@@ -1,0 +1,113 @@
+databases:
+  - name: gold-coast-tokota-db
+    databaseName: gold_coast_tokota
+    plan: starter
+    region: frankfurt
+    postgresMajorVersion: "16"
+
+services:
+  # Laravel 12 API (see backend/CLAUDE.md deviation note: README specifies
+  # Laravel 11, which is unmaintained as of this build; Laravel 12 was used
+  # instead — same architecture, Sanctum-based SPA auth, Eloquent, etc.)
+  - type: web
+    name: gold-coast-tokota-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /up
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        value: https://api.goldcoasttokota.store
+      # Two separate frontend apps call this API: ../frontend (storefront)
+      # and ../admin (dashboard) — see the admin service below.
+      - key: FRONTEND_URLS
+        value: https://goldcoasttokota.store,https://admin.goldcoasttokota.store
+      - key: SANCTUM_STATEFUL_DOMAINS
+        value: goldcoasttokota.store,admin.goldcoasttokota.store
+      - key: SESSION_DOMAIN
+        value: .goldcoasttokota.store
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: gold-coast-tokota-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: gold-coast-tokota-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: gold-coast-tokota-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: gold-coast-tokota-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: gold-coast-tokota-db
+          property: password
+      # Payment/delivery/SMS/FX secrets are set directly in the Render
+      # dashboard per Feature 12/13 — never committed to version control.
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: YANGO_API_KEY
+        sync: false
+      - key: DHL_API_KEY
+        sync: false
+      - key: FISH_AFRICA_APP_ID
+        sync: false
+      - key: FISH_AFRICA_APP_SECRET
+        sync: false
+      - key: FX_RATE_API_KEY
+        sync: false
+
+  # Nuxt 3 SSR frontend
+  - type: web
+    name: gold-coast-tokota-frontend
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && node .output/server/index.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0
+      - key: NUXT_PUBLIC_API_BASE
+        value: https://api.goldcoasttokota.store/api/v1
+      - key: NUXT_PUBLIC_WHATSAPP_NUMBER
+        sync: false
+      - key: NUXT_PUBLIC_GA_MEASUREMENT_ID
+        sync: false
+    domains:
+      - goldcoasttokota.store
+
+  # Nuxt 3 admin dashboard — fully separate app/deployment from the
+  # storefront (own build, own domain), sharing only the Laravel API.
+  - type: web
+    name: gold-coast-tokota-admin
+    runtime: node
+    region: frankfurt
+    plan: starter
+    buildCommand: cd admin && npm install && npm run build
+    startCommand: cd admin && node .output/server/index.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0
+      - key: NUXT_PUBLIC_API_BASE
+        value: https://api.goldcoasttokota.store/api/v1
+    # Add the DNS record + this domain in the Render dashboard before it
+    # resolves.
+    domains:
+      - admin.goldcoasttokota.store
