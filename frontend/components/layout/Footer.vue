@@ -105,6 +105,17 @@ const legalLinks = [
       </a>
     </div>
 
+    <NuxtLink to="/" class="py-4" aria-label="Gold Coast Tokota — home">
+      <img
+        src="/brand/logo.png"
+        alt="Gold Coast Tokota"
+        class="h-8 w-auto"
+        width="435"
+        height="108"
+        loading="lazy"
+      >
+    </NuxtLink>
+
     <div class="flex w-full flex-col items-center gap-4 py-4 text-center text-caption text-muted">
       <ul class="flex flex-wrap items-start justify-center gap-x-6 gap-y-2">
         <li v-for="link in legalLinks" :key="link.label" class="whitespace-nowrap">

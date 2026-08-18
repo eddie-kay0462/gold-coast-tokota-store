@@ -23,7 +23,7 @@ useSeoMeta({
     'Your step into heritage. Get your pair of authentic locally-made Ghanaian footwear, handcrafted by Gold Coast Tokota.',
   ogTitle: 'Gold Coast Tokota — Handmade Sandals from Ghana',
   ogDescription: 'Authentic locally-made Ghanaian footwear, handcrafted in Accra.',
-  ogImage: '/design/hero.png',
+  ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
 </script>

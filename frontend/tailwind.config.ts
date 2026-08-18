@@ -20,6 +20,9 @@ export default <Partial<Config>>{
         graphite: '#262626',
         // Figma: 300 — secondary/meta copy.
         muted: '#737373',
+        // Figma: 400 — sits between graphite and muted; filter sub-labels and
+        // the "View More +" affordance on the listing page.
+        subtle: '#4C4C4B',
         // Figma: 200 — hairline borders and input outlines.
         line: '#DDDBDC',
         // Figma: 100 — footer and section backgrounds.
@@ -41,6 +44,12 @@ export default <Partial<Config>>{
         label: ['14px', { lineHeight: '16.8px', letterSpacing: '1.4px' }], // Text/300
         'label-link': ['14px', { lineHeight: '20px', letterSpacing: '1.4px' }], // Text/300 - underline
         caption: ['12px', { lineHeight: '16px', letterSpacing: '0.2px' }], // Text/200
+        // Text/100 — product badges ("CUSTOM MADE", "RENEWED MATERIALS").
+        tag: ['10px', { lineHeight: '16px', letterSpacing: '1px' }],
+        // Listing filter group headings ("Category", "Color", "Size").
+        'filter-heading': ['14px', { lineHeight: '21px', letterSpacing: '0.42px' }],
+        // Column headings inside the mega menu ("HIGHLIGHTS", "FEATURED SHOPS").
+        eyebrow: ['10px', { lineHeight: '16px', letterSpacing: '0.6px' }],
       },
     },
   },

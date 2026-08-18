@@ -10,6 +10,10 @@ const props = withDefaults(
   { variant: 'graphite' },
 )
 
+// resolveComponent() must run in setup — it is not in scope inside template
+// expressions, where it silently renders a literal <NuxtLink> element instead.
+const linkComponent = resolveComponent('NuxtLink')
+
 const variantClass = computed(
   () =>
     ({
@@ -22,7 +26,7 @@ const variantClass = computed(
 
 <template>
   <component
-    :is="to ? resolveComponent('NuxtLink') : 'button'"
+    :is="to ? linkComponent : 'button'"
     :to="to"
     :type="to ? undefined : 'button'"
     class="flex w-[240px] max-w-full items-center justify-center py-3 text-label uppercase transition-opacity hover:opacity-80"
