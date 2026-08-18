@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* The design sets Helvetica Neue Light (300) as the default across every
+     text style, with Regular (400) reserved for a handful of small headings. */
+  body {
+    @apply font-sans font-light text-graphite antialiased;
+  }
+
+  /* Keyboard focus must stay visible everywhere (Feature 1 acceptance
+     criteria); the design has no focus treatment of its own, so this is a
+     project-level addition rather than a transcription. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-graphite;
+  }
+}
