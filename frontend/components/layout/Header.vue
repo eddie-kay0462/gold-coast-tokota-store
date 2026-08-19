@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { PhArrowRight as ArrowRight, PhCaretDown as CaretDown, PhList as List, PhMagnifyingGlass as MagnifyingGlass, PhShoppingCartSimple as ShoppingCartSimple, PhUser as User, PhX as X } from '@phosphor-icons/vue'
+import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
 import { categoryNav, primaryNav } from '~/utils/navigation'
 
 const currency = useCurrencyStore()
+const cart = useCartStore()
 const route = useRoute()
 
 const mobileNavOpen = ref(false)
@@ -147,9 +149,20 @@ function isCategoryActive(to: string) {
         <NuxtLink to="/account" class="flex items-center justify-center p-3" aria-label="Account">
           <User :size="16" />
         </NuxtLink>
-        <NuxtLink to="/checkout" class="flex items-center justify-center p-3" aria-label="Cart">
+        <button
+          type="button"
+          class="relative flex items-center justify-center p-3"
+          :aria-label="cart.itemCount ? `Cart, ${cart.itemCount} items` : 'Cart, empty'"
+          @click="cart.openDrawer()"
+        >
           <ShoppingCartSimple :size="16" />
-        </NuxtLink>
+          <span
+            v-if="cart.itemCount"
+            class="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-graphite text-[10px] leading-none text-white"
+          >
+            {{ cart.itemCount }}
+          </span>
+        </button>
       </div>
     </div>
 

@@ -6,6 +6,9 @@ const props = withDefaults(
   defineProps<{
     to?: string
     variant?: 'graphite' | 'ink' | 'white'
+    /** Stretch to the container instead of the design's fixed 240px block. */
+    full?: boolean
+    disabled?: boolean
   }>(),
   { variant: 'graphite' },
 )
@@ -29,8 +32,9 @@ const variantClass = computed(
     :is="to ? linkComponent : 'button'"
     :to="to"
     :type="to ? undefined : 'button'"
-    class="flex w-[240px] max-w-full items-center justify-center py-3 text-label uppercase transition-opacity hover:opacity-80"
-    :class="variantClass"
+    :disabled="to ? undefined : disabled"
+    class="flex max-w-full items-center justify-center py-3 text-label uppercase transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+    :class="[variantClass, full ? 'w-full' : 'w-[240px]']"
   >
     <slot />
   </component>

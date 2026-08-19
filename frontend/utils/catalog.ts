@@ -41,6 +41,51 @@ export type ApiProduct = {
   departments?: string[]
   sizes?: string[]
   widths?: string[]
+
+  // --- Detail-page fields (absent from listing responses) ---
+  /** Long-form copy under the buy panel; `description_heading` titles it. */
+  description?: string | null
+  description_heading?: string | null
+  /** e.g. "Model is 6′2″, wearing a size M". */
+  model_note?: string | null
+  /**
+   * Per-size stock, keyed by size. A size missing from the map, or at zero,
+   * renders disabled — server-side checks remain the source of truth.
+   */
+  size_availability?: Record<string, number>
+  rating?: ProductRating | null
+  reviews?: ProductReview[]
+  /**
+   * "Transparent Pricing" breakdown — GHS minor units per cost line, in the
+   * order they should display.
+   */
+  cost_breakdown?: { label: string, amount_ghs: number, icon: string }[]
+}
+
+export type ProductRating = {
+  /** Mean score out of 5. */
+  average: number
+  count: number
+  /** Review count per star, keyed "1".."5". */
+  distribution?: Record<string, number>
+  /**
+   * Fit skew on a 1–5 scale, 3 being true to size. Renders as the
+   * "Runs slightly large" meter.
+   */
+  fit?: number | null
+}
+
+export type ProductReview = {
+  id: string
+  author: string
+  verified?: boolean
+  rating: number
+  title: string
+  body: string
+  /** ISO 8601; rendered as a relative age ("14 days ago"). */
+  created_at: string
+  /** Free-form reviewer attributes shown in the left column. */
+  attributes?: { label: string, value: string }[]
 }
 
 export type Facet = { value: string, label: string }
@@ -75,6 +120,9 @@ export const COLOR_FACETS: (Facet & { hex: string })[] = [
 export const SIZE_GROUPS: { label: string, sizes: string[] }[] = [
   { label: 'Shoes & Slippers', sizes: ['38', '39', '40', '41', '42', '43', '44', '45'] },
 ]
+
+/** Star-rating scale used across the product page. */
+export const MAX_RATING = 5
 
 export const WIDTH_FACETS: Facet[] = [
   { value: 's', label: 'S' },

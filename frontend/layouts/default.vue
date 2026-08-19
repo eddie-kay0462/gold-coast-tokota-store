@@ -6,5 +6,6 @@
     </main>
     <LayoutFooter />
     <LayoutWhatsAppButton />
+    <CartDrawer />
   </div>
 </template>

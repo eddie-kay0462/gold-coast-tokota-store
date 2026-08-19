@@ -2,6 +2,7 @@
 import { PhFunnelSimple as FunnelSimple } from '@phosphor-icons/vue'
 import type { ApiProduct } from '~/utils/catalog'
 import { COLOR_FACETS } from '~/utils/catalog'
+import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 const config = useRuntimeConfig()
 const route = useRoute()
@@ -59,113 +60,6 @@ const { data: apiProducts, pending } = await useAsyncData(
   { watch: [() => route.query] },
 )
 
-const designFallback: ApiProduct[] = [
-  {
-    slug: 'kentehene-collection',
-    name: 'The Kentehene Collection',
-    base_price_ghs: 60000,
-    compare_at_ghs: 70000,
-    images: ['/design/product-kentehene.png'],
-    color: 'Brown',
-    colors: [
-      { name: 'Brown', hex: '#8B5A2B' },
-      { name: 'Navy', hex: '#1B2A4A' },
-      { name: 'Tan', hex: '#C4AE93' },
-      { name: 'Black', hex: '#000000' },
-    ],
-    product_type: 'ahenema',
-    departments: ['mens'],
-    sizes: ['39', '40', '41', '42', '43'],
-    widths: ['m', 'l'],
-  },
-  {
-    slug: 'acheampong-collection',
-    name: 'The Acheampong Collection',
-    base_price_ghs: 70000,
-    compare_at_ghs: 75000,
-    images: ['/design/product-acheampong.png'],
-    color: 'Navy Blue',
-    colors: [
-      { name: 'Navy Blue', hex: '#1B2A4A' },
-      { name: 'Black', hex: '#000000' },
-      { name: 'Grey', hex: '#D9D9D9' },
-    ],
-    tags: ['Custom Made'],
-    product_type: 'slippers',
-    departments: ['mens'],
-    sizes: ['40', '41', '42', '43', '44'],
-    widths: ['m'],
-  },
-  {
-    slug: 'adinkra-slippers',
-    name: 'The Adinkra Slippers',
-    base_price_ghs: 45000,
-    compare_at_ghs: 55000,
-    images: ['/design/product-adinkra.png'],
-    color: 'Black and White',
-    colors: [
-      { name: 'White', hex: '#FFFFFF' },
-      { name: 'Olive', hex: '#5A6134' },
-    ],
-    tags: ['Renewed Materials', 'Cleaner Chemistry'],
-    product_type: 'slippers',
-    departments: ['mens', 'womens'],
-    sizes: ['38', '39', '40', '41', '42'],
-    widths: ['s', 'm'],
-  },
-  {
-    slug: 'elevated-odeneho',
-    name: 'The Elevated Odeneho',
-    base_price_ghs: 50000,
-    compare_at_ghs: 60000,
-    images: ['/design/product-elevated-odeneho.png'],
-    color: 'Brown',
-    colors: [
-      { name: 'Brown', hex: '#8B5A2B' },
-      { name: 'Navy', hex: '#1B2A4A' },
-      { name: 'Tan', hex: '#C4AE93' },
-      { name: 'Black', hex: '#000000' },
-    ],
-    product_type: 'sandals',
-    departments: ['mens'],
-    sizes: ['41', '42', '43', '44', '45'],
-    widths: ['m', 'l'],
-  },
-  {
-    slug: 'flavourful-cross-slippers',
-    name: 'Flavourful Cross Slippers',
-    base_price_ghs: 45000,
-    compare_at_ghs: 50000,
-    images: ['/design/product-flavourful-cross.png'],
-    color: 'Crystal Blue',
-    colors: [
-      { name: 'Crystal Blue', hex: '#1E4C8F' },
-      { name: 'Black', hex: '#000000' },
-      { name: 'Grey', hex: '#D9D9D9' },
-    ],
-    tags: ['Organic Materials'],
-    product_type: 'slippers',
-    departments: ['mens', 'womens'],
-    sizes: ['38', '39', '40', '41'],
-    widths: ['s', 'm'],
-  },
-  {
-    slug: 'odeneho-collection',
-    name: 'The Odeneho Collection',
-    base_price_ghs: 25000,
-    compare_at_ghs: 30000,
-    images: ['/design/product-odeneho.png'],
-    color: 'Olive Green',
-    colors: [{ name: 'Olive Green', hex: '#5A6134' }],
-    tags: ['Renewed Materials', 'Cleaner Chemistry'],
-    is_pre_order: true,
-    product_type: 'closed-toe',
-    departments: ['mens'],
-    sizes: ['42', '43', '44', '45'],
-    widths: ['m'],
-  },
-]
-
 const usingFallback = computed(() => !(apiProducts.value?.data?.length))
 const sourceProducts = computed(() => apiProducts.value?.data ?? [])
 
@@ -198,7 +92,7 @@ function matchesFilters(product: ApiProduct): boolean {
 // The API is expected to filter server-side; the same predicate runs locally so
 // the fallback catalogue responds to the sidebar too.
 const products = computed(() =>
-  usingFallback.value ? designFallback.filter(matchesFilters) : sourceProducts.value,
+  usingFallback.value ? DESIGN_PRODUCTS.filter(matchesFilters) : sourceProducts.value,
 )
 
 /** Heading and breadcrumb follow the category the header nav linked in with. */
