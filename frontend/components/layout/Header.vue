@@ -94,31 +94,23 @@ function isCategoryActive(to: string) {
       </div>
     </div>
 
-    <!-- Primary nav -->
-    <div class="flex w-full items-center justify-between border-b border-line px-5 lg:px-[68px]">
-      <button
-        type="button"
-        class="p-3 lg:hidden"
-        :aria-expanded="mobileNavOpen"
-        aria-controls="mobile-nav"
-        aria-label="Toggle navigation"
-        @click="mobileNavOpen = !mobileNavOpen"
-      >
-        <component :is="mobileNavOpen ? X : List" :size="20" />
-      </button>
+    <!-- Primary nav. Three columns with equal 1fr flanks so the logo sits
+         optically centred in the row regardless of how wide the nav or the
+         icon cluster get. -->
+    <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 lg:px-[68px]">
+      <div class="flex items-center justify-start">
+        <button
+          type="button"
+          class="p-3 lg:hidden"
+          :aria-expanded="mobileNavOpen"
+          aria-controls="mobile-nav"
+          aria-label="Toggle navigation"
+          @click="mobileNavOpen = !mobileNavOpen"
+        >
+          <component :is="mobileNavOpen ? X : List" :size="20" />
+        </button>
 
-      <div class="hidden items-center gap-8 lg:flex">
-        <NuxtLink to="/" aria-label="Gold Coast Tokota — home">
-          <img
-            src="/brand/logo.png"
-            alt="Gold Coast Tokota"
-            class="h-7 w-auto"
-            width="435"
-            height="108"
-          >
-        </NuxtLink>
-
-        <nav class="flex items-start" aria-label="Primary">
+        <nav class="hidden items-start lg:flex" aria-label="Primary">
           <NuxtLink
             v-for="item in primaryNav"
             :key="item.label"
@@ -132,11 +124,11 @@ function isCategoryActive(to: string) {
         </nav>
       </div>
 
-      <NuxtLink to="/" class="lg:hidden" aria-label="Gold Coast Tokota — home">
+      <NuxtLink to="/" class="justify-self-center px-4 py-2" aria-label="Gold Coast Tokota — home">
         <img
           src="/brand/logo.png"
           alt="Gold Coast Tokota"
-          class="h-6 w-auto"
+          class="h-6 w-auto lg:h-7"
           width="435"
           height="108"
         >
