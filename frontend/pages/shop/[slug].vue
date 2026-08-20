@@ -1,19 +1,142 @@
 <script setup lang="ts">
+import type { ApiProduct } from '~/utils/catalog'
+import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
+import { useCartStore } from '~/stores/cart'
+
 const route = useRoute()
 const config = useRuntimeConfig()
-const { data: product } = await useAsyncData(`product-${route.params.slug}`, () =>
-  $fetch(`${config.public.apiBase}/products/${route.params.slug}`),
+const cart = useCartStore()
+const { addToCart: addToCartEvent } = useAnalytics()
+
+const slug = computed(() => String(route.params.slug))
+
+// Feature 2 owns `GET /api/v1/products/{slug}`. Until it exists a failed fetch
+// resolves to null and the design catalogue stands in, matching how the listing
+// and home pages already degrade.
+const { data: apiProduct } = await useAsyncData(
+  () => `product-${slug.value}`,
+  () =>
+    $fetch<{ data: ApiProduct }>(`${config.public.apiBase}/products/${slug.value}`)
+      .then((response) => response.data)
+      .catch(() => null),
+  { watch: [slug] },
 )
 
+const product = computed<ApiProduct | null>(
+  () => apiProduct.value ?? DESIGN_PRODUCTS.find((entry) => entry.slug === slug.value) ?? null,
+)
+
+// A slug that matches neither the API nor the design catalogue is a genuine 404
+// rather than an empty product page.
+if (!product.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Product not found', fatal: true })
+}
+
+const gallery = computed(() => product.value?.images ?? [])
+
+const discountLabel = computed(() => {
+  const entry = product.value
+  if (!entry?.compare_at_ghs || entry.compare_at_ghs <= entry.base_price_ghs) return null
+  return `${Math.round((1 - entry.base_price_ghs / entry.compare_at_ghs) * 100)}% off`
+})
+
+/** "Men / Sandals - New Arrivals" — department, then product type. */
+const DEPARTMENT_LABELS: Record<string, string> = {
+  mens: 'Men',
+  womens: 'Women',
+  kids: 'Kids',
+}
+
+const breadcrumb = computed(() => {
+  const entry = product.value
+  if (!entry) return ''
+  const department = DEPARTMENT_LABELS[entry.departments?.[0] ?? ''] ?? 'Shop'
+  const type = entry.product_type
+    ? entry.product_type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    : null
+  return type ? `${department} / ${type}` : department
+})
+
+const recommended = computed(() =>
+  DESIGN_PRODUCTS.filter((entry) => entry.slug !== slug.value).slice(0, 4),
+)
+
+function addToCart({ size, color }: { size: string, color: string }) {
+  const entry = product.value
+  if (!entry) return
+
+  cart.addItem({
+    productId: entry.slug,
+    // Real inventory item ids arrive with Feature 2/3; until then the variant
+    // key keeps distinct size/colour selections as separate cart lines.
+    inventoryItemId: `${entry.slug}:${size}:${color}`,
+    slug: entry.slug,
+    name: entry.name,
+    image: entry.images?.[0],
+    variantLabel: [size, color].filter(Boolean).join(' | '),
+    quantity: 1,
+    unitPriceGhs: entry.base_price_ghs,
+    compareAtGhs: entry.compare_at_ghs,
+  })
+
+  addToCartEvent({
+    currency: 'GHS',
+    value: entry.base_price_ghs / 100,
+    items: [{ item_id: entry.slug, item_name: entry.name, quantity: 1 }],
+  })
+
+  // Opening the sidecart is the confirmation that the add worked, and puts
+  // checkout one click away.
+  cart.openDrawer()
+}
+
 useSeoMeta({
-  title: () => (product.value as any)?.data?.name ?? 'Product — Gold Coast Tokota',
-  description: () => (product.value as any)?.data?.description ?? undefined,
+  title: () => `${product.value?.name ?? 'Product'} — Gold Coast Tokota`,
+  description: () =>
+    product.value?.description ?? 'Handmade Ghanaian footwear from Gold Coast Tokota.',
+  ogTitle: () => product.value?.name,
+  ogImage: () => product.value?.images?.[0] ?? '/brand/og-image.png',
+  ogType: 'website',
 })
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl px-4 py-12">
-    <div v-if="product">{{ (product as any).data?.name }}</div>
-    <p v-else>Loading...</p>
+  <div v-if="product" class="flex w-full flex-col items-start">
+    <!-- Section 01 — gallery + buy panel -->
+    <div class="flex w-full flex-col items-start gap-6 px-5 py-[30px] lg:flex-row lg:px-20">
+      <ShopProductGallery
+        :images="gallery"
+        :name="product.name"
+        :discount-label="discountLabel"
+      />
+      <ShopProductPurchasePanel
+        :product="product"
+        :breadcrumb="breadcrumb"
+        @add="addToCart"
+      />
+    </div>
+
+    <!-- Section 02 — recommendations -->
+    <section class="flex w-full flex-col items-start gap-2 px-5 py-16 lg:px-[196px]">
+      <h2 class="w-full text-body font-normal text-graphite">Recommended Products</h2>
+      <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+        <li v-for="item in recommended" :key="item.slug" class="min-w-0">
+          <ShopProductCard :product="item" />
+        </li>
+      </ul>
+    </section>
+
+    <!-- Section 03 — reviews -->
+    <ShopProductReviews
+      v-if="product.rating && product.reviews?.length"
+      :rating="product.rating"
+      :reviews="product.reviews"
+    />
+
+    <!-- Section 04 — transparent pricing -->
+    <ShopTransparentPricing
+      v-if="product.cost_breakdown?.length"
+      :breakdown="product.cost_breakdown"
+    />
   </div>
 </template>

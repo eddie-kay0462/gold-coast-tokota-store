@@ -16,6 +16,15 @@ export default defineNuxtConfig({
     '/order-confirmation/**': { ssr: false },
   },
 
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/brand/apple-touch-icon.png' },
+      ],
+    },
+  },
+
   site: {
     url: 'https://goldcoasttokota.store',
   },

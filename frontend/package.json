@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@nuxtjs/sitemap": "^7.2.9",
+    "@phosphor-icons/vue": "^2.2.1",
     "@pinia/nuxt": "^0.11.0",
     "gsap": "^3.12.7",
     "nuxt": "^3.15.4",

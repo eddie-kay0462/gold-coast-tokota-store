@@ -46,5 +46,13 @@ Nuxt 3 (storefront, hybrid SSR/SPA) · Nuxt 3 (admin dashboard, SPA-only, separa
 ## Current phase
 See "Implementation Order" in README.md — work sequentially, don't skip ahead.
 
+## Team status log
+`FOR_THE_TEAM.md` (repo root) is the running status log for teammates: what
+changed recently, what is still outstanding, and which decisions are waiting on
+a human. **Update it in the same change that alters the code**, not afterwards —
+bump the "Last updated" line, add a dated entry to "Recent changes", move
+finished items out of "What is left to do", and record anything blocked. Its
+closing section spells out the routine.
+
 ## Git commits
 Do not add `Co-Authored-By` trailers (or any other attribution) for Claude, Cursor, or any other AI coding agent/assistant on commits in this repo.
