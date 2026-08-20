@@ -14,7 +14,7 @@
         <p class="w-full text-body">Read about our progress in our latest Impact Report.</p>
       </div>
 
-      <CommonBrandButton to="/about#sustainability" variant="white" class="relative">
+      <CommonBrandButton to="/sustainability" variant="white" class="relative">
         Learn More
       </CommonBrandButton>
     </div>

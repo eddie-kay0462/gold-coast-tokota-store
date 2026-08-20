@@ -16,7 +16,7 @@ const columns = computed(() => [
     heading: 'Company',
     links: [
       { label: 'About', to: '/about' },
-      { label: 'Environmental Initiatives', to: '/about#sustainability' },
+      { label: 'Environmental Initiatives', to: '/sustainability' },
       { label: 'Factories', to: '/about#factories' },
       { label: 'DEI', to: '/about#dei' },
       { label: 'Careers', to: '/careers' },

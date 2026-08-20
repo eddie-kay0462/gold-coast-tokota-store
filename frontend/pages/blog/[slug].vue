@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
-import { DESIGN_POSTS, RELATED_POSTS } from '~/utils/newsPosts'
+import { DESIGN_POSTS, SUSTAINABILITY_POSTS } from '~/utils/newsPosts'
 import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 const route = useRoute()
@@ -22,7 +22,7 @@ const { data: apiPost } = await useAsyncData(
 const post = computed<ApiPost | null>(
   () =>
     apiPost.value
-    ?? [...DESIGN_POSTS, ...RELATED_POSTS].find((entry) => entry.slug === slug.value)
+    ?? [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS].find((entry) => entry.slug === slug.value)
     ?? null,
 )
 
@@ -33,7 +33,7 @@ if (!post.value) {
 
 /** Other stories, newest first, excluding the one being read. */
 const related = computed(() =>
-  [...DESIGN_POSTS, ...RELATED_POSTS]
+  [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS]
     .filter((entry) => entry.slug !== slug.value)
     .sort((a, b) => b.published_at.localeCompare(a.published_at))
     .slice(0, 3),

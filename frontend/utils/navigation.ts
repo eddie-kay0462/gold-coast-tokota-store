@@ -21,13 +21,12 @@ export type MegaMenu = {
 
 export type NavItem = NavLink & { accent?: boolean, menu?: MegaMenu }
 
-// Row 2 of the header. `Sustainability` has no route in the spec's page map
-// yet, so it points at the About page's sustainability anchor.
+// Row 2 of the header.
 export const primaryNav: NavLink[] = [
   { label: 'News & Events', to: '/blog' },
   { label: 'Shop', to: '/shop' },
   { label: 'About', to: '/about' },
-  { label: 'Sustainability', to: '/about#sustainability' },
+  { label: 'Sustainability', to: '/sustainability' },
 ]
 
 /** Merges extra query params into a base route, preserving what's already there. */
@@ -164,18 +163,19 @@ export const categoryNav: NavItem[] = [
 ]
 
 /**
- * The About page's own section nav (Figma 6:554). Only three of its seven tabs
- * have a real destination today — the brand-story sections drawn on this page
- * and the workshop booking flow. The rest are pages the spec's page map does
- * not include yet, so they resolve to the nearest existing section and are
- * flagged `placeholder`; grep the flag to find what still needs a real route.
+ * The About page's own section nav (Figma 6:554). Every tab but the Annual
+ * Impact Report now has a real destination — the brand-story sections drawn on
+ * this page, the Sustainability page, its stories, and the workshop booking
+ * flow. The report is not a designed page yet, so it resolves to the nearest
+ * existing one and is flagged `placeholder`; grep the flag to find what still
+ * needs a real route.
  */
 export const aboutSectionNav: (NavLink & { placeholder?: boolean })[] = [
   { label: 'About', to: '/about' },
   { label: 'Cleaner Manufacturing', to: '/about#factories' },
   { label: 'Workshop', to: '/booking' },
-  { label: 'Environmental Initiatives', to: '/about#sustainability' },
-  { label: 'Our Carbon Commitment', to: '/about#sustainability', placeholder: true },
-  { label: 'Annual Impact Report', to: '/blog', placeholder: true },
-  { label: 'Partnerships', to: '/about#factories', placeholder: true },
+  { label: 'Environmental Initiatives', to: '/sustainability' },
+  { label: 'Our Carbon Commitment', to: '/blog/our-carbon-commitment' },
+  { label: 'Annual Impact Report', to: '/sustainability', placeholder: true },
+  { label: 'Partnerships', to: '/blog/partnerships-for-change' },
 ]

@@ -40,6 +40,11 @@ export default <Partial<Config>>{
       },
       fontSize: {
         // [size, { lineHeight, letterSpacing }] — values are Figma-exact.
+        // The Sustainability masthead — the brand set at full width (10:910).
+        'display-brand': ['96px', { lineHeight: '176px', letterSpacing: '0' }],
+        // Section headings on the Sustainability page: "The Latest", "Our
+        // Progress", "Follow us on social for more" (10:916).
+        'display-heading': ['54px', { lineHeight: '72px', letterSpacing: '0' }],
         // Display/800 — the full-bleed About hero statement (Figma 6:631).
         'display-xl': ['70px', { lineHeight: '84px', letterSpacing: '0.2px' }],
         'display-lg': ['46px', { lineHeight: '55.2px', letterSpacing: '0.92px' }], // Display/500
@@ -61,6 +66,8 @@ export default <Partial<Config>>{
         tag: ['10px', { lineHeight: '16px', letterSpacing: '1px' }],
         // Listing filter group headings ("Category", "Color", "Size").
         'filter-heading': ['14px', { lineHeight: '21px', letterSpacing: '0.42px' }],
+        // The soft-cornered buttons on the Sustainability page (10:963).
+        action: ['14px', { lineHeight: '21px', letterSpacing: '0.42px' }],
         // Column headings inside the mega menu ("HIGHLIGHTS", "FEATURED SHOPS").
         eyebrow: ['10px', { lineHeight: '16px', letterSpacing: '0.6px' }],
       },

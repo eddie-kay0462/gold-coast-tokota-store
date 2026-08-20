@@ -14,7 +14,7 @@ const features = [
     alt: 'Recycling symbol rendered in green beside a pair of leather shoes',
     caption: 'See the sustainability efforts behind each of our products.',
     linkLabel: 'Learn More',
-    to: '/about#sustainability',
+    to: '/sustainability',
   },
 ]
 </script>

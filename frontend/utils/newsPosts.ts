@@ -138,8 +138,12 @@ export const DESIGN_POSTS: ApiPost[] = [
   },
 ]
 
-/** The three cards under an article (Figma section 08). */
-export const RELATED_POSTS: ApiPost[] = [
+/**
+ * The Sustainability listing (Figma 10:976). Six stories, three of which the
+ * article page also shows as "More stories". Photography is shared with the
+ * News designs where Figma reuses the same asset.
+ */
+export const SUSTAINABILITY_POSTS: ApiPost[] = [
   {
     slug: 'changes-to-packaging',
     title: 'Changes to Packaging',
@@ -155,9 +159,30 @@ export const RELATED_POSTS: ApiPost[] = [
     cover_image: '/design/news-employment.png',
   },
   {
+    slug: 'partnerships-for-change',
+    title: 'Partnerships for Change',
+    category: 'Partnerships',
+    published_at: '2025-11-18',
+    cover_image: '/design/news-placeholder.png',
+  },
+  {
+    slug: 'fundraising-for-change',
+    title: 'Fundraising for Change',
+    category: 'Advocacy',
+    published_at: '2025-10-30',
+    cover_image: '/design/news-placeholder.png',
+  },
+  {
+    slug: 'new-workshop-updates',
+    title: 'New Workshop Updates',
+    category: 'Processes',
+    published_at: '2025-09-12',
+    cover_image: '/design/about-explore-processes.png',
+  },
+  {
     slug: 'our-carbon-commitment',
     title: 'Our Carbon Commitment',
-    category: 'Sustainability',
+    category: 'Style',
     published_at: '2025-12-05',
     cover_image: '/design/news-carbon.png',
   },
