@@ -61,8 +61,19 @@ function menuId(label: string) {
   return `mega-menu-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 }
 
+// The anchor is part of a tab's identity: two tabs can share a path and differ
+// only by hash, and matching on path alone would light up both.
+// The hash is never sent to the server, so until we're mounted only the
+// anchorless tab can claim the underline — otherwise the client would disagree
+// with the SSR markup it's hydrating.
+const hashReady = ref(false)
+onMounted(() => (hashReady.value = true))
+
 function isActive(to: string) {
-  return route.path === to.split('?')[0]?.split('#')[0]
+  const [pathAndQuery, hash] = to.split('#')
+  if (route.path !== pathAndQuery?.split('?')[0]) return false
+  if (!hashReady.value) return !hash
+  return hash ? route.hash === `#${hash}` : !route.hash
 }
 
 function isCategoryActive(to: string) {

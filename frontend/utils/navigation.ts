@@ -162,3 +162,20 @@ export const categoryNav: NavItem[] = [
     }),
   },
 ]
+
+/**
+ * The About page's own section nav (Figma 6:554). Only three of its seven tabs
+ * have a real destination today — the brand-story sections drawn on this page
+ * and the workshop booking flow. The rest are pages the spec's page map does
+ * not include yet, so they resolve to the nearest existing section and are
+ * flagged `placeholder`; grep the flag to find what still needs a real route.
+ */
+export const aboutSectionNav: (NavLink & { placeholder?: boolean })[] = [
+  { label: 'About', to: '/about' },
+  { label: 'Cleaner Manufacturing', to: '/about#factories' },
+  { label: 'Workshop', to: '/booking' },
+  { label: 'Environmental Initiatives', to: '/about#sustainability' },
+  { label: 'Our Carbon Commitment', to: '/about#sustainability', placeholder: true },
+  { label: 'Annual Impact Report', to: '/blog', placeholder: true },
+  { label: 'Partnerships', to: '/about#factories', placeholder: true },
+]

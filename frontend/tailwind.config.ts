@@ -29,6 +29,9 @@ export default <Partial<Config>>{
         surface: '#F5F4F4',
         // Figma: Red — reserved for the Sale nav item and sale pricing.
         sale: '#D0021B',
+        // Figma: Timberwolf — the warm stone ground behind the About page's
+        // alternating story sections (10:645, 10:648).
+        timberwolf: '#E6DED8',
       },
       fontFamily: {
         // The design specifies Helvetica Neue Light (300) throughout; no
@@ -37,7 +40,17 @@ export default <Partial<Config>>{
       },
       fontSize: {
         // [size, { lineHeight, letterSpacing }] — values are Figma-exact.
+        // Display/800 — the full-bleed About hero statement (Figma 6:631).
+        'display-xl': ['70px', { lineHeight: '84px', letterSpacing: '0.2px' }],
         'display-lg': ['46px', { lineHeight: '55.2px', letterSpacing: '0.92px' }], // Display/500
+        // Display/300 — the About page's opening manifesto paragraph (6:636).
+        'display-statement': ['38px', { lineHeight: '53.2px', letterSpacing: '0.2px' }],
+        // Display/400 — headings on the About story sections ("Our ethical
+        // approach."). Same metrics as `article-lg` but with Figma's tracking.
+        'display-section': ['40px', { lineHeight: '48px', letterSpacing: '0.2px' }],
+        // Editorial scale used by the long-form news article (Figma 10:1405).
+        'article-lg': ['40px', { lineHeight: '48px', letterSpacing: '0' }],
+        'article-hero': ['64px', { lineHeight: '72px', letterSpacing: '0' }],
         'display-md': ['32px', { lineHeight: '40px', letterSpacing: '0' }], // Display/200
         'display-sm': ['24px', { lineHeight: '33.24px', letterSpacing: '0' }], // Display/100
         body: ['16px', { lineHeight: '24px', letterSpacing: '0.64px' }], // Text/400
