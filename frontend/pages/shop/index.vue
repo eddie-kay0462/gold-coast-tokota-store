@@ -53,6 +53,7 @@ const { data: apiProducts, pending } = await useAsyncData(
           FACET_KEYS.map((key) => [key, selected.value[key].join(',') || undefined]),
         ),
         category: route.query.category,
+        q: route.query.q,
         sale: route.query.sale,
         sort: route.query.sort,
       },
@@ -71,9 +72,22 @@ function colorValues(product: ApiProduct): string[] {
   ).map((facet) => facet.value)
 }
 
+/** Free-text term from the header search panel. */
+const searchTerm = computed(() =>
+  typeof route.query.q === 'string' ? route.query.q.trim().toLowerCase() : '',
+)
+
 function matchesFilters(product: ApiProduct): boolean {
   const { type, color, size, width } = selected.value
   const department = route.query.category
+
+  if (searchTerm.value) {
+    const haystack = [product.name, product.color, product.product_type, ...(product.tags ?? [])]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    if (!haystack.includes(searchTerm.value)) return false
+  }
 
   if (
     typeof department === 'string'
@@ -109,14 +123,18 @@ const activeCategory = computed(() => {
 })
 
 const heading = computed(() => {
+  if (searchTerm.value) return `Search results for “${route.query.q}”`
   if (route.query.sale === 'true') return 'Sale'
   const base = activeCategory.value?.heading ?? 'All Products'
   return route.query.sort === 'newest' ? `${base} - New Arrivals` : base
 })
 
-const breadcrumb = computed(() => `Home / ${activeCategory.value?.crumb ?? 'Shop'}`)
+const breadcrumb = computed(() =>
+  searchTerm.value ? 'Home / Search' : `Home / ${activeCategory.value?.crumb ?? 'Shop'}`,
+)
 
 const subheading = computed(() => {
+  if (searchTerm.value) return `${products.value.length} matching`
   if (route.query.sort === 'best-selling') return 'Best Sellers'
   if (route.query.sort === 'top-rated') return 'Top Rated'
   return 'Featured'

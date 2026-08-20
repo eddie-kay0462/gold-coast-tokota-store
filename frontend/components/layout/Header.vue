@@ -9,6 +9,8 @@ const cart = useCartStore()
 const route = useRoute()
 
 const mobileNavOpen = ref(false)
+/** Search band under the nav rows (Figma 6:552). */
+const searchOpen = ref(false)
 const mobileExpanded = ref<string | null>(null)
 
 /** Label of the category whose mega menu is open, or null when closed. */
@@ -48,6 +50,7 @@ watch(() => route.fullPath, () => {
   closeMenu()
   mobileNavOpen.value = false
   mobileExpanded.value = null
+  searchOpen.value = false
 })
 
 onBeforeUnmount(() => clearTimeout(closeTimer))
@@ -72,7 +75,7 @@ function isCategoryActive(to: string) {
 </script>
 
 <template>
-  <header class="relative z-50 bg-white" @keydown.esc="closeMenu(true)">
+  <header class="relative z-50 bg-white" @keydown.esc="closeMenu(true); searchOpen = false">
     <!-- Announcement bar -->
     <div class="relative flex w-full items-center justify-center gap-1 bg-ink px-[30px] py-[7px]">
       <p class="text-center text-caption text-white">Get early access on launches and offers.</p>
@@ -135,8 +138,15 @@ function isCategoryActive(to: string) {
       </NuxtLink>
 
       <div class="flex items-center justify-end">
-        <button type="button" class="flex items-center justify-center p-3" aria-label="Search">
-          <MagnifyingGlass :size="16" />
+        <button
+          type="button"
+          class="flex items-center justify-center p-3"
+          aria-label="Search"
+          :aria-expanded="searchOpen"
+          aria-controls="site-search"
+          @click="searchOpen = !searchOpen"
+        >
+          <component :is="searchOpen ? X : MagnifyingGlass" :size="16" />
         </button>
         <NuxtLink to="/account" class="flex items-center justify-center p-3" aria-label="Account">
           <User :size="16" />
@@ -198,6 +208,8 @@ function isCategoryActive(to: string) {
         </NuxtLink>
       </template>
     </nav>
+
+    <LayoutSearchPanel id="site-search" :open="searchOpen" @close="searchOpen = false" />
 
     <!-- Mega menu panel: absolutely positioned so it overlays the page rather
          than pushing it down, matching the Figma frame. -->
