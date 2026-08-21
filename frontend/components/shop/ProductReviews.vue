@@ -78,7 +78,7 @@ function relativeAge(iso: string) {
     <h2 class="w-full text-center text-display-sm font-normal text-graphite">Reviews</h2>
 
     <!-- Summary -->
-    <div class="flex w-full flex-col gap-8 bg-surface px-6 pb-16 pt-9 lg:flex-row lg:gap-[55px] lg:px-14 lg:pb-[84px]">
+    <div class="flex w-full flex-col gap-8 bg-surface px-6 pb-16 pt-9 md:flex-row md:gap-10 lg:gap-[55px] lg:px-14 lg:pb-[84px]">
       <div class="flex min-w-0 flex-1 flex-col gap-[15px]">
         <p class="w-full text-body font-normal text-graphite">
           {{ rating.average.toFixed(1) }} Overall Rating
@@ -91,7 +91,7 @@ function relativeAge(iso: string) {
           v-for="row in distribution"
           :key="row.stars"
           type="button"
-          class="flex w-full items-center gap-1 text-left"
+          class="flex min-h-[44px] w-full items-center gap-1 text-left"
           :aria-pressed="filterStars === row.stars"
           :aria-label="`Show only ${row.stars}-star reviews (${row.count})`"
           @click="filterStars = filterStars === row.stars ? null : row.stars"
@@ -155,10 +155,10 @@ function relativeAge(iso: string) {
       <li
         v-for="(review, index) in visibleReviews"
         :key="review.id"
-        class="flex w-full flex-col gap-6 pb-[57px] lg:flex-row lg:gap-2.5"
+        class="flex w-full flex-col gap-6 pb-[57px] md:flex-row md:gap-2.5"
         :class="index < visibleReviews.length - 1 ? 'border-b border-line' : ''"
       >
-        <div class="flex w-full flex-col lg:w-[230px] lg:shrink-0">
+        <div class="flex w-full flex-col md:w-[230px] md:shrink-0">
           <p class="w-full text-body font-normal text-black">{{ review.author }}</p>
           <p v-if="review.verified" class="flex w-full items-center gap-1 pb-5 pt-2">
             <PhCheckCircle :size="18" class="shrink-0" />

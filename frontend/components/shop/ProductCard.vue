@@ -29,7 +29,7 @@ const selectedColorIndex = computed(() => {
 <template>
   <article class="relative flex min-w-0 flex-col gap-2.5">
     <NuxtLink :to="`/shop/${product.slug}`" class="group flex flex-col gap-2.5">
-      <div class="relative h-[280px] w-full overflow-hidden sm:h-[340px] lg:h-[392px]">
+      <div class="relative aspect-[9/10] w-full overflow-hidden">
         <img
           :src="image"
           :alt="product.name"
@@ -68,7 +68,8 @@ const selectedColorIndex = computed(() => {
       </div>
     </NuxtLink>
 
-    <ul v-if="product.colors?.length" class="flex items-center gap-2.5">
+    <!-- Wraps: a product with five or more colourways pushed past the card. -->
+    <ul v-if="product.colors?.length" class="flex flex-wrap items-center gap-2.5">
       <li
         v-for="(color, index) in product.colors"
         :key="color.name"

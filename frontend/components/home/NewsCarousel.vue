@@ -33,7 +33,7 @@ const { railEl, pageCount, activeIndex, canScrollPrev, canScrollNext, scrollToPa
 </script>
 
 <template>
-  <section class="page-gutter section-y flex w-full flex-col items-start gap-[30px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1560px] flex-col items-start gap-[30px]">
     <div class="flex w-full flex-col items-center gap-3 text-center text-ink">
       <h2 class="w-full text-display-sm">News &amp; Events</h2>
       <p class="w-full text-body">
@@ -44,7 +44,7 @@ const { railEl, pageCount, activeIndex, canScrollPrev, canScrollNext, scrollToPa
     <div class="flex w-full items-stretch justify-center gap-3">
       <CommonCarouselArrow
         direction="left"
-        class="hidden lg:flex"
+        class="hidden md:flex"
         :disabled="!canScrollPrev"
         @click="scrollByPage(-1)"
       />
@@ -62,7 +62,7 @@ const { railEl, pageCount, activeIndex, canScrollPrev, canScrollNext, scrollToPa
             <img
               :src="item.image"
               :alt="item.title"
-              class="h-[420px] w-full object-cover"
+              class="aspect-[4/5] w-full object-cover"
               loading="lazy"
             >
             <div class="flex w-full flex-col items-start gap-[3px]">
@@ -76,7 +76,7 @@ const { railEl, pageCount, activeIndex, canScrollPrev, canScrollNext, scrollToPa
 
       <CommonCarouselArrow
         direction="right"
-        class="hidden lg:flex"
+        class="hidden md:flex"
         :disabled="!canScrollNext"
         @click="scrollByPage(1)"
       />

@@ -50,10 +50,32 @@ function submit() {
 }
 
 const rating = computed(() => props.product.rating)
+
+// Drives the phone-only sticky CTA: visible exactly while the inline button is
+// off screen. An IntersectionObserver rather than a scroll listener so there is
+// no work on the main thread between crossings.
+const ctaEl = ref<HTMLElement | null>(null)
+const showStickyCta = ref(false)
+let ctaObserver: IntersectionObserver | null = null
+
+onMounted(() => {
+  if (!ctaEl.value || typeof IntersectionObserver === 'undefined') return
+  ctaObserver = new IntersectionObserver(
+    ([entry]) => {
+      showStickyCta.value = !entry!.isIntersecting
+    },
+    { rootMargin: '0px 0px -80px 0px' },
+  )
+  ctaObserver.observe(ctaEl.value)
+})
+
+onBeforeUnmount(() => ctaObserver?.disconnect())
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-px lg:w-[384px] lg:shrink-0">
+  <div
+    class="flex w-full flex-col gap-px md:sticky md:top-4 md:max-h-[calc(100dvh-2rem)] md:w-[340px] md:shrink-0 md:overflow-y-auto lg:w-[384px]"
+  >
     <!-- Identity -->
     <div class="flex w-full flex-col gap-1 border-b border-surface pb-4">
       <p class="text-caption text-muted">{{ breadcrumb }}</p>
@@ -83,18 +105,19 @@ const rating = computed(() => props.product.rating)
         <span class="font-normal">Color</span>
         <span class="font-light">{{ selectedColor }}</span>
       </div>
-      <div class="flex w-full flex-wrap gap-3">
+      <div class="-m-1.5 flex w-full flex-wrap">
         <button
           v-for="color in product.colors"
           :key="color.name"
           type="button"
-          class="size-8 shrink-0 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite"
-          :class="color.name === selectedColor ? 'ring-1 ring-graphite ring-offset-2' : ''"
+          class="flex size-11 shrink-0 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite"
           :aria-pressed="color.name === selectedColor"
           @click="selectedColor = color.name"
         >
+          <!-- The swatch stays 32px as drawn; the button around it is 44px. -->
           <span
-            class="block size-full rounded-full border border-black/10"
+            class="block size-8 rounded-full border border-black/10"
+            :class="color.name === selectedColor ? 'ring-1 ring-graphite ring-offset-2' : ''"
             :style="{ backgroundColor: color.hex }"
           />
           <span class="sr-only">{{ color.name }}</span>
@@ -106,7 +129,7 @@ const rating = computed(() => props.product.rating)
     <div v-if="product.sizes?.length" class="flex w-full flex-col gap-2.5 py-[18px]">
       <div class="flex w-full items-start justify-between text-caption">
         <span class="font-normal text-black">Size</span>
-        <NuxtLink to="/size-guide" class="font-light text-graphite underline">Size Guide</NuxtLink>
+        <NuxtLink to="/size-guide" class="-my-3 flex min-h-[44px] items-center py-3 font-light text-graphite underline">Size Guide</NuxtLink>
       </div>
 
       <div class="flex w-full flex-wrap gap-3">
@@ -114,7 +137,7 @@ const rating = computed(() => props.product.rating)
           v-for="size in product.sizes"
           :key="size"
           type="button"
-          class="flex w-[45px] shrink-0 items-center justify-center p-3 text-caption disabled:cursor-not-allowed disabled:opacity-50"
+          class="flex size-11 shrink-0 items-center justify-center text-caption disabled:cursor-not-allowed disabled:opacity-50"
           :class="size === selectedSize ? 'bg-ink text-surface' : 'bg-surface text-graphite'"
           :disabled="!stockFor(size)"
           :aria-pressed="size === selectedSize"
@@ -134,12 +157,33 @@ const rating = computed(() => props.product.rating)
     </div>
 
     <!-- Add to cart -->
-    <div class="flex w-full flex-col items-center justify-center gap-2 py-8">
+    <div ref="ctaEl" class="flex w-full flex-col items-center justify-center gap-2 py-8">
       <CommonBrandButton full :disabled="!selectedInStock" @click="submit">
         {{ product.is_pre_order ? 'Pre-Order' : 'Add to Cart' }}
       </CommonBrandButton>
       <p v-if="!selectedSize" class="text-caption text-muted">Select a size to continue.</p>
     </div>
+
+    <!-- Phone-only sticky CTA. The inline button above is far below the fold on
+         a phone, and there was nothing to bring it back. Shown only once that
+         button has scrolled out of view, so the two never appear together. -->
+    <ClientOnly>
+      <Transition
+        enter-active-class="motion-safe:transition-transform motion-safe:duration-200"
+        leave-active-class="motion-safe:transition-transform motion-safe:duration-200"
+        enter-from-class="translate-y-full"
+        leave-to-class="translate-y-full"
+      >
+        <div
+          v-if="showStickyCta"
+          class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:hidden"
+        >
+          <CommonBrandButton full :disabled="!selectedInStock" @click="submit">
+            {{ product.is_pre_order ? 'Pre-Order' : 'Add to Cart' }}
+          </CommonBrandButton>
+        </div>
+      </Transition>
+    </ClientOnly>
 
     <!-- Service promises -->
     <div class="flex w-full flex-col gap-6 border-t border-line py-6">
@@ -199,8 +243,10 @@ const rating = computed(() => props.product.rating)
       <h2 class="w-[106px] shrink-0 text-body font-normal">Fit</h2>
       <div class="flex min-w-0 flex-1 flex-col text-label font-light">
         <p>Questions about fit?</p>
-        <NuxtLink to="/contact" class="underline">Contact Us</NuxtLink>
-        <NuxtLink to="/size-guide" class="underline">Size Guide</NuxtLink>
+        <!-- These stack as their own rows rather than sitting inside a
+             sentence, so they take the 44px floor. -->
+        <NuxtLink to="/contact" class="-my-3 flex min-h-[44px] items-center py-3 underline">Contact Us</NuxtLink>
+        <NuxtLink to="/size-guide" class="-my-3 flex min-h-[44px] items-center py-3 underline">Size Guide</NuxtLink>
       </div>
     </div>
 

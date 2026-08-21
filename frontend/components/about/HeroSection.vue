@@ -14,10 +14,10 @@
     <div class="relative flex w-full max-w-[488px] flex-col items-center gap-4 text-center font-light text-white">
       <!-- The designed line breaks are wider than the 488px column at 70px, so
            the heading is allowed to run past it rather than rewrap. -->
-      <h1 class="w-full text-display-md lg:w-auto lg:whitespace-nowrap lg:text-display-xl">
+      <h1 class="w-full text-display-xl lg:w-auto lg:whitespace-nowrap">
         We believe<br>we can all make<br>a difference.
       </h1>
-      <p class="w-full text-body lg:text-display-sm">
+      <p class="w-full text-lede">
         Our way: Exceptional quality.<br>Ethical factories. Radical Transparency.
       </p>
     </div>

@@ -14,6 +14,6 @@ const shippingAddress = reactive({
     <FormsFormField v-model="shippingAddress.line1" label="Address" name="line1" required />
     <FormsFormField v-model="shippingAddress.city" label="City" name="city" required />
     <FormsFormField v-model="shippingAddress.phone" label="Phone" name="phone" required />
-    <button type="submit" class="w-full rounded bg-black py-3 text-white">Continue to payment</button>
+    <CommonBrandButton full type="submit">Continue to payment</CommonBrandButton>
   </form>
 </template>

@@ -103,7 +103,7 @@ useSeoMeta({
 <template>
   <div v-if="product" class="flex w-full flex-col items-start">
     <!-- Section 01 — gallery + buy panel -->
-    <div class="page-gutter flex w-full flex-col items-start gap-6 py-[30px] lg:flex-row">
+    <div class="page-gutter mx-auto flex w-full max-w-[1168px] flex-col items-start gap-6 py-[30px] md:flex-row">
       <ShopProductGallery
         :images="gallery"
         :name="product.name"

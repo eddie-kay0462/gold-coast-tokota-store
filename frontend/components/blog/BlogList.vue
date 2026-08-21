@@ -5,7 +5,7 @@ defineProps<{ posts: ApiPost[] }>()
 </script>
 
 <template>
-  <ul v-if="posts.length" class="grid w-full grid-cols-1 gap-x-[30px] gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+  <ul v-if="posts.length" class="grid w-full grid-cols-1 gap-x-[30px] gap-y-10 sm:grid-cols-2 md:grid-cols-3">
     <li v-for="post in posts" :key="post.slug" class="min-w-0">
       <BlogCard :post="post" />
     </li>

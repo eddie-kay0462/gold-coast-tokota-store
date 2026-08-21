@@ -56,7 +56,7 @@ watch(
     <div v-if="open" class="w-full bg-white" @keydown.esc="close">
       <!-- Search field -->
       <form
-        class="flex w-full items-start border-t border-line px-5 py-6 lg:px-[326px]"
+        class="flex w-full items-start border-t border-line px-5 py-6 md:px-10 lg:px-[120px] xl:px-[326px]"
         role="search"
         @submit.prevent="submit"
       >
@@ -79,16 +79,16 @@ watch(
       </form>
 
       <!-- Popular categories -->
-      <div class="flex w-full flex-col items-start gap-4 border-t border-line px-5 py-8 lg:px-[156px]">
+      <div class="flex w-full flex-col items-start gap-4 border-t border-line px-5 py-8 md:px-10 lg:px-[60px] xl:px-[156px]">
         <h2 class="w-full text-label font-light text-subtle">Popular Categories</h2>
 
-        <ul class="grid w-full grid-cols-2 gap-5 lg:grid-cols-4">
+        <ul class="grid w-full grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
           <li v-for="category in categories" :key="category.label" class="min-w-0">
             <NuxtLink :to="category.to" class="group flex w-full flex-col gap-2.5" @click="close">
               <img
                 :src="category.image"
                 :alt="category.label"
-                class="h-[220px] w-full object-cover lg:h-[340px]"
+                class="aspect-[3/4] w-full object-cover"
                 loading="lazy"
               >
               <span class="w-full text-body font-light text-subtle underline group-hover:no-underline">

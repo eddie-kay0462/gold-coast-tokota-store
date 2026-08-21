@@ -27,7 +27,7 @@ function step(direction: -1 | 1) {
 
 <template>
   <section class="flex w-full flex-col items-center gap-[30px]">
-    <div class="page-gutter flex w-full flex-col items-center gap-8 lg:flex-row lg:gap-[74px]">
+    <div class="page-gutter mx-auto flex w-full max-w-[1406px] flex-col items-center gap-8 md:flex-row md:gap-10 lg:gap-[74px]">
       <CommonCarouselArrow
         v-if="hasMultiple"
         direction="left"

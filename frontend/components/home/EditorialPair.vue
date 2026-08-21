@@ -20,7 +20,7 @@ const features = [
 </script>
 
 <template>
-  <section class="page-gutter section-y mx-auto flex w-full max-w-[1190px] flex-col items-start gap-5 lg:flex-row">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1190px] flex-col items-start gap-5 md:flex-row">
     <article
       v-for="feature in features"
       :key="feature.heading"
@@ -31,7 +31,7 @@ const features = [
       <img
         :src="feature.image"
         :alt="feature.alt"
-        class="h-[626px] w-full object-cover"
+        class="aspect-[4/5] w-full object-cover"
         loading="lazy"
       >
 

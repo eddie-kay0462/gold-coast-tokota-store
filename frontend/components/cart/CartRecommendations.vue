@@ -71,17 +71,23 @@ const subtitle = computed(() => {
       </div>
     </div>
 
-    <div v-if="products.length > 1" class="flex w-full items-start gap-3">
+    <!-- These dots are the only way to change card on a touch device, so the
+         button is 44px even though the dot it draws stays 7px. -->
+    <div v-if="products.length > 1" class="-my-4 flex w-full items-center">
       <button
         v-for="(product, index) in products"
         :key="product.slug"
         type="button"
-        class="size-[7px] shrink-0 rounded-full transition-colors"
-        :class="index === active ? 'bg-graphite' : 'bg-line'"
+        class="flex size-11 shrink-0 items-center justify-center"
         :aria-label="`Show recommendation ${index + 1} of ${products.length}`"
         :aria-current="index === active"
         @click="active = index"
-      />
+      >
+        <span
+          class="size-[7px] rounded-full transition-colors"
+          :class="index === active ? 'bg-graphite' : 'bg-line'"
+        />
+      </button>
     </div>
   </div>
 </template>

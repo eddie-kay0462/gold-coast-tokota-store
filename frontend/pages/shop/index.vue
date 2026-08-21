@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhFunnelSimple as FunnelSimple } from '@phosphor-icons/vue'
+import { PhFunnelSimple as FunnelSimple, PhX as X } from '@phosphor-icons/vue'
 import type { ApiProduct } from '~/utils/catalog'
 import { COLOR_FACETS } from '~/utils/catalog'
 import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
@@ -142,6 +142,25 @@ const subheading = computed(() => {
 
 const filtersOpen = ref(false)
 
+/** Shown on the toggle so the count of active filters is visible from the grid. */
+const activeFacetCount = computed(() =>
+  FACET_KEYS.reduce((total, key) => total + selected.value[key].length, 0),
+)
+
+// The sheet is an overlay on a phone, so the grid behind it must not scroll.
+useBodyScrollLock(filtersOpen)
+
+// Widening past `md` turns the sheet back into a permanent sidebar; leaving the
+// flag set would keep the scrim and the scroll lock on a layout that has neither.
+onMounted(() => {
+  const desktop = window.matchMedia('(min-width: 768px)')
+  const sync = () => {
+    if (desktop.matches) filtersOpen.value = false
+  }
+  desktop.addEventListener('change', sync)
+  onBeforeUnmount(() => desktop.removeEventListener('change', sync))
+})
+
 useSeoMeta({
   title: `${heading.value} - Gold Coast Tokota`,
   description:
@@ -152,26 +171,77 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="page-gutter flex w-full flex-col items-start gap-4 pb-16 pt-[30px] lg:flex-row lg:pb-[90px]">
-    <!-- Mobile: the sidebar collapses behind a toggle rather than pushing the
-         grid a full screen down. -->
+  <div class="page-gutter mx-auto flex w-full max-w-[1560px] flex-col items-start gap-4 pb-16 pt-[30px] md:flex-row md:gap-6 lg:pb-[90px]">
+    <!-- Below `md` the filters are a sheet, not an inline accordion. Expanded
+         inline they pushed ~1000px of panel above the first product, with no
+         way back to the grid but scrolling up to the toggle. -->
     <button
       type="button"
-      class="flex w-full items-center justify-between border-b border-line py-4 text-caption text-graphite lg:hidden"
+      class="flex min-h-[44px] w-full items-center justify-between border-b border-line py-4 text-caption text-graphite md:hidden"
       :aria-expanded="filtersOpen"
       aria-controls="shop-filters"
-      @click="filtersOpen = !filtersOpen"
+      @click="filtersOpen = true"
     >
-      <span>Filters</span>
+      <span class="flex items-center gap-2">
+        Filters
+        <span
+          v-if="activeFacetCount"
+          class="flex size-5 items-center justify-center rounded-full bg-graphite text-tag text-white"
+        >{{ activeFacetCount }}</span>
+      </span>
       <FunnelSimple :size="16" />
     </button>
 
-    <div id="shop-filters" class="w-full lg:w-auto" :class="filtersOpen ? '' : 'hidden lg:block'">
-      <ShopProductFilter
-        :product-count="products.length"
-        :selected="selected"
-        @toggle="toggleFacet"
+    <!-- Scrim, phone only. -->
+    <Transition
+      enter-active-class="motion-safe:transition-opacity motion-safe:duration-200"
+      leave-active-class="motion-safe:transition-opacity motion-safe:duration-200"
+      enter-from-class="opacity-0"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="filtersOpen"
+        class="fixed inset-0 z-[60] bg-black/60 md:hidden"
+        aria-hidden="true"
+        @click="filtersOpen = false"
       />
+    </Transition>
+
+    <div
+      id="shop-filters"
+      class="w-full md:block md:w-auto"
+      :class="filtersOpen
+        ? 'fixed inset-y-0 left-0 z-[70] flex max-w-[90vw] flex-col bg-white md:static md:z-auto md:max-w-none md:bg-transparent'
+        : 'hidden'"
+    >
+      <div
+        v-if="filtersOpen"
+        class="flex shrink-0 items-center justify-between border-b border-line px-5 py-3 md:hidden"
+      >
+        <h2 class="text-filter-heading font-normal text-graphite">Filters</h2>
+        <button
+          type="button"
+          class="-m-1.5 flex size-11 items-center justify-center text-graphite"
+          aria-label="Close filters"
+          @click="filtersOpen = false"
+        >
+          <X :size="20" />
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto" :class="filtersOpen ? 'px-5 py-4 md:p-0' : ''">
+        <ShopProductFilter
+          :product-count="products.length"
+          :selected="selected"
+          @toggle="toggleFacet"
+        />
+      </div>
+
+      <div v-if="filtersOpen" class="shrink-0 border-t border-line p-4 md:hidden">
+        <CommonBrandButton full @click="filtersOpen = false">
+          Show {{ products.length }} result{{ products.length === 1 ? '' : 's' }}
+        </CommonBrandButton>
+      </div>
     </div>
 
     <div class="flex min-w-0 flex-1 flex-col">

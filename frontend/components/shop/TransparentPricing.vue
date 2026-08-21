@@ -42,7 +42,7 @@ const lines = computed(() =>
         class="flex min-w-0 flex-1 basis-1/3 flex-col items-center gap-3 p-6 sm:basis-0"
       >
         <img :src="line.icon" alt="" class="h-[60px] w-auto" loading="lazy">
-        <p class="min-w-full text-center text-caption font-light text-graphite">
+        <p class="w-full text-center text-caption font-light text-graphite">
           <span class="block">{{ line.label }}</span>
           <span class="block">{{ line.display }}</span>
         </p>

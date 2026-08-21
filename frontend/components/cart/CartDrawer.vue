@@ -72,6 +72,11 @@ function goToCheckout() {
 }
 
 // Escape closes, and the page behind must not scroll while the drawer is open.
+// The lock lives in `useBodyScrollLock` — setting `body { overflow: hidden }`
+// alone does not hold on iOS Safari, which is where a full-bleed drawer matters
+// most.
+useBodyScrollLock(() => cart.isDrawerOpen)
+
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') close()
 }
@@ -83,12 +88,10 @@ watch(
 
     if (open) {
       previouslyFocused = document.activeElement as HTMLElement
-      document.body.style.overflow = 'hidden'
       document.addEventListener('keydown', onKeydown)
       await nextTick()
       panel.value?.focus()
     } else {
-      document.body.style.overflow = ''
       document.removeEventListener('keydown', onKeydown)
       previouslyFocused?.focus()
       previouslyFocused = null
@@ -98,7 +101,6 @@ watch(
 
 onBeforeUnmount(() => {
   if (!import.meta.client) return
-  document.body.style.overflow = ''
   document.removeEventListener('keydown', onKeydown)
 })
 </script>
@@ -142,7 +144,7 @@ onBeforeUnmount(() => {
             <button
               ref="closeButton"
               type="button"
-              class="self-end p-1 text-graphite transition-opacity hover:opacity-60"
+              class="-m-1.5 flex size-11 shrink-0 items-center justify-center self-end text-graphite transition-opacity hover:opacity-60"
               aria-label="Close cart"
               @click="close"
             >

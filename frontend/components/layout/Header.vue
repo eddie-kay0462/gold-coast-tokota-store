@@ -13,6 +13,10 @@ const cart = useCartStore()
 const route = useRoute()
 
 const mobileNavOpen = ref(false)
+
+// The drawer is taller than a phone viewport once an accordion is expanded, so
+// the page behind it must not scroll — same treatment as the cart drawer.
+useBodyScrollLock(mobileNavOpen)
 /** Search band under the nav rows (Figma 6:552). */
 const searchOpen = ref(false)
 const mobileExpanded = ref<string | null>(null)
@@ -91,27 +95,46 @@ function isCategoryActive(to: string) {
 
 <template>
   <header class="relative z-50 bg-white" @keydown.esc="closeMenu(true); searchOpen = false">
-    <!-- Announcement bar -->
-    <div class="relative flex w-full items-center justify-center gap-1 bg-ink px-[30px] py-[7px]">
-      <p class="text-center text-caption text-white">Get early access on launches and offers.</p>
-      <NuxtLink to="/#newsletter" class="text-center text-caption text-white underline">
-        Sign Up For Texts
-      </NuxtLink>
-      <ArrowRight :size="14" class="shrink-0 text-white" />
+    <!-- Announcement bar. The flag/currency cluster used to be absolutely
+         positioned, so it reserved no width and the centred message ran
+         underneath it on a phone (measured: the sign-up link overlapped it by
+         41px at both 320px and 375px). It is a normal flex child now, and below
+         `sm` the message scrolls through a marquee rather than wrapping to
+         three lines in the space that is left. -->
+    <div class="flex w-full items-center gap-3 bg-ink px-5 py-[7px] lg:px-[30px]">
+      <div class="min-w-0 flex-1">
+        <!-- One link wrapping the whole message, so the marquee's duplicated
+             runs cannot produce duplicate tab stops. -->
+        <NuxtLink to="/#newsletter" class="flex min-h-[44px] items-center text-caption text-white sm:hidden">
+          <CommonMarquee :copies="3" :duration="24">
+            <span class="whitespace-nowrap pr-2">Get early access on launches and offers.</span>
+            <span class="whitespace-nowrap underline">Sign Up For Texts</span>
+            <ArrowRight :size="14" class="mx-4 shrink-0" />
+          </CommonMarquee>
+        </NuxtLink>
 
-      <div class="absolute right-[30px] top-1/2 flex -translate-y-1/2 items-center gap-3">
+        <div class="hidden items-center justify-center gap-1 sm:flex">
+          <p class="text-center text-caption text-white">Get early access on launches and offers.</p>
+          <NuxtLink to="/#newsletter" class="flex min-h-[44px] items-center text-center text-caption text-white underline lg:min-h-0">
+            Sign Up For Texts
+          </NuxtLink>
+          <ArrowRight :size="14" class="shrink-0 text-white" />
+        </div>
+      </div>
+
+      <div class="flex shrink-0 items-center gap-2">
         <img
           :key="geo.country"
           :src="flagUrl(geo.country)"
           :alt="countryName(geo.country)"
           :title="countryName(geo.country)"
-          class="h-[15px] w-[21px] object-cover"
+          class="h-[15px] w-[21px] shrink-0 object-cover"
           width="21"
           height="15"
         >
         <button
           type="button"
-          class="text-caption text-white"
+          class="flex min-h-[44px] min-w-[44px] items-center justify-center px-2 text-caption text-white lg:min-h-0 lg:min-w-0 lg:px-0"
           :aria-label="`Currency: ${currency.active}. Switch to ${currency.active === 'GHS' ? 'USD' : 'GHS'}`"
           @click="currency.setCurrency(currency.active === 'GHS' ? 'USD' : 'GHS')"
         >
@@ -123,11 +146,11 @@ function isCategoryActive(to: string) {
     <!-- Primary nav. Three columns with equal 1fr flanks so the logo sits
          optically centred in the row regardless of how wide the nav or the
          icon cluster get. -->
-    <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 lg:px-[68px]">
+    <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 md:px-10 lg:px-[68px]">
       <div class="flex items-center justify-start">
         <button
           type="button"
-          class="p-3 lg:hidden"
+          class="p-3 md:hidden"
           :aria-expanded="mobileNavOpen"
           aria-controls="mobile-nav"
           aria-label="Toggle navigation"
@@ -136,7 +159,7 @@ function isCategoryActive(to: string) {
           <component :is="mobileNavOpen ? X : List" :size="20" />
         </button>
 
-        <nav class="hidden items-start lg:flex" aria-label="Primary">
+        <nav class="hidden items-start md:flex" aria-label="Primary">
           <NuxtLink
             v-for="item in primaryNav"
             :key="item.label"
@@ -150,11 +173,11 @@ function isCategoryActive(to: string) {
         </nav>
       </div>
 
-      <NuxtLink to="/" class="justify-self-center px-4 py-2" aria-label="Gold Coast Tokota — home">
+      <NuxtLink to="/" class="flex min-h-[44px] items-center justify-self-center px-4" aria-label="Gold Coast Tokota — home">
         <img
           src="/brand/logo.png"
           alt="Gold Coast Tokota"
-          class="h-6 w-auto lg:h-7"
+          class="h-6 w-auto md:h-7"
           width="435"
           height="108"
         >
@@ -163,7 +186,7 @@ function isCategoryActive(to: string) {
       <div class="flex items-center justify-end">
         <button
           type="button"
-          class="flex items-center justify-center p-3"
+          class="flex size-11 items-center justify-center"
           aria-label="Search"
           :aria-expanded="searchOpen"
           aria-controls="site-search"
@@ -171,12 +194,12 @@ function isCategoryActive(to: string) {
         >
           <component :is="searchOpen ? X : MagnifyingGlass" :size="16" />
         </button>
-        <NuxtLink to="/account" class="flex items-center justify-center p-3" aria-label="Account">
+        <NuxtLink to="/account" class="flex size-11 items-center justify-center" aria-label="Account">
           <User :size="16" />
         </NuxtLink>
         <button
           type="button"
-          class="relative flex items-center justify-center p-3"
+          class="relative flex size-11 items-center justify-center"
           :aria-label="cart.itemCount ? `Cart, ${cart.itemCount} items` : 'Cart, empty'"
           @click="cart.openDrawer()"
         >
@@ -193,7 +216,7 @@ function isCategoryActive(to: string) {
 
     <!-- Category nav (desktop): items with a mega menu are buttons, the rest links -->
     <nav
-      class="hidden w-full items-center justify-center lg:flex"
+      class="hidden w-full items-center justify-center md:flex"
       aria-label="Categories"
       @mouseleave="scheduleClose"
     >
@@ -245,7 +268,7 @@ function isCategoryActive(to: string) {
       <div
         v-if="openMenuItem?.menu"
         :id="menuId(openMenuItem.label)"
-        class="absolute inset-x-0 top-full z-50 hidden lg:block"
+        class="absolute inset-x-0 top-full z-50 hidden md:block"
         @mouseenter="openMenuFor(openMenuItem!.label)"
         @mouseleave="scheduleClose"
       >
@@ -257,7 +280,7 @@ function isCategoryActive(to: string) {
     <nav
       v-if="mobileNavOpen"
       id="mobile-nav"
-      class="flex w-full flex-col border-t border-line lg:hidden"
+      class="flex w-full flex-col border-t border-line md:hidden"
       aria-label="Mobile navigation"
     >
       <NuxtLink
@@ -304,7 +327,7 @@ function isCategoryActive(to: string) {
               v-for="link in column.links"
               :key="link.label"
               :to="link.to"
-              class="px-8 py-2.5 text-label text-graphite"
+              class="flex min-h-[44px] items-center px-8 py-2.5 text-label text-graphite"
             >
               {{ link.label }}
             </NuxtLink>
@@ -335,7 +358,7 @@ function isCategoryActive(to: string) {
   >
     <div
       v-if="openMenu"
-      class="fixed inset-0 z-40 hidden bg-black/60 lg:block"
+      class="fixed inset-0 z-40 hidden bg-black/60 md:block"
       aria-hidden="true"
       @click="closeMenu()"
     />

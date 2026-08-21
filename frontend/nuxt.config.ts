@@ -20,6 +20,12 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      // `viewport-fit=cover` is what makes `env(safe-area-inset-*)` resolve to
+      // real values — the fixed WhatsApp button and the cart drawer's checkout
+      // footer both sit in the iOS home-indicator band without it.
+      meta: [
+        { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
+      ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/brand/apple-touch-icon.png' },

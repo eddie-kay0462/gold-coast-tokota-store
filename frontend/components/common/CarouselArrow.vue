@@ -16,7 +16,7 @@ withDefaults(
     type="button"
     :disabled="disabled"
     :aria-label="direction === 'left' ? 'Previous' : 'Next'"
-    class="flex shrink-0 items-center justify-center text-graphite transition-opacity disabled:opacity-25"
+    class="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center text-graphite transition-opacity disabled:opacity-25"
   >
     <component
       :is="direction === 'left' ? CaretLeft : CaretRight"

@@ -36,7 +36,7 @@ const cards = [
         <img
           :src="card.image"
           :alt="card.alt"
-          class="h-[195px] w-full object-cover"
+          class="aspect-[16/9] w-full object-cover"
           loading="lazy"
         >
         <span class="w-full text-center text-body tracking-[0.2px] text-subtle group-hover:underline">

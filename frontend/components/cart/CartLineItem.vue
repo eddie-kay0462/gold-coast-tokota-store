@@ -44,7 +44,7 @@ const discountLabel = computed(() => {
 
         <button
           type="button"
-          class="shrink-0 p-1 text-graphite transition-opacity hover:opacity-60"
+          class="-m-3 flex size-11 shrink-0 items-center justify-center p-3 text-graphite transition-opacity hover:opacity-60"
           :aria-label="`Remove ${item.name} from cart`"
           @click="emit('remove')"
         >
@@ -55,7 +55,7 @@ const discountLabel = computed(() => {
       <div class="flex w-full items-center justify-between gap-3">
         <div class="flex min-w-0 flex-1 flex-col text-caption">
           <CommonPriceDisplay
-            class="whitespace-nowrap text-graphite"
+            class="min-w-0 text-graphite"
             :base-price-ghs="item.unitPriceGhs"
             :compare-at-ghs="item.compareAtGhs"
             compact
@@ -63,10 +63,13 @@ const discountLabel = computed(() => {
           <p v-if="discountLabel" class="w-full font-light text-sale">{{ discountLabel }}</p>
         </div>
 
-        <div class="flex shrink-0 items-center gap-[15px] border border-line p-3">
+        <!-- The padding lives on the buttons, not the wrapper: with `p-3` on the
+             row the hit areas were the bare 12px glyph boxes, with 15px of dead
+             gap between them. Same visual weight, 44px targets. -->
+        <div class="flex shrink-0 items-center border border-line">
           <button
             type="button"
-            class="shrink-0 text-graphite transition-opacity hover:opacity-60"
+            class="flex size-11 shrink-0 items-center justify-center text-graphite transition-opacity hover:opacity-60"
             :aria-label="item.quantity === 1 ? `Remove ${item.name}` : `Decrease quantity of ${item.name}`"
             @click="emit('quantity', item.quantity - 1)"
           >
@@ -79,7 +82,7 @@ const discountLabel = computed(() => {
 
           <button
             type="button"
-            class="shrink-0 text-graphite transition-opacity hover:opacity-60"
+            class="flex size-11 shrink-0 items-center justify-center text-graphite transition-opacity hover:opacity-60"
             :aria-label="`Increase quantity of ${item.name}`"
             @click="emit('quantity', item.quantity + 1)"
           >
