@@ -1,3 +1,346 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===========================================================================
+   Gold Coast Tokota — admin design tokens.
+
+   This file is the single source of truth for colour in the admin app.
+   Every colour is declared once here as a space-separated RGB triple so
+   Tailwind can apply an alpha channel (`rgb(var(--bg) / <alpha-value>)`),
+   and `.dark` below redefines *only* those same variable names.
+
+   The consequence, and the point: no component ever writes a `dark:` colour
+   variant. Dark mode is one variable swap, not a second set of utilities
+   sprayed across seventy files.
+
+   Sources:
+   - Brand palette — "gold coast tokota store front details.pdf", Brand
+     Colour Palette. Heritage Black, Pure White, Gold Coast Gold, Craft
+     Brown, Sustainability Green, Warm Sand.
+   - Neutral ramp — frontend/tailwind.config.ts, transcribed from the
+     storefront Figma system (file 4Fw0WGaqVs9iqbLoAAbmpO) so the two apps
+     stay one design language.
+   - Chrome metrics — the Dashboard UI Kit frames (Figma c11bIgiFJmUEcpOR2J9FYL):
+     212px sidebar, 68px header, 72px right rail.
+   =========================================================================== */
+
+:root {
+  /* --- Brand constants. Identical in both themes; these *are* the brand. --- */
+  --brand-gold: 212 175 55;         /* #D4AF37 Gold Coast Gold  */
+  --brand-brown: 122 90 58;         /* #7A5A3A Craft Brown      */
+  --brand-green: 47 111 79;         /* #2F6F4F Sustainability   */
+  --brand-sand: 234 223 200;        /* #EADFC8 Warm Sand        */
+  --brand-ink: 0 0 0;               /* #000000 Heritage Black   */
+
+  /* --- Surfaces --- */
+  --bg: 255 255 255;                /* page ground              */
+  --bg-elevated: 255 255 255;       /* cards, panels, popovers  */
+  --bg-sunken: 245 244 244;         /* #F5F4F4 rails, table zebra, inputs */
+  --bg-inset: 237 236 236;          /* pressed / track          */
+
+  /* --- Foreground --- */
+  /* The ramp is contrast-led, not swatch-led. Measured against `--bg`:
+     13.6 : 8.6 : 6.4 : 4.8 — four distinguishable steps that all clear WCAG AA
+     for body text (4.5:1).
+
+     The Figma kit renders secondary copy as rgba(28,28,28,0.4), which is about
+     2.5:1 on white. That is below AA, and in this app that tier carries
+     timestamps, stock counts and form hints — not decoration. So `--fg-muted`
+     and `--fg-faint` are darker than the kit's, deliberately. Caught by
+     measurement, not by eye. */
+  --fg: 38 38 38;                   /* #262626 graphite — body   13.6:1 */
+  --fg-strong: 0 0 0;               /* headings, metric values   21.0:1 */
+  --fg-subtle: 76 76 75;            /* #4C4C4B sub-labels         8.6:1 */
+  --fg-muted: 95 95 95;             /* #5F5F5F meta copy          6.4:1 */
+  --fg-faint: 112 112 112;          /* #707070 hints, timestamps  4.8:1 */
+
+  /* --- Lines --- */
+  --border: 221 219 220;            /* #DDDBDC hairline         */
+  --border-strong: 196 193 194;     /* focused inputs, dividers */
+
+  /* --- Primary action. Inverts in dark so buttons stay high-contrast. --- */
+  --primary: 0 0 0;
+  --primary-fg: 255 255 255;
+  --primary-hover: 38 38 38;
+
+  /* --- Accent: Gold. Fills, active nav, focus rings, indicators.
+         Never used for small text on light — see --accent-text. --- */
+  --accent: 212 175 55;
+  --accent-fg: 0 0 0;               /* text *on* a gold fill    */
+  --accent-soft: 234 223 200;       /* #EADFC8 tinted backing   */
+  --accent-text: 122 90 58;         /* gold-flavoured text that passes AA */
+
+  /* --- Status --- */
+  --success: 47 111 79;
+  --success-soft: 232 241 236;
+  --warning: 146 97 15;             /* darkened from #B7791F: 3.9:1 on its
+                                       own tint failed AA for 12px text */
+  --warning-soft: 250 243 230;
+  --danger: 208 2 27;               /* #D0021B storefront `sale` */
+  --danger-soft: 252 233 235;
+  --info: 122 90 58;
+  --info-soft: 243 238 232;
+  --neutral-soft: 240 239 239;
+
+  /* --- Chart series ---
+     A categorical ramp has two jobs the brand palette alone cannot do.
+
+     1. SEPARATION. Gold, sand and brown are all warm yellows; as adjacent
+        donut slices they read as one smear. So the ramp keeps the brand hues
+        that carry meaning (gold, green, brown) and fills the rest with hues
+        placed as far apart as possible while still feeling earthy —
+        terracotta, slate, stone. Verified: the closest pair is ΔE 21 in
+        CIELAB, comfortably above the ~10 where two fills start to merge.
+
+     2. CONTRAST ON BOTH GROUNDS. WCAG 1.4.11 wants 3:1 for graphical objects.
+        Brand gold #D4AF37 is only 2.1:1 on white — a donut slice in it is
+        barely there — so the light ramp uses a darkened gold and the dark
+        ramp a lifted one. Same hue, different luminance per theme, which is
+        what makes one chart legible in both.
+
+     Measured (light vs #FFFFFF · dark vs #0B0B0B):
+       gold 3.5 / 11.8 · green 6.0 / 8.0 · terracotta 4.9 / 7.5
+       slate 6.2 / 8.3 · brown 6.3 / 8.3 · stone 5.4 / 8.2                  */
+  --chart-1: 168 131 34;            /* #A88322 gold, darkened for white   */
+  --chart-2: 47 111 79;             /* #2F6F4F sustainability green       */
+  --chart-3: 180 85 47;             /* #B4552F terracotta                 */
+  --chart-4: 63 99 144;             /* #3F6390 slate — the cool anchor    */
+  --chart-5: 122 90 58;             /* #7A5A3A craft brown                */
+  --chart-6: 110 106 99;            /* #6E6A63 stone                      */
+  --chart-grid: 233 232 232;
+  --chart-track: 240 239 239;
+
+  /* --- Chrome metrics, from the Figma frames --- */
+  --sidebar-w: 212px;
+  --sidebar-collapsed-w: 68px;
+  --header-h: 68px;
+  --rail-w: 72px;
+  --rail-panel-w: 280px;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  color-scheme: light;
+}
+
+.dark {
+  /* Same names, different values. Nothing else in the app changes. */
+
+  --bg: 11 11 11;
+  --bg-elevated: 22 22 22;
+  --bg-sunken: 0 0 0;
+  --bg-inset: 32 32 32;
+
+  /* Same four-step logic against the dark ground. #737373 was 4.0:1 on
+     #0B0B0B — under AA — so the faint tier is lifted here too. */
+  --fg: 237 237 237;                /* 15.7:1 */
+  --fg-strong: 255 255 255;         /* 18.5:1 */
+  --fg-subtle: 196 196 196;         /* 10.5:1 */
+  --fg-muted: 163 163 163;          /*  7.1:1 */
+  --fg-faint: 141 141 141;          /*  5.3:1 */
+
+  --border: 42 42 42;
+  --border-strong: 61 61 61;
+
+  --primary: 255 255 255;
+  --primary-fg: 0 0 0;
+  --primary-hover: 224 224 224;
+
+  /* Gold holds its hue on dark; only the tint and on-dark text shift. */
+  --accent: 212 175 55;
+  --accent-fg: 0 0 0;
+  --accent-soft: 58 48 24;
+  --accent-text: 226 197 108;       /* lifted for AA on #0B0B0B */
+
+  --success: 106 176 138;
+  --success-soft: 22 41 32;
+  --warning: 216 163 74;
+  --warning-soft: 45 35 18;
+  --danger: 240 106 122;
+  --danger-soft: 51 21 25;
+  --info: 186 152 116;
+  --info-soft: 42 34 26;
+  --neutral-soft: 36 36 36;
+
+  /* Same six hues, lifted for the dark ground. Order is identical, so a
+     series keeps its identity when the theme flips. */
+  --chart-1: 232 197 92;            /* #E8C55C gold       */
+  --chart-2: 95 182 140;            /* #5FB68C green      */
+  --chart-3: 224 138 95;            /* #E08A5F terracotta */
+  --chart-4: 134 171 221;           /* #86ABDD slate      */
+  --chart-5: 200 161 118;           /* #C8A176 brown      */
+  --chart-6: 173 166 156;           /* #ADA69C stone      */
+  --chart-grid: 38 38 38;
+  --chart-track: 36 36 36;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  /* The brand face is Helvetica Neue Light (300) — same stack as the
+     storefront (frontend/assets/css/main.css). Admin runs at 400 rather
+     than 300: dashboard copy is small and dense, and Light at 12–14px goes
+     thin to the point of illegibility on a low-DPI monitor. */
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+  }
+
+  /* Keyboard focus must stay visible everywhere (README Accessibility
+     Requirements). Gold reads as brand rather than as a browser default. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg rounded-sm;
+  }
+
+  ::selection {
+    @apply bg-accent-soft text-fg-strong;
+  }
+
+  /* Scrollbars: the kit's panes scroll a lot, and the OS default overlay
+     bar is a heavy grey slab against these surfaces. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--border-strong)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    @apply h-2 w-2;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    @apply rounded-pill bg-border-strong;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Respect the OS motion preference (README Accessibility Requirements). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* The one horizontal gutter, denser than the storefront's `.page-gutter`
+     (20/40/60px) because admin content sits inside a 212px sidebar and a
+     72px rail and cannot afford 60px of air on each side. */
+  .admin-gutter {
+    @apply px-4 md:px-6 lg:px-8;
+  }
+
+  /* Matching vertical rhythm between stacked admin sections. */
+  .admin-stack {
+    @apply space-y-4 md:space-y-5;
+  }
+
+  /* The kit's one container primitive: hairline border, no shadow. The
+     design language is flat — the storefront defines no shadow tokens at
+     all, and admin does not introduce any. */
+  .card {
+    @apply rounded-lg border border-border bg-bg-elevated;
+  }
+
+  .card-pad {
+    @apply p-4 md:p-5;
+  }
+
+  /* Section heading inside a card — "Traffic by Source", "Onboarding
+     Progress" in the Dashboard/Team frames. */
+  .card-title {
+    @apply text-section font-medium text-fg-strong;
+  }
+
+  /* Sidebar and right-rail rows. Active state is the grey pill from the
+     frames, with a gold leading marker so the current page reads at a
+     glance rather than as a slightly different grey. */
+  .rail-item {
+    @apply relative flex min-h-[40px] items-center gap-3 rounded-lg px-3 text-ui
+           text-fg-subtle transition-colors hover:bg-bg-sunken hover:text-fg-strong;
+  }
+
+  .rail-item-active {
+    @apply bg-bg-sunken font-medium text-fg-strong;
+  }
+
+  .rail-item-active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-pill bg-accent;
+  }
+
+  /* Group label above a nav section — "Dashboard", "Relationships",
+     "Configuration" in the frames. */
+  .rail-group-label {
+    @apply px-3 pb-1 pt-4 text-meta font-medium text-fg-faint;
+  }
+
+  /* Form control. 40px tall in the dense admin grid; anything the user taps
+     on a phone gets grown to 44px at the call site. */
+  .field {
+    @apply block w-full rounded-lg border border-border bg-bg-elevated px-3 py-2
+           text-ui text-fg placeholder:text-fg-faint
+           focus:border-border-strong disabled:cursor-not-allowed
+           disabled:bg-bg-sunken disabled:text-fg-faint;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-meta font-medium text-fg-subtle;
+  }
+
+  .field-error {
+    @apply mt-1 block text-meta text-danger;
+  }
+
+  /* Small square icon button — the toolbar cluster in the Products frame
+     (sort / filter / history) and the row action cluster. */
+  .toolbar-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border
+           border-transparent text-fg-muted transition-colors
+           hover:bg-bg-sunken hover:text-fg-strong;
+  }
+
+  /* Status / count pill. Colour comes from a modifier at the call site. */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1
+           text-meta font-medium;
+  }
+
+  /* Table primitives. `DataTable` composes these so every table in the app
+     shares one set of metrics.
+
+     One trap worth naming: do NOT put Tailwind's `.sr-only` inside a
+     horizontally-scrolling table. It is `position: absolute`, so its text
+     escapes the scroll container and extends the *document's* scroll region —
+     a permission matrix picked up 139px of page-wide sideways scroll at 390px
+     that way. Put the semantics on the cell's `aria-label` instead. */
+  .table-head {
+    @apply sticky top-0 z-10 bg-bg-elevated text-left text-meta font-medium
+           text-fg-muted;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 text-ui align-middle;
+  }
+
+  .table-row {
+    @apply border-t border-border transition-colors hover:bg-bg-sunken;
+  }
+
+  /* Thin horizontal rule that matches the card border exactly. */
+  .hairline {
+    @apply border-t border-border;
+  }
+}

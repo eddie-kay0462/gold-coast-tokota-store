@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 21 August 2026 (second entry below)
+- **Last updated:** 21 August 2026 (third entry below — admin dashboard rebuild, incl. the accessibility pass)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** contains substantial uncommitted work (News & Events, the
   search panel, About, Sustainability) — everything from 19 Aug 00:06 onward.
@@ -25,9 +25,9 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — About | **Built** from Figma *(uncommitted)* |
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — Booking, Checkout, Order confirmation | **Scaffold stubs only** (10–45 lines each) |
-| Backend API | **Two endpoints only** — `GET /v1/pages/{slug}`, `GET /v1/site-settings` |
+| Backend API | **Two endpoints only** — `GET /v1/pages/{slug}`, `GET /v1/site-settings`. The admin app now calls ~21 `/admin/*` paths that do not exist yet |
 | Database | 4 tables: `admin_users`, `customers`, `pages`, `site_settings` |
-| Admin dashboard | **Scaffold only** — 10 pages averaging ~15 lines, no API wiring |
+| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. Runs on bundled fixtures; see the entry below |
 | Tests | None beyond Laravel's two `ExampleTest` placeholders |
 
 Against the README's "Implementation Order": **Phase 3a is nearly done**
@@ -40,6 +40,235 @@ not started on the backend.
 
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
+
+### 21 August 2026 (latest) — admin dashboard rebuilt
+
+The admin app was a scaffold: 30 files, every page under 30 lines, `pages/index.vue`
+a bare `<h1>Dashboard</h1>`, `pages/login.vue` with no form, `tailwind.config.ts`
+with `colors: {}`, and `main.css` holding three `@tailwind` lines. It is now a
+working dashboard of **36 routes**, built against the Dashboard UI Kit
+(Figma `c11bIgiFJmUEcpOR2J9FYL`) in Gold Coast Tokota's identity.
+
+#### One CSS file owns colour, and dark mode costs nothing
+
+`admin/assets/css/main.css` declares every colour once as a space-separated RGB
+triple; `.dark` redefines **only those same variable names**. `tailwind.config.ts`
+exposes them as `rgb(var(--x) / <alpha-value>)`, which is what makes
+`bg-accent/10` work against a custom property — without the alpha placeholder,
+opacity utilities silently no-op.
+
+The result is worth stating plainly: **the compiled CSS contains zero
+`dark:`-scoped colour utilities.** The whole theme is one variable swap. Verified
+against the build output, not asserted.
+
+Palette is the brand PDF's — Gold Coast Gold `#D4AF37`, Craft Brown `#7A5A3A`,
+Sustainability Green `#2F6F4F`, Warm Sand `#EADFC8` — over the storefront's
+existing neutral ramp, so the two apps stay one design system per README
+"Styling Requirements". Type is a **dense fixed scale** (`text-metric-lg` →
+`text-micro`), deliberately not the storefront's fluid display tier: a 1440px
+table and a 2560px table want the same 14px row.
+
+Theme is light / dark / **system**, cookie-persisted, tracking the OS live via
+`matchMedia`, with an inline boot script in `nuxt.config.ts` so a dark-mode
+reload does not flash white. No `@nuxtjs/color-mode` dependency.
+
+#### The data layer, because the admin API does not exist
+
+`backend/routes/api.php` still defines two public routes. All seven `/admin/*`
+calls the old scaffold made returned 404, and the rebuild needs ~21.
+
+`composables/useAdminApi.ts` tries the real endpoint, unwraps the
+`{ data, meta, errors }` envelope, and falls back to bundled fixtures on
+404/unreachable. `NUXT_PUBLIC_ADMIN_DATA` forces `live` or `fixtures`; default is
+`auto`. **As each endpoint lands, its screen starts showing real data with no
+code change.** The fallback is never silent — a "Demo data" chip sits in the
+header whenever fixtures are serving.
+
+Fixtures are seeded from the brand PDF rather than lorem ipsum, because a
+dashboard full of "Sample Product" teaches an operator nothing: the real staff
+roster, the six real workshops with their actual capacities, the four policy
+pages with published copy, and ten WhatsApp threads that are scenarios this
+business handles. All deterministic (xorshift32 from a fixed seed) against a
+fixed `NOW`, so screenshots are stable and "2 hours ago" stays 2 hours ago.
+
+#### Four role tiers, and interns expire
+
+README and the `admin_users` enum say two tiers. The brand PDF's "Admin and Staff
+User Roles" table names three. The business asked for a fourth — `intern`, whose
+access is **time-boxed and extendable**.
+
+`utils/permissions.ts` holds a 38-capability map; templates ask
+`can('orders.refund')`, never `role === 'admin'`. That is why adding the fourth
+tier was one table entry instead of a codebase sweep. A lapsed intern keeps its
+role label but is filtered down to `.view` capabilities, with a countdown banner
+and an **Extend access** action on `/team` (+7/+30/custom). Extending a *lapsed*
+account runs from today, not from the old expiry — getting that wrong silently is
+how someone stays locked out after being told they were extended.
+
+The profile modal carries a **"View as"** switcher through all four tiers. It
+exists because permission gating is otherwise unreviewable with no login and one
+account. It only ever narrows the UI; it cannot widen server access.
+
+Two design flaws the role testing exposed, both fixed:
+
+- Gating `/` on `analytics.view` removed Overview from Staff and Intern sidebars
+  while the page still rendered — reachable by URL, invisible in the nav. Split
+  out `analytics.revenue`: everyone gets the operational dashboard, only Admins
+  see the money.
+- The mobile nav scrim sat at `z-50` above the sidebar at `z-40`, so every link
+  in the drawer was unclickable. Z-ladder reordered and the ordering constraint
+  documented in `tailwind.config.ts`.
+
+#### Login is built and deliberately inactive
+
+Full split-layout form — brand panel, validation, show-password, remember-me.
+Submit runs the real loading state, then explains that the API endpoint has not
+been built rather than throwing a 404. **No route middleware is registered
+anywhere**, so every page stays reachable for review. When Feature 9 lands, the
+submit body becomes a `sanctum/csrf-cookie` call plus a POST and nothing else
+changes.
+
+#### Screens
+
+Shell (sidebar / header / right rail / `⌘K` palette) transcribed from Figma node
+`10:2521` — 212px, 8px item padding at 12px radius, 20px icons, collapsing to the
+68px icon rail the Calendar frame shows, and an off-canvas drawer below `lg`.
+
+| Figma frame | Route |
+|---|---|
+| Dashboard `1:24956` | `/` — tiles, two-series revenue chart, traffic panels |
+| — | `/analytics` — order-derived sales reporting, GA4-independent |
+| Products `10:3761` | `/products`, `/inventory`, `/customers`, `/newsletter` |
+| Deals `19:945` | `/orders/board` — fulfilment kanban, per-column totals |
+| Calendar `14:6138` | `/bookings/calendar` |
+| Blog `26:1297` | `/blog/[id]` — Tiptap editor, 0/8000 counter, SEO rail |
+| Team `23:1972` | `/team` |
+| Chats `29:8158` | `/inbox` |
+
+`/analytics` is built on order records rather than GA4 on purpose: README
+Feature 11 requires dashboard figures to stay accurate when a customer blocks
+the tracking script, so revenue, order counts and the currency split are
+computed server-side and only the traffic panels come from the analytics feed.
+The page labels which is which, because an operator needs to know which numbers
+survive an ad-blocker.
+
+Charts are hand-rolled inline SVG (`components/charts/`) rather than a library:
+the kit's charts are flat and hairline, so a catmull-rom path does in fifty lines
+what would otherwise cost ~150KB — and the strokes are theme tokens, so dark mode
+needs no configuration.
+
+Things the PDF specifies that README does not, now modelled: the **six workshop
+types** with their own recurrence/duration/capacity (a session is an instance of
+one, which is what lets the owner schedule another Sip & Paint without re-entering
+that it seats 20); the **DIY turnaround matrix** of five order types, replacing
+README's single `diy_turnaround_estimate` string; the **four policy pages**
+alongside `about` as one `Page` resource; and Ghanaian **payment methods**
+(MTN MoMo, Telecel Cash, AirtelTigo Money).
+
+#### The WhatsApp inbox is a simulation, and says so on every screen
+
+**Scope deviation worth a decision.** README Feature 6 scopes WhatsApp as a deep
+link only — `wa.me/<number>`, explicitly "no API integration required". A two-way
+inbox needs the Business Cloud API, a verified WABA, approved templates and a
+webhook receiver on the Laravel side. None of that exists or has been costed.
+
+So `/inbox` is built against the real Cloud API's shape — message direction,
+delivery receipts, the **24-hour free-form reply window**, template approval
+states — and served entirely from fixtures. A non-dismissible banner reads
+*"Simulated — the WhatsApp Business Cloud API is not connected."* Sending appends
+locally and stamps the message `simulated`. `/settings/whatsapp` holds the real
+config shape (phone number ID, WABA ID, webhook URL, verify token) disabled, so
+wiring it later is mechanical.
+
+The deep link itself is real and owner-editable on that same page. Note it warns
+that the number on file (`+233 25 753 4297`) came from the PDF annotated
+"update with official number" — worth confirming before launch, since a wrong
+number silently breaks the main ordering channel.
+
+#### Dependencies and removals
+
+Added `@phosphor-icons/vue` (already a `frontend/` dependency, so no new vendor)
+and `@tiptap/vue-3` + `starter-kit` (the old `PageEditor.vue` was a `<textarea>`
+labelled "Rich text editor", which the CMS acceptance criteria cannot be met
+with). `npm audit` reports 7 vulnerabilities — all pre-existing in Nuxt's own
+tree, none from these.
+
+Removed all ten root-level scaffold components (`DataTable`, `StatusBadge`,
+`MetricCard`, …) once nothing referenced them; superseded by `components/ui/`.
+`pages/about.vue` is superseded by `/pages/about`.
+
+**Routing bug fixed:** `pages/orders.vue` alongside `pages/orders/` makes the
+former a *parent* route needing `<NuxtPage/>`, so `/orders/board` rendered the
+orders list under a "Fulfilment" breadcrumb. Seven such pairs converted to
+`index.vue`.
+
+#### Accessibility pass — measured, not eyeballed
+
+Three real defects, all found by measuring rather than looking:
+
+- **Secondary text failed WCAG AA.** `--fg-faint` was `#A3A3A3`, which is
+  **2.5:1 on white** against a 4.5 requirement — and that tier carries
+  timestamps, stock counts and form hints across every screen, so it is content,
+  not decoration. The Figma kit renders it as `rgba(28,28,28,0.4)`, which has
+  the same problem. Both foreground ramps were rebuilt contrast-first: light is
+  now 13.6 / 8.6 / 6.4 / 4.8, dark 15.7 / 10.5 / 7.1 / 5.3 — four
+  distinguishable steps that all clear AA. `--warning` was darkened for the
+  same reason. A checker samples every text node on eight routes in both
+  themes, resolves the true painted background by walking ancestors, and
+  applies the large-text exemption; it reports **0 failures**.
+
+- **Chart colours failed on white, and the donut was unreadable.** Brand gold
+  `#D4AF37` is **2.1:1 on white** — under the 3:1 WCAG 1.4.11 wants for
+  graphical objects — and sand and grey failed too. Worse for a donut: gold,
+  sand and brown are all warm yellows, so adjacent slices merged into one
+  smear. The series ramp is now hue-separated (gold, green, terracotta, slate,
+  brown, stone), tuned to a different luminance per theme so the same series
+  keeps its identity when the theme flips. Verified: every colour ≥3:1 on its
+  own ground, and the closest pair is **ΔE 21 in CIELAB**, well above the ~10
+  where two fills stop being distinguishable. The donut also gained a hairline
+  gap between segments, so colour is not the only thing carrying the boundary.
+
+- **`.sr-only` inside a scrolling table broke the page layout.** The permission
+  matrix put visually-hidden "allowed"/"not allowed" text in each cell.
+  Tailwind's `.sr-only` is `position: absolute`, so that text escaped the
+  horizontal scroll container and extended the **document's** scroll region —
+  the whole page gained 139px of sideways scroll at 390px. The state moved to
+  the cell's `aria-label`, which reads identically to a screen reader and
+  occupies no layout. The trap is documented next to the table primitives in
+  `main.css`.
+
+A keyboard pass over Overview, Products and the blog editor confirms every tab
+stop is reachable with a visible focus ring, the profile dialog moves focus in,
+traps it, closes on Escape and restores focus to its trigger, and the command
+palette is fully operable by keyboard. Collapsed-sidebar icons carry real
+tooltips shown on focus as well as hover, rather than a bare `title`.
+
+#### Two bugs the verification found that reading would not have
+
+Pointed the app at a stub API serving `site-settings` live and 404ing the rest:
+**every live field arrived `undefined`.** Laravel API Resources emit snake_case
+(`PageResource` and `SiteSettingResource`, the two that exist, both do); the
+TypeScript models are camelCase. `useAdminApi` now normalises response keys in
+one place, so the models stay idiomatic and the call sites do not have to
+remember. Found before the real endpoints landed rather than after.
+
+And the Playwright sweep caught **no `<h1>` on all eight settings routes**.
+Nuxt de-duplicates repeated path segments, so `components/settings/SettingsShell.vue`
+auto-imports as `<SettingsShell>`, not `<SettingsSettingsShell>`. The tag was
+unresolved, so Vue rendered it as an unknown element — slot content appeared,
+the shell's heading and section nav silently did not. Renamed to
+`components/settings/Shell.vue` so directory + filename compose unambiguously,
+and the sweep now asserts the settings nav is present, not just that the page
+loaded.
+
+#### Verified
+
+`tsc --noEmit` clean (proved to cover the new files by planting a deliberate
+error first), `npm run build` clean, and a Playwright sweep of all 36 routes ×
+both themes asserting no page errors, an `<h1>` present, the correct themed body
+background, and no horizontal overflow. Interactions checked in a browser:
+drawer, `⌘K` palette, theme cycle + persistence, 68px sidebar collapse, and the
+role switcher changing the nav (Super Admin/Admin 14 entries · Staff 13 · Intern 12).
 
 ### 21 August 2026 (later)
 
@@ -418,8 +647,29 @@ order:
 
 ### Admin dashboard
 
-Entirely unimplemented past the scaffold. Needs auth against the `admin` Sanctum
-guard, then the tables and editors listed in README Feature 9.
+The frontend is built. What it needs from the backend, in the order the screens
+will light up:
+
+1. **The `/api/v1/admin/*` surface** — ~21 paths. The exact list is the routing
+   table in `admin/fixtures/index.ts`; each key there is an endpoint the UI
+   already calls, and the fixture next to it is the response shape it expects.
+2. **Admin login** — no `AuthController`, no route, no Form Request. Until it
+   exists `pages/login.vue` is inert by design and no route middleware is
+   registered. Wiring it is: `GET /sanctum/csrf-cookie`, `POST /admin/login`,
+   `GET /admin/me`, then add an `auth` middleware to the pages.
+3. **Widen `admin_users.role`** from `enum('admin','staff')` to four values
+   (`super_admin`, `admin`, `staff`, `intern`) and add a nullable
+   `access_expires_at` timestamp plus an extensions audit trail. The middleware
+   aliases need a matching third/fourth tier.
+4. **Extra `Page` slugs** — `shipping-and-delivery`, `returns-and-exchanges`,
+   `privacy-policy`, `terms-of-service` alongside `about`.
+5. **A `diy_turnaround_tiers` structure**, replacing `SiteSetting`'s single
+   `diy_turnaround_estimate` string.
+6. **Server-side HTML sanitisation** on every CMS save. The editor emits HTML;
+   README Feature 9 names stored XSS explicitly and no client-side escaping
+   substitutes for it.
+7. **WhatsApp Cloud API + a webhook receiver**, *if* the inbox is to go live —
+   see the scope note in the 21 Aug entry. This is new scope, not configuration.
 
 ### Cross-cutting
 
@@ -446,6 +696,9 @@ guard, then the tables and editors listed in README Feature 9.
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
 | 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
 | 9 | **Marquee line-height on the Sustainability masthead** | `display-brand` keeps Figma's 176/96 ratio, so at the mobile floor (36px) the leading is 66px — very airy. Faithful to the design, but it may be a Figma artifact rather than intent. Cheap to change to ~1.1 if it is. |
+| 11 | **The WhatsApp inbox implies scope README does not cover** | README Feature 6 specifies a `wa.me` deep link and states "no API integration required". `/inbox` needs the Business Cloud API, a verified WABA, approved templates and a webhook receiver. It ships as a clearly-labelled simulation; **whether to fund the real integration is awaiting a decision.** |
+| 12 | **Role model disagrees across sources** | README and `admin_users.role` say two tiers; the brand PDF names three; the business asked for four (adding a time-boxed `intern`). The admin UI implements four. **The database enum and role middleware still need widening** — until then the server cannot enforce what the UI presents. |
+| 13 | **WhatsApp number is provisional** | The PDF gives `+233 25 753 4297` annotated "(update with official number)". It is seeded into site settings and surfaced with a warning on `/settings/whatsapp`. Needs confirming before launch. |
 | 10 | **`Toast.vue` has no placement, and no consumer** | It renders in normal flow with no shared region in `layouts/default.vue`, so every caller would invent its own positioning. Nothing mounts it yet, so where toasts appear, how they stack, and whether they clear the fixed WhatsApp button is undecided. Width is bounded; placement is **awaiting a decision** when something first needs it. |
 
 ---
