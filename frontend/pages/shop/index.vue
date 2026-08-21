@@ -143,10 +143,10 @@ const subheading = computed(() => {
 const filtersOpen = ref(false)
 
 useSeoMeta({
-  title: `${heading.value} — Gold Coast Tokota`,
+  title: `${heading.value} - Gold Coast Tokota`,
   description:
     'Browse handmade Ghanaian sandals, slippers and shoes — filter by category, colour, size and width.',
-  ogTitle: `${heading.value} — Gold Coast Tokota`,
+  ogTitle: `${heading.value} - Gold Coast Tokota`,
   ogImage: '/brand/og-image.png',
 })
 </script>
