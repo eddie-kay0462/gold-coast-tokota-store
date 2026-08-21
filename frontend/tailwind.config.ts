@@ -39,25 +39,48 @@ export default <Partial<Config>>{
         sans: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
       },
       fontSize: {
-        // [size, { lineHeight, letterSpacing }] — values are Figma-exact.
-        // The Sustainability masthead — the brand set at full width (10:910).
-        'display-brand': ['96px', { lineHeight: '176px', letterSpacing: '0' }],
-        // Section headings on the Sustainability page: "The Latest", "Our
-        // Progress", "Follow us on social for more" (10:916).
-        'display-heading': ['54px', { lineHeight: '72px', letterSpacing: '0' }],
-        // Display/800 — the full-bleed About hero statement (Figma 6:631).
-        'display-xl': ['70px', { lineHeight: '84px', letterSpacing: '0.2px' }],
-        'display-lg': ['46px', { lineHeight: '55.2px', letterSpacing: '0.92px' }], // Display/500
-        // Display/300 — the About page's opening manifesto paragraph (6:636).
-        'display-statement': ['38px', { lineHeight: '53.2px', letterSpacing: '0.2px' }],
+        // [size, { lineHeight, letterSpacing }].
+        //
+        // The DISPLAY tier is fluid. Each entry is
+        // `clamp(mobileMin, intercept + slope*vw, figmaMax)` with the slope
+        // solved so the token renders its **exact Figma pixel value at the
+        // 1440px design frame** — the number in each comment — while scaling
+        // smoothly below that instead of snapping at a breakpoint. Line heights
+        // are unitless ratios equal to the Figma pair (e.g. 176/96), so leading
+        // tracks the size. Verify with the check in `scripts/check-responsive.mjs`
+        // notes: at a 1440px viewport every value below must measure the Figma px.
+        //
+        // The TEXT tier (body/label/caption/tag/eyebrow/…) stays fixed — small
+        // copy should not shrink on a phone.
+
+        // Figma 10:910 — the Sustainability masthead, brand at full width. 96px.
+        'display-brand': ['clamp(36px, 18.857px + 5.357vw, 96px)', { lineHeight: '1.8333', letterSpacing: '0' }],
+        // Display/800 — the full-bleed About hero statement (Figma 6:631). 70px.
+        'display-xl': ['clamp(32px, 21.143px + 3.393vw, 70px)', { lineHeight: '1.2', letterSpacing: '0.2px' }],
+        // Editorial hero on the long-form news article (Figma 10:1405). 64px.
+        'article-hero': ['clamp(32px, 22.857px + 2.857vw, 64px)', { lineHeight: '1.125', letterSpacing: '0' }],
+        // Section headings on Sustainability: "The Latest", "Our Progress",
+        // "Follow us on social for more" (Figma 10:916). 54px.
+        'display-heading': ['clamp(32px, 25.714px + 1.964vw, 54px)', { lineHeight: '1.3333', letterSpacing: '0' }],
+        // Display/500. 46px.
+        'display-lg': ['clamp(30px, 25.429px + 1.429vw, 46px)', { lineHeight: '1.2', letterSpacing: '0.92px' }],
+        // Display/300 — the About page's opening manifesto paragraph (6:636). 38px.
+        'display-statement': ['clamp(20px, 14.857px + 1.607vw, 38px)', { lineHeight: '1.4', letterSpacing: '0.2px' }],
+        // Editorial body scale on the news article. 40px.
+        'article-lg': ['clamp(24px, 19.429px + 1.429vw, 40px)', { lineHeight: '1.2', letterSpacing: '0' }],
         // Display/400 — headings on the About story sections ("Our ethical
-        // approach."). Same metrics as `article-lg` but with Figma's tracking.
-        'display-section': ['40px', { lineHeight: '48px', letterSpacing: '0.2px' }],
-        // Editorial scale used by the long-form news article (Figma 10:1405).
-        'article-lg': ['40px', { lineHeight: '48px', letterSpacing: '0' }],
-        'article-hero': ['64px', { lineHeight: '72px', letterSpacing: '0' }],
-        'display-md': ['32px', { lineHeight: '40px', letterSpacing: '0' }], // Display/200
-        'display-sm': ['24px', { lineHeight: '33.24px', letterSpacing: '0' }], // Display/100
+        // approach."). Same metrics as `article-lg` but with Figma's tracking. 40px.
+        'display-section': ['clamp(24px, 19.429px + 1.429vw, 40px)', { lineHeight: '1.2', letterSpacing: '0.2px' }],
+        // Display/200. 32px.
+        'display-md': ['clamp(24px, 21.714px + 0.714vw, 32px)', { lineHeight: '1.25', letterSpacing: '0' }],
+        // Display/100. 24px.
+        'display-sm': ['clamp(20px, 18.857px + 0.357vw, 24px)', { lineHeight: '1.385', letterSpacing: '0' }],
+
+        // Lede / hero-subtitle copy: 16px on a phone growing to the design's
+        // 24px at 1440. Its own token because the display tier's floors are
+        // heading-sized, and `text-body lg:text-display-sm` was a hard step.
+        lede: ['clamp(16px, 13.714px + 0.714vw, 24px)', { lineHeight: '1.5', letterSpacing: '0' }],
+
         body: ['16px', { lineHeight: '24px', letterSpacing: '0.64px' }], // Text/400
         label: ['14px', { lineHeight: '16.8px', letterSpacing: '1.4px' }], // Text/300
         'label-link': ['14px', { lineHeight: '20px', letterSpacing: '1.4px' }], // Text/300 - underline

@@ -18,7 +18,7 @@ function isCurrent(to: string) {
     class="w-full overflow-x-auto bg-white"
     aria-label="About sections"
   >
-    <ul class="flex items-center justify-start px-5 lg:justify-center lg:px-0">
+    <ul class="page-gutter flex items-center justify-start lg:justify-center">
       <li v-for="item in aboutSectionNav" :key="item.label">
         <NuxtLink
           :to="item.to"

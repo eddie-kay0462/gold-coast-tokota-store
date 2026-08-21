@@ -29,7 +29,7 @@ async function onSubmit() {
       <FormsFormField v-model="form.name" label="Name" name="name" required />
       <FormsFormField v-model="form.email" label="Email" name="email" type="email" required />
       <FormsFormField v-model="form.phone" label="Phone" name="phone" required />
-      <button type="submit" class="rounded bg-black px-4 py-2 text-white">Book Workshop</button>
+      <CommonBrandButton full type="submit">Book Workshop</CommonBrandButton>
     </form>
     <p v-else>Booking submitted — check your email/SMS for confirmation.</p>
   </div>

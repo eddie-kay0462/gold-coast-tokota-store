@@ -48,7 +48,7 @@ useSeoMeta({
     <img
       src="/design/about-workshop-wide.png"
       alt="Inside the Gold Coast Tokota workshop, tools and hides laid out at the bench"
-      class="h-[280px] w-full object-cover lg:h-[637px]"
+      class="aspect-[16/9] max-h-[637px] w-full object-cover"
       loading="lazy"
     >
 
@@ -66,7 +66,7 @@ useSeoMeta({
     <img
       src="/design/about-materials-wide.png"
       alt="Woven material and finishing supplies arranged across the workshop floor"
-      class="h-[280px] w-full object-cover lg:h-[560px]"
+      class="aspect-[16/9] max-h-[560px] w-full object-cover"
       loading="lazy"
     >
 

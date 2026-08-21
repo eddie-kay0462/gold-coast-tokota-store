@@ -32,7 +32,7 @@ const targets = computed(() => [
         :href="target.href"
         target="_blank"
         rel="noopener noreferrer"
-        class="block transition-opacity hover:opacity-60"
+        class="-m-2 flex size-11 items-center justify-center transition-opacity hover:opacity-60"
       >
         <img :src="target.icon" alt="" class="size-7" aria-hidden="true">
         <span class="sr-only">Share “{{ title }}” on {{ target.name }}</span>

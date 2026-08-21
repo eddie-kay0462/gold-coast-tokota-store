@@ -60,12 +60,12 @@ const legalLinks = [
 </script>
 
 <template>
-  <footer class="flex w-full flex-col items-center bg-surface px-5 pt-10 lg:px-[72px]">
-    <div class="flex w-full flex-col items-start lg:flex-row">
+  <footer class="flex w-full flex-col items-center bg-surface px-5 pt-10 md:px-10 lg:px-[72px]">
+    <div class="flex w-full flex-col items-start md:flex-row md:flex-wrap lg:flex-nowrap">
       <div
         v-for="column in columns"
         :key="column.heading"
-        class="flex min-w-0 flex-1 flex-col items-start gap-5 p-5"
+        class="flex min-w-0 flex-1 flex-col items-start gap-5 p-5 md:basis-1/2 lg:basis-0"
       >
         <h2 class="w-full text-body font-normal tracking-[0.2px] text-graphite">
           {{ column.heading }}
@@ -77,16 +77,16 @@ const legalLinks = [
               :href="link.to"
               target="_blank"
               rel="noopener noreferrer"
-              class="text-label text-muted hover:text-graphite"
+              class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted hover:text-graphite"
             >{{ link.label }}</a>
-            <NuxtLink v-else :to="link.to" class="text-label text-muted hover:text-graphite">
+            <NuxtLink v-else :to="link.to" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted hover:text-graphite">
               {{ link.label }}
             </NuxtLink>
           </li>
         </ul>
       </div>
 
-      <div class="flex w-full items-start p-5 lg:w-auto">
+      <div class="flex w-full items-start p-5 md:basis-full lg:w-auto lg:basis-auto">
         <FormsNewsletterForm source="footer" />
       </div>
     </div>
@@ -116,10 +116,10 @@ const legalLinks = [
       >
     </NuxtLink>
 
-    <div class="flex w-full flex-col items-center gap-4 py-4 text-center text-caption text-muted">
+    <div class="flex w-full flex-col items-center gap-4 py-4 pb-[calc(1rem+4.5rem)] text-center text-caption text-muted sm:pb-4">
       <ul class="flex flex-wrap items-start justify-center gap-x-6 gap-y-2">
         <li v-for="link in legalLinks" :key="link.label" class="whitespace-nowrap">
-          <NuxtLink :to="link.to" class="hover:text-graphite">{{ link.label }}</NuxtLink>
+          <NuxtLink :to="link.to" class="-my-3 flex min-h-[44px] items-center py-3 hover:text-graphite">{{ link.label }}</NuxtLink>
         </li>
       </ul>
       <p class="w-full">© Gold Coast Tokota {{ new Date().getFullYear() }} All Rights Reserved</p>

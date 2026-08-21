@@ -103,7 +103,7 @@ useSeoMeta({
 <template>
   <div v-if="product" class="flex w-full flex-col items-start">
     <!-- Section 01 — gallery + buy panel -->
-    <div class="flex w-full flex-col items-start gap-6 px-5 py-[30px] lg:flex-row lg:px-20">
+    <div class="page-gutter mx-auto flex w-full max-w-[1168px] flex-col items-start gap-6 py-[30px] md:flex-row">
       <ShopProductGallery
         :images="gallery"
         :name="product.name"
@@ -117,7 +117,7 @@ useSeoMeta({
     </div>
 
     <!-- Section 02 — recommendations -->
-    <section class="flex w-full flex-col items-start gap-2 px-5 py-16 lg:px-[196px]">
+    <section class="page-gutter section-y mx-auto flex w-full max-w-[1168px] flex-col items-start gap-2">
       <h2 class="w-full text-body font-normal text-graphite">Recommended Products</h2>
       <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
         <li v-for="item in recommended" :key="item.slug" class="min-w-0">

@@ -11,20 +11,24 @@ const isExternal = computed(() => !!siteSettings.instagramUrl)
 
 <template>
   <!-- Figma 10:1038 -->
-  <section class="flex w-full flex-col items-start gap-8 bg-ink px-5 py-16 lg:px-[60px] lg:py-[90px]">
-    <h2 class="w-full font-normal text-display-md text-white lg:text-display-heading">
-      Follow us on social for more
-    </h2>
+  <!-- The black band stays full-bleed; only its contents are capped, so the
+       heading and button don't drift to the far left of a 2560px screen. -->
+  <section class="page-gutter section-y flex w-full flex-col items-start bg-ink">
+    <div class="mx-auto flex w-full max-w-[1320px] flex-col items-start gap-8">
+      <h2 class="w-full font-normal text-display-heading text-white">
+        Follow us on social for more
+      </h2>
 
-    <CommonBrandButton
-      :to="instagramUrl"
-      variant="white"
-      shape="soft"
-      :external="isExternal"
-      :target="isExternal ? '_blank' : undefined"
-      :rel="isExternal ? 'noopener noreferrer' : undefined"
-    >
-      @GoldCoastTokota Instagram
-    </CommonBrandButton>
+      <CommonBrandButton
+        :to="instagramUrl"
+        variant="white"
+        shape="soft"
+        :external="isExternal"
+        :target="isExternal ? '_blank' : undefined"
+        :rel="isExternal ? 'noopener noreferrer' : undefined"
+      >
+        @GoldCoastTokota Instagram
+      </CommonBrandButton>
+    </div>
   </section>
 </template>

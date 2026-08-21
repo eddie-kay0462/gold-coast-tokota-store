@@ -20,7 +20,7 @@ const blocks = computed(() => {
   <article class="flex w-full flex-col items-start">
     <!-- Hero -->
     <header
-      class="relative flex min-h-[420px] w-full flex-col items-start justify-end overflow-hidden px-5 py-12 lg:min-h-[691px] lg:px-[53px] lg:py-[70px]"
+      class="page-gutter relative flex min-h-[420px] w-full flex-col items-start justify-end overflow-hidden py-12 lg:min-h-[691px] lg:py-[70px]"
     >
       <img
         :src="post.hero_image || post.cover_image || '/design/news-placeholder.png'"
@@ -39,8 +39,8 @@ const blocks = computed(() => {
           {{ post.category }}
         </p>
         <div class="flex w-full flex-col items-start gap-[18px] text-white">
-          <h1 class="w-full text-display-md font-normal lg:text-article-hero">{{ post.title }}</h1>
-          <p v-if="post.subtitle" class="w-full text-body font-light lg:text-display-sm">
+          <h1 class="w-full text-article-hero font-normal">{{ post.title }}</h1>
+          <p v-if="post.subtitle" class="w-full text-lede font-light">
             {{ post.subtitle }}
           </p>
         </div>
@@ -48,10 +48,10 @@ const blocks = computed(() => {
     </header>
 
     <!-- Lede, with the share rail alongside -->
-    <div class="flex w-full flex-col gap-10 px-5 py-16 lg:px-[60px] lg:py-[115px]">
+    <div class="page-gutter flex w-full flex-col gap-10 py-16 lg:py-[115px]">
       <div class="h-3.5 w-full bg-black lg:h-[14px]" />
 
-      <div class="flex w-full flex-col items-start gap-8 lg:flex-row lg:gap-[148px]">
+      <div class="flex w-full flex-col items-start gap-8 md:flex-row md:gap-12 lg:gap-[148px]">
         <div class="flex shrink-0 flex-col gap-2">
           <BlogShare :title="post.title" />
           <time :datetime="post.published_at" class="text-caption text-muted">
@@ -59,7 +59,7 @@ const blocks = computed(() => {
           </time>
         </div>
 
-        <p v-if="post.lede" class="min-w-0 flex-1 text-display-sm font-normal text-black lg:text-article-lg">
+        <p v-if="post.lede" class="min-w-0 flex-1 text-article-lg font-normal text-black">
           {{ post.lede }}
         </p>
       </div>
@@ -69,7 +69,7 @@ const blocks = computed(() => {
     <template v-for="(block, index) in blocks" :key="index">
       <div
         v-if="block.type === 'image'"
-        class="flex w-full items-center justify-center overflow-hidden px-5 py-12 lg:px-[60px] lg:py-[100px]"
+        class="page-gutter flex w-full items-center justify-center overflow-hidden py-12 lg:py-[100px]"
       >
         <img
           :src="block.src"
@@ -79,14 +79,15 @@ const blocks = computed(() => {
         >
       </div>
 
-      <div
-        v-else
-        class="post-body flex w-full flex-col items-start gap-8 px-5 py-12 text-black lg:gap-11 lg:px-[228px] lg:py-[100px]"
-        v-html="block.html"
-      />
+      <div v-else class="page-gutter w-full py-12 lg:py-[100px]">
+        <div
+          class="post-body mx-auto flex w-full max-w-[984px] flex-col items-start gap-8 text-black lg:gap-11"
+          v-html="block.html"
+        />
+      </div>
     </template>
 
-    <p v-if="!blocks.length" class="w-full px-5 py-16 text-center text-body text-muted lg:px-[228px]">
+    <p v-if="!blocks.length" class="page-gutter mx-auto w-full max-w-[984px] py-16 text-center text-body text-muted">
       This story hasn’t been published in full yet.
     </p>
   </article>
@@ -94,22 +95,28 @@ const blocks = computed(() => {
 
 <style scoped>
 /* The article body arrives as CMS rich text, so its elements are styled here
-   rather than with utility classes. Sizes follow the Figma editorial scale. */
+   rather than with utility classes. Sizes follow the Figma editorial scale and
+   use the same clamp() form as the display tokens in `tailwind.config.ts` —
+   each reaches its exact Figma pixel value at the 1440px frame and scales
+   smoothly below it, replacing the hard @media step this block used to carry. */
 .post-body :deep(h2) {
-  font-size: 32px;
-  line-height: 40px;
+  /* 40px at 1440 */
+  font-size: clamp(24px, 19.429px + 1.429vw, 40px);
+  line-height: 1.2;
   width: 100%;
 }
 
 .post-body :deep(h3) {
-  font-size: 24px;
-  line-height: 33.24px;
+  /* 24px at 1440 */
+  font-size: clamp(20px, 18.857px + 0.357vw, 24px);
+  line-height: 1.385;
   width: 100%;
 }
 
 .post-body :deep(p) {
-  font-size: 16px;
-  line-height: 24px;
+  /* Body copy grows from 16px to the editorial 24px at 1440. */
+  font-size: clamp(16px, 13.714px + 0.714vw, 24px);
+  line-height: 1.5;
   font-weight: 300;
   letter-spacing: 0.64px;
   width: 100%;
@@ -127,18 +134,5 @@ const blocks = computed(() => {
 .post-body :deep(ol) {
   padding-left: 1.5rem;
   list-style: revert;
-}
-
-@media (min-width: 1024px) {
-  .post-body :deep(h2) {
-    font-size: 40px;
-    line-height: 48px;
-  }
-
-  .post-body :deep(h3),
-  .post-body :deep(p) {
-    font-size: 24px;
-    line-height: 33.24px;
-  }
 }
 </style>

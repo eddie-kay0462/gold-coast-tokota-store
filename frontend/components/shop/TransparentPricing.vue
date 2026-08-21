@@ -25,7 +25,7 @@ const lines = computed(() =>
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-4 px-5 py-16 lg:p-20">
+  <section class="page-gutter section-y flex w-full flex-col items-center gap-4">
     <div class="flex w-full max-w-[684px] flex-col items-center gap-4 text-center text-graphite">
       <h2 class="w-full text-display-sm font-normal">Transparent Pricing</h2>
       <p class="w-full text-label font-light">
@@ -42,7 +42,7 @@ const lines = computed(() =>
         class="flex min-w-0 flex-1 basis-1/3 flex-col items-center gap-3 p-6 sm:basis-0"
       >
         <img :src="line.icon" alt="" class="h-[60px] w-auto" loading="lazy">
-        <p class="min-w-full text-center text-caption font-light text-graphite">
+        <p class="w-full text-center text-caption font-light text-graphite">
           <span class="block">{{ line.label }}</span>
           <span class="block">{{ line.display }}</span>
         </p>

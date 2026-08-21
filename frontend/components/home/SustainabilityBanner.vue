@@ -1,5 +1,5 @@
 <template>
-  <section class="flex w-full flex-col items-start overflow-hidden px-5 py-16 lg:px-[42px] lg:py-[90px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-start overflow-hidden">
     <div class="relative flex min-h-[281px] w-full flex-col items-center justify-center gap-5 px-5 py-11">
       <img
         src="/design/sustainability.png"

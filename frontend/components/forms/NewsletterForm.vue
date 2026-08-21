@@ -30,7 +30,10 @@ async function onSubmit() {
 
 <template>
   <div>
-    <form v-if="!submitted" class="flex" @submit.prevent="onSubmit">
+    <!-- `min-w-0` on the input matters: an <input> has an intrinsic min-content
+         width (~180px) that `w-full` cannot shrink past while it is a flex item,
+         which left the row 8px clear of a 320px viewport. -->
+    <form v-if="!submitted" class="flex w-full min-w-0" @submit.prevent="onSubmit">
       <label class="sr-only" for="newsletter-email">Email address</label>
       <input
         id="newsletter-email"
@@ -38,7 +41,7 @@ async function onSubmit() {
         type="email"
         required
         placeholder="Sign up for our Newsletter here!"
-        class="w-full max-w-[388px] border border-line bg-white px-[15px] py-[18px] text-label text-graphite placeholder:text-muted"
+        class="w-full min-w-0 max-w-[388px] flex-1 border border-line bg-white px-[15px] py-[18px] text-label text-graphite placeholder:text-muted"
       >
       <button
         type="submit"

@@ -8,12 +8,27 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl px-4 py-12">
-    <div class="flex gap-4 border-b">
-      <button type="button" :class="activeTab === 'workshop' ? 'font-semibold' : ''" @click="activeTab = 'workshop'">
+  <div class="page-gutter section-y mx-auto w-full max-w-[calc(56rem+120px)]">
+    <!-- Tabs had no padding at all, so the tap target was the ~19px text box. -->
+    <div class="flex gap-2 border-b border-line" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === 'workshop'"
+        class="flex min-h-[44px] items-center px-4 text-label"
+        :class="activeTab === 'workshop' ? 'border-b-2 border-graphite font-normal text-black' : 'text-muted'"
+        @click="activeTab = 'workshop'"
+      >
         Workshop
       </button>
-      <button type="button" :class="activeTab === 'diy' ? 'font-semibold' : ''" @click="activeTab = 'diy'">
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="activeTab === 'diy'"
+        class="flex min-h-[44px] items-center px-4 text-label"
+        :class="activeTab === 'diy' ? 'border-b-2 border-graphite font-normal text-black' : 'text-muted'"
+        @click="activeTab = 'diy'"
+      >
         DIY Sandals
       </button>
     </div>

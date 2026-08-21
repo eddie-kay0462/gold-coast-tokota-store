@@ -12,8 +12,10 @@ const props = withDefaults(
     /** Stretch to the container instead of the design's fixed 240px block. */
     full?: boolean
     disabled?: boolean
+    /** Native button type. Ignored when `to` is set, since that renders a link. */
+    type?: 'button' | 'submit' | 'reset'
   }>(),
-  { variant: 'graphite', shape: 'block' },
+  { variant: 'graphite', shape: 'block', type: 'button' },
 )
 
 // resolveComponent() must run in setup — it is not in scope inside template
@@ -32,8 +34,8 @@ const variantClass = computed(
 const shapeClass = computed(
   () =>
     ({
-      block: 'py-3 text-label uppercase',
-      soft: 'rounded-lg py-5 text-action',
+      block: 'min-h-[44px] py-3 text-label uppercase',
+      soft: 'min-h-[44px] rounded-lg py-5 text-action',
     })[props.shape],
 )
 </script>
@@ -42,7 +44,7 @@ const shapeClass = computed(
   <component
     :is="to ? linkComponent : 'button'"
     :to="to"
-    :type="to ? undefined : 'button'"
+    :type="to ? undefined : type"
     :disabled="to ? undefined : disabled"
     class="flex max-w-full items-center justify-center text-center transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
     :class="[variantClass, shapeClass, full ? 'w-full' : 'w-[240px]']"

@@ -14,11 +14,16 @@ const emit = defineEmits<{ selectSession: [sessionId: string] }>()
   <div>
     <template v-if="mode === 'workshop'">
       <ul>
-        <li v-for="session in sessions" :key="session.id" class="flex items-center justify-between border-b py-2">
-          <span>{{ session.scheduled_date }} — {{ session.scheduled_slot }}</span>
+        <li
+          v-for="session in sessions"
+          :key="session.id"
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-line py-2"
+        >
+          <span class="min-w-0 text-body">{{ session.scheduled_date }} — {{ session.scheduled_slot }}</span>
           <button
             v-if="session.booked_count < session.capacity"
             type="button"
+            class="flex min-h-[44px] shrink-0 items-center px-3 text-label underline"
             @click="emit('selectSession', session.id)"
           >
             {{ session.capacity - session.booked_count }} spots left

@@ -27,7 +27,7 @@ function step(direction: -1 | 1) {
 
 <template>
   <section class="flex w-full flex-col items-center gap-[30px]">
-    <div class="flex w-full flex-col items-center gap-8 px-5 lg:flex-row lg:gap-[74px] lg:px-[35px]">
+    <div class="page-gutter mx-auto flex w-full max-w-[1406px] flex-col items-center gap-8 md:flex-row md:gap-10 lg:gap-[74px]">
       <CommonCarouselArrow
         v-if="hasMultiple"
         direction="left"
@@ -76,7 +76,7 @@ function step(direction: -1 | 1) {
       />
     </div>
 
-    <div class="flex w-full flex-col items-center gap-12 px-5 lg:gap-[73px] lg:px-[77px]">
+    <div class="page-gutter mx-auto flex w-full max-w-[1406px] flex-col items-center gap-12 lg:gap-[73px]">
       <CommonCarouselDots
         v-if="hasMultiple"
         :count="testimonials.length"

@@ -8,7 +8,7 @@ const cart = useCartStore()
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-4 py-12">
+  <div class="page-gutter section-y mx-auto w-full max-w-[calc(48rem+120px)]">
     <h1 class="text-display-sm font-normal text-black">Checkout</h1>
 
     <!-- Nothing to pay for — send people back to the shop rather than showing

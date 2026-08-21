@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 20 August 2026
+- **Last updated:** 21 August 2026 (second entry below)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** contains substantial uncommitted work (News & Events, the
   search panel, About, Sustainability) — everything from 19 Aug 00:06 onward.
@@ -38,8 +38,150 @@ not started on the backend.
 
 ## Recent changes
 
-Everything below happened over three working days (18–20 August). The last two
-days' work is **not yet committed** — see the note at the end of this section.
+Everything below happened over four working days (18–21 August). The 19–20 Aug
+work is **not yet committed** — see the note at the end of this section.
+
+### 21 August 2026 (later)
+
+#### Full responsive pass — a real breakpoint ladder, fluid type, 44px targets
+
+The storefront was transcribed from a 1440px Figma frame and had never had a
+responsive pass. One number explained most of it: **119 `lg:` classes, 18 `sm:`,
+and zero `md:`, `xl:` or `2xl:`**. So 768–1023px (iPad portrait, a half-screen
+laptop window) rendered the *phone* layout at tablet width, and 1024px flipped
+everything at once into the 1440 design compressed into 1024 — 217px-wide
+product cards still carrying 392px image heights, 244×508 gallery frames.
+
+It is now **23 `sm:` / 71 `md:` / 66 `lg:` / 5 `xl:` / 2 `2xl:`**.
+
+**Measure first.** `frontend/scripts/check-responsive.mjs` (`npm run
+check:responsive`, needs a `npm run build` first) drives headless Chrome over
+every route at ten widths from 320 to 2560 and asserts three things: the
+document does not scroll sideways, no element's box passes the right edge, and
+at ≤768px every control clears the 44px tap floor. It respects clipping
+ancestors (a marquee inside `overflow-hidden` is not an overflow), the WCAG
+2.5.5 inline-link exemption, and label-wrapped inputs. Baseline was **551
+findings**; it is **0** now. `playwright-core` is the only new dependency — it
+uses the system Chrome, so there is no browser download.
+
+**What the script corrected in our own analysis:** the static audit predicted
+five horizontal overflows at 320–375px. Measured, **four were wrong** — the
+44-character footer legal link renders 243px against 280px available, and the
+header row's min-content fits 320px. Only the announcement-bar collision was
+real (the sign-up link overlapped the currency cluster by 41px). The other four
+were hardened anyway as latent risks, but nothing was chasing a live bug.
+
+- **Fluid display type.** Every display token in `tailwind.config.ts` is now
+  `clamp(mobileMin, intercept + slope·vw, figmaMax)`, solved so each renders its
+  **exact Figma pixel value at 1440px** (verified: 96/70/64/54/46/40/40/38/32/24)
+  while scaling smoothly below. Line heights became unitless ratios. That
+  retired every `text-x lg:text-y` pair — including a 32px→96px jump on the
+  Sustainability masthead — and the hand-rolled `@media (min-width: 1024px)`
+  block in `BlogPost.vue`. New `lede` token (16→24px) for hero subtitles.
+- **Announcement bar** — the flag/currency cluster was `absolute`, so it
+  reserved no width. It is a normal flex child now, and below `sm` the message
+  runs through the new `components/common/Marquee.vue`, extracted from
+  `SloganTicker` (which also had a real bug: one run was ~1540px, so the loop
+  exposed blank space above that width — it now renders two copies per run).
+  **Closes known issue #1.**
+- **Tablet tier** — the desktop nav, mega menu, footer columns, About story
+  splits, `EditorialPair`, `ValueProps`, testimonials, the shop sidebar and
+  every grid now step at `md`. `ProgressGrid` and `RelatedPosts` hold exactly
+  three items, so `sm:grid-cols-2` left a permanent orphan; both go 3-up at `md`.
+- **Aspect ratios replace fixed image heights.** Nothing used `aspect-[]`; every
+  image was a pixel height on a fluid width, so the crop changed at every
+  viewport and was right only at 1440. `ProductGrid`'s skeleton was a flat
+  `392px` that matched only `lg` and so *caused* the shift its comment claimed
+  to prevent — it now shares the card's ratio.
+- **Above 1440** — the shop listing and PDP had no `max-w` at all. Capped, along
+  with a dozen sections, using the existing content+2×60px convention.
+- **44px tap targets** — the cart ± steppers were **12×12px** (the padding was
+  on the wrapper, not the buttons), carousel dots **7px**, footer links ~16px.
+  All fixed by growing the *button* while the drawn dot/swatch keeps its size.
+- **Interaction rebuilds** — `Modal.vue` had no max-height or scroll container,
+  so content taller than the viewport was unreachable; the shop filter was an
+  inline accordion pushing ~1000px above the grid and is now a proper sheet with
+  a scrim, an active-filter count and a "Show N results" close; the PDP buy panel
+  is sticky at `md`+ with a phone-only sticky add-to-cart (the inline CTA sits
+  ~2000px down for a 4-image product); `FormField` was rebuilt on the design
+  tokens at ≥44px with a textarea variant (DIY measurements were going into a
+  single-line input).
+- **New `composables/useBodyScrollLock.ts`** — reference-counted, and uses the
+  `position: fixed` treatment because `body { overflow: hidden }` alone does not
+  hold on iOS Safari. The cart drawer, nav drawer (which had no lock at all),
+  modal and filter sheet all share it.
+- **`useScrollRail` paging was wrong below `lg`.** It scrolled by one container
+  width, which only tiles when slides are 25%/20%; elsewhere it landed mid-slide
+  and the dots lit a page the user never scrolled to. It now measures real slide
+  offsets, and a `MutationObserver` re-measures when an async post list resolves
+  (a `ResizeObserver` does not fire when only `scrollWidth` changes).
+- **z-index scale** documented in `layouts/default.vue`. The WhatsApp button was
+  `z-50`, tying with the header and modal; it is `z-40`, has a real icon instead
+  of the literal text "WA", respects `env(safe-area-inset-bottom)` (which needed
+  `viewport-fit=cover` in `nuxt.config.ts`), and the footer reserves its corner.
+  Layout switched to `min-h-dvh`.
+
+#### `ValueProps` — the three home-page blocks were not centred on a phone
+
+Follow-up to the pass above, reported by Kirk. `components/home/ValueProps.vue`
+had `flex-col items-start` on its section. In a **column** flex container the
+cross axis is horizontal, so `items-start` sized each of the three blocks to its
+own content width and pinned it left; each block's inner `items-center` /
+`text-center` then centred its contents *within itself*, which is why the three
+icons drifted apart instead of lining up on the page.
+
+Fixed with `items-stretch sm:items-start` — stretched, each block is full width
+and its existing centring does the rest. From `sm` the row is horizontal, where
+`items-start` correctly means top-aligned columns, so that behaviour is
+unchanged.
+
+Icon centre positions, before → after:
+
+| viewport | before | after | page centre |
+|---|---|---|---|
+| 320px | 160 / 160 / 160 | 160 / 160 / 160 | 160 |
+| 375px | **188 / 175 / 168** | 188 / 188 / 188 | 188 |
+| 414px | **207 / 175 / 168** | 207 / 207 / 207 | 207 |
+| 640px+ | unchanged (3-up row) | unchanged | — |
+
+Worth knowing because it is easy to miss and easy to reintroduce: at 320px all
+three blocks hit the container cap at 280px, so they already lined up. The
+misalignment only appeared from ~360px, where the longest line ("Gold Coast
+Tokota, E A Amartei, Haatso") still fitted but the shorter headings did not
+stretch to match. **`npm run check:responsive` does not catch this** — nothing
+overflows and no tap target is small; it is an alignment defect, which is
+exactly the class of thing the script's docstring warns still needs a human eye.
+
+#### One page gutter, one vertical rhythm — `.page-gutter` / `.section-y`
+
+The blog article's related-stories grid ran flush to both viewport edges on
+desktop and sat directly on the footer. The wrapper at `pages/blog/[slug].vue`
+carried `lg:px-0 lg:pb-0`, zeroing both, while every neighbouring section on the
+page sat at 60px. That was the visible symptom of a structural gap: there was no
+shared gutter anywhere — no `theme.container`, nothing in `main.css`, no padding
+on `layouts/default.vue` — so each section invented its own value. Fourteen
+different desktop gutters were in play, plus a `px-2` carousel track, two
+`px-0` rows, and a doubled ~96px gutter in `UgcGallery`.
+
+- `assets/css/main.css` — new `@layer components` with **`.page-gutter`**
+  (`px-5 lg:px-[60px]`, the Figma section gutter) and **`.section-y`**
+  (`py-12 lg:py-[90px]`). Both are commented in place with the reasoning.
+- Every full-width section across Home, About, Sustainability, Shop, Blog and
+  the checkout/booking/order-confirmation stubs now uses them.
+- **Large gutters that were really content measures became max-widths.** The
+  article prose (`lg:px-[228px]`), `EditorialPair` (185px), `ValueProps` and the
+  testimonial rail (77px), `ProductReviews` and shop recommendations (196px),
+  `ExploreGrid` (200px) and `StatementSection` (258px) now carry the standard
+  gutter plus `mx-auto max-w-[Npx]`, where N reproduces the Figma width at the
+  1440px frame. They no longer over-stretch above 1440px either.
+- `components/blog/RelatedPosts.vue` now owns its own section chrome (gutter,
+  rhythm, and a **visible "More Stories" heading** matching "Shop Our Products"
+  above it) instead of depending on a wrapper to supply padding; the wrapper in
+  `pages/blog/[slug].vue` is gone.
+- Deliberately left full-bleed: `SloganTicker`, the `FeatureSection` image half,
+  and the wide `<img>` bands on the About page.
+- Deliberately unchanged: the app chrome — see open decision #8 below.
+- `npm run build` passes.
 
 ### 20 August 2026
 
@@ -295,13 +437,16 @@ guard, then the tables and editors listed in README Feature 9.
 
 | # | Issue | Notes |
 |---|---|---|
-| 1 | **Site-wide horizontal overflow below ~500px** | The announcement bar in `Header.vue` is a non-wrapping flex row; its copy plus the absolutely-positioned currency cluster exceed a phone viewport, so *every* page scrolls sideways. Everything fits from 560px up. Fix is contained but the treatment is a design call: wrap, truncate, or hide the sentence below `sm`. **Awaiting a decision.** |
+| 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
 | 3 | **About "Designed to last" copy was rewritten** | Figma's text names Everlane, cashmere sweaters and Peruvian Pima tees. Adapted to the brand. All other copy is verbatim from the design. |
 | 4 | **"Our Carbon Commitment" is tagged `Style`** | Straight from Figma `10:958`; looks like a design slip. Transcribed faithfully — flag if it should read Sustainability. |
 | 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. |
 | 6 | **Fish Africa coverage unverified** | Blocks confidence in Feature 8. README "Clarifications Needed" #3. |
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
+| 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
+| 9 | **Marquee line-height on the Sustainability masthead** | `display-brand` keeps Figma's 176/96 ratio, so at the mobile floor (36px) the leading is 66px — very airy. Faithful to the design, but it may be a Figma artifact rather than intent. Cheap to change to ~1.1 if it is. |
+| 10 | **`Toast.vue` has no placement, and no consumer** | It renders in normal flow with no shared region in `layouts/default.vue`, so every caller would invent its own positioning. Nothing mounts it yet, so where toasts appear, how they stack, and whether they clear the fixed WhatsApp button is undecided. Width is bounded; placement is **awaiting a decision** when something first needs it. |
 
 ---
 
@@ -315,6 +460,40 @@ guard, then the tables and editors listed in README Feature 9.
 - **Design tokens live in `frontend/tailwind.config.ts`**, each annotated with
   its Figma style name. Add tokens there rather than using arbitrary values, so
   design and code stay reconcilable.
+- **Breakpoints are a ladder, not a switch.** base = phone · `sm` (640) large
+  phone, 2-up grids · `md` (768) tablet, side-by-side splits begin · `lg` (1024)
+  full desktop structure · `xl`/`2xl` reclaim width. **Never jump base → `lg`** —
+  that is the bug this codebase started with, and it puts a phone layout on every
+  tablet. Tailwind defaults; no `screens` override.
+- **Display type is fluid, not stepped.** The display tokens in
+  `tailwind.config.ts` are `clamp()` values that hit their exact Figma pixel size
+  at 1440px. Name one token; do not write `text-a lg:text-b`.
+- **Images get `aspect-[w/h]`, not a pixel height.** A fixed height on a fluid
+  width re-crops the photo at every viewport.
+- **44px minimum tap target.** Grow the *button*, keep the drawn dot or swatch at
+  its design size (see `CarouselDots.vue`, `ProductPurchasePanel.vue`). Inline
+  links inside a sentence are exempt (WCAG 2.5.5).
+- **`items-start` on a `flex-col` is a horizontal instruction.** It collapses
+  each child to its content width and left-aligns it. That is usually harmless —
+  most of our stacked sections are left-aligned anyway, or their children carry
+  `w-full` — but it silently breaks any child that centres its *own* contents,
+  because each one then centres inside a different width. If a stacked block is
+  meant to look centred, use `items-stretch` and put the row alignment behind the
+  breakpoint that makes it a row: `items-stretch sm:items-start`. This bit
+  `ValueProps`; a sweep of all seven routes at 375px found no other instance,
+  and the remaining `flex-col items-start` hits (footer columns, category pills,
+  the blog share rail, `BrandButton`) are all correctly left-aligned or
+  intrinsically sized.
+- **Run `npm run check:responsive` before you push layout changes.** It needs a
+  `npm run build` first, and it is a diagnostic, not a snapshot suite — "no
+  overflow" is not "reads well", so still look at 768 and 1440 yourself.
+- **Overlays use `useBodyScrollLock`**, and the z-scale in `layouts/default.vue`.
+- **Section padding is `.page-gutter` + `.section-y`, never ad hoc.** Defined in
+  `frontend/assets/css/main.css`. A full-width section takes both. If a design
+  calls for a narrower column, keep the gutter and constrain the *content* with
+  `mx-auto max-w-[Npx]` — outer padding is not a measure. The only exceptions
+  are deliberate full-bleed elements (marquee, edge-to-edge imagery) and the app
+  chrome in `components/layout/`.
 - **Components are auto-imported by directory prefix** — `components/about/HeroSection.vue`
   is `<AboutHeroSection />`, `components/common/BrandButton.vue` is
   `<CommonBrandButton />`.

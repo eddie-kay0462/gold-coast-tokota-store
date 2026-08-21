@@ -16,3 +16,25 @@
     @apply outline-2 outline-offset-2 outline-graphite;
   }
 }
+
+@layer components {
+  /* The one horizontal page gutter. Before this existed every section invented
+     its own value (fourteen different desktop paddings across the app), which
+     left neighbouring sections visibly out of alignment and some content — the
+     blog post's related-stories grid — flush against the viewport edge. 20px on
+     mobile, 40px on tablet, 60px from `lg` is the gutter the Figma frames use for a standard
+     full-width section, so it is the value everything else moves to.
+
+     A section whose design calls for a narrower column keeps this gutter and
+     constrains its *content* with `mx-auto max-w-[Npx]` instead, where N is the
+     Figma width at the 1440px frame. Ad hoc outer padding is not a measure. */
+  .page-gutter {
+    @apply px-5 md:px-10 lg:px-[60px];
+  }
+
+  /* Matching vertical rhythm between full-width sections. Also guarantees the
+     last section on a page has bottom padding rather than butting the footer. */
+  .section-y {
+    @apply py-12 md:py-16 lg:py-[90px];
+  }
+}

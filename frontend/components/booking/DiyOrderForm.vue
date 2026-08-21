@@ -30,15 +30,29 @@ async function onSubmit() {
   <div class="mt-6">
     <BookingCalendar mode="diy" :diy-turnaround-estimate="siteSettings.diyTurnaroundEstimate" />
     <form v-if="!submitted" class="mt-4 space-y-4" @submit.prevent="onSubmit">
-      <FormsFormField v-model="form.measurements" label="Sandal specs / measurements" name="measurements" required />
-      <div>
-        <label for="reference_image" class="mb-1 block text-sm font-medium">Reference image</label>
-        <input id="reference_image" type="file" accept="image/*" @change="onFileChange">
+      <FormsFormField
+        v-model="form.measurements"
+        label="Sandal specs / measurements"
+        name="measurements"
+        type="textarea"
+        required
+      />
+      <div class="flex w-full min-w-0 flex-col gap-1.5">
+        <label for="reference_image" class="text-caption font-normal text-graphite">Reference image</label>
+        <!-- A bare file input has an unbounded intrinsic width; `w-full min-w-0`
+             keeps it inside a 320px viewport. -->
+        <input
+          id="reference_image"
+          type="file"
+          accept="image/*"
+          class="w-full min-w-0 border border-line bg-white p-2.5 text-caption text-graphite file:mr-3 file:min-h-[36px] file:border-0 file:bg-surface file:px-3 file:text-caption file:text-graphite"
+          @change="onFileChange"
+        >
       </div>
       <FormsFormField v-model="form.name" label="Name" name="name" required />
       <FormsFormField v-model="form.email" label="Email" name="email" type="email" required />
       <FormsFormField v-model="form.phone" label="Phone" name="phone" required />
-      <button type="submit" class="rounded bg-black px-4 py-2 text-white">Submit DIY Order</button>
+      <CommonBrandButton full type="submit">Submit DIY Order</CommonBrandButton>
     </form>
     <p v-else>Order submitted — check your email/SMS for confirmation.</p>
   </div>

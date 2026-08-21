@@ -23,7 +23,7 @@ const cards = [
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-5 px-5 py-14 lg:px-[200px] lg:py-[82px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1160px] flex-col items-center gap-5">
     <h2 class="w-full text-center font-light text-black text-display-md">More to Explore</h2>
 
     <div class="flex w-full flex-col gap-5 sm:flex-row sm:items-start">
@@ -36,7 +36,7 @@ const cards = [
         <img
           :src="card.image"
           :alt="card.alt"
-          class="h-[195px] w-full object-cover"
+          class="aspect-[16/9] w-full object-cover"
           loading="lazy"
         >
         <span class="w-full text-center text-body tracking-[0.2px] text-subtle group-hover:underline">

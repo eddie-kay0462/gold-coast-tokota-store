@@ -57,12 +57,12 @@ useSeoMeta({
     <BlogPost :post="post" />
 
     <!-- Shop Our Products -->
-    <section class="flex w-full flex-col items-center gap-10 px-5 py-16 lg:p-[60px]">
-      <h2 class="w-full text-center text-display-md font-normal text-black lg:text-article-lg">
+    <section class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-center gap-10">
+      <h2 class="w-full text-center text-article-lg font-normal text-black">
         Shop Our Products
       </h2>
 
-      <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
+      <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
         <li v-for="product in products" :key="product.slug" class="min-w-0">
           <ShopProductCard :product="product" />
         </li>
@@ -71,8 +71,6 @@ useSeoMeta({
       <CommonBrandButton to="/shop">Shop Now</CommonBrandButton>
     </section>
 
-    <div class="w-full px-5 pb-16 lg:px-0 lg:pb-0">
-      <BlogRelatedPosts :posts="related" />
-    </div>
+    <BlogRelatedPosts :posts="related" />
   </div>
 </template>

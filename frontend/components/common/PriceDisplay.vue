@@ -38,7 +38,11 @@ const comparePrice = computed(() =>
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-1">
+  <!-- `flex-wrap` matters: consumers put this in narrow columns (the cart
+       line item leaves it ~90px), and a discounted price renders both the
+       struck compare-at and the live price. Without wrapping the pair is an
+       unshrinkable box that pushes its row sideways. -->
+  <span class="inline-flex min-w-0 flex-wrap items-center gap-x-1">
     <s v-if="comparePrice" class="font-light">
       <span class="sr-only">Was </span>{{ comparePrice }}
     </s>

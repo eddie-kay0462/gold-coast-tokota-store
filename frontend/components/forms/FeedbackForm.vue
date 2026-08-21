@@ -14,7 +14,7 @@ async function onSubmit() {
     <FormsFormField v-model="form.name" label="Name" name="name" required />
     <FormsFormField v-model="form.email" label="Email" name="email" type="email" required />
     <FormsFormField v-model="form.message" label="Message" name="message" required />
-    <button type="submit" class="rounded bg-black px-4 py-2 text-white">Send Feedback</button>
+    <CommonBrandButton full type="submit">Send Feedback</CommonBrandButton>
   </form>
   <p v-else>Thanks for your feedback!</p>
 </template>

@@ -15,8 +15,8 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage } = useScrollRail()
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-3 px-5 lg:px-[42px]">
-    <div class="flex w-full flex-col items-center gap-[25px] border-t border-graphite px-5 pt-16 text-center text-graphite lg:px-[54px] lg:pt-[90px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1560px] flex-col items-center gap-3">
+    <div class="flex w-full flex-col items-center gap-[25px] border-t border-graphite pt-12 text-center text-graphite lg:pt-[90px]">
       <h2 class="w-full text-display-md">Gold Coast Tokota Fits Well On You</h2>
 
       <div class="flex w-full flex-col items-center gap-1">
@@ -30,7 +30,7 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage } = useScrollRail()
           >#GoldCoastTokota</a>
           <span> for a chance to be featured.</span>
         </p>
-        <NuxtLink to="/community/submit" class="w-full text-label-link underline hover:no-underline">
+        <NuxtLink to="/community/submit" class="-my-3 flex min-h-[44px] w-full items-center py-3 text-label-link underline hover:no-underline">
           Add Your Photo
         </NuxtLink>
       </div>
@@ -39,7 +39,7 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage } = useScrollRail()
     <div class="flex w-full items-stretch gap-3 lg:gap-[18px]">
       <CommonCarouselArrow
         direction="left"
-        class="hidden lg:flex"
+        class="hidden md:flex"
         :disabled="!canScrollPrev"
         @click="scrollByPage(-1)"
       />
@@ -51,12 +51,12 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage } = useScrollRail()
         <li
           v-for="look in looks"
           :key="look.id"
-          class="relative flex h-[225px] w-[60%] shrink-0 snap-start items-start justify-end overflow-hidden p-2.5 sm:w-[40%] lg:w-[calc(20%-0.9rem)]"
+          class="relative flex aspect-[4/3] w-[60%] shrink-0 snap-start items-start justify-end overflow-hidden p-2.5 sm:w-[40%] md:w-[30%] lg:w-[calc(20%-0.9rem)]"
         >
           <img :src="look.image" :alt="look.alt" class="absolute inset-0 size-full object-cover" loading="lazy">
           <NuxtLink
             :to="look.to"
-            class="relative flex size-[30px] items-center justify-center rounded-full bg-white/90 text-graphite transition-colors hover:bg-white"
+            class="relative flex size-11 items-center justify-center rounded-full bg-white/90 text-graphite transition-colors hover:bg-white"
             aria-label="Shop this look"
           >
             <ShoppingCartSimple :size="16" />
@@ -66,7 +66,7 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage } = useScrollRail()
 
       <CommonCarouselArrow
         direction="right"
-        class="hidden lg:flex"
+        class="hidden md:flex"
         :disabled="!canScrollNext"
         @click="scrollByPage(1)"
       />

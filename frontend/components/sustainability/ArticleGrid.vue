@@ -21,11 +21,11 @@ watch(() => props.posts, () => (shown.value = PAGE_SIZE))
 
 <template>
   <!-- Figma 10:976 -->
-  <section class="flex w-full flex-col items-start gap-3 px-5 py-16 lg:px-[60px] lg:py-[120px]">
-    <h2 class="w-full font-normal text-display-md text-black lg:text-display-heading">The Latest</h2>
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-start gap-3">
+    <h2 class="w-full font-normal text-display-heading text-black">The Latest</h2>
 
     <div class="flex w-full flex-col items-center gap-10">
-      <ul class="grid w-full grid-cols-1 gap-x-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 lg:gap-y-[120px]">
+      <ul class="grid w-full grid-cols-1 gap-x-6 gap-y-16 sm:grid-cols-2 md:grid-cols-3 lg:gap-y-[120px]">
         <li v-for="post in visible" :key="post.slug" class="min-w-0">
           <BlogFeatureCard :post="post" />
         </li>

@@ -24,16 +24,16 @@ const strands = [
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-start gap-3 px-5 py-16 lg:px-[60px] lg:py-[120px]">
-    <h2 class="w-full font-normal text-display-md text-black lg:text-display-heading">Our Progress</h2>
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-start gap-3">
+    <h2 class="w-full font-normal text-display-heading text-black">Our Progress</h2>
 
-    <ul class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <ul class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
       <li v-for="strand in strands" :key="strand.label" class="min-w-0">
         <NuxtLink :to="strand.to" class="group flex w-full flex-col items-start gap-3">
           <img
             :src="strand.image"
             :alt="strand.alt"
-            class="h-[220px] w-full object-cover lg:h-[306px]"
+            class="aspect-[4/3] w-full object-cover"
             loading="lazy"
           >
           <h3 class="w-full font-light text-display-md text-black group-hover:underline">

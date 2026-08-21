@@ -10,7 +10,7 @@ defineProps<{ post: ApiPost }>()
     <img
       :src="post.cover_image || '/design/news-placeholder.png'"
       :alt="post.title"
-      class="h-[220px] w-full object-cover lg:h-[280px]"
+      class="aspect-[4/3] w-full object-cover"
       loading="lazy"
     >
     <div class="flex w-full flex-col gap-1 font-light text-black">

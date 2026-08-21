@@ -26,11 +26,12 @@ withDefaults(defineProps<{
   <!-- Figma 6:645 / 6:648 / 6:656 — the same two-up story block, mirrored. -->
   <section
     :id="id"
-    class="flex w-full flex-col items-stretch lg:flex-row"
-    :class="[tinted && 'bg-timberwolf', reverse && 'lg:flex-row-reverse']"
+    class="flex w-full flex-col items-stretch md:flex-row"
+    :class="[tinted && 'bg-timberwolf', reverse && 'md:flex-row-reverse']"
     :style="{ '--about-section-height': `${height}px` }"
   >
-    <div class="h-[320px] w-full shrink-0 lg:h-[var(--about-section-height)] lg:w-1/2">
+    <!-- Image half is intentionally full-bleed; only the text half takes the gutter. -->
+    <div class="h-[320px] w-full shrink-0 md:h-auto md:w-1/2">
       <img
         :src="image"
         :alt="alt"
@@ -41,11 +42,11 @@ withDefaults(defineProps<{
     </div>
 
     <div
-      class="flex min-w-0 flex-1 flex-col items-center justify-center gap-5 px-5 py-12 font-light text-black lg:h-[var(--about-section-height)] lg:px-[70px] lg:py-0"
+      class="page-gutter flex min-w-0 flex-1 flex-col items-center justify-center gap-5 py-12 font-light text-black md:min-h-[var(--about-section-height)] md:py-8"
     >
       <div class="flex w-full flex-col items-start">
         <p class="w-full font-normal text-caption">{{ eyebrow }}</p>
-        <h2 class="w-full whitespace-pre-line text-display-sm lg:text-display-section">{{ heading }}</h2>
+        <h2 class="w-full whitespace-pre-line text-display-section">{{ heading }}</h2>
       </div>
       <p class="w-full text-label">{{ body }}</p>
     </div>

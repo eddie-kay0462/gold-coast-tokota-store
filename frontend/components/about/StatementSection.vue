@@ -11,15 +11,15 @@ defineProps<{
 
 <template>
   <!-- Figma 6:638 -->
-  <section class="flex w-full items-center justify-center px-5 py-12 lg:px-[258px] lg:py-[76px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1044px] items-center justify-center">
     <div
       v-if="body"
-      class="prose-statement min-w-0 flex-1 text-center font-light text-black text-body lg:text-display-statement"
+      class="prose-statement min-w-0 flex-1 text-center font-light text-black text-display-statement"
       v-html="body"
     />
     <p
       v-else
-      class="min-w-0 flex-1 text-center font-light text-black text-body lg:text-display-statement"
+      class="min-w-0 flex-1 text-center font-light text-black text-display-statement"
     >
       At Gold Coast Tokota, we want the right choice to be as easy as putting on
       a great pair of shoes. That's why we partner with the best, ethical

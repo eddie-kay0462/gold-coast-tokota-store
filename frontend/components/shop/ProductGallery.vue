@@ -9,6 +9,11 @@ const props = defineProps<{
 // The design lays out a 2-up grid of 508px frames. A product with an odd
 // number of photos simply ends on a single frame rather than padding the grid
 // with repeats.
+//
+// Frames are sized by aspect ratio, not a fixed pixel height: with a fluid
+// width, `h-[360px] lg:h-[508px]` gave a different crop at every viewport —
+// 244×508 at 1024 was a 0.48 ratio. `3/5` reproduces the design's 2-up frame at
+// 1440; a lone frame spans both columns, so it takes a landscape ratio instead.
 const frames = computed(() => props.images.filter(Boolean))
 </script>
 
@@ -17,8 +22,10 @@ const frames = computed(() => props.images.filter(Boolean))
     <div
       v-for="(image, index) in frames"
       :key="image + index"
-      class="relative h-[360px] w-full overflow-hidden lg:h-[508px]"
-      :class="frames.length === 1 ? 'sm:col-span-2' : ''"
+      class="relative w-full overflow-hidden"
+      :class="frames.length === 1
+        ? 'aspect-[5/4] sm:col-span-2'
+        : 'aspect-[3/5]'"
     >
       <img
         :src="image"
