@@ -31,7 +31,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="flex w-full flex-col items-center gap-12 px-5 py-[30px] lg:gap-16 lg:px-[35px]">
+  <div class="page-gutter flex w-full flex-col items-center gap-12 py-12 lg:gap-16 lg:pb-[90px] lg:pt-[30px]">
     <div class="flex w-full flex-col items-center gap-4 text-center font-light text-black">
       <h1 class="w-full text-display-md">News &amp; Events</h1>
       <p class="w-full text-body">

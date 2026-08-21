@@ -20,7 +20,7 @@ const features = [
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-start gap-5 px-5 py-16 lg:flex-row lg:px-[185px] lg:py-[90px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1190px] flex-col items-start gap-5 lg:flex-row">
     <article
       v-for="feature in features"
       :key="feature.heading"

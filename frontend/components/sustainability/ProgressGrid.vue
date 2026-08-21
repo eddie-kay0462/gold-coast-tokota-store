@@ -24,7 +24,7 @@ const strands = [
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-start gap-3 px-5 py-16 lg:px-[60px] lg:py-[120px]">
+  <section class="page-gutter section-y flex w-full flex-col items-start gap-3">
     <h2 class="w-full font-normal text-display-md text-black lg:text-display-heading">Our Progress</h2>
 
     <ul class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -10,7 +10,7 @@ const heroImage = computed(() => siteSettings.heroImage || '/design/hero.png')
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-2.5 overflow-hidden px-8 py-16 text-center lg:py-24">
+  <section class="page-gutter flex w-full flex-col items-center gap-2.5 overflow-hidden py-16 text-center lg:py-24">
     <h1 class="w-full text-display-lg text-ink">{{ headline }}</h1>
 
     <p class="w-full text-display-sm text-graphite">

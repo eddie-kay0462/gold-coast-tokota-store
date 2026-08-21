@@ -1,7 +1,7 @@
 <template>
   <!-- Figma 6:635 — full-bleed workshop photograph with the brand statement
        centred over it. The image is decorative; the heading carries the page. -->
-  <section class="relative flex w-full flex-col items-center justify-center overflow-hidden px-5 py-24 lg:h-[691px] lg:py-0">
+  <section class="page-gutter relative flex w-full flex-col items-center justify-center overflow-hidden py-24 lg:h-[691px] lg:py-0">
     <img
       src="/design/about-hero.png"
       alt=""

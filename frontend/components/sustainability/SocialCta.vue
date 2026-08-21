@@ -11,7 +11,7 @@ const isExternal = computed(() => !!siteSettings.instagramUrl)
 
 <template>
   <!-- Figma 10:1038 -->
-  <section class="flex w-full flex-col items-start gap-8 bg-ink px-5 py-16 lg:px-[60px] lg:py-[90px]">
+  <section class="page-gutter section-y flex w-full flex-col items-start gap-8 bg-ink">
     <h2 class="w-full font-normal text-display-md text-white lg:text-display-heading">
       Follow us on social for more
     </h2>

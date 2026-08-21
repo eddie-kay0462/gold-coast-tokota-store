@@ -15,8 +15,8 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage } = useScrollRail()
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-3 px-5 lg:px-[42px]">
-    <div class="flex w-full flex-col items-center gap-[25px] border-t border-graphite px-5 pt-16 text-center text-graphite lg:px-[54px] lg:pt-[90px]">
+  <section class="page-gutter section-y flex w-full flex-col items-center gap-3">
+    <div class="flex w-full flex-col items-center gap-[25px] border-t border-graphite pt-12 text-center text-graphite lg:pt-[90px]">
       <h2 class="w-full text-display-md">Gold Coast Tokota Fits Well On You</h2>
 
       <div class="flex w-full flex-col items-center gap-1">

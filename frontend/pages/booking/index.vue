@@ -8,7 +8,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl px-4 py-12">
+  <div class="page-gutter section-y mx-auto w-full max-w-[calc(56rem+120px)]">
     <div class="flex gap-4 border-b">
       <button type="button" :class="activeTab === 'workshop' ? 'font-semibold' : ''" @click="activeTab = 'workshop'">
         Workshop

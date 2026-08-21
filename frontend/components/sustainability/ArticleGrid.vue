@@ -21,7 +21,7 @@ watch(() => props.posts, () => (shown.value = PAGE_SIZE))
 
 <template>
   <!-- Figma 10:976 -->
-  <section class="flex w-full flex-col items-start gap-3 px-5 py-16 lg:px-[60px] lg:py-[120px]">
+  <section class="page-gutter section-y flex w-full flex-col items-start gap-3">
     <h2 class="w-full font-normal text-display-md text-black lg:text-display-heading">The Latest</h2>
 
     <div class="flex w-full flex-col items-center gap-10">

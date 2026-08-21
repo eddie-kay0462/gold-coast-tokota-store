@@ -152,7 +152,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="flex w-full flex-col items-start gap-4 px-5 py-[30px] lg:flex-row lg:px-20">
+  <div class="page-gutter flex w-full flex-col items-start gap-4 pb-16 pt-[30px] lg:flex-row lg:pb-[90px]">
     <!-- Mobile: the sidebar collapses behind a toggle rather than pushing the
          grid a full screen down. -->
     <button

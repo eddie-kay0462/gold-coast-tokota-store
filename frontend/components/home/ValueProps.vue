@@ -24,7 +24,7 @@ const valueProps = [
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-start gap-8 px-5 py-16 lg:flex-row lg:gap-1.5 lg:px-[77px] lg:py-[90px]">
+  <section class="page-gutter section-y mx-auto flex w-full max-w-[1406px] flex-col items-start gap-8 lg:flex-row lg:gap-1.5">
     <div
       v-for="item in valueProps"
       :key="item.id"

@@ -27,7 +27,7 @@ const tiles = computed(() => {
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-[25px] px-5 py-16 lg:px-[42px] lg:py-[90px]">
+  <section class="page-gutter section-y flex w-full flex-col items-center gap-[25px]">
     <h2 class="w-full text-center text-display-sm text-graphite">Locally Made, Top Quality</h2>
 
     <ul class="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">

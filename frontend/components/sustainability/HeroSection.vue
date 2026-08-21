@@ -1,7 +1,7 @@
 <template>
   <!-- Figma 10:915 — a heavy rule, the brand set at display size, and the
        mission statement beneath it. -->
-  <section class="flex w-full flex-col items-start gap-2 px-5 py-12 lg:px-[60px] lg:py-16">
+  <section class="page-gutter flex w-full flex-col items-start gap-2 py-12 lg:py-16">
     <div class="h-[14px] w-full bg-graphite" />
 
     <div class="flex w-full flex-col items-start text-black">

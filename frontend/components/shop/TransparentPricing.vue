@@ -25,7 +25,7 @@ const lines = computed(() =>
 </script>
 
 <template>
-  <section class="flex w-full flex-col items-center gap-4 px-5 py-16 lg:p-20">
+  <section class="page-gutter section-y flex w-full flex-col items-center gap-4">
     <div class="flex w-full max-w-[684px] flex-col items-center gap-4 text-center text-graphite">
       <h2 class="w-full text-display-sm font-normal">Transparent Pricing</h2>
       <p class="w-full text-label font-light">

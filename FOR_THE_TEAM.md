@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 20 August 2026
+- **Last updated:** 21 August 2026
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** contains substantial uncommitted work (News & Events, the
   search panel, About, Sustainability) — everything from 19 Aug 00:06 onward.
@@ -38,8 +38,41 @@ not started on the backend.
 
 ## Recent changes
 
-Everything below happened over three working days (18–20 August). The last two
-days' work is **not yet committed** — see the note at the end of this section.
+Everything below happened over four working days (18–21 August). The 19–20 Aug
+work is **not yet committed** — see the note at the end of this section.
+
+### 21 August 2026
+
+#### One page gutter, one vertical rhythm — `.page-gutter` / `.section-y`
+
+The blog article's related-stories grid ran flush to both viewport edges on
+desktop and sat directly on the footer. The wrapper at `pages/blog/[slug].vue`
+carried `lg:px-0 lg:pb-0`, zeroing both, while every neighbouring section on the
+page sat at 60px. That was the visible symptom of a structural gap: there was no
+shared gutter anywhere — no `theme.container`, nothing in `main.css`, no padding
+on `layouts/default.vue` — so each section invented its own value. Fourteen
+different desktop gutters were in play, plus a `px-2` carousel track, two
+`px-0` rows, and a doubled ~96px gutter in `UgcGallery`.
+
+- `assets/css/main.css` — new `@layer components` with **`.page-gutter`**
+  (`px-5 lg:px-[60px]`, the Figma section gutter) and **`.section-y`**
+  (`py-12 lg:py-[90px]`). Both are commented in place with the reasoning.
+- Every full-width section across Home, About, Sustainability, Shop, Blog and
+  the checkout/booking/order-confirmation stubs now uses them.
+- **Large gutters that were really content measures became max-widths.** The
+  article prose (`lg:px-[228px]`), `EditorialPair` (185px), `ValueProps` and the
+  testimonial rail (77px), `ProductReviews` and shop recommendations (196px),
+  `ExploreGrid` (200px) and `StatementSection` (258px) now carry the standard
+  gutter plus `mx-auto max-w-[Npx]`, where N reproduces the Figma width at the
+  1440px frame. They no longer over-stretch above 1440px either.
+- `components/blog/RelatedPosts.vue` now owns its own section chrome (gutter,
+  rhythm, and a **visible "More Stories" heading** matching "Shop Our Products"
+  above it) instead of depending on a wrapper to supply padding; the wrapper in
+  `pages/blog/[slug].vue` is gone.
+- Deliberately left full-bleed: `SloganTicker`, the `FeatureSection` image half,
+  and the wide `<img>` bands on the About page.
+- Deliberately unchanged: the app chrome — see open decision #8 below.
+- `npm run build` passes.
 
 ### 20 August 2026
 
@@ -302,6 +335,7 @@ guard, then the tables and editors listed in README Feature 9.
 | 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. |
 | 6 | **Fish Africa coverage unverified** | Blocks confidence in Feature 8. README "Clarifications Needed" #3. |
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
+| 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
 
 ---
 
@@ -315,6 +349,12 @@ guard, then the tables and editors listed in README Feature 9.
 - **Design tokens live in `frontend/tailwind.config.ts`**, each annotated with
   its Figma style name. Add tokens there rather than using arbitrary values, so
   design and code stay reconcilable.
+- **Section padding is `.page-gutter` + `.section-y`, never ad hoc.** Defined in
+  `frontend/assets/css/main.css`. A full-width section takes both. If a design
+  calls for a narrower column, keep the gutter and constrain the *content* with
+  `mx-auto max-w-[Npx]` — outer padding is not a measure. The only exceptions
+  are deliberate full-bleed elements (marquee, edge-to-edge imagery) and the app
+  chrome in `components/layout/`.
 - **Components are auto-imported by directory prefix** — `components/about/HeroSection.vue`
   is `<AboutHeroSection />`, `components/common/BrandButton.vue` is
   `<CommonBrandButton />`.

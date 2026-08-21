@@ -74,7 +74,7 @@ function relativeAge(iso: string) {
 </script>
 
 <template>
-  <section class="flex w-full flex-col gap-10 px-5 lg:px-[196px]">
+  <section class="page-gutter mx-auto flex w-full max-w-[1168px] flex-col gap-10">
     <h2 class="w-full text-center text-display-sm font-normal text-graphite">Reviews</h2>
 
     <!-- Summary -->
