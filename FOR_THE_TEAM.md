@@ -43,6 +43,55 @@ days' work is **not yet committed** — see the note at the end of this section.
 
 ### 20 August 2026
 
+#### Announcement-bar flag now reflects the visitor's country
+
+The static US flag SVG in `components/layout/Header.vue` was a design export,
+not a signal. It is now resolved per visitor, server-side, and deliberately
+awkward to move with a VPN.
+
+- `server/utils/geo.ts` — the resolver. Trust order: CDN geo header
+  (`cf-ipcountry`, `x-vercel-ip-country`, …) → IP geolocation → browser
+  timezone. The timezone only ever *corrects* the first two, never stands in
+  for them.
+- `server/utils/timezone-countries.ts` — 468-entry IANA zone → ISO country
+  table, **generated from the system tzdb `zone.tab`**. Regenerate it when
+  tzdb ships new zones; do not hand-edit.
+- `server/api/geo.get.ts` — the one endpoint. Nothing in its request shape lets
+  a caller name a country outright.
+- `composables/useVisitorCountry.ts` — resolves during SSR (so the first paint
+  is already right for most visitors), then re-asks on mount with the browser
+  timezone attached.
+- `utils/geo.ts` — shared types plus `flagUrl()` / `countryName()`.
+- Flags come from the `flag-icons` package, served straight out of
+  `node_modules` via `nitro.publicAssets` at `/flags/{cc}.svg`. Nothing is
+  vendored into `public/`, and a visitor downloads exactly one 300-byte SVG.
+
+**Why a VPN has trouble with it.** A commercial VPN rewrites the exit IP but
+not the operating system clock. So when the IP sits on a hosting/VPN ASN (org
+name matched against a keyword list) *and* its country disagrees with the
+browser timezone, the timezone wins — that is the honest signal. Two further
+locks: the browser's claimed IANA zone is cross-checked against its own
+`getTimezoneOffset()`, so editing the zone string alone gets the hint
+discarded; and the per-visitor cache cookie is HMAC-signed, since an unsigned
+one would have been a free country override.
+
+**What it does not stop**, and nobody should claim otherwise: a VPN user who
+also changes their OS timezone, or a residential-proxy exit on an ASN that
+reads as consumer broadband. Both come back as `confidence: 'low'` with
+`vpnSuspected: true` on the API response, so anything built on top of this can
+decide for itself how much to trust the answer.
+
+**One deployment caveat.** The flag is now per-visitor content inside SSR'd
+HTML. `/api/geo` sends `cache-control: private, no-store`, but if a CDN is ever
+put in front of the storefront with full-page caching enabled, the first
+visitor's flag would be served to everyone. Either vary the page cache on the
+edge country header or render the flag client-only at that point.
+
+Config is all optional — see the new geo block in `frontend/.env.example`.
+`NUXT_GEO_SECRET` should be a stable random value in production; without it the
+cookie signing key changes on every restart and every visitor is re-looked-up.
+
+
 #### Sustainability page — new route `/sustainability`
 
 Figma node `10:1163`.
@@ -213,6 +262,14 @@ order:
   `/account/login`, `/account/register`, `/gift-cards`, `/help/**`,
   `/legal/**`, `/international`, `/accessibility`, `/affiliates`, `/stores`,
   `/about#dei`. These log router warnings in dev — expected, not a regression.
+- **Currency toggle does not follow the flag.** The header now knows the
+  visitor's country but `stores/currency.ts` still defaults everyone to GHS,
+  and the README asks for the choice to persist via cookie. Deliberately left
+  alone — defaulting a country to a currency is a commercial decision, not a
+  technical one. Decide GH → GHS / everyone else → USD (or otherwise) and wire
+  it, respecting an explicit user choice over the geo default.
+- **`public/design/flag.svg`** is now unused; kept only as the original Figma
+  export. Delete it once nobody wants the reference.
 - **Placeholder nav targets** are flagged `placeholder: true` in
   `utils/navigation.ts`. Grep that flag to find what still needs a real route
   (currently: seven mega-menu categories, and "Annual Impact Report").

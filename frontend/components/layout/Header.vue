@@ -2,9 +2,13 @@
 import { PhArrowRight as ArrowRight, PhCaretDown as CaretDown, PhList as List, PhMagnifyingGlass as MagnifyingGlass, PhShoppingCartSimple as ShoppingCartSimple, PhUser as User, PhX as X } from '@phosphor-icons/vue'
 import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
+import { countryName, flagUrl } from '~/utils/geo'
 import { categoryNav, primaryNav } from '~/utils/navigation'
 
 const currency = useCurrencyStore()
+// Flag reflects where the visitor is actually connecting from; resolved
+// server-side and refined with browser signals a VPN doesn't change.
+const { geo } = useVisitorCountry()
 const cart = useCartStore()
 const route = useRoute()
 
@@ -96,7 +100,15 @@ function isCategoryActive(to: string) {
       <ArrowRight :size="14" class="shrink-0 text-white" />
 
       <div class="absolute right-[30px] top-1/2 flex -translate-y-1/2 items-center gap-3">
-        <img src="/design/flag.svg" alt="" class="h-[15px] w-[21px]" aria-hidden="true">
+        <img
+          :key="geo.country"
+          :src="flagUrl(geo.country)"
+          :alt="countryName(geo.country)"
+          :title="countryName(geo.country)"
+          class="h-[15px] w-[21px] object-cover"
+          width="21"
+          height="15"
+        >
         <button
           type="button"
           class="text-caption text-white"
