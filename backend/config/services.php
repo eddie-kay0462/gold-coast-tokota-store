@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // Feature 2 FX rate provider — see FxRateService. Free tier requires an
+    // access_key query param (https://exchangerate.host/#/docs); swapping
+    // providers later only touches this file + FxRateService.
+    'exchangerate_host' => [
+        'base_url' => env('EXCHANGERATE_HOST_URL', 'https://api.exchangerate.host'),
+        'key' => env('EXCHANGERATE_HOST_KEY'),
+    ],
+
 ];

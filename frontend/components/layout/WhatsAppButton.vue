@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
-import { useSiteSettingsStore } from '~/stores/siteSettings'
 
-const siteSettings = useSiteSettingsStore()
-
-const href = computed(() => {
-  if (!siteSettings.whatsappNumber) return null
-  const message = encodeURIComponent(siteSettings.whatsappDefaultMessage || '')
-  return `https://wa.me/${siteSettings.whatsappNumber}?text=${message}`
-})
+const { href } = useWhatsApp()
 </script>
 
 <template>
