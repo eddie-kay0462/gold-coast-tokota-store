@@ -1,2 +1,10 @@
 User-Agent: *
-Disallow:
+# Feature 10: checkout must not be crawled. The account area and order
+# confirmations are per-customer, so they are excluded for the same reason.
+# Both are also `ssr: false` in nuxt.config.ts and carry a noindex meta tag —
+# this file is the third layer, not the only one.
+Disallow: /checkout
+Disallow: /account/
+Disallow: /order-confirmation/
+
+Sitemap: https://goldcoasttokota.store/sitemap.xml

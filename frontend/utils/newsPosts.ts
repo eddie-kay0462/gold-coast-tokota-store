@@ -36,6 +36,24 @@ export type ApiPost = {
 }
 
 export const DESIGN_POSTS: ApiPost[] = [
+  /**
+   * Listing metadata only — no `body` or `blocks`, so the article page renders
+   * its "hasn't been published in full yet" state rather than faking a story.
+   *
+   * It exists because the home page's `EditorialPair` tile has always linked to
+   * `/blog/holiday-gift-picks`, a slug that was in no fallback set, so the tile
+   * 404'd whenever the API was down. Title, artwork and caption are transcribed
+   * from that component rather than invented.
+   */
+  {
+    slug: 'holiday-gift-picks',
+    title: 'Our Holiday Gift Picks',
+    subtitle: 'The best presents for everyone on your list.',
+    category: 'Gift Guide',
+    published_at: '2025-12-01',
+    cover_image: '/design/editorial-gift-picks.png',
+    hero_image: '/design/editorial-gift-picks.png',
+  },
   {
     slug: 'tyred-of-waste',
     title: 'Tyred of Waste',

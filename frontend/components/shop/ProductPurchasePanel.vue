@@ -193,7 +193,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
           <p class="text-filter-heading font-normal">Free Shipping</p>
           <p class="text-caption font-light">
             On all Ghana orders over ₵1,500
-            <NuxtLink to="/shipping" class="underline">Learn more.</NuxtLink>
+            <NuxtLink to="/help/shipping" class="underline">Learn more.</NuxtLink>
           </p>
         </div>
       </div>
@@ -204,7 +204,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
           <p class="text-filter-heading font-normal">Easy Returns &amp; Modifications</p>
           <p class="text-caption font-light">
             Extended returns through January 31.
-            <NuxtLink to="/returns" class="underline">Returns Details.</NuxtLink>
+            <NuxtLink to="/help/returns" class="underline">Returns Details.</NuxtLink>
           </p>
         </div>
       </div>

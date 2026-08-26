@@ -7,11 +7,12 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 21 August 2026 (third entry below — admin dashboard rebuild, incl. the accessibility pass)
+- **Last updated:** 26 August 2026 (first entry below — the 22 missing storefront routes)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
-- **Working tree:** contains substantial uncommitted work (News & Events, the
-  search panel, About, Sustainability) — everything from 19 Aug 00:06 onward.
-  Read the "Uncommitted work" note at the end of *Recent changes* before you branch.
+- **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
+  `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
+  the search panel, About, Sustainability) went in ahead of it — read the
+  "Uncommitted work" note at the end of *Recent changes* before you branch.
 
 ---
 
@@ -24,15 +25,22 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — News & Events (listing + article) | **Built** from Figma *(uncommitted)* |
 | Storefront — About | **Built** from Figma *(uncommitted)* |
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
-| Storefront — Booking, Checkout, Order confirmation | **Scaffold stubs only** (10–45 lines each) |
-| Backend API | **Two endpoints only** — `GET /v1/pages/{slug}`, `GET /v1/site-settings`. The admin app now calls ~21 `/admin/*` paths that do not exist yet |
-| Database | 4 tables: `admin_users`, `customers`, `pages`, `site_settings` |
+| Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
+| Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI. `POST /checkout/session` does not exist, so placing an order is inert |
+| Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
+| Storefront — Booking | **Scaffold stubs only** — `BookingCalendar` has no date picker, `WaitlistBanner` emits an event nothing listens for, sessions are a hardcoded `[]` |
+| Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
+| Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. Runs on bundled fixtures; see the entry below |
 | Tests | None beyond Laravel's two `ExampleTest` placeholders |
 
-Against the README's "Implementation Order": **Phase 3a is nearly done**
-(Feature 1 core pages), Feature 6 (WhatsApp) is in place, and Phases 3b–3d have
-not started on the backend.
+Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
+core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
+is in place, and Feature 2's catalogue endpoints exist. What is still missing on
+the backend is the transactional half — checkout sessions and payments
+(Feature 4), delivery quotes (Feature 5), notifications (Feature 8) and customer
+auth — which is why several storefront pages are complete but deliberately
+inert at their last step.
 
 ---
 
@@ -41,7 +49,104 @@ not started on the backend.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 21 August 2026 (latest) — admin dashboard rebuilt
+### 26 August 2026 (latest) — the 22 missing storefront routes
+
+The header and footer linked to 22 routes that did not exist. Every one logged a
+router warning in dev and would have 404'd in production, and five of them
+(`/size-guide`, `/contact`, `/returns`, `/shipping`, `/community/submit`) sit on
+the live product-detail and home pages rather than in a footer corner. All 22 now
+resolve, plus `/checkout` and `/order-confirmation/[id]` are built out.
+
+**Two things this file used to say that were wrong, now corrected above:** the
+backend is much further along than "almost nothing exists yet" (see the status
+table), and the missing-routes list omitted `/account`, `/size-guide`,
+`/contact`, `/returns`, `/shipping` and `/community/submit`.
+
+**New pages — 17 files, 22 routes**
+
+- **Account (5)** — `/account` (hub + guest order lookup), `/account/login`,
+  `/account/register`, `/account/orders`, `/account/settings`.
+- **Legal (5)** and **Help (3+1)** — one shared `[slug]` template each, plus the
+  `/help` hub. `/accessibility` is a thin wrapper on the same template.
+- **Company + commerce (8)** — `/careers`, `/international`, `/affiliates`,
+  `/stores`, `/gift-cards`, `/size-guide`, `/contact`, `/community/submit`.
+
+**The split rule, worth knowing before you add a page:** prose owned by a lawyer
+or a support lead goes through the CMS `[slug]` template
+(`components/content/PolicyArticle.vue`); anything with structured UI — a table,
+grid, form or directory — gets its own `.vue` file. That is why `/help` itself is
+bespoke: it is a directory of topics, not an article.
+
+**Inert by design — now a named convention, not a one-off.** `admin/pages/login.vue`
+established it; customer sign-in, sign-up, gift-card redemption, order lookup,
+photo submission and the checkout payment step all follow it now. The shape is:
+one function, a ~600ms simulated wait so the loading state is real, a
+`<CommonInlineNotice>` naming the endpoint that does not exist, and a header
+comment listing exactly what to change when it does. **No `$fetch` in any of
+them** — verify with the Network tab before you call one of these done.
+
+`composables/useAuth.ts` exports `AUTH_ENABLED = false`. Grep it to find
+everything that changes when customer auth goes live. No route middleware is
+registered, deliberately: nothing can authenticate, so a guard would make
+`/account/orders` and `/account/settings` permanently unreachable.
+
+**Checkout** is a 3-step flow (Details → Delivery → Payment) with the summary as
+a sticky rail from `md` and a collapsed disclosure below it. `CheckoutForm` now
+has real validation and **an email field, which it did not have at all** —
+that is where the receipt goes. `PaymentStep` was 10 lines and mounted nowhere;
+it is now mounted and shows the currency-routed gateway. A "Continue on WhatsApp"
+CTA sits alongside, because that is the one route that completes an order today.
+
+**Order confirmation** was 16 lines on raw `text-2xl` with `(order as any)` casts
+and no `.catch()` — a failed fetch threw, and this app has no `error.vue`, so
+that was a blank page on an SPA route. It now renders all six fields Feature 4
+requires (number, items, total, currency, FX rate applied, delivery method) from
+a typed `ApiOrder`, has loading / found / unavailable states, and polls while
+status is `pending` to handle the webhook-race edge case Feature 4 calls out.
+
+**Backend: `pages.is_draft`.** Seeding placeholder legal copy would otherwise have
+*suppressed* the draft banner — the fetch would succeed, `.catch()` would never
+fire, and the site would publish unreviewed policy text with no warning. The
+column defaults to `true`, `PageResource` exposes it, and `usePageContent` is the
+single place the draft decision is made. New `PageSeeder` seeds 10 flat slugs
+(`privacy`, not `legal/privacy` — the URL prefix is frontend IA) with null bodies,
+so the owner writes the real text in admin.
+
+**Dead links fixed**
+
+- `/#newsletter` — the header linked to an id that existed nowhere. `Footer.vue`'s
+  newsletter wrapper now carries `id="newsletter"`, and the header links use
+  `:to="{ hash }"` so a reader is scrolled to it instead of sent to the home page.
+- `/about#dei` — that anchor never existed. Repointed to `/careers#dei`, which is
+  a real section on a real page. **Open decision:** if the brand wants DEI copy on
+  About instead, that needs brand-written text, not a code change.
+- `/blog/holiday-gift-picks` — slug was in no fallback set, so the home tile 404'd
+  with the API down. Added to `DESIGN_POSTS` as listing metadata only (title and
+  artwork transcribed from `EditorialPair.vue`, not invented), so the article page
+  renders its honest "not published in full yet" state.
+- `/shop/the-original-ahenema` — same problem, but adding the product would mean
+  inventing a price and stock, and repointing would misattribute a real customer's
+  review. The link now renders as plain text unless the slug resolves, and lights
+  up on its own when the SKU exists.
+- `/returns` and `/shipping` — the PDP used these while the footer used
+  `/help/*`. `/help/*` is canonical; the short URLs are 301s so printed inserts
+  keep working.
+
+**Housekeeping** — `/account/**` is `ssr: false` and carries `X-Robots-Tag` as an
+HTTP header, because a `noindex` meta tag on an SPA route only appears after
+hydration and a non-JS crawler never sees it. `robots.txt` disallowed nothing and
+now disallows the three private paths. The sitemap had no config at all, so it
+was publishing `/account` and `/checkout`; it now excludes them and picks up the
+`[slug]` articles from `server/api/__sitemap__/urls.ts`. `check-responsive.mjs`
+went from 9 routes to 28 — it also takes `ROUTES=/one,/two` now, because the full
+sweep is a few minutes.
+
+**Still to do here:** blog posts and products are missing from the sitemap for
+the same `[slug]` reason and need the same handler treatment.
+
+---
+
+### 21 August 2026 — admin dashboard rebuilt
 
 The admin app was a scaffold: 30 files, every page under 30 lines, `pages/index.vue`
 a bare `<h1>Dashboard</h1>`, `pages/login.vue` with no form, `tailwind.config.ts`
@@ -625,14 +730,26 @@ order:
 ### Storefront
 
 - **Booking page** (`/booking`) — the four components are stubs.
-- **Checkout + order confirmation** — stubs; SPA-only route rules are already
-  configured.
+- **Checkout + order confirmation** — both built out (26 Aug), but inert at the
+  payment boundary until `POST /checkout/session` and `GET /orders/{id}` exist.
 - **Wire the pages to real endpoints** as each API lands, and delete the
   corresponding design fallback.
-- **Routes referenced by the footer/nav that do not exist yet:** `/careers`,
-  `/account/login`, `/account/register`, `/gift-cards`, `/help/**`,
-  `/legal/**`, `/international`, `/accessibility`, `/affiliates`, `/stores`,
-  `/about#dei`. These log router warnings in dev — expected, not a regression.
+- ~~**Routes referenced by the footer/nav that do not exist yet**~~ — **closed
+  26 Aug.** All 22 are built. A router warning in dev is now a regression, not
+  something to expect; that is the fastest check that a nav change is sound.
+- **Customer auth is inert.** The pages are complete and validate, but nothing
+  authenticates until `backend/routes/api.php` gains a `CustomerAuthController`
+  (register / login / logout / me / profile / password reset). The model side is
+  already done: `Customer` is an `Authenticatable` with `HasApiTokens` and hashed
+  passwords, the `web` guard is configured, `passwords.customers` is wired, and
+  Sanctum's `guard` array lists `web`. Grep `AUTH_ENABLED` for the frontend side.
+- **`stores/auth.ts` types `user.id` as `string`**, but `customers.id` is a
+  Postgres bigint. Fix when the real session shape lands.
+- **The legal and help pages are unreviewed placeholder copy.** See the open
+  decisions table — this is the highest-risk item on this list before launch.
+- **Sitemap misses blog posts and products** — `@nuxtjs/sitemap` can't enumerate
+  `[slug]` params. `server/api/__sitemap__/urls.ts` does this for legal and help;
+  extend it.
 - **Currency toggle does not follow the flag.** The header now knows the
   visitor's country but `stores/currency.ts` still defaults everyone to GHS,
   and the README asks for the choice to persist via cookie. Deliberately left
@@ -688,6 +805,13 @@ will light up:
 | # | Issue | Notes |
 |---|---|---|
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
+| 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
+| 15 | **`/about#dei` repointed to `/careers#dei`** | The About page never had a `dei` anchor. `/careers` now has a real DEI section, but its copy is a placeholder too. If DEI belongs on About, that needs brand-written text. **Awaiting a decision.** |
+| 16 | **The testimonial names a product that doesn't exist** | Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
+| 17 | **"Sign Up For Texts" links to an email form** | The announcement bar copy says texts; `#newsletter` is the footer's email signup. Either the copy or the destination is wrong — a brand decision, not a bug to guess at. |
+| 18 | **The footer lists two identical sitemap links** | "Sitemap Pages" and "Sitemap Products" both point at `/sitemap.xml`. Collapse to one, or emit a product sitemap. |
+| 19 | **Gift cards are announced but don't exist** | `/gift-cards` explains the programme and both forms are inert. Making it real is backend scope: a `GiftCard` model with a code and balance, issuance on purchase, and a redemption step in the checkout session. |
+| 20 | **`/size-guide` conversions are the standard ladder, not measured lasts** | The EU/UK/US table is the generic conversion, not Gold Coast Tokota's own lasts. A chart wrong by half a size causes returns — confirm against production lasts before launch. |
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
 | 3 | **About "Designed to last" copy was rewritten** | Figma's text names Everlane, cashmere sweaters and Peruvian Pima tees. Adapted to the brand. All other copy is verbatim from the design. |
 | 4 | **"Our Carbon Commitment" is tagged `Style`** | Straight from Figma `10:958`; looks like a design slip. Transcribed faithfully — flag if it should read Sustainability. |
@@ -753,6 +877,24 @@ will light up:
 - **GSAP is client-only, always.** Wrap in `<ClientOnly>` / `onMounted` and
   never touch `window`/`document` during SSR. Content must be readable before
   any animation runs.
+- **Prose vs structured UI decides where a page lives.** Content owned by a
+  lawyer or a support lead goes through the CMS `[slug]` template
+  (`components/content/PolicyArticle.vue`, backed by `usePageContent`); anything
+  with a table, grid, form or directory gets its own `.vue` file. `/help` is
+  bespoke for exactly this reason — it is a directory of topics, not an article.
+- **"Inert by design" has one shape — follow it.** When the UI is ready and the
+  endpoint is not: one function, a ~600ms simulated wait so the loading state is
+  real, a `<CommonInlineNotice>` naming the missing endpoint, and a header
+  comment listing what to change when it lands. **No `$fetch` in that path** —
+  a raw 404 is worse than an honest explanation. See `pages/account/login.vue`
+  and `components/checkout/PaymentStep.vue`.
+- **`usePageContent` is the only place the draft decision is made.** Do not
+  re-derive "is this approved?" in a page, and do not remove `<ContentDraftNotice>`
+  to make a page look finished. A page showing unreviewed legal text without that
+  banner is the failure mode the `pages.is_draft` column exists to prevent.
+- **`<CommonInlineNotice>`, not `Toast.vue`.** The toast still has no placement,
+  no region in the layout and no consumer (issue #10). An in-flow notice needs
+  none of that resolved.
 - **`placeholder: true`** in `utils/navigation.ts` marks a link whose
   destination is a stand-in, not a real page. Grep it before assuming a route
   exists.

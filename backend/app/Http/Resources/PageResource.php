@@ -14,6 +14,8 @@ class PageResource extends JsonResource
             'slug' => $this->slug,
             'title' => $this->title,
             'body' => $this->body,
+            // Drives the storefront's "draft — awaiting review" banner.
+            'is_draft' => (bool) $this->is_draft,
             'updated_at' => $this->updated_at,
         ];
     }

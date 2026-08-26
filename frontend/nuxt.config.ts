@@ -14,8 +14,27 @@ export default defineNuxtConfig({
   // now lives in its own app (../admin), not in this one.
   ssr: true,
   routeRules: {
-    '/checkout': { ssr: false },
-    '/order-confirmation/**': { ssr: false },
+    // SPA-only: per-visitor, never SSR-cached, never indexed. The pages also
+    // carry `robots: 'noindex, nofollow'` — `ssr: false` stops the server
+    // rendering content, it does not stop the URL being indexed.
+    //
+    // The meta tag alone is not enough here: on an `ssr: false` route it is only
+    // added after hydration, so a crawler that doesn't run JS never sees it.
+    // `X-Robots-Tag` is served with the shell itself and needs no JS.
+    '/checkout': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/order-confirmation/**': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    '/account/**': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+
+    // `/help/returns` and `/help/shipping` are canonical — they sit inside the
+    // help hub's structure and the footer already used those URLs. The short
+    // forms stay alive as permanent redirects so printed cards and packaging
+    // inserts keep working. A Nuxt `alias` would instead publish two indexable
+    // URLs with identical content.
+    '/returns': { redirect: { to: '/help/returns', statusCode: 301 } },
+    '/shipping': { redirect: { to: '/help/shipping', statusCode: 301 } },
+
+    // Nothing links to a bare /legal, but a 404 there reads as broken.
+    '/legal': { redirect: { to: '/legal/privacy', statusCode: 302 } },
   },
 
   app: {
@@ -48,6 +67,16 @@ export default defineNuxtConfig({
 
   site: {
     url: 'https://goldcoasttokota.store',
+  },
+
+  sitemap: {
+    // Authenticated and per-customer routes must never be published. Without
+    // this the module auto-discovers every `pages/` file, /account included.
+    exclude: ['/account/**', '/checkout', '/order-confirmation/**'],
+    // `[slug]` params can't be discovered from the filesystem, so the legal and
+    // help articles are supplied by `server/api/__sitemap__/urls.ts` — that
+    // handler can import from `~/utils`, which this config file cannot.
+    sources: ['/api/__sitemap__/urls'],
   },
 
   runtimeConfig: {

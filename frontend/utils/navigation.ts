@@ -179,3 +179,16 @@ export const aboutSectionNav: (NavLink & { placeholder?: boolean })[] = [
   { label: 'Annual Impact Report', to: '/sustainability', placeholder: true },
   { label: 'Partnerships', to: '/blog/partnerships-for-change' },
 ]
+
+/**
+ * The account section's own tab row, consumed by `AccountShell` the same way
+ * `aboutSectionNav` is consumed by `AboutSectionNav`.
+ *
+ * Sign-out is not a link and so is not here — it is an action, and it lives in
+ * the shell's footer.
+ */
+export const accountNav: NavLink[] = [
+  { label: 'Overview', to: '/account' },
+  { label: 'Orders', to: '/account/orders' },
+  { label: 'Settings', to: '/account/settings' },
+]
