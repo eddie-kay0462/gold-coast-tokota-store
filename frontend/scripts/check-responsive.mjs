@@ -31,7 +31,7 @@ const TAP_MIN = 44
 
 // Slugs come from the design fallbacks in utils/, so these resolve with or
 // without the Laravel API running.
-const ROUTES = [
+const ALL_ROUTES = [
   '/',
   '/about',
   '/sustainability',
@@ -41,7 +41,40 @@ const ROUTES = [
   '/shop/kentehene-collection',
   '/checkout',
   '/booking',
+  // Account. Inert, but the shell's base -> md rail is the layout most likely
+  // to overflow, so every page that uses it is covered.
+  '/account',
+  '/account/login',
+  '/account/register',
+  '/account/orders',
+  '/account/settings',
+  // Prose templates: one representative each, since the template is what
+  // overflows, not the individual slug.
+  '/legal/privacy',
+  '/legal/terms',
+  '/help',
+  '/help/returns',
+  '/accessibility',
+  // Bespoke marketing and commerce. `/size-guide` is the one to watch — it
+  // carries a wide table, which is the classic 320px overflow.
+  '/careers',
+  '/international',
+  '/affiliates',
+  '/stores',
+  '/gift-cards',
+  '/size-guide',
+  '/contact',
+  '/community/submit',
 ]
+
+/**
+ * `ROUTES=/size-guide,/help npm run check:responsive` narrows the sweep while
+ * iterating on one page. The full list is the default, and is what CI should
+ * run — at 28 routes x 10 widths this takes a few minutes.
+ */
+const ROUTES = process.env.ROUTES
+  ? process.env.ROUTES.split(',').map((route) => route.trim()).filter(Boolean)
+  : ALL_ROUTES
 
 const BASE_URL = process.env.BASE_URL
 const PORT = 3000
