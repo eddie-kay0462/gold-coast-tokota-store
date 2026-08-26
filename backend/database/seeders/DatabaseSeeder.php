@@ -8,7 +8,6 @@ use App\Models\Category;
 use App\Models\Collection;
 use App\Models\FxRate;
 use App\Models\InventoryItem;
-use App\Models\Page;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -35,13 +34,8 @@ class DatabaseSeeder extends Seeder
             'diy_turnaround_estimate' => '2-3 weeks',
         ]);
 
-        Page::query()->updateOrCreate(
-            ['slug' => 'about'],
-            [
-                'title' => 'About Gold Coast Tokota',
-                'body' => '<p>Handmade in Ghana, one pair at a time.</p>',
-            ],
-        );
+        // All page seeding lives in PageSeeder so the CMS slugs are in one place.
+        $this->call(PageSeeder::class);
 
         // Bootstrap rate so price_usd resolves on the very first request,
         // before RefreshFxRate has ever run (Feature 2). A placeholder

@@ -10,8 +10,16 @@ class Page extends Model
         'slug',
         'title',
         'body',
+        'is_draft',
         'updated_by_admin_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_draft' => 'boolean',
+        ];
+    }
 
     public function updatedByAdmin()
     {
