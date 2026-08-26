@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PhStar as Star } from '@phosphor-icons/vue'
+import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 // The Figma frame shows four indicator dots but supplies a single real
 // testimonial. Only that one is included here — the rest of the carousel fills
@@ -18,6 +19,22 @@ const testimonials = [
 
 const activeIndex = ref(0)
 const active = computed(() => testimonials[activeIndex.value]!)
+
+/**
+ * The product Aseye names isn't in the catalogue — 'the-original-ahenema' is in
+ * no fallback set and no API fixture, so linking it 404'd whenever the API was
+ * down. Rather than repoint the link at a different sandal (which would
+ * misattribute a real customer's review) or invent the SKU (which would need a
+ * made-up price and stock), the name renders as plain text until the product
+ * exists. `productTo` stays in the data so the link lights up on its own the
+ * day it does. Confirm the real SKU with the brand — see FOR_THE_TEAM.md.
+ */
+const productHref = computed(() => {
+  const slug = active.value.productTo?.split('/').pop()
+  return slug && DESIGN_PRODUCTS.some((product) => product.slug === slug)
+    ? active.value.productTo
+    : null
+})
 const hasMultiple = computed(() => testimonials.length > 1)
 
 function step(direction: -1 | 1) {
@@ -50,9 +67,10 @@ function step(direction: -1 | 1) {
 
         <p class="w-full text-label text-ink">
           <span>&#45;&#45; {{ active.author }}, </span>
-          <NuxtLink :to="active.productTo" class="text-label-link underline">
+          <NuxtLink v-if="productHref" :to="productHref" class="text-label-link underline">
             {{ active.product }}
           </NuxtLink>
+          <span v-else class="text-label-link">{{ active.product }}</span>
         </p>
 
         <CommonBrandButton to="/shop" variant="graphite">Get Yours Now</CommonBrandButton>

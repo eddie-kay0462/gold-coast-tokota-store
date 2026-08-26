@@ -18,7 +18,10 @@ const columns = computed(() => [
       { label: 'About', to: '/about' },
       { label: 'Environmental Initiatives', to: '/sustainability' },
       { label: 'Factories', to: '/about#factories' },
-      { label: 'DEI', to: '/about#dei' },
+      // Points at /careers#dei, not /about#dei: the About page has never had a
+      // `dei` anchor, and DEI is a people-and-culture topic that belongs with
+      // careers. See FOR_THE_TEAM.md if the brand wants it back on /about.
+      { label: 'DEI', to: '/careers#dei' },
       { label: 'Careers', to: '/careers' },
       { label: 'International', to: '/international' },
       { label: 'Accessibility', to: '/accessibility' },
@@ -86,7 +89,10 @@ const legalLinks = [
         </ul>
       </div>
 
-      <div class="flex w-full items-start p-5 md:basis-full lg:w-auto lg:basis-auto">
+      <div
+        id="newsletter"
+        class="flex w-full scroll-mt-24 items-start p-5 md:basis-full lg:w-auto lg:basis-auto"
+      >
         <FormsNewsletterForm source="footer" />
       </div>
     </div>

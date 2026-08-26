@@ -105,7 +105,7 @@ function isCategoryActive(to: string) {
       <div class="min-w-0 flex-1">
         <!-- One link wrapping the whole message, so the marquee's duplicated
              runs cannot produce duplicate tab stops. -->
-        <NuxtLink to="/#newsletter" class="flex min-h-[44px] items-center text-caption text-white sm:hidden">
+        <NuxtLink :to="{ hash: '#newsletter' }" class="flex min-h-[44px] items-center text-caption text-white sm:hidden">
           <CommonMarquee :copies="3" :duration="24">
             <span class="whitespace-nowrap pr-2">Get early access on launches and offers.</span>
             <span class="whitespace-nowrap underline">Sign Up For Texts</span>
@@ -115,7 +115,7 @@ function isCategoryActive(to: string) {
 
         <div class="hidden items-center justify-center gap-1 sm:flex">
           <p class="text-center text-caption text-white">Get early access on launches and offers.</p>
-          <NuxtLink to="/#newsletter" class="flex min-h-[44px] items-center text-center text-caption text-white underline lg:min-h-0">
+          <NuxtLink :to="{ hash: '#newsletter' }" class="flex min-h-[44px] items-center text-center text-caption text-white underline lg:min-h-0">
             Sign Up For Texts
           </NuxtLink>
           <ArrowRight :size="14" class="shrink-0 text-white" />
