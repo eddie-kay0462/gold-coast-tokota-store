@@ -61,7 +61,61 @@ watch(() => route.fullPath, () => {
   searchOpen.value = false
 })
 
-onBeforeUnmount(() => clearTimeout(closeTimer))
+/**
+ * The category row collapses upward once the page starts moving, and drops back
+ * down at the top — the header keeps its identity and its controls while
+ * scrolling, without holding 159px of viewport the whole way down a page.
+ *
+ * The two thresholds are deliberately different. With one value the row
+ * flickers whenever a scroll settles right on it, and iOS rubber-banding
+ * reports negative offsets at the top of the document.
+ */
+const COLLAPSE_AT = 16
+const EXPAND_AT = 4
+
+const rowCollapsed = ref(false)
+/** Keeps the row open while a keyboard user is inside it — see `rowOpen`. */
+const rowFocused = ref(false)
+
+/**
+ * A collapsed row is 0px tall, so it cannot be tabbed into and a keyboard user
+ * scrolled halfway down a page would lose the category nav entirely. Focus
+ * re-opens it; the pointer path never hits this because the row has no height
+ * to hover.
+ */
+const rowOpen = computed(() => !rowCollapsed.value || rowFocused.value)
+
+let scrollQueued = false
+
+function onScroll() {
+  if (scrollQueued) return
+  scrollQueued = true
+  // rAF rather than a bare listener: scroll fires far faster than paint, and
+  // this reads layout.
+  requestAnimationFrame(() => {
+    const y = window.scrollY
+    if (!rowCollapsed.value && y > COLLAPSE_AT) rowCollapsed.value = true
+    else if (rowCollapsed.value && y <= EXPAND_AT) rowCollapsed.value = false
+    scrollQueued = false
+  })
+}
+
+onMounted(() => {
+  // A restored scroll position or a `#hash` landing starts mid-page, so the
+  // row's state has to be derived once rather than assumed to be "top".
+  onScroll()
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+
+// A mega menu left open while the row collapses would hang off nothing.
+watch(rowCollapsed, (collapsed) => {
+  if (collapsed) closeMenu()
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(closeTimer)
+  window.removeEventListener('scroll', onScroll)
+})
 
 /** Labels like "New Arrivals" must not become ids with spaces — aria-controls
  *  parses on whitespace, so a space would silently break the reference. */
@@ -212,10 +266,17 @@ function isCategoryActive(to: string) {
     </div>
 
     <!-- Category nav (desktop): items with a mega menu are buttons, the rest links -->
+    <!-- `max-height` rather than `height`: the row is a single non-wrapping
+         line, so 56px is stable, and max-height animates without needing the
+         height measured at runtime. `overflow-hidden` is what actually clips it
+         on the way up. -->
     <nav
-      class="chrome-dark hidden w-full items-center justify-center text-white md:flex"
+      class="chrome-dark hidden w-full items-center justify-center overflow-hidden text-white motion-safe:transition-[max-height,opacity] motion-safe:duration-300 motion-safe:ease-out md:flex"
+      :class="rowOpen ? 'max-h-[64px] opacity-100' : 'max-h-0 opacity-0'"
       aria-label="Categories"
       @mouseleave="scheduleClose"
+      @focusin="rowFocused = true"
+      @focusout="rowFocused = false"
     >
       <template v-for="item in categoryNav" :key="item.label">
         <button
