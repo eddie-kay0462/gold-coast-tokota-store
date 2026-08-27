@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — product detail width and price treatment)
+- **Last updated:** 27 August 2026 (first entry below — checkout rebuilt as a Shopify-style checkout)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
   `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
@@ -27,7 +27,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
-| Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI. `POST /checkout/session` does not exist, so placing an order is inert |
+| Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI, restyled 27 Aug as a Shopify-style checkout on its own stripped layout. `POST /checkout/session` does not exist, so placing an order is inert |
 | Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
 | Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
@@ -50,7 +50,65 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 27 August 2026 (latest) — product detail: panel width and price treatment
+### 27 August 2026 (latest) — checkout rebuilt as a Shopify-style checkout
+
+`/checkout` now looks like a standard Shopify checkout: stripped chrome, a
+`Cart › Information › Shipping › Payment` breadcrumb, the form in a measured
+column on the left, and the order summary in a tinted panel bleeding to the
+right edge of the viewport. Below `lg` the summary collapses into the "Show
+order summary" bar Shopify puts above everything.
+
+**New `layouts/checkout.vue`.** A single centred logo and a row of policy links,
+nothing else. Shopify strips its checkout for the reason every checkout is
+stripped — a nav bar at the payment step is a row of exits — and the mega menu,
+search panel and footer columns are all exits. Two things are kept that Shopify
+has no equivalent for:
+
+- **`CartDrawer`**, because "Return to cart" has to open something and this
+  app's cart is a drawer, not a page.
+- **`WhatsAppButton`**, because README Feature 6's acceptance criteria say it is
+  visible on *every* storefront route, and it is currently the only way to
+  actually complete an order while payment is inert.
+
+**It stays three steps** rather than becoming Shopify's newer one-page checkout.
+The step machinery here is real — Information validates before it will advance —
+and collapsing it would mean either throwing that away or validating a whole
+page at once.
+
+**`CartSummary` → `OrderSummary`**, rebuilt to the Shopify pattern: square
+thumbnails with the quantity on a badge on the corner, a discount-code row, then
+subtotal / savings / shipping / total with the currency code set small against
+the total.
+
+**`CheckoutForm`** is split into Contact and Delivery in Shopify's field order —
+country first, since it routes the courier and changes the fields under it —
+and its action row is Shopify's: the way back as a quiet link on the left, the
+way forward as the only button on the right. The shipping step gained the
+review block Shopify shows above the method choice ("Contact … Change",
+"Ship to … Change"), which is the step's only reassurance that it is quoting
+for the right address.
+
+**The Shipping row never shows a number.** It says "Calculated at the next step",
+then "Yango · quoted at payment". The real figure comes from the courier quote
+at checkout-session creation, which is not built, and putting a guess in the
+Total is how someone ends up surprised at the payment screen. Shopify shows
+"Calculated at next step" for exactly this reason.
+
+**The discount code field is inert by design**, following the same shape as the
+payment step and the account pages: it waits ~600ms and then explains that there
+is no discounts endpoint, rather than firing a request that would 404. It is in
+because a Shopify checkout without one is not recognisable — but it is the
+third inert control on this page, so if that starts to feel like too much dead
+UI, this is the one to drop.
+
+**A layout note worth keeping.** The tinted column stretches to the footer via
+`flex-1` the whole way up from `layouts/checkout`, not `min-h-full`: a
+percentage height against a flex-sized ancestor does not reliably resolve, and
+the first attempt left the tint stopping mid-page on the short payment step.
+
+**Verified** at 1440 and 390 across all three steps, with a seeded cart.
+
+### 27 August 2026 — product detail: panel width and price treatment
 
 **The purchase panel is wider.** It was `md:340 / lg:384`; it is now
 `md:340 / lg:400 / xl:440`. `md` is untouched deliberately — at 768 the row is

@@ -50,7 +50,7 @@ async function placeOrder() {
     <div class="flex w-full flex-col items-start gap-2 border border-line p-5">
       <p class="w-full text-caption text-muted">Paying in</p>
       <p class="w-full text-display-sm font-normal text-black">
-        <CommonPriceDisplay :base-price-ghs="totalGhs" />
+        <CommonPriceDisplay :base-price-ghs="totalGhs" compact />
       </p>
       <p class="w-full text-caption text-muted">
         Processed securely by {{ gateway }}.

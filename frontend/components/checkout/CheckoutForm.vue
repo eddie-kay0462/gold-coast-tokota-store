@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PhCaretLeft } from '@phosphor-icons/vue'
 import { isValidEmail, isValidGhanaPhone } from '~/utils/validators'
 
 export type ShippingAddress = {
@@ -13,7 +14,7 @@ export type ShippingAddress = {
 }
 
 const model = defineModel<ShippingAddress>({ required: true })
-const emit = defineEmits<{ submit: [] }>()
+const emit = defineEmits<{ submit: [], cart: [] }>()
 
 const errors = reactive<Record<string, string | undefined>>({})
 
@@ -71,49 +72,72 @@ defineExpose({ validate })
 </script>
 
 <template>
-  <form class="flex w-full flex-col items-start gap-5" novalidate @submit.prevent="onSubmit">
-    <FormsFormField
-      v-model="model.email"
-      label="Email" name="email" type="email" autocomplete="email" required
-      hint="Your order confirmation and receipt go here."
-      :error="errors.email"
-    />
-    <FormsFormField
-      v-model="model.fullName"
-      label="Full name" name="fullName" autocomplete="name" required :error="errors.fullName"
-    />
-    <FormsFormField
-      v-model="model.country"
-      label="Country" name="country" type="select" :options="countryOptions" required
-      :error="errors.country"
-    />
-    <FormsFormField
-      v-model="model.line1"
-      label="Street address" name="line1" autocomplete="address-line1" required :error="errors.line1"
-    />
-    <div class="flex w-full min-w-0 flex-col gap-5 sm:flex-row">
+  <!-- Split into Contact and Delivery, in Shopify's field order: country first
+       (it is what routes the courier and changes the fields below it), then the
+       recipient, then the address, then the phone. -->
+  <form class="flex w-full flex-col items-start gap-8" novalidate @submit.prevent="onSubmit">
+    <section class="flex w-full flex-col items-start gap-4">
+      <h2 class="w-full text-body font-normal text-black">Contact</h2>
       <FormsFormField
-        v-model="model.city"
-        label="City or town" name="city" autocomplete="address-level2" required :error="errors.city"
+        v-model="model.email"
+        label="Email" name="email" type="email" autocomplete="email" required
+        hint="Your order confirmation and receipt go here."
+        :error="errors.email"
       />
-      <FormsFormField
-        v-model="model.region"
-        :label="isGhana ? 'Region' : 'State or province'"
-        name="region" autocomplete="address-level1"
-      />
-    </div>
-    <FormsFormField
-      v-if="!isGhana"
-      v-model="model.postcode"
-      label="Postal code" name="postcode" autocomplete="postal-code"
-    />
-    <FormsFormField
-      v-model="model.phone"
-      label="Phone" name="phone" type="tel" autocomplete="tel" required
-      :hint="isGhana ? 'For delivery updates from the courier.' : 'Include your country code.'"
-      :error="errors.phone"
-    />
+    </section>
 
-    <CommonBrandButton full type="submit">Continue to delivery</CommonBrandButton>
+    <section class="flex w-full flex-col items-start gap-4">
+      <h2 class="w-full text-body font-normal text-black">Delivery</h2>
+
+      <FormsFormField
+        v-model="model.country"
+        label="Country/Region" name="country" type="select" :options="countryOptions" required
+        :error="errors.country"
+      />
+      <FormsFormField
+        v-model="model.fullName"
+        label="Full name" name="fullName" autocomplete="name" required :error="errors.fullName"
+      />
+      <FormsFormField
+        v-model="model.line1"
+        label="Address" name="line1" autocomplete="address-line1" required :error="errors.line1"
+      />
+      <div class="flex w-full min-w-0 flex-col gap-4 sm:flex-row">
+        <FormsFormField
+          v-model="model.city"
+          label="City" name="city" autocomplete="address-level2" required :error="errors.city"
+        />
+        <FormsFormField
+          v-model="model.region"
+          :label="isGhana ? 'Region' : 'State or province'"
+          name="region" autocomplete="address-level1"
+        />
+        <FormsFormField
+          v-if="!isGhana"
+          v-model="model.postcode"
+          label="Postal code" name="postcode" autocomplete="postal-code"
+        />
+      </div>
+      <FormsFormField
+        v-model="model.phone"
+        label="Phone" name="phone" type="tel" autocomplete="tel" required
+        :hint="isGhana ? 'For delivery updates from the courier.' : 'Include your country code.'"
+        :error="errors.phone"
+      />
+    </section>
+
+    <!-- Shopify's action row: the way back on the left as a quiet link, the way
+         forward on the right as the only button. -->
+    <div class="flex w-full flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <button
+        type="button"
+        class="-my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-caption text-graphite hover:underline sm:justify-start"
+        @click="emit('cart')"
+      >
+        <PhCaretLeft :size="12" aria-hidden="true" />
+        Return to cart
+      </button>
+      <CommonBrandButton type="submit">Continue to shipping</CommonBrandButton>
+    </div>
   </form>
 </template>

@@ -29,9 +29,10 @@ const options = computed(() =>
 
 <template>
   <fieldset class="flex w-full flex-col items-start gap-3">
-    <legend class="mb-2 text-caption font-normal text-graphite">
-      Delivery method — via {{ provider }}
-    </legend>
+    <!-- The visible heading is the page's ("Shipping method"); repeating it
+         here read as two headings for one control. The legend stays for screen
+         readers, which do not get the page's heading as the fieldset's name. -->
+    <legend class="sr-only">Shipping method, delivered by {{ provider }}</legend>
 
     <label
       v-for="option in options"
