@@ -7,12 +7,13 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — the collapsing category row)
+- **Last updated:** 27 August 2026 (the collapsing category row; the 24 Aug dev-server entry below merged in from a local stash)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
-- **Working tree:** clean, and `dev` is pushed. The 27 Aug work is eight commits
-  on `dev` starting at `d201f5a` — the Template B design pass and everything
-  that followed from it. `dev` is ahead of `main`; merging it is a separate
-  decision.
+- **Working tree:** carries one uncommitted change — `backend/package.json`, the
+  headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
+  eight commits on `dev` starting at `d201f5a` — the Template B design pass and
+  everything that followed from it. `dev` is ahead of `main`; merging it is a
+  separate decision.
 
 ---
 
@@ -47,8 +48,8 @@ inert at their last step.
 
 ## Recent changes
 
-Everything below happened over four working days (18–21 August). The 19–20 Aug
-work is **not yet committed** — see the note at the end of this section.
+Newest first. Everything from 18 August onward, and all of it is committed and
+pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
 ### 27 August 2026 (latest) — the category row collapses on scroll
 
@@ -610,6 +611,54 @@ sweep is a few minutes.
 
 **Still to do here:** blog posts and products are missing from the sitemap for
 the same `[slug]` reason and need the same handler treatment.
+
+---
+
+### 24 August 2026 — all three dev servers start clean
+
+Three separate startup failures, none of them code bugs. Fixed in one pass.
+
+**`frontend/` and `admin/`: missing `@phosphor-icons/vue`.** Both apps died on
+`Failed to resolve import "@phosphor-icons/vue"` — 14 components in `frontend/`,
+plus `pages/index.vue` and `components/ui/MetricCard.vue` in `admin/`. The
+package was declared at `^2.2.1` in both `package.json` files *and* present in
+both `package-lock.json` files; it was simply absent from `node_modules/`. An
+incomplete install, nothing more. `npm install` in each app fixed it (3 new
+packages in `frontend/`, 50 in `admin/`). **No source file was touched** — every
+import was already correct.
+
+Verified after install: storefront `/`, `/shop`, `/about`, `/booking` all 200
+with icons rendering; admin `/`, `/login`, `/products`, `/orders` all 200, zero
+errors in either startup log.
+
+> If you hit this on a fresh clone, run `npm install` in **all three** app
+> directories before anything else. `backend/` needs `composer install`, not npm.
+
+**`backend/`: `npm run dev` no longer pretends to be a Vite app**
+
+`cd backend && npm run dev` failed with `sh: vite: command not found`. The cause
+was stock Laravel scaffolding, not a broken install: `backend/package.json`
+shipped the default `"dev": "vite"` script plus Vite/Tailwind devDependencies,
+but this backend is a **headless API** — the only `@vite(...)` reference in the
+whole app is the untouched `resources/views/welcome.blade.php`, and
+`node_modules/` was never installed there. Nothing built, nothing needed to.
+
+`backend/package.json` now has no devDependencies, and its scripts point at the
+real dev server:
+
+- `npm run dev` → `php artisan serve` (port 8000)
+- `npm run build` → prints "headless API, nothing to build" and exits 0, so a CI
+  step that blindly runs `npm run build` per package does not fail
+
+Verified: `php artisan serve` comes up and `GET /api/v1/site-settings` returns
+200 (PHP 8.5.6 / Laravel 12.64.0).
+
+**Left alone deliberately:** `backend/vite.config.js`, `resources/css/app.css`,
+`resources/js/*` and the `GET /` route returning `welcome.blade.php`. That route
+throws a Vite-manifest exception if you hit `http://localhost:8000/` in a
+browser — it did so before this change too, since no build ever ran. Harmless
+for an API, but if it bothers anyone, make `/` return a small JSON identity
+response and delete the four leftover asset files.
 
 ---
 
