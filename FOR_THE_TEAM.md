@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — the sticky header)
+- **Last updated:** 27 August 2026 (first entry below — the collapsing category row)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
-- **Working tree:** clean, and `dev` is pushed. The 27 Aug work is seven commits
+- **Working tree:** clean, and `dev` is pushed. The 27 Aug work is eight commits
   on `dev` starting at `d201f5a` — the Template B design pass and everything
   that followed from it. `dev` is ahead of `main`; merging it is a separate
   decision.
@@ -50,7 +50,45 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 27 August 2026 (latest) — the header is sticky
+### 27 August 2026 (latest) — the category row collapses on scroll
+
+The header's third row (Best Sellers · Sandals · Ahenema · Sale) now folds
+upward as soon as the page starts moving and drops back down at the top. The
+header keeps its identity and its controls the whole way down a page without
+holding 159px of viewport to do it — measured, it is **159px at the top and
+103px once scrolling**.
+
+This is the answer to the "worth a look" note in the sticky-header entry below.
+The announcement strip stays put; it is two short lines and it carries the
+currency toggle.
+
+Four things in it that are not obvious:
+
+- **Two thresholds, not one** (collapse above 16px, expand at or below 4px).
+  With a single value the row flickers whenever a scroll settles right on it,
+  and iOS rubber-banding reports negative offsets at the top of a document.
+- **The state is derived on mount, not assumed.** A restored scroll position or
+  a `#hash` landing starts mid-page, where the row should already be closed.
+- **Focus re-opens it.** A collapsed row is 0px tall, so it cannot be tabbed
+  into — a keyboard user halfway down a page would lose the category nav
+  outright. `focusin`/`focusout` hold it open; the pointer path never reaches
+  this because there is no height to hover.
+- **An open mega menu is closed when the row collapses**, or the panel would
+  hang off a row that is no longer there.
+
+`max-height` rather than `height`, since the row is a single non-wrapping line
+at a stable 56px and max-height animates without measuring at runtime.
+`overflow-hidden` is what actually clips it. The transition is behind
+`motion-safe:`, so a reduced-motion visitor gets the same collapse without the
+travel.
+
+**Left as is:** `scroll-padding-top` is still 11.5rem at `md`, which clears the
+*expanded* header. An anchor now lands about 80px below the collapsed header
+rather than 25px. Generous, but never hidden — and tightening it to the
+collapsed height would put a heading underneath the header for any anchor near
+the top of a document, where the row is still open. Whitespace over overlap.
+
+### 27 August 2026 — the header is sticky
 
 `Header.vue` is `sticky top-0` rather than `relative`, matching the approved
 mockup, which wraps the announcement strip *and* the nav rows in one sticky
