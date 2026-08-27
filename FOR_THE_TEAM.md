@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — the footer cut back to the mockup)
+- **Last updated:** 27 August 2026 (first entry below — product detail width and price treatment)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
   `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
@@ -50,7 +50,46 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 27 August 2026 (latest) — the footer cut back to the mockup
+### 27 August 2026 (latest) — product detail: panel width and price treatment
+
+**The purchase panel is wider.** It was `md:340 / lg:384`; it is now
+`md:340 / lg:400 / xl:440`. `md` is untouched deliberately — at 768 the row is
+already close to an even split (340 panel against a 324 gallery), and widening
+there would have squeezed the main image to about 210px. The extra room goes
+where there is room to give: 440px at 1440 against 384px before, which is what
+makes the description and the fit/model rows read as paragraphs rather than as
+a narrow column.
+
+**Discounted prices read as one price and one qualifier now**, not two
+competing figures. `PriceDisplay` used to render the was-price *first*, at the
+same size as the live price, faded to 50% opacity — so the eye landed on the
+crossed-out number and had to work out which of two equally sized figures it
+was actually paying.
+
+It now leads with the live price, which turns **`sale` red** when it is a
+discount, followed by the was-price at `0.8em` in muted grey with a 1px rule.
+Three notes on that:
+
+- `sale` (`#D0021B`) is what `tailwind.config.ts` documents the token for —
+  "the Sale nav item **and sale pricing**" — and it is what the product card's
+  own discount chip already uses. The price was the one place not honouring it.
+- `0.8em`, not a fixed size, so it scales with whatever type the parent sets:
+  12px on a card, 24px in the purchase panel, without a second set of values.
+- `items-baseline` keeps the two on one line despite the size gap.
+
+`ProductPurchasePanel`'s `[&_s]:opacity-50` override is gone — that is the
+component's job now, and an arbitrary variant reaching into another component's
+markup was the wrong lever.
+
+Every consumer inherits this: the product card, the cart drawer and line items,
+the checkout summary and the payment step.
+
+**Not changed, and worth knowing:** the size row still wraps to an orphan on a
+product with nine sizes (eight then one). It wrapped before too — at 384px it
+split 7/2 — so this is not a regression, and the fix would be shrinking the
+46×44 box the mockup specifies. Left alone.
+
+### 27 August 2026 — the footer cut back to the mockup
 
 Four columns of eighteen links became the approved mockup's two: **Shop** (Best
 Sellers, Sandals, Ahenema, Bookings) and **House** (Stories, About, Shipping &

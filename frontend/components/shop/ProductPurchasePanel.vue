@@ -87,7 +87,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
 
 <template>
   <div
-    class="flex w-full flex-col gap-px md:sticky md:top-4 md:max-h-[calc(100dvh-2rem)] md:w-[340px] md:shrink-0 md:overflow-y-auto lg:w-[384px]"
+    class="flex w-full flex-col gap-px md:sticky md:top-4 md:max-h-[calc(100dvh-2rem)] md:w-[340px] md:shrink-0 md:overflow-y-auto lg:w-[400px] xl:w-[440px]"
   >
     <!-- Identity -->
     <div class="flex w-full flex-col gap-1 border-b border-surface pb-4">
@@ -99,7 +99,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
       <div class="flex w-full items-start gap-2.5 text-display-sm font-light">
         <h1 class="min-w-0 flex-1 text-black">{{ product.name }}</h1>
         <CommonPriceDisplay
-          class="shrink-0 whitespace-nowrap text-graphite [&_s]:opacity-50"
+          class="shrink-0 whitespace-nowrap text-graphite"
           :base-price-ghs="product.base_price_ghs"
           :compare-at-ghs="product.compare_at_ghs"
           compact
