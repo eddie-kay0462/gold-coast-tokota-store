@@ -98,6 +98,13 @@ Anything that writes them directly is a bug.
 | PATCH | `/admin/bookings/{id}` | Status, incl. waitlist promotion |
 | GET/POST | `/admin/workshop-sessions` | `?upcoming=true` on index |
 | PUT/DELETE | `/admin/workshop-sessions/{id}` | Capacity editing, guarded — see below |
+| GET/POST | `/admin/blog` · GET/PUT/DELETE `/admin/blog/{id}` | Includes drafts. Body sanitised server-side |
+| GET | `/admin/pages` · `/admin/pages/{id}` | |
+| PUT | `/admin/pages/{id}` | Body sanitised. **No create or delete** — see below |
+| GET | `/admin/site-settings` | Staff may read |
+| PUT | `/admin/site-settings` | **Admin only** |
+| GET | `/admin/newsletter` · `/admin/newsletter/export` | Read-only. Export streams CSV |
+| GET | `/admin/categories` | Categories and collections together |
 | POST/PUT/DELETE | `/admin/products` | Admin role only |
 
 ### Specified, not yet built
@@ -344,11 +351,9 @@ invented.
 
 ## Admin screens with nothing behind them
 
-The admin app calls 30 distinct endpoints. Eleven now exist. The rest split in
-two:
-
-**Specified in README Feature 9, still to build:** `/admin/blog`,
-`/admin/pages`, `/admin/site-settings`, `/admin/newsletter`, `/admin/categories`.
+The admin app calls 30 distinct endpoints. **Sixteen now exist**, and every
+endpoint README Feature 9 specifies is built. What remains is entirely
+unspecified surface:
 
 **Not in the README at all, and with no model behind them** — these are screens
 the admin app grew beyond the spec, the same way `ProductReviews.vue` did:

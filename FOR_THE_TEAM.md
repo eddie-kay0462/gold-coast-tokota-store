@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (admin operations API — orders, bookings, workshop capacity, dashboard metrics)
+- **Last updated:** 27 August 2026 (the native CMS — blog, pages, site settings, newsletter, and server-side HTML sanitisation)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
-| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **11 of its 30 API paths now exist**; the rest still fall back to fixtures behind the demo-data chip. See "Admin screens with nothing behind them" in `docs/api-contract.md` — a third of them have no model and are not in the README |
+| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **16 of its 30 API paths now exist, and every endpoint README Feature 9 specifies is built.** The 14 that remain are unspecified surface with no model — see "Admin screens with nothing behind them" in `docs/api-contract.md` and open decision 28 |
 | Tests | **77 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
@@ -52,7 +52,64 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — the admin operations API
+### 27 August 2026 (latest) — the native CMS
+
+Blog, pages, site settings, newsletter and catalogue taxonomy. **Every endpoint
+README Feature 9 specifies now exists** — 16 of the admin app's 30 paths.
+
+**Stored XSS is closed.** Every rich-text body submitted to `/admin/blog` or
+`/admin/pages` passes through `HtmlSanitizer` before storage, so what is in the
+database is already safe to render. Server-side is the point: the editor may
+strip scripts in the browser, but the browser is not the trust boundary —
+anything that can POST to the endpoint can post anything.
+
+HTMLPurifier rather than a hand-rolled allowlist, deliberately. Getting this
+right means handling malformed markup, nested encodings, `javascript:` URLs,
+CSS expressions and mutation-XSS, and hand-rolled sanitisers are a known source
+of bypasses. Verified against `<script>`, `onclick`, `onerror`, `javascript:`
+hrefs, `<iframe>`, `<style>` and `<svg/onload>` — all neutralised, formatting
+preserved. `target` is not in the allowlist at all, which sidesteps
+`window.opener` rather than mitigating it.
+
+Other decisions worth not re-litigating:
+
+- **Pages can be edited but not created or deleted.** Page slugs are storefront
+  routes, so inventing one publishes a page nothing links to and deleting one
+  breaks a live URL. `POST` and `DELETE` return 405. New pages stay a code
+  change.
+- **A blog slug is derived from the title once and never silently re-derived.**
+  A published post's slug is a URL somebody may already have linked to.
+- **The admin blog index lists drafts and scheduled posts**; the public one
+  still shows only what is live. An editor has to be able to find the thing
+  they have not published yet.
+- **Site Settings: Admin writes, Staff reads.** Writing is named in the
+  README's two-tier rule; reading is open because the WhatsApp number and
+  contact details appear on screens Staff work in.
+- **`whatsapp_number` must be 6-15 digits with no punctuation.** It is
+  interpolated straight into a `wa.me` URL site-wide, and a number with spaces
+  or a leading `+` produces a link that silently goes nowhere. There is a test
+  for the full round trip the README asks for: change it in admin, see it on
+  the public endpoint, no deploy.
+- **The newsletter CSV export is streamed and chunked**, not built in memory.
+
+**Two bugs fixed on the way past, both pre-existing:**
+
+- **A GET returned 201.** `SiteSetting::current()` lazily creates the single
+  settings row, and Laravel's `JsonResource` answers 201 whenever its model
+  `wasRecentlyCreated` — so the very first read of `/site-settings` after a
+  fresh deploy answered `201 Created`. This hit the **public** endpoint too,
+  not just admin. Both now set 200 explicitly.
+- **11 security advisories in `composer.lock`**, on `guzzlehttp/guzzle` (5, one
+  high — a host-check bypass) and `league/commonmark` (6). Both are transitive
+  Laravel dependencies, neither came from this change. Resolved by a
+  within-constraint update — guzzle 7.14.2 → 7.15.5, commonmark 2.8.3 → 2.10.0,
+  no majors, no removals. `composer audit` is clean. Worth a periodic re-run;
+  this repo already rejected Laravel 11 over exactly this class of thing.
+
+**New dependency:** `ezyang/htmlpurifier`. Its definition cache lives in
+`storage/app/htmlpurifier`, which is already gitignored.
+
+### 27 August 2026 — the admin operations API
 
 Orders, bookings, workshop capacity and dashboard metrics. Eleven of the admin
 app's thirty API paths now exist.
@@ -1512,13 +1569,12 @@ In dependency order:
 6. **Feature 8 — Notifications.** Fish Africa SMS + transactional email behind
    a swappable `NotificationService`. *Sandbox test recommended first — Ghana
    network delivery rates unverified (README "Clarifications Needed" #3).*
-7. **Feature 9 — CMS + admin API.** *The largest remaining surface.* Blog
-   posts, About/Page editing, site settings, newsletter, customers, orders,
-   bookings, workshops, media upload and `GET /admin/dashboard/metrics` — the
-   admin app renders all of it from bundled fixtures today. Done so far:
-   `admin/products` (write), `admin/inventory` and `admin/feedback` (read).
-   Also outstanding here: server-side HTML sanitisation on `PageEditor`
-   submissions, which is an explicit stored-XSS acceptance criterion.
+7. ~~**Feature 9 — CMS + admin API.**~~ — **the specified half closed 27 Aug.**
+   Products, inventory, feedback, orders, bookings, workshop sessions,
+   dashboard metrics, blog, pages, site settings, newsletter and taxonomy all
+   exist, and `PageEditor` submissions are sanitised server-side. *What is left
+   is the 14 admin paths that are **not** in the README and have no model* —
+   see open decision 28. That is a scope conversation, not a task.
 
 8. **Customer accounts.** ~~Register/login/logout/me, order history.~~ —
    **closed 27 Aug.**
@@ -1616,7 +1672,7 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
-| 28 | **Nineteen admin endpoints have no backend, and fourteen have no model or spec** | The admin app calls 30 paths; 11 exist. Of the 19 missing, only blog/pages/site-settings/newsletter/categories are in README Feature 9. The others — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
+| 28 | **Fourteen admin endpoints have no model and no spec** | The admin app calls 30 paths; **16 now exist, and every endpoint README Feature 9 specifies is built.** The remainder — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
 | 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
 | 25 | **Seeded collection assignments are a guess** | `database/data/design-products.json` assigns each of the six designed products to a collection (Obrempong / Sikapa / Slides). The design fixture never carried one, so these are a first pass. Categories are derived from `product_type` and are safe; **the collections need the brand to confirm.** |

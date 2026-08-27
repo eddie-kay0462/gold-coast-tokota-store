@@ -1,11 +1,16 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\BlogPostController as AdminBlogPostController;
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
+use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\V1\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\V1\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopSessionController as AdminWorkshopSessionController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\BlogPostController;
@@ -132,11 +137,39 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('/workshop-sessions', [AdminWorkshopSessionController::class, 'store'])->name('workshop-sessions.store');
                 Route::put('/workshop-sessions/{workshopSession}', [AdminWorkshopSessionController::class, 'update'])->name('workshop-sessions.update');
                 Route::delete('/workshop-sessions/{workshopSession}', [AdminWorkshopSessionController::class, 'destroy'])->name('workshop-sessions.destroy');
+
+                // Native CMS (Feature 9). Rich-text bodies are sanitised
+                // server-side on the way in — see HtmlSanitizer.
+                Route::get('/blog', [AdminBlogPostController::class, 'index'])->name('blog.index');
+                Route::post('/blog', [AdminBlogPostController::class, 'store'])->name('blog.store');
+                Route::get('/blog/{blogPost}', [AdminBlogPostController::class, 'show'])->name('blog.show');
+                Route::put('/blog/{blogPost}', [AdminBlogPostController::class, 'update'])->name('blog.update');
+                Route::delete('/blog/{blogPost}', [AdminBlogPostController::class, 'destroy'])->name('blog.destroy');
+
+                // Pages are edited, never created or deleted: their slugs are
+                // storefront routes, so inventing one publishes a page nothing
+                // links to and removing one breaks a live URL.
+                Route::get('/pages', [AdminPageController::class, 'index'])->name('pages.index');
+                Route::get('/pages/{page}', [AdminPageController::class, 'show'])->name('pages.show');
+                Route::put('/pages/{page}', [AdminPageController::class, 'update'])->name('pages.update');
+
+                Route::get('/newsletter', [AdminNewsletterController::class, 'index'])->name('newsletter.index');
+                Route::get('/newsletter/export', [AdminNewsletterController::class, 'export'])->name('newsletter.export');
+
+                Route::get('/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+
+                // Site Settings is readable by Staff (the WhatsApp number shows
+                // on screens they use) but writable only by Admin — see below.
+                Route::get('/site-settings', [AdminSiteSettingController::class, 'show'])->name('site-settings.show');
             });
 
             // Products: pricing/catalogue changes are Admin-only, not Staff
             // (README two-tier role rule — Staff has no pricing access).
             Route::middleware('admin')->group(function () {
+                // Site Settings: named in the README's two-tier rule alongside
+                // pricing and refunds as Admin-only.
+                Route::put('/site-settings', [AdminSiteSettingController::class, 'update'])->name('site-settings.update');
+
                 Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
                 Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');
                 Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])->name('products.destroy');
