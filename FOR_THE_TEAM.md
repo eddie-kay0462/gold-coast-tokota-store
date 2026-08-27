@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (Feature 3's two read endpoints — the storefront polls real stock now, and admin Inventory has an API)
+- **Last updated:** 27 August 2026 (checkout and orders — the payment boundary moved from "nothing exists" to "waiting on gateway keys")
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -28,8 +28,8 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
-| Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI, restyled 27 Aug as a Shopify-style checkout on its own stripped layout. `POST /checkout/session` does not exist, so placing an order is inert |
-| Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
+| Storefront — Checkout | **Built to the payment boundary.** `POST /checkout/session` now exists and works end to end — prices, shipping quote, FX lock, stock reservation, order creation. What is still inert is the last hop: `PaymentStep.placeOrder()` is still the simulated version, and `FakeGateway` stands in for Paystack/Stripe until their keys exist |
+| Storefront — Order confirmation | **Built, and no longer waiting.** `GET /orders/{reference}` exists and satisfies `ApiOrder` in full. Note the key: **reference, not numeric id** — `/orders/1` is a 404 by design |
 | Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
@@ -52,7 +52,63 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — Feature 3's read endpoints
+### 27 August 2026 (latest) — checkout and orders
+
+`POST /checkout/session` and `GET /orders/{reference}`. The transactional half
+of Feature 4, up to the point where a real gateway would take money.
+
+A session re-prices every line from the database, quotes shipping *before*
+payment, locks the FX rate for USD orders, reserves stock through the existing
+`InventoryReservationService`, creates the order, and only then opens a gateway
+session — all in one transaction, so a failure at any step rolls the order away
+and releases what it had already held.
+
+- **No prices are accepted from the request.** The client sends an inventory
+  item and a quantity; everything about money is read server-side. There is a
+  test that posts a `unit_price` of 1 against a ₵600 product and asserts the
+  order still says ₵600.
+- **`GET /orders/{reference}` is addressed by reference, never by id, and
+  `/orders/1` is a 404.** Guest checkout means the endpoint cannot sit behind
+  auth, and an order carries a name, an email and a home address — a sequential
+  id would let anyone walk the order table by counting. References are `GCT-`
+  plus 12 characters from an alphabet with no O/0 or I/1, since customers read
+  them aloud over WhatsApp. The route is throttled on top. **This is the one
+  decision in here I would not quietly change later.**
+- **`payment_reference` is not in the response.** It is the gateway's own id
+  and it is internal.
+- **Order lines snapshot `product_name` and `variant_label`.** `product_id` is
+  `nullOnDelete`, so a hard-deleted product must not take the name off a
+  historical receipt. `slug` and `image` still come from the live product and
+  go null when it is gone — those are presentation, not record.
+- **The concurrency criterion is now a test, not a claim.** Two checkouts for
+  the last unit: one order, one 409, and the loser is refused before any
+  charge. Also tested — a two-line order where the second line is short leaves
+  neither an orphan order nor a stuck reservation.
+- **USD with no cached FX rate is a 503, not a guessed rate.** Pricing an order
+  on a fallback rate loses real money on every unit sold.
+
+**What is deliberately fake, and loudly so:** `PaymentGatewayFactory` resolves
+`FakeGateway` in every environment and logs that it did, because every Paystack
+and Stripe key in `.env` is still empty. It shapes its response like the real
+thing — authorization URL for GHS, client secret for USD — so the storefront's
+branching can be built now, but it never moves money and never confirms
+anything. An order it opens stays `pending` until a webhook says otherwise,
+which is exactly how the real gateways behave. Nothing downstream can come to
+depend on a fake payment having "succeeded".
+
+`YangoService` and `DhlService` are the same shape: the real interface, static
+rate tables inside. Ghana standard ₵25 and free over ₵1,500 — **matched to what
+the product page already promises**, because a checkout that contradicts the
+product page is worse than one that is merely approximate. Express ₵50.
+International ₵350 / ₵600. Live quotes change only the body of `quote()`.
+
+**Kirk — two things are yours now.** `PaymentStep.placeOrder()` can stop
+simulating and post the body it already documents; the response gives you
+`payment.authorization_url` (GHS) or `payment.client_secret` (USD), and the
+order's `reference` is what `/order-confirmation/{...}` should be handed, not
+the id. Full request/response in `docs/api-contract.md`.
+
+### 27 August 2026 — Feature 3's read endpoints
 
 `GET /products/{slug}/stock` and `GET /admin/inventory`. Both are exposure
 rather than construction: `InventoryReservationService` already did the hard
@@ -1343,8 +1399,13 @@ In dependency order:
    tested. *What is left is on the storefront:* `[slug].vue` doesn't pass
    `liveStock` to `ProductPurchasePanel`, so the polled per-size map the API
    now sends goes nowhere. Small frontend wiring, no API work.
-3. **Feature 4 — Checkout & payments.** Orders, Paystack (GHS) + Stripe (USD)
-   session creation and webhook verification, FX rate locked at checkout.
+3. **Feature 4 — Checkout & payments.** *Half done.* `POST /checkout/session`
+   and `GET /orders/{reference}` exist, with pricing, shipping quote, FX lock,
+   stock reservation and order creation all tested. *What is left:*
+   `PaystackService` and `StripeService` behind `PaymentGateway` (**blocked on
+   keys — both are self-serve, an hour's work**), the two webhook receivers,
+   a `processed_webhook_events` table for idempotency, and the `OrderPlaced`
+   event that finalises inventory and triggers notifications.
 4. **Feature 5 — Delivery.** Yango (domestic) and DHL (international) quote/booking.
 5. **Feature 7 — Bookings.** Workshop sessions with capacity + waitlist, and
    the unlimited DIY queue.

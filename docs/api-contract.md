@@ -81,6 +81,8 @@ Anything that writes them directly is a bug.
 | GET | `/pages/{slug}` · `/site-settings` | |
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
 | GET | `/blog-posts/{slug}` | |
+| POST | `/checkout/session` | Guest-friendly. Throttled 20/min — see below |
+| GET | `/orders/{reference}` | Throttled 60/min. **Reference, never the numeric id** |
 | POST | `/newsletter` | |
 | GET | `/workshop-sessions` · POST `/bookings` | |
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
@@ -91,8 +93,6 @@ Anything that writes them directly is a bug.
 
 | Method | Path | Consumer | Stage |
 |---|---|---|---|
-| POST | `/checkout/session` | `components/checkout/PaymentStep.vue` | 3 |
-| GET | `/orders/{id}` | `pages/order-confirmation/[id].vue` | 3 |
 | POST | `/webhooks/paystack` · `/webhooks/stripe` | gateways | 3 |
 | POST | `/feedback` | `components/forms/FeedbackForm.vue` | 6 |
 | GET | `/admin/dashboard/metrics` | admin app | 7 |
@@ -146,6 +146,84 @@ ignoring reservations, because it answers "what do we need to make more of" —
 and a reserved unit is still on the shelf. Rows carry both counts plus
 `sellable_quantity`, since "12 in stock, 11 spoken for" is a very different
 operational picture from "12 in stock".
+
+---
+
+## Checkout (`POST /checkout/session`)
+
+```json
+{
+  "items": [{ "inventory_item_id": 12, "quantity": 1 }],
+  "currency": "GHS",
+  "delivery_method": "standard",
+  "shipping_address": {
+    "full_name": "…", "email": "…", "phone": "…",
+    "line1": "…", "city": "…", "region": "…", "postcode": "…", "country": "GH"
+  }
+}
+```
+
+Returns `201` with `{ data: <Order>, payment: { gateway, reference, authorization_url, client_secret } }`.
+GHS gets an `authorization_url` to redirect to; USD gets a `client_secret` to
+confirm. `country` is **required** — it routes the courier, so a missing one is
+a validation error rather than an unpriced order.
+
+**No prices are accepted from the request.** The client sends an inventory item
+and a quantity; unit price, shipping and total are all read or computed
+server-side. Anything price-shaped in the body is ignored, and there is a test
+that says so.
+
+### What it does, in order
+
+1. Re-price every line from the database.
+2. Quote shipping *before* payment, so the figure shown is the figure charged.
+3. Lock the FX rate for USD, once — one read for the whole order, so the
+   subtotal and the shipping can't convert on rates either side of the hourly
+   refresh. No rate cached → `503`, never a guessed rate.
+4. Reserve stock through `InventoryReservationService` (15-minute TTL).
+5. Only then open the gateway session.
+
+All of it inside one transaction: a failure at any step rolls the order away
+*and* releases anything already reserved.
+
+### Failure codes
+
+| Code | Means |
+|---|---|
+| `409` | Sold out, or the product went inactive. Body carries `inventory_item_id` and `available`. Not `422` — the request was fine, the world changed |
+| `422` | Validation, including a missing `country` |
+| `503` | USD checkout with no FX rate to lock |
+
+### Until gateway credentials exist
+
+`PaymentGatewayFactory` resolves `FakeGateway` in every environment, logging
+that it did. It shapes its response like the real thing so the storefront's
+branching can be built now, but it never moves money and never confirms
+anything — an order it opens stays `pending` until a webhook says otherwise,
+which is exactly how Paystack and Stripe behave. Nothing downstream can come to
+depend on a fake payment having "succeeded".
+
+Delivery is the same shape: `YangoService` and `DhlService` implement the real
+interface with static rate tables. Ghana standard is ₵25, free over ₵1,500 —
+matching what the product page already promises — and express is ₵50.
+International is ₵350 / ₵600. Swapping in live quotes changes only the body of
+`quote()`.
+
+## Orders (`GET /orders/{reference}`)
+
+**Addressed by `reference`, never by the numeric id, and `/orders/1` is a 404.**
+Guest checkout means this endpoint cannot sit behind auth, and an order carries
+a name, an email and a home address — a sequential id would let anyone walk the
+order table by counting. References are `GCT-` plus 12 characters from an
+unambiguous 32-character alphabet, and the route is throttled on top.
+
+`payment_reference` (the gateway's own id) is deliberately **not** in the
+response. Line items carry snapshotted `name` and `variant_label` so a receipt
+survives its product being renamed or hard-deleted; `slug` and `image` come
+from the live product and go null when it's gone.
+
+The confirmation page polls this while an order reads `pending`, because the
+webhook can land after the customer is redirected back.
 
 ---
 

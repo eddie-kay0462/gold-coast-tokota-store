@@ -12,6 +12,7 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
+        'reference',
         'customer_id',
         'currency',
         'fx_rate_applied',

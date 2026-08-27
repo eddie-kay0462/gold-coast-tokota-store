@@ -6,9 +6,11 @@ use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\BlogPostController;
 use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CategoryController;
+use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\FxRateController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
+use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductStockController;
@@ -35,6 +37,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/fx-rate', [FxRateController::class, 'show'])->name('fx-rate.show');
+
+    // Checkout and orders (Feature 4). Both are unauthenticated: guest
+    // checkout is supported by design, so neither can sit behind a login.
+    //
+    // Rate-limited for that reason. Checkout creation reserves stock, so an
+    // unthrottled endpoint is a way to hold the whole catalogue hostage; and
+    // orders are addressed by a random reference, so throttling is what turns
+    // "not practically guessable" into "not worth trying".
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/checkout/session', [CheckoutController::class, 'store'])->name('checkout.session');
+    });
+
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/orders/{reference}', [OrderController::class, 'show'])->name('orders.show');
+    });
 
     // Booking system (Feature 7) — Workshop (capacity/waitlist) + DIY orders
     // (unlimited/queue-based). No auth required: guest bookings are supported,
