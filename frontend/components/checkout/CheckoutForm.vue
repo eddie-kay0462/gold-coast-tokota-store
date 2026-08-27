@@ -120,7 +120,7 @@ defineExpose({ validate })
       </div>
       <FormsFormField
         v-model="model.phone"
-        label="Phone" name="phone" type="tel" autocomplete="tel" required
+        label="Phone (WhatsApp)" name="phone" type="tel" autocomplete="tel" required
         :hint="isGhana ? 'For delivery updates from the courier.' : 'Include your country code.'"
         :error="errors.phone"
       />

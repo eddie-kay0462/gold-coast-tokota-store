@@ -3,6 +3,7 @@ import type { ApiOrder } from '~/utils/orders'
 import { deliveryProviderLabel, isAwaitingPayment } from '~/utils/orders'
 import { ORDER_POLL_INTERVAL_MS, ORDER_POLL_MAX_ATTEMPTS } from '~/utils/constants'
 import { formatMoney } from '~/utils/formatters'
+import { whatsappMessage } from '~/utils/whatsapp'
 
 /**
  * Order confirmation.
@@ -24,7 +25,6 @@ definePageMeta({ layout: 'default' })
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const { href: whatsappHref } = useWhatsApp()
 
 const orderUrl = `${config.public.apiBase}/orders/${route.params.id}`
 
@@ -88,7 +88,13 @@ useSeoMeta({
         it isn’t lost — message us and we’ll confirm it by hand.
       </CommonInlineNotice>
       <div class="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-start">
-        <CommonBrandButton v-if="whatsappHref" :to="whatsappHref">Message us</CommonBrandButton>
+        <CommonWhatsAppLink
+          source="order-help"
+          variant="solid"
+          :message="whatsappMessage.orderHelp(String(route.params.id))"
+        >
+          Message us about this order
+        </CommonWhatsAppLink>
         <CommonBrandButton to="/shop" variant="white">Back to shop</CommonBrandButton>
       </div>
     </div>
@@ -103,6 +109,18 @@ useSeoMeta({
         </p>
         <CommonStatusBadge :status="order.status" />
       </header>
+
+      <!-- The brand guidelines promise "shipping updates via email or WhatsApp
+           once dispatched", and this is the screen where someone asks. The
+           mockup hides its floating button here; README Feature 6 requires it
+           on every route, so it stays and this sits alongside it with the order
+           number already in the message. -->
+      <CommonWhatsAppLink
+        source="order-tracking"
+        :message="whatsappMessage.orderTracking(order.reference || `#${order.id}`)"
+      >
+        Track this order on WhatsApp
+      </CommonWhatsAppLink>
 
       <CommonInlineNotice v-if="stillConfirming" title="Still confirming your payment">
         Your payment is going through. This page updates on its own — there’s no need to refresh

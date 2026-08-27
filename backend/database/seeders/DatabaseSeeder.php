@@ -29,7 +29,36 @@ class DatabaseSeeder extends Seeder
 
         SiteSetting::current()->update([
             'whatsapp_number' => '233200000000',
-            'whatsapp_default_message' => 'Hi! I have a question about your sandals.',
+            // Deliberately still the placeholder. The brand document gives
+            // +233 25 753 4297 but annotates it "update with official number",
+            // so it stays unset until the business confirms — a wrong number
+            // here silently breaks the main ordering channel. See
+            // FOR_THE_TEAM.md issue #13.
+            'whatsapp_default_message' => 'Hi Gold Coast Tokota, I\'d like to know more about your sandals.',
+            // Verbatim from the brand guidelines, "Default Greeting Message".
+            'whatsapp_greeting' => implode("\n", [
+                'Welcome to Gold Coast Tokota!',
+                '',
+                'Thank you for contacting us. We create handcrafted sustainable footwear from recycled materials while celebrating Ghanaian culture through immersive experiences and craftsmanship.',
+                '',
+                'Whether you are looking to:',
+                '- Shop our handcrafted sandals',
+                '- Book a Sandal Sip & Paint experience',
+                '- Schedule a school or group tour',
+                '- Discuss partnerships or bulk orders',
+                '- Learn more about our sustainability initiatives',
+                '',
+                'We are here to help.',
+                '',
+                'Our team typically responds during business hours:',
+                'Monday - Saturday: 9:00 AM - 5:00 PM (GMT)',
+                '',
+                'Please let us know how we can assist you today.',
+                '',
+                'Gold Coast Tokota',
+                'Crafted with Purpose. Inspired by Culture.',
+            ]),
+            'business_hours' => 'Mon–Sat · 9am–5pm GMT',
             'contact_email' => 'hello@goldcoasttokota.store',
             'diy_turnaround_estimate' => '2-3 weeks',
             // Deliberately conservative. The approved mockup's bar reads

@@ -15,6 +15,8 @@ export default defineNuxtPlugin(async () => {
     siteSettings.setSettings({
       whatsappNumber: data.value.data.whatsapp_number,
       whatsappDefaultMessage: data.value.data.whatsapp_default_message,
+      whatsappGreeting: data.value.data.whatsapp_greeting,
+      businessHours: data.value.data.business_hours,
       contactEmail: data.value.data.contact_email,
       contactPhone: data.value.data.contact_phone,
       instagramUrl: data.value.data.instagram_url,

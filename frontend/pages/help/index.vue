@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 import { HELP_TOPICS } from '~/utils/policyContent'
 
 /**
@@ -10,7 +11,6 @@ import { HELP_TOPICS } from '~/utils/policyContent'
  */
 // `href` is null when the admin hasn't set a number — the CTA hides rather
 // than linking to an invalid wa.me URL.
-const { href: whatsappHref } = useWhatsApp()
 
 useSeoMeta({
   title: 'Help Centre — Gold Coast Tokota',
@@ -55,9 +55,9 @@ useSeoMeta({
         </p>
         <div class="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-start">
           <CommonBrandButton to="/contact">Contact us</CommonBrandButton>
-          <CommonBrandButton v-if="whatsappHref" :to="whatsappHref" variant="white">
+          <CommonWhatsAppLink source="contact" :message="whatsappMessage.general()">
             WhatsApp us
-          </CommonBrandButton>
+          </CommonWhatsAppLink>
         </div>
       </div>
     </section>

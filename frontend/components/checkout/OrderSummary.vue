@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
+import { whatsappMessage } from '~/utils/whatsapp'
 
 /**
  * The order summary, laid out the way a standard Shopify checkout lays it out:
@@ -41,7 +42,7 @@ async function apply() {
   applying.value = false
   codeNotice.value =
     'Discount codes aren’t enabled yet — there’s no discounts endpoint on the API. '
-    + 'If you were given a code, message us on WhatsApp and we’ll apply it by hand.'
+    + 'If you were given a code, send it to us and we’ll apply it by hand.'
 }
 </script>
 
@@ -106,7 +107,18 @@ async function apply() {
             {{ applying ? 'Applying…' : 'Apply' }}
           </button>
         </form>
-        <CommonInlineNotice v-if="codeNotice" variant="warning">{{ codeNotice }}</CommonInlineNotice>
+        <CommonInlineNotice v-if="codeNotice" variant="warning">
+          {{ codeNotice }}
+          <template #action>
+            <CommonWhatsAppLink
+              source="discount-code"
+              variant="quiet"
+              :message="whatsappMessage.discountCode(code)"
+            >
+              Send the code on WhatsApp
+            </CommonWhatsAppLink>
+          </template>
+        </CommonInlineNotice>
       </div>
 
       <!-- Totals -->

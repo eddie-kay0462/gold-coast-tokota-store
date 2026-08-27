@@ -57,6 +57,17 @@ export default <Partial<Config>>{
         // `ink` — `ink` is pure #000 and the whole app already leans on it, so
         // this is a second, softer near-black rather than a redefinition.
         chrome: '#111111',
+        // WhatsApp's own brand green, from the approved mockup's floating
+        // button. A token rather than raw `green-500` so the one place the
+        // storefront wears another company's colour is named and findable.
+        whatsapp: '#25D366',
+      },
+      zIndex: {
+        // One step between the WhatsApp button (40) and the header (50), for
+        // the product page's phone-only sticky Add-to-Cart bar. Tailwind's
+        // default scale jumps 40 → 50; the documented stacking order in
+        // `layouts/default.vue` needs a rung in between.
+        45: '45',
       },
       fontFamily: {
         // The design specifies Helvetica Neue Light (300) throughout; no

@@ -6,6 +6,15 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
   state: () => ({
     whatsappNumber: '',
     whatsappDefaultMessage: '',
+    /**
+     * The auto-reply the business sends when a chat opens (brand guidelines,
+     * "Default Greeting Message"). Owner-managed in admin; the storefront holds
+     * it so there is one copy of it, but never renders it — it is WhatsApp
+     * Business profile copy, not page content.
+     */
+    whatsappGreeting: '',
+    /** Rendered on the announcement bar's second line. */
+    businessHours: '',
     contactEmail: '',
     contactPhone: '',
     instagramUrl: '',

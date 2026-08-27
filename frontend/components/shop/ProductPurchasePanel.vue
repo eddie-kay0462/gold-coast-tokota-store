@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
 import type { ApiProduct } from '~/utils/catalog'
+import { whatsappMessage } from '~/utils/whatsapp'
 
 const props = defineProps<{
   product: ApiProduct
@@ -58,11 +58,7 @@ const collectionLabel = computed(() => {
   return collection ? `${collection} Collection` : null
 })
 
-// Prefilled with the product and, once picked, the size.
-const { href: whatsappHref } = useWhatsApp(() => {
-  const sizePart = selectedSize.value ? ` in size ${selectedSize.value}` : ''
-  return `Hi Gold Coast Tokota, I'd like to order the ${props.product.name}${sizePart}.`
-})
+
 
 // Drives the phone-only sticky CTA: visible exactly while the inline button is
 // off screen. An IntersectionObserver rather than a scroll listener so there is
@@ -178,16 +174,13 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
            product and the chosen size so the shop can answer in one message.
            Hidden entirely when no number is configured — `useWhatsApp` returns
            null rather than an invalid wa.me link (README Feature 6). -->
-      <a
-        v-if="whatsappHref"
-        :href="whatsappHref"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex min-h-[44px] w-full items-center justify-center gap-2 border border-graphite bg-white px-4 text-center text-label uppercase text-graphite transition-colors hover:bg-graphite hover:text-white"
+      <CommonWhatsAppLink
+        source="product-detail"
+        full
+        :message="whatsappMessage.product(product.name, selectedSize)"
       >
-        <WhatsappLogo :size="18" weight="fill" />
         Prefer to order via WhatsApp?
-      </a>
+      </CommonWhatsAppLink>
     </div>
 
     <!-- Phone-only sticky CTA. The inline button above is far below the fold on
@@ -202,7 +195,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
       >
         <div
           v-if="showStickyCta"
-          class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:hidden"
+          class="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-5 pr-[4.75rem] pt-3 md:hidden"
         >
           <CommonBrandButton full :disabled="!selectedInStock" @click="submit">
             {{ product.is_pre_order ? 'Pre-Order' : 'Add to Cart' }}
