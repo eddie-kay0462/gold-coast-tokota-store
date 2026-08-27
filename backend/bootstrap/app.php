@@ -14,6 +14,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
 
+        // A baseline limit on every API route (Feature 12). Individual routes
+        // that need tighter limits set their own — checkout is 20/min because
+        // it reserves stock, feedback 10/min because it writes free text — and
+        // login has its own per-email+IP lockout. This is the floor underneath
+        // all of them, so a route added later is never completely unthrottled.
+        //
+        // Keyed by user then IP, so several people behind one office NAT do
+        // not share a budget once they are signed in.
+        $middleware->api(prepend: ['throttle:api']);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureAdminRole::class,
             'staff_or_admin' => \App\Http\Middleware\EnsureStaffOrAdminRole::class,

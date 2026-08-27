@@ -1,3 +1,78 @@
+envVarGroups:
+  # Shared by the API, the worker and the scheduler — all three run the same
+  # image and must agree about the database, the queue and every credential.
+  # DB connection details stay on each service, since `fromDatabase` is only
+  # valid there.
+  - name: tokota-backend
+    envVars:
+    - key: APP_ENV
+      value: production
+    - key: APP_DEBUG
+      value: "false"
+    - key: APP_KEY
+      sync: false
+    - key: APP_URL
+      value: https://api.goldcoasttokota.store
+    # Two separate frontend apps call this API: ../frontend (storefront)
+    # and ../admin (dashboard) — see the admin service below.
+    - key: FRONTEND_URLS
+      value: https://goldcoasttokota.store,https://admin.goldcoasttokota.store
+    - key: SANCTUM_STATEFUL_DOMAINS
+      value: goldcoasttokota.store,admin.goldcoasttokota.store
+    - key: SESSION_DOMAIN
+      value: .goldcoasttokota.store
+    - key: DB_CONNECTION
+      value: pgsql
+    # Queue and scheduler both read these; the worker service below shares
+    # the same database connection, so a job dispatched by the web service
+    # is picked up by the worker.
+    - key: QUEUE_CONNECTION
+      value: database
+    - key: CACHE_STORE
+      value: database
+    - key: SESSION_DRIVER
+      value: database
+    # Payment/delivery/SMS/FX secrets are set directly in the Render
+    # dashboard per Feature 12/13 — never committed to version control.
+    # Every name here is one config/services.php actually reads; the old
+    # FX_RATE_API_KEY entry matched nothing in the codebase.
+    - key: PAYSTACK_PUBLIC_KEY
+      sync: false
+    - key: PAYSTACK_SECRET_KEY
+      sync: false
+    - key: PAYSTACK_WEBHOOK_SECRET
+      sync: false
+    - key: STRIPE_PUBLIC_KEY
+      sync: false
+    - key: STRIPE_SECRET_KEY
+      sync: false
+    - key: STRIPE_WEBHOOK_SECRET
+      sync: false
+    - key: YANGO_API_BASE_URL
+      sync: false
+    - key: YANGO_API_KEY
+      sync: false
+    - key: DHL_API_BASE_URL
+      sync: false
+    - key: DHL_API_KEY
+      sync: false
+    - key: FISH_AFRICA_BASE_URL
+      value: https://api.letsfish.africa
+    - key: FISH_AFRICA_APP_ID
+      sync: false
+    - key: FISH_AFRICA_APP_SECRET
+      sync: false
+    - key: EXCHANGERATE_HOST_URL
+      value: https://api.exchangerate.host
+    - key: EXCHANGERATE_HOST_KEY
+      sync: false
+    - key: MAIL_MAILER
+      sync: false
+    - key: MAIL_FROM_ADDRESS
+      value: hello@goldcoasttokota.store
+    - key: MAIL_FROM_NAME
+      value: Gold Coast Tokota
+
 databases:
   - name: gold-coast-tokota-db
     databaseName: gold_coast_tokota
@@ -18,24 +93,7 @@ services:
     region: frankfurt
     healthCheckPath: /up
     envVars:
-      - key: APP_ENV
-        value: production
-      - key: APP_DEBUG
-        value: "false"
-      - key: APP_KEY
-        sync: false
-      - key: APP_URL
-        value: https://api.goldcoasttokota.store
-      # Two separate frontend apps call this API: ../frontend (storefront)
-      # and ../admin (dashboard) — see the admin service below.
-      - key: FRONTEND_URLS
-        value: https://goldcoasttokota.store,https://admin.goldcoasttokota.store
-      - key: SANCTUM_STATEFUL_DOMAINS
-        value: goldcoasttokota.store,admin.goldcoasttokota.store
-      - key: SESSION_DOMAIN
-        value: .goldcoasttokota.store
-      - key: DB_CONNECTION
-        value: pgsql
+      - fromGroup: tokota-backend
       - key: DB_HOST
         fromDatabase:
           name: gold-coast-tokota-db
@@ -56,22 +114,40 @@ services:
         fromDatabase:
           name: gold-coast-tokota-db
           property: password
-      # Payment/delivery/SMS/FX secrets are set directly in the Render
-      # dashboard per Feature 12/13 — never committed to version control.
-      - key: PAYSTACK_SECRET_KEY
-        sync: false
-      - key: STRIPE_SECRET_KEY
-        sync: false
-      - key: YANGO_API_KEY
-        sync: false
-      - key: DHL_API_KEY
-        sync: false
-      - key: FISH_AFRICA_APP_ID
-        sync: false
-      - key: FISH_AFRICA_APP_SECRET
-        sync: false
-      - key: FX_RATE_API_KEY
-        sync: false
+
+  # Queue worker. Without this, nothing dispatched to the queue ever runs —
+  # QUEUE_CONNECTION is `database`, so RefreshFxRate and
+  # ReleaseExpiredReservations would pile up in the jobs table untouched, and
+  # expired checkout reservations would hold stock permanently.
+  - type: worker
+    name: gold-coast-tokota-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    region: frankfurt
+    # --tries and --max-time so a poisoned job cannot spin forever and the
+    # process recycles rather than leaking memory over days.
+    dockerCommand: php artisan queue:work --tries=3 --max-time=3600 --sleep=3
+    envVars:
+      - fromGroup: tokota-backend
+
+  # Scheduler. Laravel's scheduler needs something to call `schedule:run` every
+  # minute; Render cron jobs are the equivalent of the crontab line the docs
+  # describe. Without it neither scheduled job is ever dispatched at all —
+  # the FX rate would never refresh past its seed value, and reservations
+  # would never expire.
+  - type: cron
+    name: gold-coast-tokota-scheduler
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    region: frankfurt
+    schedule: "* * * * *"
+    dockerCommand: php artisan schedule:run
+    envVars:
+      - fromGroup: tokota-backend
 
   # Nuxt 3 SSR frontend
   - type: web

@@ -17,6 +17,8 @@ in the browser.
 
 | Rule | Why |
 |---|---|
+| **Stale FX rates are dropped, not shown.** Beyond 24h, `price_usd` and `compare_at_usd` go null and USD checkout returns 503 | A dead provider must not break product reads, but it must not let us charge a week-old rate either. `/fx-rate` still serves the stale value flagged `is_stale` |
+| Every API route carries a 120/min baseline throttle | Floor under everything, so a route added later is never unthrottled. Tighter limits: checkout 20/min, feedback 10/min, login per-email+IP |
 | All money is in **minor units** (pesewas / cents) as integers | No float arithmetic on money; `60000` is GH₵600.00 |
 | **USD is always derived** from GHS × the cached `FxRate`, never stored | README Feature 2. The one exception is `orders.fx_rate_applied`, snapshotted at checkout so a charged amount can't move |
 | A price and its was-price convert on the **same** rate | `price_usd` and `compare_at_usd` are computed from one `FxRate` read |
@@ -381,6 +383,27 @@ production schema and screens built against it.
 **None of what remains is a bug.** Those four screens fall back to fixtures and
 show the demo-data chip. But they are unbudgeted work, and that should be a
 decision rather than something discovered during a launch checklist.
+
+---
+
+## Deploying this
+
+Four things the API needs in production that are easy to miss, all now in
+`render.yaml` and `backend/Dockerfile`:
+
+- **A cron service running `schedule:run` every minute.** Without it neither
+  `RefreshFxRate` nor `ReleaseExpiredReservations` is ever dispatched, and
+  expired checkout reservations hold stock permanently.
+- **A queue worker.** `QUEUE_CONNECTION` is `database` and both scheduled jobs
+  are dispatched to the queue, so a scheduler with no worker just fills a table.
+- **`php artisan storage:link` on boot.** `public/storage` is gitignored;
+  without the link every uploaded image 404s.
+- **Env var names that match `config/services.php`.** The blueprint previously
+  set `FX_RATE_API_KEY`, which nothing reads.
+
+> **Known issue:** the container still serves the API with
+> `php artisan serve`, Laravel's single-threaded dev server. Fine for a demo,
+> not for production traffic — see FOR_THE_TEAM.md decision 30.
 
 ---
 

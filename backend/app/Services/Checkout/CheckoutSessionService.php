@@ -79,7 +79,10 @@ class CheckoutSessionService
             // hourly refresh and convert the subtotal and the shipping on
             // different rates.
             $fxRate = $data['currency'] === 'USD'
-                ? ($this->fxRates->getCachedRate()?->rate ?? throw new NoFxRateException)
+                // getUsableRate(), not getCachedRate(): a rate old enough to
+                // be stale is a real loss on every unit sold, and refusing the
+                // order is cheaper than honouring a week-old cedi.
+                ? ($this->fxRates->getUsableRate()?->rate ?? throw new NoFxRateException)
                 : null;
 
             $order = Order::create([

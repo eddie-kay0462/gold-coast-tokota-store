@@ -16,6 +16,13 @@ RUN composer dump-autoload --optimize \
 
 EXPOSE 8000
 
-# Migrations run on boot rather than in a separate Render preDeploy step —
-# keeps the blueprint in render.yaml simple for the initial deployment.
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+# `storage:link` is not optional: public/storage is gitignored, so without it
+# every image uploaded through the admin media library 404s. It is idempotent
+# and cheap, so it runs on every boot rather than being a step someone has to
+# remember.
+#
+# Migrations run here rather than in a Render preDeploy step to keep the
+# blueprint simple. Note this means only the *web* service should migrate —
+# the worker and scheduler run the same image with their own dockerCommand,
+# which overrides this CMD, so they never race it.
+CMD ["sh", "-c", "php artisan migrate --force && php artisan storage:link || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

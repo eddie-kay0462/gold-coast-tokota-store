@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (DIY turnaround tiers — 23 of 30 admin paths real; the 7 left are genuine owner questions)
+- **Last updated:** 27 August 2026 (hardening — FX staleness, API rate limiting, and four bugs in the deploy blueprint)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -35,7 +35,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **23 of its 30 API paths now exist.** The 7 that remain (inbox ×3, returns, activity, audit, workshop-types) are all genuine business-owner questions, not backlog — see open decision 28 |
-| Tests | **77 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
+| Tests | **225 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -52,7 +52,70 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — DIY turnaround tiers
+### 27 August 2026 (latest) — hardening
+
+Stage 8. FX staleness, a baseline rate limit, and **four bugs in the deploy
+config that would each have broken something in production.**
+
+#### The deploy blueprint was wrong in four ways
+
+None of these show up locally, which is exactly why they were still there.
+
+1. **Nothing ran the scheduler.** `RefreshFxRate` (hourly) and
+   `ReleaseExpiredReservations` (every five minutes) are registered in
+   `routes/console.php`, but Laravel's scheduler needs something to call
+   `schedule:run` every minute and `render.yaml` had no cron service. Neither
+   job would ever have been dispatched — the FX rate would have sat on its
+   seeded placeholder forever, and **expired checkout reservations would have
+   held stock permanently.** Added as a `cron` service on `* * * * *`.
+2. **Nothing ran the queue.** `QUEUE_CONNECTION=database`, and both scheduled
+   jobs are dispatched with `Schedule::job()` — so even with a scheduler they
+   would have piled up in the `jobs` table untouched. Added a `worker` service
+   running `queue:work --tries=3 --max-time=3600`.
+3. **The FX key had the wrong name.** `render.yaml` set `FX_RATE_API_KEY`;
+   the code reads `EXCHANGERATE_HOST_KEY`. Nothing would have matched, so the
+   FX provider would have stayed unauthenticated in production. Fixed, along
+   with **twelve other env vars the code reads that the blueprint never set** —
+   both webhook secrets, both publishable keys, the courier base URLs, the mail
+   config, and the queue/cache/session drivers.
+4. **`storage:link` was never run.** `public/storage` is gitignored, so every
+   image uploaded through the admin media library would have 404'd. Now in the
+   container's boot command, idempotent.
+
+The three backend services share an `envVarGroups` entry rather than
+triplicating thirty variables; DB credentials stay per-service, since
+`fromDatabase` is only valid there. Blueprint verified as parsing.
+
+#### FX staleness now affects what we charge, not just what we say
+
+`isStale()` existed and `FxRateResource` reported it, but **nothing acted on
+it** — `ProductResource` priced USD off a rate of any age, and checkout locked
+one.
+
+New `getUsableRate()`: the rate, but only if it is safe to charge money
+against. `getCachedRate()` still serves the last known value however old,
+because a provider outage must never break product reads (Feature 2 edge case).
+That is the right answer for *displaying* a price and the wrong one for
+*charging* it.
+
+- **Products** now drop `price_usd`/`compare_at_usd` when the rate is stale.
+  The storefront already falls back to cedis when they are null, so an outage
+  degrades to "priced in GHS" rather than quoting a dollar figure checkout
+  would then refuse — the worse failure, because the customer only finds out at
+  the payment step.
+- **USD checkout** is refused on a stale rate, with the same 503 as no rate at
+  all. GHS checkout is unaffected; it never touches the rate.
+- **`/fx-rate` still serves a stale rate flagged `is_stale: true`** — that is
+  what the endpoint is for.
+
+#### Rate limiting
+
+A baseline `throttle:api` on every API route, 120/minute keyed by user then IP
+so an office NAT does not share one budget. Routes with tighter needs keep their
+own — checkout 20/min, feedback 10/min, login its per-email+IP lockout. There is
+a test asserting the storefront's inventory polling stays comfortably inside it.
+
+### 27 August 2026 — DIY turnaround tiers
 
 `GET/PUT /admin/settings/diy-turnaround`. **23 of the admin app's 30 paths are
 now real**, and the 7 that remain are all genuine questions for the business
@@ -1752,6 +1815,7 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
+| 30 | **Production serves the API with `php artisan serve`** | The Dockerfile's CMD is Laravel's built-in dev server: single-threaded, explicitly not for production in Laravel's own docs. It will work for a demo and fall over under real traffic. The fix is a proper process manager — FrankenPHP is the smallest change (one base-image swap plus a Caddyfile), php-fpm + nginx the conventional one. **Not done in the hardening pass deliberately:** it is a container change that cannot be verified without an actual deploy, and shipping an unverified web server swap is worse than a documented known issue. Needs one deploy to test. |
 | 28 | **Seven admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **23 now exist.** What is left is inbox (×3), returns, activity, audit and workshop-types — all four underlying questions have been written up for the business owner. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. The remainder — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
 | 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |

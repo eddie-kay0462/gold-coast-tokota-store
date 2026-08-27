@@ -12,7 +12,12 @@ class ProductResource extends JsonResource
     {
         // USD is always derived at read-time from base_price_ghs × the latest
         // cached FxRate — never stored as a static column (README Feature 2).
-        $fxRate = app(FxRateService::class)->getCachedRate();
+        // Stale rates are dropped rather than shown. The storefront already
+        // falls back to cedis when price_usd is null, so a provider outage
+        // degrades to "priced in GHS" instead of quoting a dollar figure that
+        // checkout would then refuse to honour — the worse of the two
+        // failures, because the customer only finds out at the payment step.
+        $fxRate = app(FxRateService::class)->getUsableRate();
 
         return [
             'id' => $this->id,

@@ -80,4 +80,23 @@ class FxRateService
     {
         return $fxRate->fetched_at->lt(now()->subHours(self::STALE_AFTER_HOURS));
     }
+
+    /**
+     * The rate, but only if it is safe to charge money against.
+     *
+     * getCachedRate() deliberately keeps serving the last known value however
+     * old it is, because a provider outage must never break product reads
+     * (Feature 2 edge case). That is the right answer for *displaying* a price
+     * and the wrong one for *charging* it: a rate that has not moved in a week
+     * is a loss on every unit sold, in whichever direction the cedi went.
+     *
+     * Callers that take money use this; callers that render a page use
+     * getCachedRate() and degrade to cedis.
+     */
+    public function getUsableRate(): ?FxRate
+    {
+        $rate = $this->getCachedRate();
+
+        return $rate && ! $this->isStale($rate) ? $rate : null;
+    }
 }
