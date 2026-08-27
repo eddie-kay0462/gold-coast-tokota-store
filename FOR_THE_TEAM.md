@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — Sustainability merged into About)
+- **Last updated:** 27 August 2026 (first entry below — the footer cut back to the mockup)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
   `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
@@ -50,7 +50,46 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 27 August 2026 (latest) — Sustainability merged into About
+### 27 August 2026 (latest) — the footer cut back to the mockup
+
+Four columns of eighteen links became the approved mockup's two: **Shop** (Best
+Sellers, Sandals, Ahenema, Bookings) and **House** (Stories, About, Shipping &
+Returns, Privacy Policy), with the brand column and the newsletter either side
+on the mockup's `1.4fr 1fr 1fr 1.4fr` tracks. The seven-item legal row is gone.
+
+What came out and why:
+
+- **Facebook and Twitter pointed at `/`.** Placeholders for accounts that are
+  not modelled anywhere. Only Instagram is, and it moved to the social row
+  beside the newsletter where the mockup puts it, next to WhatsApp.
+- **Two identical "Sitemap" links**, both resolving to `/sitemap.xml`. That was
+  **open issue #18** — removing both closes it.
+- **Log In / Sign Up** — reachable from the header's account icon, which is
+  where people look, and both pages are inert until customer auth exists.
+- **The Company column** duplicated About's own section nav (About,
+  Environmental Initiatives, Factories), which is now one merged page anyway.
+
+**The address is Haatso, not the mockup's "Osu."** Haatso is what the brand
+guidelines give, and `/stores` deliberately publishes no street address because
+inventing one is worse than omitting it. It links to `/stores`, which also keeps
+that page reachable now the Connect column is gone.
+
+**Height.** With four links a column the band read as a strip stuck to the
+bottom of the page, so its vertical rhythm now matches `.section-y`
+(12 / 16 / 90) — the same ladder every full-width section above it sits on.
+Measured: 387px at 1440, against roughly 400px in the mockup.
+
+**Seven routes lost their only inbound link** and are now reachable by URL and
+sitemap only: `/gift-cards`, `/international`, `/accessibility`, `/affiliates`,
+`/legal/do-not-sell`, `/legal/supply-chain`, `/legal/vendor-code`. Three of
+those are placeholder-by-design (gift cards and affiliates announce programmes
+that do not exist; the three legal drafts are unreviewed — issue #14). The ones
+worth a second look are **`/accessibility`** and **`/international`**, which are
+real content. Nothing else was orphaned: `/stores` has the address link,
+`/careers` is a card in About's More to Explore, and `/legal/terms` is linked
+from the register page's consent line.
+
+### 27 August 2026 — Sustainability merged into About
 
 `/sustainability` no longer exists. About and Sustainability were telling one
 story across two routes, so they are now one page with the section nav moving
@@ -1088,7 +1127,8 @@ will light up:
 | 17 | ~~**"Sign Up For Texts" links to an email form**~~ | **Closed 27 Aug 2026.** The announcement bar was rebuilt as the approved mockup's rotating strip and that copy no longer exists. |
 | 21 | **The approved mockup asserts two things the project cannot back up** | Template B's announcement bar reads "Free delivery in Accra" and "Order online, pick up in Osu". Checkout charges GH₵25 for Accra delivery, and the address on file in the brand PDF is Haatso, not Osu. Neither line shipped. The bar renders "Handcrafted in Ghana / Pay with MoMo or card / We ship worldwide" instead, and `SiteSetting.announcements` makes the real copy a settings change rather than a deploy. **Confirm both claims with the brand**, then set them. |
 | 22 | **DIY reference images are not uploaded** | The booking form has the mockup's dropzone, but `StoreBookingRequest` types `details.reference_image` as a string and no endpoint accepts a binary. The form records the file *name* and tells the customer, in place, to send the photo over WhatsApp with a prefilled link. Honest, but it is a stopgap — an upload endpoint (and storage) is the real fix. |
-| 18 | **The footer lists two identical sitemap links** | "Sitemap Pages" and "Sitemap Products" both point at `/sitemap.xml`. Collapse to one, or emit a product sitemap. |
+| 18 | ~~**The footer lists two identical sitemap links**~~ | **Closed 27 Aug 2026.** Both went when the footer was cut back to the approved mockup's link set. A product sitemap is still worth emitting — see the sitemap item under *What is left to do*. |
+| 23 | **Seven routes now have no inbound link** | Cutting the footer back to the mockup orphaned `/gift-cards`, `/international`, `/accessibility`, `/affiliates` and three `/legal/**` drafts. They resolve and stay in the sitemap. Four are placeholder-by-design, but **`/accessibility` and `/international` are real content** — decide whether they earn a link somewhere (a slim utility row in the bottom bar would hold both) or stay unadvertised until launch. |
 | 19 | **Gift cards are announced but don't exist** | `/gift-cards` explains the programme and both forms are inert. Making it real is backend scope: a `GiftCard` model with a code and balance, issuance on purchase, and a redemption step in the checkout session. |
 | 20 | **`/size-guide` conversions are the standard ladder, not measured lasts** | The EU/UK/US table is the generic conversion, not Gold Coast Tokota's own lasts. A chart wrong by half a size causes returns — confirm against production lasts before launch. |
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
