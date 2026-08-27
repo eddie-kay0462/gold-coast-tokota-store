@@ -13,7 +13,7 @@ const { data: featuredProducts } = await useAsyncData('home-featured-products', 
 )
 
 const { data: latestPosts } = await useAsyncData('home-latest-posts', () =>
-  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/posts?limit=5`)
+  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/blog-posts?limit=5`)
     .catch(() => ({ data: [] as ApiPost[] })),
 )
 
