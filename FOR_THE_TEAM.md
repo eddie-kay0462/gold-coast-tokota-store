@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — the approved Template B design pass)
+- **Last updated:** 27 August 2026 (first entry below — Sustainability merged into About)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
   `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
@@ -25,6 +25,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — News & Events (listing + article) | **Built** from Figma *(uncommitted)* |
 | Storefront — About | **Built** from Figma *(uncommitted)* |
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
+| Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
 | Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI. `POST /checkout/session` does not exist, so placing an order is inert |
 | Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
@@ -49,7 +50,67 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 27 August 2026 (latest) — the approved "Template B" design pass
+### 27 August 2026 (latest) — Sustainability merged into About
+
+`/sustainability` no longer exists. About and Sustainability were telling one
+story across two routes, so they are now one page with the section nav moving
+between the parts of it — which is what that tab row was always for. Before the
+merge, four of its seven tabs left the page entirely.
+
+`/sustainability` is a **301** to `/about#sustainability` (`nuxt.config.ts`),
+not a 302: the old URL was indexable and linked from the footer, the home page
+and the About tab row, so its ranking should transfer rather than be split.
+Every link that pointed at it — footer "Environmental Initiatives", the home
+editorial pair and sustainability banner — now points at the anchor.
+
+**Page order** is About's own story first (hero → CMS statement → Our Factories
+→ Our Quality → Our Prices), then everything that came across from
+Sustainability (mission → slogan ticker → Our Progress → The Latest), then More
+to Explore and the social CTA.
+
+**Components moved** from `components/sustainability/` into `components/about/`,
+so the auto-import prefix matches the page they serve: `ArticleGrid` →
+`AboutStoriesGrid`, plus `AboutProgressGrid`, `AboutSloganTicker`,
+`AboutSocialCta`. The directory is gone.
+
+**Two things did not come across verbatim:**
+
+- The old masthead's `Gold Coast Tokota` wordmark at `display-brand`. A page has
+  one masthead and About already has one; a second brand-sized wordmark two
+  thirds of the way down read as the start of a different page. Its mission copy
+  ("We're on a mission to clean up a dirty industry") survives as the
+  sustainability section's heading. **This retires open issue #9**, which was
+  about that token's very airy leading at the mobile floor.
+- "The Latest" was two rows of six with a "Load More Articles" button paging
+  through the programme feed. On a merged page that is a second, filtered copy
+  of `/blog` — and `/blog` gained its own category filter earlier the same day.
+  It is one row of three with a link to `/blog?category=Sustainability`.
+
+**New: `AboutSustainabilitySection.vue`** carries the mission heading and, under
+it, the **mission and vision statements verbatim from the brand guidelines**.
+Those had no home anywhere on the storefront before, and the merged page is
+where a reader is already asking what the company is for.
+
+**An anchor changed.** The "Designed to last" feature section carried
+`id="sustainability"` — a leftover that would now collide with the real
+sustainability block. It is `id="quality"`. Nothing linked to the old one.
+
+**The section nav is six tabs**, trimmed at the customer's request: About · Our
+Workshop · Designed to Last · Sustainability · The Latest · Partnerships.
+Removed: Radical Transparency, Our Progress, Our Carbon Commitment, Annual
+Impact Report. "Cleaner Manufacturing" and "Workshop" merged into **Our
+Workshop** — they pointed at the same subject from two directions, and booking
+is a top-level header item, so nothing is unreachable.
+
+The sections the first two named are **still on the page** and still have their
+anchors (`#prices`, `#progress`) — a section nav is a shortcut list, not a table
+of contents. If the intent was to remove those sections too, say so; note that
+`#prices` is the one carrying the Everlane price-breakdown bitmap (issue #2).
+
+`placeholder: true` now has **no users left** in `utils/navigation.ts` — the
+Annual Impact Report was the last one.
+
+### 27 August 2026 — the approved "Template B" design pass
 
 The customer reviewed a second design mockup (`Gold Coast Tokota.html` at the
 repo root — a self-contained Design Canvas bundle) and chose **variant B**. That
@@ -971,11 +1032,12 @@ order:
   GH → GHS / everyone else → USD is a commercial decision, not a technical one.
 - **`public/design/flag.svg`** is now unused; kept only as the original Figma
   export. Delete it once nobody wants the reference.
-- **Placeholder nav targets** are flagged `placeholder: true` in
-  `utils/navigation.ts`. Grep that flag to find what still needs a real route.
-  As of 27 Aug only **"Annual Impact Report"** is left: the seven mega-menu
-  categories are gone, and the menus themselves now link only to filters
-  `/shop` implements, so `MegaMenu.placeholder` was removed from the type.
+- ~~**Placeholder nav targets** are flagged `placeholder: true`~~ — **closed
+  27 Aug.** Nothing in `utils/navigation.ts` carries the flag any more: the
+  seven mega-menu categories went with the Template B nav, the menus now link
+  only to filters `/shop` implements, and the Annual Impact Report tab was
+  removed with the About section-nav trim. The flag is gone from the types too,
+  so re-add it deliberately if a stand-in destination ever comes back.
 
 ### Admin dashboard
 
@@ -1036,7 +1098,7 @@ will light up:
 | 6 | **Fish Africa coverage unverified** | Blocks confidence in Feature 8. README "Clarifications Needed" #3. |
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
 | 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
-| 9 | **Marquee line-height on the Sustainability masthead** | `display-brand` keeps Figma's 176/96 ratio, so at the mobile floor (36px) the leading is 66px — very airy. Faithful to the design, but it may be a Figma artifact rather than intent. Cheap to change to ~1.1 if it is. |
+| 9 | ~~**Marquee line-height on the Sustainability masthead**~~ | **Closed 27 Aug 2026.** The masthead was the only user of `display-brand`, whose 176/96 Figma leading measured 66px at the 36px mobile floor. It went with the About/Sustainability merge — About already had a hero, and a second brand-sized wordmark mid-page read as a different page starting. The token is still defined and now unused; delete it if nothing claims it. |
 | 11 | **The WhatsApp inbox implies scope README does not cover** | README Feature 6 specifies a `wa.me` deep link and states "no API integration required". `/inbox` needs the Business Cloud API, a verified WABA, approved templates and a webhook receiver. It ships as a clearly-labelled simulation; **whether to fund the real integration is awaiting a decision.** |
 | 12 | **Role model disagrees across sources** | README and `admin_users.role` say two tiers; the brand PDF names three; the business asked for four (adding a time-boxed `intern`). The admin UI implements four. **The database enum and role middleware still need widening** — until then the server cannot enforce what the UI presents. |
 | 13 | **WhatsApp number is provisional** | The PDF gives `+233 25 753 4297` annotated "(update with official number)". It is seeded into site settings and surfaced with a warning on `/settings/whatsapp`. Needs confirming before launch. |

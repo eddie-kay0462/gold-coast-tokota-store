@@ -24,8 +24,10 @@ export const primaryNav: NavLink[] = [
   { label: 'Shop', to: '/shop' },
   { label: 'Bookings', to: '/booking' },
   { label: 'Stories', to: '/blog' },
+  // `Sustainability` used to sit beside this. It is a section of About now
+  // (27 Aug) — the two routes were telling one story — and `/sustainability`
+  // 301s here.
   { label: 'About', to: '/about' },
-  { label: 'Sustainability', to: '/sustainability' },
 ]
 
 /** Merges extra query params into a base route, preserving what's already there. */
@@ -139,20 +141,33 @@ export const categoryNav: NavItem[] = [
 ]
 
 /**
- * The About page's own section nav (Figma 6:554). Every tab but the Annual
- * Impact Report now has a real destination — the brand-story sections drawn on
- * this page, the Sustainability page, its stories, and the workshop booking
- * flow. The report is not a designed page yet, so it resolves to the nearest
- * existing one and is flagged `placeholder`; grep the flag to find what still
- * needs a real route.
+ * The About page's own section nav (Figma 6:554).
+ *
+ * Since Sustainability was merged into About (27 Aug) this is what moves a
+ * reader between the parts of one long page, which is what a section nav is
+ * for — before the merge, four of its seven tabs left the page entirely.
+ *
+ * Trimmed to six on 27 Aug at the customer's request — Radical Transparency,
+ * Our Progress, Our Carbon Commitment and Annual Impact Report came out. The
+ * sections those first two named are still on the page and still have their
+ * anchors (`#prices`, `#progress`); a section nav is a shortcut list, not a
+ * table of contents.
+ *
+ * Every tab now resolves to something real, so nothing here is flagged
+ * `placeholder` any more — the last user of that flag was the Annual Impact
+ * Report, which was pointing at the nearest existing section because the report
+ * itself has never been designed.
  */
-export const aboutSectionNav: (NavLink & { placeholder?: boolean })[] = [
+export const aboutSectionNav: NavLink[] = [
   { label: 'About', to: '/about' },
-  { label: 'Cleaner Manufacturing', to: '/about#factories' },
-  { label: 'Workshop', to: '/booking' },
-  { label: 'Environmental Initiatives', to: '/sustainability' },
-  { label: 'Our Carbon Commitment', to: '/blog/our-carbon-commitment' },
-  { label: 'Annual Impact Report', to: '/sustainability', placeholder: true },
+  // "Cleaner Manufacturing" and "Workshop" were separate tabs pointing at the
+  // same subject from two directions — the factories section on this page, and
+  // the booking page. One tab now, on the section that explains the work.
+  // Booking is a top-level header item (`Bookings`), so nothing is lost.
+  { label: 'Our Workshop', to: '/about#factories' },
+  { label: 'Designed to Last', to: '/about#quality' },
+  { label: 'Sustainability', to: '/about#sustainability' },
+  { label: 'The Latest', to: '/about#stories' },
   { label: 'Partnerships', to: '/blog/partnerships-for-change' },
 ]
 

@@ -25,8 +25,9 @@ const allPosts = computed(() => {
  *
  * The categories are derived from the posts themselves rather than from a fixed
  * allowlist: the CMS owns them, and a hardcoded list would silently hide any
- * category the brand adds later. `/sustainability` does use an allowlist, but it
- * is doing something different — selecting a subset of the feed for one page.
+ * category the brand adds later. About's programme strand does use an allowlist,
+ * but it is doing something different — selecting a subset of the feed for one
+ * section.
  *
  * State lives in the URL so a filtered view is shareable and survives a
  * back-button, the same way `/shop` handles its facets.

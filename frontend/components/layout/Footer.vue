@@ -16,7 +16,7 @@ const columns = computed(() => [
     heading: 'Company',
     links: [
       { label: 'About', to: '/about' },
-      { label: 'Environmental Initiatives', to: '/sustainability' },
+      { label: 'Environmental Initiatives', to: '/about#sustainability' },
       { label: 'Factories', to: '/about#factories' },
       // Points at /careers#dei, not /about#dei: the About page has never had a
       // `dei` anchor, and DEI is a people-and-culture topic that belongs with

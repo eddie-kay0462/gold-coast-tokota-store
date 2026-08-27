@@ -35,6 +35,12 @@ export default defineNuxtConfig({
 
     // Nothing links to a bare /legal, but a 404 there reads as broken.
     '/legal': { redirect: { to: '/legal/privacy', statusCode: 302 } },
+
+    // About and Sustainability told one story across two routes and merged into
+    // `/about` on 27 Aug. Permanent, not a 302: the old URL was indexable and
+    // linked from the footer, the home page and the About tab row, so its
+    // ranking and any external links should transfer rather than be split.
+    '/sustainability': { redirect: { to: '/about#sustainability', statusCode: 301 } },
   },
 
   app: {

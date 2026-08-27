@@ -34,7 +34,6 @@ const TAP_MIN = 44
 const ALL_ROUTES = [
   '/',
   '/about',
-  '/sustainability',
   '/blog',
   '/blog/celebrating-au-day',
   '/shop',

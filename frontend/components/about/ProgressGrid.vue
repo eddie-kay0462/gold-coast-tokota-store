@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Figma 10:978. Each card points at the story that covers that strand of the
-// programme; the routes match the Sustainability listing's slugs.
+// programme. Moved under `components/about/` on 27 Aug when Sustainability was
+// merged into About; "Better Factories" now points at a section on the same page.
 const strands = [
   {
     label: 'Carbon Commitment',
@@ -24,7 +25,10 @@ const strands = [
 </script>
 
 <template>
-  <section class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-start gap-3">
+  <section
+    id="progress"
+    class="page-gutter section-y mx-auto flex w-full max-w-[1440px] scroll-mt-8 flex-col items-start gap-3"
+  >
     <h2 class="w-full font-normal text-display-heading text-black">Our Progress</h2>
 
     <ul class="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
