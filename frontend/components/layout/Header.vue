@@ -94,11 +94,20 @@ function isCategoryActive(to: string) {
 </script>
 
 <template>
-  <!-- The chrome is dark from the approved mockup. The ground is set here, but
-       the text colour and the light focus ring are set on each dark *row*
-       rather than on this element, because the mega menu and search panels are
-       light-on-white children of it. -->
-  <header class="relative z-50 bg-chrome" @keydown.esc="closeMenu(true); searchOpen = false">
+  <!-- The chrome is dark from the approved mockup, and sticky as the mockup has
+       it — the announcement strip travels with the nav rather than scrolling
+       away, so the currency toggle and the cart stay reachable from anywhere on
+       a page.
+
+       The ground is set here, but the text colour and the light focus ring are
+       set on each dark *row* rather than on this element, because the mega menu
+       and search panels are light-on-white children of it.
+
+       Anchor landings are handled by `scroll-padding-top` on `html`
+       (`assets/css/main.css`), not by `scroll-mt` on every target: a sticky
+       header covers the top of the viewport for every anchor on the site, so
+       the offset belongs in one place. -->
+  <header class="sticky top-0 z-50 bg-chrome" @keydown.esc="closeMenu(true); searchOpen = false">
     <!-- Announcement bar. The flag/currency cluster used to be absolutely
          positioned, so it reserved no width and the centred message ran
          underneath it on a phone (measured: the sign-up link overlapped it by
@@ -268,7 +277,7 @@ function isCategoryActive(to: string) {
     <nav
       v-if="mobileNavOpen"
       id="mobile-nav"
-      class="chrome-dark flex w-full flex-col border-t border-white/15 text-white md:hidden"
+      class="chrome-dark flex max-h-[calc(100dvh-7rem)] w-full flex-col overflow-y-auto border-t border-white/15 text-white md:hidden"
       aria-label="Mobile navigation"
     >
       <NuxtLink

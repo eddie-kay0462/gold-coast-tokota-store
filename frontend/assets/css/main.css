@@ -9,6 +9,23 @@
     @apply font-sans font-light text-graphite antialiased;
   }
 
+  /* The header is sticky, so every in-page anchor would otherwise land its
+     target underneath it. `scroll-padding-top` on the scroll container fixes
+     that once for every anchor on the site — `scroll-mt` on individual targets
+     would mean remembering it on each new one, and getting it wrong is silent.
+
+     The two values are the header's own height at each breakpoint: two rows on
+     a phone, three once the category row appears at `md`. */
+  html {
+    scroll-padding-top: 7rem;
+  }
+
+  @media (min-width: 768px) {
+    html {
+      scroll-padding-top: 11.5rem;
+    }
+  }
+
   /* Keyboard focus must stay visible everywhere (Feature 1 acceptance
      criteria); the design has no focus treatment of its own, so this is a
      project-level addition rather than a transcription. */

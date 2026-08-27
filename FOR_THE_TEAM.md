@@ -7,12 +7,12 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (first entry below — checkout rebuilt as a Shopify-style checkout)
-- **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
-- **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
-  `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
-  the search panel, About, Sustainability) went in ahead of it — read the
-  "Uncommitted work" note at the end of *Recent changes* before you branch.
+- **Last updated:** 27 August 2026 (first entry below — the sticky header)
+- **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
+- **Working tree:** clean, and `dev` is pushed. The 27 Aug work is seven commits
+  on `dev` starting at `d201f5a` — the Template B design pass and everything
+  that followed from it. `dev` is ahead of `main`; merging it is a separate
+  decision.
 
 ---
 
@@ -50,7 +50,39 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 27 August 2026 (latest) — checkout rebuilt as a Shopify-style checkout
+### 27 August 2026 (latest) — the header is sticky
+
+`Header.vue` is `sticky top-0` rather than `relative`, matching the approved
+mockup, which wraps the announcement strip *and* the nav rows in one sticky
+block. The whole chrome travels: the announcement bar, the logo row and the
+category row. Currency, search and the cart are reachable from anywhere on a
+page now.
+
+**Anchors are handled once, in `main.css`, not per target.** A sticky header
+covers the top of the viewport for *every* in-page anchor on the site, so the
+offset is `scroll-padding-top` on `html` — 7rem below `md`, 11.5rem above it,
+which is the header's own height at each breakpoint plus a little air. Putting
+`scroll-mt` on individual targets would mean remembering it on every new anchor,
+and forgetting is silent: the heading just lands under the header. Verified —
+`/about#progress` lands 144px down against a 91px header on a phone, and 216px
+against a 159px header at 1440.
+
+**The mobile drawer gained `max-h-[calc(100dvh-7rem)] overflow-y-auto`.** It
+lives inside the header, and a sticky element taller than the viewport cannot
+be scrolled to the bottom of — with three categories expanded it would have
+trapped its own last links.
+
+**Worth a look:** the header is 159px at desktop — announcement strip, logo row,
+category row. That is a lot of permanently-occupied viewport, and it is the
+price of the earlier decision to keep both nav rows. Dropping the announcement
+strip out of the sticky region (letting it scroll away while the nav stays) is
+a two-line change if it proves too heavy in use.
+
+The checkout has its own header (`layouts/checkout.vue`) and is deliberately
+**not** sticky — Shopify's checkout header is not, and a checkout with fewer
+fixed distractions is the whole point of that layout.
+
+### 27 August 2026 — checkout rebuilt as a Shopify-style checkout
 
 `/checkout` now looks like a standard Shopify checkout: stripped chrome, a
 `Cart › Information › Shipping › Payment` breadcrumb, the form in a measured
@@ -1219,7 +1251,7 @@ will light up:
 |---|---|---|
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
 | 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
-| 15 | **`/about#dei` repointed to `/careers#dei`** | The About page never had a `dei` anchor. `/careers` now has a real DEI section, but its copy is a placeholder too. If DEI belongs on About, that needs brand-written text. **Awaiting a decision.** |
+| 15 | **DEI has no link anywhere** | Was "`/about#dei` repointed to `/careers#dei`". The footer link that raised this went with the 27 Aug footer trim, so nothing now links to `/careers#dei` at all — the section exists and its copy is still a placeholder. The decision is no longer *where* DEI lives but **whether it needs a home**; if it does, it needs brand-written text and a link. **Awaiting a decision.** |
 | 16 | **The testimonial names a product that doesn't exist** | Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
 | 17 | ~~**"Sign Up For Texts" links to an email form**~~ | **Closed 27 Aug 2026.** The announcement bar was rebuilt as the approved mockup's rotating strip and that copy no longer exists. |
 | 21 | **The approved mockup asserts two things the project cannot back up** | Template B's announcement bar reads "Free delivery in Accra" and "Order online, pick up in Osu". Checkout charges GH₵25 for Accra delivery, and the address on file in the brand PDF is Haatso, not Osu. Neither line shipped. The bar renders "Handcrafted in Ghana / Pay with MoMo or card / We ship worldwide" instead, and `SiteSetting.announcements` makes the real copy a settings change rather than a deploy. **Confirm both claims with the brand**, then set them. |
@@ -1231,7 +1263,7 @@ will light up:
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
 | 3 | **About "Designed to last" copy was rewritten** | Figma's text names Everlane, cashmere sweaters and Peruvian Pima tees. Adapted to the brand. All other copy is verbatim from the design. |
 | 4 | **"Our Carbon Commitment" is tagged `Style`** | Straight from Figma `10:958`; looks like a design slip. Transcribed faithfully — flag if it should read Sustainability. |
-| 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. |
+| 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. The *frontend* half is no longer blocked as of 27 Aug — `plugins/fx-rate.ts` consumes `GET /fx-rate`, and prices fall back to cedis when no rate is available rather than rendering `$0`. What is still missing is a real provider behind `FxRateService`; it currently serves a `seed-placeholder` rate. |
 | 6 | **Fish Africa coverage unverified** | Blocks confidence in Feature 8. README "Clarifications Needed" #3. |
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
 | 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
