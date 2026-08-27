@@ -69,7 +69,14 @@ class DatabaseSeeder extends Seeder
         $obrempong = Collection::query()->firstOrCreate(['slug' => 'obrempong'], ['name' => 'Obrempong']);
         $slides = Collection::query()->firstOrCreate(['slug' => 'slides'], ['name' => 'Slides']);
 
-        if (Product::query()->count() === 0) {
+        // The six products the storefront was actually designed around, with
+        // their real copy, photography and per-size stock. Runs first so a
+        // fresh database looks like the approved mockup rather than like faker.
+        $this->call(ProductSeeder::class);
+
+        // A handful of faker products on top, so pagination, the listing
+        // filters and the empty states have more than six rows to work with.
+        if (Product::query()->count() <= 6) {
             Product::factory()
                 ->count(3)
                 ->featured()
@@ -78,6 +85,7 @@ class DatabaseSeeder extends Seeder
 
             Product::factory()
                 ->count(2)
+                ->onSale()
                 ->has(InventoryItem::factory()->count(2))
                 ->create(['category_id' => $sandals->id, 'collection_id' => $sikapa->id]);
 

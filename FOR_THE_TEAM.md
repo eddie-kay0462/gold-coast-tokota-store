@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (the collapsing category row; the 24 Aug dev-server entry below merged in from a local stash)
+- **Last updated:** 27 August 2026 (the product API contract — backend now sends every field the storefront reads, bar reviews)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -32,9 +32,10 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
 | Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
+| Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. Runs on bundled fixtures; see the entry below |
-| Tests | None beyond Laravel's two `ExampleTest` placeholders |
+| Tests | **77 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -51,7 +52,65 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — the category row collapses on scroll
+### 27 August 2026 (latest) — the product API contract closed
+
+The storefront's `ApiProduct` type declared **thirteen fields that
+`ProductResource` never sent**. Every page built against them had been falling
+back to `DESIGN_PRODUCTS` for months, and nobody found out, because every
+storefront fetch ends in `.catch(() => null)` — a broken endpoint and a working
+one looked identical in the browser.
+
+Eleven of the thirteen now exist end to end: `compare_at_ghs`, `product_type`,
+`departments`, `widths`, `tags`, `color`, `colors`, `is_pre_order`,
+`description_heading`, `model_note`, `cost_breakdown`. Migration, model casts,
+`ProductResource`, factory, seeder and tests, plus a new
+**`docs/api-contract.md`** that is now the shared source of truth. Change a
+response shape, change that file in the same commit.
+
+Things in it that are not obvious:
+
+- **Two whole sections of the product page were about to vanish.** `[slug].vue`
+  guards its reviews block and its Transparent Pricing block with `v-if`, so
+  the moment a real API response replaced the fixture, both would have
+  disappeared. `cost_breakdown` is now sent; reviews are deliberately not — see
+  below.
+- **`sizes` was returning integers.** PHP silently casts numeric array keys to
+  ints, and the listing's size facet compares against strings, so
+  `['39','40'].includes(39)` is false — the size filter would have matched
+  nothing, silently, forever. `getSizesAttribute` now casts back.
+- **`compare_at_usd` is derived on the same `FxRate` read as `price_usd`.** Two
+  separate reads could straddle an hourly refresh and show a "sale" where the
+  was-price converted lower than the selling price.
+- **`ProductFactory` seeded `'images' => []`.** That is why every seeded
+  product's detail page was a bare grey frame: `ProductGallery` has no
+  placeholder fallback, unlike `ProductCard`, so the omission was invisible on
+  the listing and total on the detail page. The factory now seeds a real photo,
+  and there is a test that fails if that regresses.
+- **The six designed products are now seeded for real.** `ProductSeeder` reads
+  `backend/database/data/design-products.json` — copy, photography, pricing and
+  per-size stock, generated from the frontend fixture rather than
+  hand-transcribed, so the two cannot drift. A seeded database now looks like
+  the approved mockup instead of like faker ("Molestiae Hic Veritatis").
+  Faker products are still created on top so pagination and the filters have
+  more than six rows to work against.
+- **The design's deliberate zeroes are seeded too**, which is what makes the
+  struck-through sizes and the OUT OF STOCK badge actually appear locally.
+
+Also fixed, both found while tracing the above:
+
+- **`frontend/pages/index.vue` was fetching `/posts?limit=5`.** The route is
+  `/blog-posts`. It had been 404ing into the fixture fallback since it was
+  written.
+- **`/blog-posts` ignored `limit` entirely**, so fixing the path alone would
+  have handed the home page nine posts for a five-post strip. It now honours
+  `?limit=`, clamped to 1–24.
+
+**Left as is:** the listing filters still run client-side over a 12-per-page
+API response, so they only ever see the first page. Harmless at six products,
+a correctness bug at sixty. Recorded in `docs/api-contract.md` under "Known
+gaps"; server-side filtering is the fix.
+
+### 27 August 2026 — the category row collapses on scroll
 
 The header's third row (Best Sellers · Sandals · Ahenema · Sale) now folds
 upward as soon as the page starts moving and drops back down at the top. The
@@ -1220,17 +1279,32 @@ API, per the folder structure in `README.md`.
 
 ### Backend — the critical path
 
-Almost nothing exists yet. Every storefront page currently renders from
-hardcoded design fallbacks (see "Conventions" below). In rough dependency
-order:
+This section used to open "Almost nothing exists yet." That has not been true
+for a while. Feature 2 is done and its contract is closed (27 Aug); Feature 3's
+hard part — reservations with row-level locking — is written and tested; the
+scheduler runs `RefreshFxRate` hourly and `ReleaseExpiredReservations` every
+five minutes. What is missing is the transactional half.
 
-1. **Feature 2 — Catalogue & pricing.** `products`, `variants`, `categories`
-   tables; `ProductController`; `FxRateService` + the cached GHS→USD rate. USD
-   is always derived, never stored. *Blocked on: FX provider still unchosen —
-   see README "Clarifications Needed" #2.*
-2. **Feature 3 — Inventory.** Stock levels, reservations
-   (`RESERVATION_TTL_MINUTES` is already in `utils/constants.ts`), and the
-   polling endpoint behind `useInventoryPolling`.
+**Every third-party credential in `backend/.env` is empty** (13 of 15 values).
+Paystack and Stripe test keys are self-serve; Fish Africa, Yango, DHL and
+exchangerate.host need a human to request business access. Those requests have
+lead times measured in days, and they gate items 3–6 below — start them now,
+not when you reach the stage that needs them.
+
+In dependency order:
+
+1. ~~**Feature 2 — Catalogue & pricing.**~~ — **closed 27 Aug.** Tables,
+   `ProductController`, `FxRateService` and the full storefront contract all
+   exist; see `docs/api-contract.md`. The FX provider is chosen
+   (exchangerate.host) and `RefreshFxRate` is scheduled — only the access key
+   is missing. *What is left: server-side listing filters, before the catalogue
+   outgrows one page.*
+2. **Feature 3 — Inventory.** Mostly built: `InventoryReservationService` does
+   `SELECT … FOR UPDATE` with correct concurrent-hold semantics, and
+   `ReleaseExpiredReservations` is scheduled. *What is left is exposure, not
+   construction:* `GET /products/{slug}/stock` (the composable
+   `useInventoryPolling` is already polling into the void) and
+   `GET /admin/inventory` with the low-stock filter.
 3. **Feature 4 — Checkout & payments.** Orders, Paystack (GHS) + Stripe (USD)
    session creation and webhook verification, FX rate locked at checkout.
 4. **Feature 5 — Delivery.** Yango (domestic) and DHL (international) quote/booking.
@@ -1336,6 +1410,10 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
+| 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
+| 25 | **Seeded collection assignments are a guess** | `database/data/design-products.json` assigns each of the six designed products to a collection (Obrempong / Sikapa / Slides). The design fixture never carried one, so these are a first pass. Categories are derived from `product_type` and are safe; **the collections need the brand to confirm.** |
+| 26 | **Listing filters only ever see the first page** | The shop page sends `type`, `color`, `size`, `width`, `category`, `q`, `sale` and `sort` as query params, `ProductController::index` ignores every one of them, and `matchesFilters()` filters client-side over a 12-per-page response. Invisible at six products; wrong at sixty. Server-side filtering is the fix — see `docs/api-contract.md`, "Known gaps". |
+| 27 | **13 of 15 third-party credentials are empty** | Everything in `backend/.env` for Paystack, Stripe, Yango, DHL, Fish Africa and exchangerate.host. Paystack and Stripe test keys are self-serve and enough to build the whole of Feature 4. The rest need business accounts requested by a human, with real lead times — **they gate Features 4, 5 and 8, so request them now**, not on arrival at the stage. |
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
 | 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
 | 15 | **DEI has no link anywhere** | Was "`/about#dei` repointed to `/careers#dei`". The footer link that raised this went with the 27 Aug footer trim, so nothing now links to `/careers#dei` at all — the section exists and its copy is still a placeholder. The decision is no longer *where* DEI lives but **whether it needs a home**; if it does, it needs brand-written text and a link. **Awaiting a decision.** |
@@ -1350,7 +1428,7 @@ will light up:
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
 | 3 | **About "Designed to last" copy was rewritten** | Figma's text names Everlane, cashmere sweaters and Peruvian Pima tees. Adapted to the brand. All other copy is verbatim from the design. |
 | 4 | **"Our Carbon Commitment" is tagged `Style`** | Straight from Figma `10:958`; looks like a design slip. Transcribed faithfully — flag if it should read Sustainability. |
-| 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. The *frontend* half is no longer blocked as of 27 Aug — `plugins/fx-rate.ts` consumes `GET /fx-rate`, and prices fall back to cedis when no rate is available rather than rendering `$0`. What is still missing is a real provider behind `FxRateService`; it currently serves a `seed-placeholder` rate. |
+| 5 | **FX provider chosen, key missing** | No longer blocks Feature 2 — that shipped 27 Aug. README "Clarifications Needed" #2. The *frontend* half is no longer blocked as of 27 Aug — `plugins/fx-rate.ts` consumes `GET /fx-rate`, and prices fall back to cedis when no rate is available rather than rendering `$0`. What is still missing is a real provider behind `FxRateService`; it currently serves a `seed-placeholder` rate. |
 | 6 | **Fish Africa coverage unverified** | Blocks confidence in Feature 8. README "Clarifications Needed" #3. |
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
 | 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |

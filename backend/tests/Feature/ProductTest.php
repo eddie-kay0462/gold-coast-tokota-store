@@ -214,4 +214,108 @@ class ProductTest extends TestCase
         $response->assertJsonPath('data.in_stock', true);
         $response->assertJsonPath('data.merchandising_badge', null);
     }
+
+    /**
+     * The storefront's ApiProduct type (frontend/utils/catalog.ts) is the
+     * contract. Everything it declares must survive a round trip through the
+     * API, or the pages built against it silently fall back to fixtures.
+     */
+    public function test_product_resource_exposes_every_storefront_contract_field(): void
+    {
+        $product = Product::factory()->onSale()->create([
+            'product_type' => 'ahenema',
+            'departments' => ['mens', 'womens'],
+            'widths' => ['m', 'l'],
+            'tags' => ['Custom Made'],
+            'color' => 'Brown',
+            'colors' => [['name' => 'Brown', 'hex' => '#8B5A2B']],
+            'is_pre_order' => true,
+            'description_heading' => 'Woven Heritage, Everyday Wear',
+            'model_note' => 'Model is 5′11″, wearing a size 42',
+            'cost_breakdown' => [
+                ['label' => 'Materials', 'amount_ghs' => 4500, 'icon' => '/design/icons/cost-materials.svg'],
+            ],
+        ]);
+
+        $response = $this->getJson("/api/v1/products/{$product->slug}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.product_type', 'ahenema');
+        $response->assertJsonPath('data.departments', ['mens', 'womens']);
+        $response->assertJsonPath('data.widths', ['m', 'l']);
+        $response->assertJsonPath('data.tags', ['Custom Made']);
+        $response->assertJsonPath('data.color', 'Brown');
+        $response->assertJsonPath('data.colors.0.hex', '#8B5A2B');
+        $response->assertJsonPath('data.is_pre_order', true);
+        $response->assertJsonPath('data.description_heading', 'Woven Heritage, Everyday Wear');
+        $response->assertJsonPath('data.model_note', 'Model is 5′11″, wearing a size 42');
+        $response->assertJsonPath('data.cost_breakdown.0.label', 'Materials');
+        $response->assertJsonPath('data.compare_at_ghs', $product->compare_at_ghs);
+    }
+
+    /** Listing responses carry the facets too — the shop page filters on them client-side. */
+    public function test_listing_responses_carry_the_listing_facets(): void
+    {
+        Product::factory()->create(['product_type' => 'slippers', 'departments' => ['womens']]);
+
+        $response = $this->getJson('/api/v1/products');
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.product_type', 'slippers');
+        $response->assertJsonPath('data.0.departments', ['womens']);
+    }
+
+    /**
+     * PHP casts numeric array keys to ints, but the storefront's size facet
+     * compares these against strings — an int list matches nothing, silently.
+     */
+    public function test_sizes_are_returned_as_strings(): void
+    {
+        $product = Product::factory()->create();
+        InventoryItem::factory()->create([
+            'product_id' => $product->id,
+            'variant_attributes' => ['size' => '42'],
+            'quantity_available' => 5,
+        ]);
+
+        $response = $this->getJson("/api/v1/products/{$product->slug}");
+
+        $response->assertOk();
+        $this->assertSame(['42'], $response->json('data.sizes'));
+    }
+
+    /** A sale price and its was-price must never be converted on different rates. */
+    public function test_compare_at_usd_is_derived_on_the_same_rate_as_price_usd(): void
+    {
+        FxRate::factory()->create(['rate' => 0.08]);
+        $product = Product::factory()->create([
+            'base_price_ghs' => 60000,
+            'compare_at_ghs' => 70000,
+        ]);
+
+        $response = $this->getJson("/api/v1/products/{$product->slug}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.price_usd', 4800);
+        $response->assertJsonPath('data.compare_at_usd', 5600);
+    }
+
+    public function test_compare_at_usd_is_null_when_the_product_is_not_on_sale(): void
+    {
+        FxRate::factory()->create(['rate' => 0.08]);
+        $product = Product::factory()->create(['compare_at_ghs' => null]);
+
+        $response = $this->getJson("/api/v1/products/{$product->slug}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.compare_at_usd', null);
+    }
+
+    /** A product with no photo renders the detail gallery as a bare grey frame. */
+    public function test_factory_products_always_carry_at_least_one_image(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->assertNotEmpty($product->images);
+    }
 }

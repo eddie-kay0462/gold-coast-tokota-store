@@ -1,0 +1,488 @@
+[
+  {
+    "slug": "kentehene-collection",
+    "name": "The Kentehene Collection",
+    "base_price_ghs": 60000,
+    "compare_at_ghs": 70000,
+    "images": [
+      "/design/product-kentehene.png"
+    ],
+    "color": "Brown",
+    "colors": [
+      {
+        "name": "Brown",
+        "hex": "#8B5A2B"
+      },
+      {
+        "name": "Navy",
+        "hex": "#1B2A4A"
+      },
+      {
+        "name": "Tan",
+        "hex": "#C4AE93"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      }
+    ],
+    "product_type": "ahenema",
+    "departments": [
+      "mens"
+    ],
+    "sizes": [
+      "39",
+      "40",
+      "41",
+      "42",
+      "43"
+    ],
+    "widths": [
+      "m",
+      "l"
+    ],
+    "description_heading": "Woven Heritage, Everyday Wear",
+    "description": "The Kentehene Collection pairs a hand-woven kente strap with a full-grain leather footbed that softens to the shape of your foot within a week of wear. Each strap is woven in Bonwire and cut to order, so no two pairs carry exactly the same pattern. The outsole is stitched rather than glued — it can be resoled by any cobbler instead of replaced.",
+    "model_note": "Model is 5′11″, wearing a size 42",
+    "size_availability": {
+      "39": 4,
+      "40": 9,
+      "41": 6,
+      "42": 0,
+      "43": 3
+    },
+    "cost_breakdown": [
+      {
+        "label": "Materials",
+        "amount_ghs": 4500,
+        "icon": "/design/icons/cost-materials.svg"
+      },
+      {
+        "label": "Hardware",
+        "amount_ghs": 500,
+        "icon": "/design/icons/cost-hardware.svg"
+      },
+      {
+        "label": "Labor",
+        "amount_ghs": 5000,
+        "icon": "/design/icons/cost-labor.svg"
+      },
+      {
+        "label": "Duties",
+        "amount_ghs": 1000,
+        "icon": "/design/icons/cost-duties.svg"
+      },
+      {
+        "label": "Transport",
+        "amount_ghs": 2000,
+        "icon": "/design/icons/cost-transport.svg"
+      }
+    ],
+    "category": "ahenema",
+    "collection": "obrempong"
+  },
+  {
+    "slug": "acheampong-collection",
+    "name": "The Acheampong Collection",
+    "base_price_ghs": 70000,
+    "compare_at_ghs": 75000,
+    "images": [
+      "/design/pdp-acheampong-1.png",
+      "/design/pdp-acheampong-2.png",
+      "/design/pdp-acheampong-3.png",
+      "/design/product-acheampong.png"
+    ],
+    "color": "Navy Blue",
+    "colors": [
+      {
+        "name": "Navy Blue",
+        "hex": "#1B2A4A"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      },
+      {
+        "name": "Grey",
+        "hex": "#D9D9D9"
+      }
+    ],
+    "tags": [
+      "Custom Made"
+    ],
+    "product_type": "slippers",
+    "departments": [
+      "mens"
+    ],
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45",
+      "46"
+    ],
+    "widths": [
+      "m"
+    ],
+    "description_heading": "Calm, Elevated and Purposeful",
+    "description": "Meet your new every day sandal. The Acheampong Collection has all the classic sandal detailing — strong soles, comfortable cushioning with a strap, and a good hem. The straps are fully lined for added comfort and it’s made with a GRS-certified recycled Italian wool and GRS-certified recycled nylon blend. Think cozy, comfy, and oh-so easy to wear. With the goal of increasing the use of recycled materials and reducing the harmful impacts of production, the Global Recycled Standard (GRS) sets requirements for third-party certification of recycled input in products — including chain of custody, social and environmental practices, and chemical restrictions.",
+    "model_note": "Model is 6′2″, wearing a size 43",
+    "size_availability": {
+      "38": 6,
+      "39": 4,
+      "40": 5,
+      "41": 0,
+      "42": 8,
+      "43": 7,
+      "44": 3,
+      "45": 2,
+      "46": 0
+    },
+    "cost_breakdown": [
+      {
+        "label": "Materials",
+        "amount_ghs": 5000,
+        "icon": "/design/icons/cost-materials.svg"
+      },
+      {
+        "label": "Hardware",
+        "amount_ghs": 500,
+        "icon": "/design/icons/cost-hardware.svg"
+      },
+      {
+        "label": "Labor",
+        "amount_ghs": 6000,
+        "icon": "/design/icons/cost-labor.svg"
+      },
+      {
+        "label": "Duties",
+        "amount_ghs": 1000,
+        "icon": "/design/icons/cost-duties.svg"
+      },
+      {
+        "label": "Transport",
+        "amount_ghs": 2500,
+        "icon": "/design/icons/cost-transport.svg"
+      }
+    ],
+    "category": "sandals",
+    "collection": "obrempong"
+  },
+  {
+    "slug": "adinkra-slippers",
+    "name": "The Adinkra Slippers",
+    "base_price_ghs": 45000,
+    "compare_at_ghs": 55000,
+    "images": [
+      "/design/product-adinkra.png"
+    ],
+    "color": "Black and White",
+    "colors": [
+      {
+        "name": "White",
+        "hex": "#FFFFFF"
+      },
+      {
+        "name": "Olive",
+        "hex": "#5A6134"
+      }
+    ],
+    "tags": [
+      "Renewed Materials",
+      "Cleaner Chemistry"
+    ],
+    "product_type": "slippers",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "widths": [
+      "s",
+      "m"
+    ],
+    "description_heading": "Symbols That Carry Meaning",
+    "description": "Each pair of Adinkra Slippers is stamped by hand with a single symbol — Gye Nyame, Sankofa or Dwennimmen — using dye pressed from badie bark, the same method used for adinkra cloth. The upper is offcut leather recovered from our sandal production, which is why the shade varies slightly between pairs. Built flat and unlined for warm weather.",
+    "model_note": "Model is 5′8″, wearing a size 40",
+    "size_availability": {
+      "38": 7,
+      "39": 5,
+      "40": 2,
+      "41": 0,
+      "42": 4
+    },
+    "cost_breakdown": [
+      {
+        "label": "Materials",
+        "amount_ghs": 3500,
+        "icon": "/design/icons/cost-materials.svg"
+      },
+      {
+        "label": "Hardware",
+        "amount_ghs": 400,
+        "icon": "/design/icons/cost-hardware.svg"
+      },
+      {
+        "label": "Labor",
+        "amount_ghs": 4000,
+        "icon": "/design/icons/cost-labor.svg"
+      },
+      {
+        "label": "Duties",
+        "amount_ghs": 700,
+        "icon": "/design/icons/cost-duties.svg"
+      },
+      {
+        "label": "Transport",
+        "amount_ghs": 1400,
+        "icon": "/design/icons/cost-transport.svg"
+      }
+    ],
+    "category": "sandals",
+    "collection": "slides"
+  },
+  {
+    "slug": "elevated-odeneho",
+    "name": "The Elevated Odeneho",
+    "base_price_ghs": 50000,
+    "compare_at_ghs": 60000,
+    "images": [
+      "/design/product-elevated-odeneho.png"
+    ],
+    "color": "Brown",
+    "colors": [
+      {
+        "name": "Brown",
+        "hex": "#8B5A2B"
+      },
+      {
+        "name": "Navy",
+        "hex": "#1B2A4A"
+      },
+      {
+        "name": "Tan",
+        "hex": "#C4AE93"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      }
+    ],
+    "product_type": "sandals",
+    "departments": [
+      "mens"
+    ],
+    "sizes": [
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "widths": [
+      "m",
+      "l"
+    ],
+    "description_heading": "A Little More Height, All Day Comfort",
+    "description": "The Elevated Odeneho takes our flat sandal and adds a 30mm stacked leather midsole with a cork footbed underneath. The cork moulds to your arch over the first month and stays there. Woven crossover straps distribute pressure so nothing digs in when you are standing for long stretches. Made to be resoled, not replaced.",
+    "model_note": "Model is 6′0″, wearing a size 43",
+    "size_availability": {
+      "41": 3,
+      "42": 6,
+      "43": 5,
+      "44": 0,
+      "45": 1
+    },
+    "cost_breakdown": [
+      {
+        "label": "Materials",
+        "amount_ghs": 3800,
+        "icon": "/design/icons/cost-materials.svg"
+      },
+      {
+        "label": "Hardware",
+        "amount_ghs": 500,
+        "icon": "/design/icons/cost-hardware.svg"
+      },
+      {
+        "label": "Labor",
+        "amount_ghs": 4400,
+        "icon": "/design/icons/cost-labor.svg"
+      },
+      {
+        "label": "Duties",
+        "amount_ghs": 800,
+        "icon": "/design/icons/cost-duties.svg"
+      },
+      {
+        "label": "Transport",
+        "amount_ghs": 1500,
+        "icon": "/design/icons/cost-transport.svg"
+      }
+    ],
+    "category": "sandals",
+    "collection": "sikapa"
+  },
+  {
+    "slug": "flavourful-cross-slippers",
+    "name": "Flavourful Cross Slippers",
+    "base_price_ghs": 45000,
+    "compare_at_ghs": 50000,
+    "images": [
+      "/design/product-flavourful-cross.png"
+    ],
+    "color": "Crystal Blue",
+    "colors": [
+      {
+        "name": "Crystal Blue",
+        "hex": "#1E4C8F"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      },
+      {
+        "name": "Grey",
+        "hex": "#D9D9D9"
+      }
+    ],
+    "tags": [
+      "Organic Materials"
+    ],
+    "product_type": "slippers",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "38",
+      "39",
+      "40",
+      "41"
+    ],
+    "widths": [
+      "s",
+      "m"
+    ],
+    "description_heading": "Dyed by Hand, No Two Alike",
+    "description": "The crossover strap is dyed in small batches using indigo grown in the Volta Region, which is why the blue shifts between pairs and deepens with sun exposure. Underneath is an organic cotton canvas footbed over natural latex — no synthetic foam anywhere in the build. Best kept out of standing water, since the dye is unfixed by design.",
+    "model_note": "Model is 5′7″, wearing a size 39",
+    "size_availability": {
+      "38": 5,
+      "39": 8,
+      "40": 0,
+      "41": 2
+    },
+    "cost_breakdown": [
+      {
+        "label": "Materials",
+        "amount_ghs": 3400,
+        "icon": "/design/icons/cost-materials.svg"
+      },
+      {
+        "label": "Hardware",
+        "amount_ghs": 400,
+        "icon": "/design/icons/cost-hardware.svg"
+      },
+      {
+        "label": "Labor",
+        "amount_ghs": 3800,
+        "icon": "/design/icons/cost-labor.svg"
+      },
+      {
+        "label": "Duties",
+        "amount_ghs": 600,
+        "icon": "/design/icons/cost-duties.svg"
+      },
+      {
+        "label": "Transport",
+        "amount_ghs": 1300,
+        "icon": "/design/icons/cost-transport.svg"
+      }
+    ],
+    "category": "sandals",
+    "collection": "slides"
+  },
+  {
+    "slug": "odeneho-collection",
+    "name": "The Odeneho Collection",
+    "base_price_ghs": 25000,
+    "compare_at_ghs": 30000,
+    "images": [
+      "/design/product-odeneho.png"
+    ],
+    "color": "Olive Green",
+    "colors": [
+      {
+        "name": "Olive Green",
+        "hex": "#5A6134"
+      }
+    ],
+    "tags": [
+      "Renewed Materials",
+      "Cleaner Chemistry"
+    ],
+    "is_pre_order": true,
+    "product_type": "closed-toe",
+    "departments": [
+      "mens"
+    ],
+    "sizes": [
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "widths": [
+      "m"
+    ],
+    "description_heading": "The Original, Made From What We Save",
+    "description": "The sandal we started with. The olive upper is cut from leather offcuts recovered off our own cutting floor, and the footbed is bonded with a water-based adhesive rather than a solvent one. Simple flat build, closed toe, nothing on it that cannot be repaired. Currently made to order — pre-order pairs ship within three weeks.",
+    "model_note": "Model is 5′9″, wearing a size 43",
+    "size_availability": {
+      "42": 0,
+      "43": 0,
+      "44": 0,
+      "45": 0
+    },
+    "cost_breakdown": [
+      {
+        "label": "Materials",
+        "amount_ghs": 2000,
+        "icon": "/design/icons/cost-materials.svg"
+      },
+      {
+        "label": "Hardware",
+        "amount_ghs": 200,
+        "icon": "/design/icons/cost-hardware.svg"
+      },
+      {
+        "label": "Labor",
+        "amount_ghs": 2200,
+        "icon": "/design/icons/cost-labor.svg"
+      },
+      {
+        "label": "Duties",
+        "amount_ghs": 400,
+        "icon": "/design/icons/cost-duties.svg"
+      },
+      {
+        "label": "Transport",
+        "amount_ghs": 700,
+        "icon": "/design/icons/cost-transport.svg"
+      }
+    ],
+    "category": "sandals",
+    "collection": "sikapa"
+  }
+]

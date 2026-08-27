@@ -19,18 +19,36 @@ class Product extends Model
         'category_id',
         'collection_id',
         'base_price_ghs',
+        'compare_at_ghs',
         'sku',
         'images',
         'is_active',
         'is_featured',
+        'is_pre_order',
         'merchandising_badge',
+        'product_type',
+        'departments',
+        'widths',
+        'tags',
+        'color',
+        'colors',
+        'description_heading',
+        'model_note',
+        'cost_breakdown',
     ];
 
     protected $casts = [
         'images' => 'array',
+        'departments' => 'array',
+        'widths' => 'array',
+        'tags' => 'array',
+        'colors' => 'array',
+        'cost_breakdown' => 'array',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'is_pre_order' => 'boolean',
         'base_price_ghs' => 'integer',
+        'compare_at_ghs' => 'integer',
     ];
 
     public function category(): BelongsTo
@@ -112,11 +130,15 @@ class Product extends Model
      * are currently out of stock, which still render (struck through) so the
      * customer can see the range and ask about a restock.
      *
+     * Cast back to strings: PHP silently converts numeric array keys to ints,
+     * and the storefront's size facet compares these against string values
+     * (frontend/pages/shop/index.vue) — an int list matches nothing, silently.
+     *
      * @return array<int, string>
      */
     public function getSizesAttribute(): array
     {
-        return array_keys($this->size_availability);
+        return array_map(strval(...), array_keys($this->size_availability));
     }
 
     /**
