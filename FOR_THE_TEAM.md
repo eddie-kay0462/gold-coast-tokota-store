@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (checkout and orders — the payment boundary moved from "nothing exists" to "waiting on gateway keys")
+- **Last updated:** 27 August 2026 (customer accounts and feedback — `AUTH_ENABLED` can be flipped on)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -27,7 +27,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — About | **Built** from Figma *(uncommitted)* |
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
-| Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
+| Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. **Auth is no longer inert on the API side:** register/login/logout/me and order history all exist on the `web` guard, so `AUTH_ENABLED` in `composables/useAuth.ts` can be flipped. `POST /feedback` exists too |
 | Storefront — Checkout | **Built to the payment boundary.** `POST /checkout/session` now exists and works end to end — prices, shipping quote, FX lock, stock reservation, order creation. What is still inert is the last hop: `PaymentStep.placeOrder()` is still the simulated version, and `FakeGateway` stands in for Paystack/Stripe until their keys exist |
 | Storefront — Order confirmation | **Built, and no longer waiting.** `GET /orders/{reference}` exists and satisfies `ApiOrder` in full. Note the key: **reference, not numeric id** — `/orders/1` is a 404 by design |
 | Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
@@ -52,7 +52,53 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — checkout and orders
+### 27 August 2026 (latest) — customer accounts and feedback
+
+`POST /register`, `POST /login`, `POST /logout`, `GET /me`, `GET /orders`, and
+`POST /feedback` with its admin read side. Sanctum SPA cookie sessions on the
+`web` guard, mirroring what `AdminAuthController` already does on `admin`.
+
+`composables/useAuth.ts` spelled out exactly what the backend needed and every
+claim in it checked out — `Customer` extends Authenticatable with hashed
+casting, `web` is wired to the `customers` provider, `passwords.customers` is
+configured. Only the controller and routes were missing.
+
+- **Customer routes are guarded with `auth:web`, not `auth:sanctum`.**
+  `config/sanctum.php` has `'guard' => ['web', 'admin']`, so `auth:sanctum`
+  would have let an **admin** session satisfy a customer route — and
+  `$request->user()` would then be an `AdminUser`, whose id could collide with
+  a real customer's and hand back someone else's order history. There is a test
+  that signs in as an admin and asserts `/me` and `/orders` both 401.
+- **`GET /orders` scopes to the session and takes no customer parameter.** The
+  only safe answer to "whose orders?" is "the session's".
+- **Registration deliberately does not adopt an existing passwordless row.**
+  Nothing creates them today — guest checkout leaves `customer_id` null rather
+  than writing a Customer. If post-purchase account creation ever does, letting
+  registration claim one would hand anyone who knows a customer's email their
+  whole order history. Any future claiming flow needs an emailed confirmation
+  link, and there is a comment in `RegisterCustomerRequest` saying so.
+- **Login is throttled per email + IP**, not per email, so nobody can lock a
+  real customer out by hammering a known address from elsewhere.
+- **Feedback is unauthenticated, so `message` is capped at 5,000 characters**
+  and the route is throttled. A `customer_id` in the body is ignored; it comes
+  from the session or not at all. The admin side is read-only — feedback is a
+  record of what someone said, and a panel that can quietly edit it is worse
+  than one that cannot.
+
+**Fixed on the way past:** `OrderFactory` and `OrderItemFactory` were left out
+of sync by yesterday's checkout migration — `reference` and `product_name` are
+both NOT NULL now, and neither factory set them. No test had used them yet, so
+the suite stayed green while `Order::factory()->create()` would have thrown for
+the next person to try it. Both now set the columns they need.
+
+**Kirk — this is the one you have been waiting on.** `useAuth.ts` lists the four
+steps to turn accounts on; all of them are now unblocked. `AUTH_ENABLED` → true,
+swap the three `simulate()` bodies for `GET /sanctum/csrf-cookie` then
+`POST /login | /register | /logout` with `credentials: 'include'`, and add the
+route middleware to `/account/orders` and `/account/settings`. `GET /orders`
+gives that first page real data. Full shapes in `docs/api-contract.md`.
+
+### 27 August 2026 — checkout and orders
 
 `POST /checkout/session` and `GET /orders/{reference}`. The transactional half
 of Feature 4, up to the point where a real gateway would take money.
@@ -1412,9 +1458,16 @@ In dependency order:
 6. **Feature 8 — Notifications.** Fish Africa SMS + transactional email behind
    a swappable `NotificationService`. *Sandbox test recommended first — Ghana
    network delivery rates unverified (README "Clarifications Needed" #3).*
-7. **Feature 9 — CMS + admin API.** Blog posts, About/Page editing, site
-   settings, newsletter, feedback; two-tier role middleware is scaffolded but
-   unused.
+7. **Feature 9 — CMS + admin API.** *The largest remaining surface.* Blog
+   posts, About/Page editing, site settings, newsletter, customers, orders,
+   bookings, workshops, media upload and `GET /admin/dashboard/metrics` — the
+   admin app renders all of it from bundled fixtures today. Done so far:
+   `admin/products` (write), `admin/inventory` and `admin/feedback` (read).
+   Also outstanding here: server-side HTML sanitisation on `PageEditor`
+   submissions, which is an explicit stored-XSS acceptance criterion.
+
+8. **Customer accounts.** ~~Register/login/logout/me, order history.~~ —
+   **closed 27 Aug.**
 
 ### Storefront
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
@@ -8,6 +9,8 @@ use App\Http\Controllers\Api\V1\BookingController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CollectionController;
+use App\Http\Controllers\Api\V1\CustomerAuthController;
+use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\FxRateController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\V1\OrderController;
@@ -37,6 +40,30 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/fx-rate', [FxRateController::class, 'show'])->name('fx-rate.show');
+
+    // Customer accounts (README Feature 4 — optional throughout; guest
+    // checkout never requires one). Sanctum SPA cookie sessions on the `web`
+    // guard, the mirror of the admin block below.
+    //
+    // Routes are guarded with `auth:web`, NOT `auth:sanctum`: config/sanctum.php
+    // lists both `web` and `admin` in its guard array, so `auth:sanctum` would
+    // let an admin session through here — and `$request->user()` would then be
+    // an AdminUser whose id could collide with a real customer's.
+    Route::post('/register', [CustomerAuthController::class, 'register'])->name('register');
+    Route::post('/login', [CustomerAuthController::class, 'login'])->name('login');
+
+    Route::middleware('auth:web')->group(function () {
+        Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
+        Route::get('/me', [CustomerAuthController::class, 'me'])->name('me');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    });
+
+    // Feedback (Feature 9). Unauthenticated — the form on /help asks for a name
+    // and an email rather than a login — so it is throttled, and a session is
+    // attached when there happens to be one.
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+    });
 
     // Checkout and orders (Feature 4). Both are unauthenticated: guest
     // checkout is supported by design, so neither can sit behind a login.
@@ -80,6 +107,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // operations, not a pricing decision.
             Route::middleware('staff_or_admin')->group(function () {
                 Route::get('/inventory', [AdminInventoryController::class, 'index'])->name('inventory.index');
+                Route::get('/feedback', [AdminFeedbackController::class, 'index'])->name('feedback.index');
             });
 
             // Products: pricing/catalogue changes are Admin-only, not Staff

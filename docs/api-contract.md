@@ -83,10 +83,14 @@ Anything that writes them directly is a bug.
 | GET | `/blog-posts/{slug}` | |
 | POST | `/checkout/session` | Guest-friendly. Throttled 20/min — see below |
 | GET | `/orders/{reference}` | Throttled 60/min. **Reference, never the numeric id** |
+| POST | `/register` · `/login` | Customer sessions, `web` guard |
+| POST | `/logout` · GET `/me` · GET `/orders` | `auth:web`. `/orders` is the signed-in customer's own history |
+| POST | `/feedback` | Guest-friendly. Throttled 10/min |
 | POST | `/newsletter` | |
 | GET | `/workshop-sessions` · POST `/bookings` | |
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
 | GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` — 50/page |
+| GET | `/admin/feedback` | Admin **and** Staff. Read-only, newest first — 50/page |
 | POST/PUT/DELETE | `/admin/products` | Admin role only |
 
 ### Specified, not yet built
@@ -94,7 +98,6 @@ Anything that writes them directly is a bug.
 | Method | Path | Consumer | Stage |
 |---|---|---|---|
 | POST | `/webhooks/paystack` · `/webhooks/stripe` | gateways | 3 |
-| POST | `/feedback` | `components/forms/FeedbackForm.vue` | 6 |
 | GET | `/admin/dashboard/metrics` | admin app | 7 |
 
 `POST /checkout/session` has its request and response already written out in a
@@ -224,6 +227,57 @@ from the live product and go null when it's gone.
 
 The confirmation page polls this while an order reads `pending`, because the
 webhook can land after the customer is redirected back.
+
+---
+
+## Customer accounts
+
+Sanctum SPA cookie sessions on the **`web`** guard — the mirror of the admin
+block, which uses `admin`. The storefront must `GET /sanctum/csrf-cookie` first
+and send `credentials: 'include'`; `composables/useAuth.ts` documents both steps
+and has an `AUTH_ENABLED` flag to flip.
+
+| Route | Body |
+|---|---|
+| `POST /register` | `{ name, email, password, password_confirmation, phone?, preferred_currency? }` → `201`, signed in |
+| `POST /login` | `{ email, password, remember? }` → `200` |
+| `POST /logout` | — |
+| `GET /me` | — |
+| `GET /orders` | The signed-in customer's own history, 20/page |
+
+**Guarded with `auth:web`, never `auth:sanctum`.** `config/sanctum.php` lists
+both `web` and `admin` in its guard array, so `auth:sanctum` would let an admin
+session through a customer route — and `$request->user()` would then be an
+`AdminUser` whose id could collide with a real customer's, handing back someone
+else's orders. There is a test for this.
+
+`GET /orders` scopes to the session and takes no customer parameter, because the
+only safe answer to "whose orders?" is "the session's".
+
+Login is throttled 5 attempts per **email + IP**, not per email — otherwise
+anyone hammering a known address from elsewhere could lock a real customer out
+of their own account.
+
+**Registration does not adopt existing passwordless rows.** Nothing creates them
+today (guest checkout leaves `customer_id` null rather than writing a Customer),
+and if post-purchase account creation ever does, letting registration claim one
+would hand anyone who knows a customer's email their full order history. Any
+future claiming flow needs an emailed confirmation link.
+
+## Feedback
+
+`POST /feedback` takes `{ name, email, message, rating? }` and returns `201`
+with no body — `FeedbackForm.vue` replaces itself with a thank-you and has
+nothing to render. Unauthenticated by design, so it is throttled and `message`
+is capped at 5,000 characters; an open text field with no ceiling is a way to
+fill a disk. A `customer_id` in the body is ignored — it comes from the session
+or not at all.
+
+`GET /admin/feedback` is read-only for Admin and Staff. There is no update or
+delete: feedback is a record of what someone said, and an admin panel that can
+quietly edit it is worse than one that cannot. The resource emits
+`submitted_at`, which the admin app normalises to the `submittedAt` its
+`FeedbackEntry` type expects.
 
 ---
 

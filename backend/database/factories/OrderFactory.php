@@ -17,6 +17,10 @@ class OrderFactory extends Factory
         $tax = 0;
 
         return [
+            // Unique and NOT NULL in the schema — and the public lookup key,
+            // so a factory that left it null would build an order no endpoint
+            // could ever find.
+            'reference' => 'GCT-'.strtoupper(fake()->unique()->bothify('??########??')),
             'customer_id' => null,
             'currency' => 'GHS',
             'fx_rate_applied' => null,
