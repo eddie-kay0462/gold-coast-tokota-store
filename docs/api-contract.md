@@ -91,6 +91,13 @@ Anything that writes them directly is a bug.
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
 | GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` — 50/page |
 | GET | `/admin/feedback` | Admin **and** Staff. Read-only, newest first — 50/page |
+| GET | `/admin/dashboard/metrics` | Admin **and** Staff. Live queries, no caching |
+| GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` — 25/page |
+| PATCH | `/admin/orders/{reference}` | Status. **`refunded` is Admin-only** |
+| GET | `/admin/bookings` | `?status=` `?type=` `?workshop_session_id=` |
+| PATCH | `/admin/bookings/{id}` | Status, incl. waitlist promotion |
+| GET/POST | `/admin/workshop-sessions` | `?upcoming=true` on index |
+| PUT/DELETE | `/admin/workshop-sessions/{id}` | Capacity editing, guarded — see below |
 | POST/PUT/DELETE | `/admin/products` | Admin role only |
 
 ### Specified, not yet built
@@ -278,6 +285,90 @@ delete: feedback is a record of what someone said, and an admin panel that can
 quietly edit it is worse than one that cannot. The resource emits
 `submitted_at`, which the admin app normalises to the `submittedAt` its
 `FeedbackEntry` type expects.
+
+---
+
+## Admin: operations
+
+Everything under `/admin/*` is Admin **and** Staff except where noted. Money in
+admin responses is `{ amount, currency }`, not a bare integer — the admin app's
+`Money` type makes the pair inseparable so a number can never be mistaken for a
+price. This is the one place admin and storefront shapes deliberately differ.
+
+### Orders
+
+`AdminOrderResource` adds what the storefront's deliberately withholds:
+`payment_reference` (the gateway id, which is what you reconcile against a
+Paystack or Stripe dashboard), `customer_name` / `customer_email` /
+`is_guest`, and `placed_at`.
+
+Search (`?q=`) covers the reference, the customer record, **and the shipping
+address** — guests have no Customer row, so without the address half the orders
+would be unfindable. It uses `LOWER(...) LIKE`, not Postgres's `ILIKE`:
+production is Postgres but the test suite runs on SQLite, and a search that
+works in only one environment is worse than a slightly longer clause.
+
+**`refunded` is Admin-only.** The README names refunds alongside pricing and
+site settings in the two-tier rule. It is enforced on the submitted *value*
+rather than the route, because the same endpoint is legal for Staff right up
+until they ask for a refund — and the 403 carries a sentence, not a raw blob.
+
+### Bookings and workshop capacity
+
+Promoting a waitlisted booking is the one status change that can oversell:
+every other transition moves a seat the booking already holds. It re-checks
+capacity under a row lock, for the same reason checkout does, and returns `409`
+when the session is full.
+
+Two guards on sessions, both returning `422` with the number of people affected:
+capacity cannot be cut below the seats already taken, and a session with
+bookings cannot be deleted. Both would otherwise leave someone turning up to a
+seat that no longer exists.
+
+### Dashboard metrics
+
+Direct queries, no caching or pre-aggregation — the README requires live data on
+every load, and says the upgrade is a later concern if volume demands it.
+`generated_at` is in the response because "metrics show when they were read" is
+an acceptance criterion.
+
+**Revenue is split by currency and never summed.** Adding GHS and USD would need
+a rate that would then disagree with every order's own locked
+`fx_rate_applied`. Only `paid`/`processing`/`shipped`/`delivered` count.
+
+`unread_messages` and `open_returns` are **`null`, not `0`**. There is no inbox
+and no returns table — see "Admin screens with nothing behind them" below. A
+confident zero would read as "no open returns" rather than "returns do not
+exist", and the admin app's own rule is that invented numbers must look
+invented.
+
+## Admin screens with nothing behind them
+
+The admin app calls 30 distinct endpoints. Eleven now exist. The rest split in
+two:
+
+**Specified in README Feature 9, still to build:** `/admin/blog`,
+`/admin/pages`, `/admin/site-settings`, `/admin/newsletter`, `/admin/categories`.
+
+**Not in the README at all, and with no model behind them** — these are screens
+the admin app grew beyond the spec, the same way `ProductReviews.vue` did:
+
+| Path | What it would need |
+|---|---|
+| `/admin/returns` | A returns/RMA model and a workflow nobody has specified |
+| `/admin/shipments` | Derivable from orders once Feature 5 books real deliveries |
+| `/admin/media` | A media library — also what product `images` needs to be uploadable at all |
+| `/admin/inbox/threads` · `/messages` · `/templates` | A whole customer-messaging system |
+| `/admin/activity` · `/admin/audit` | An audit log |
+| `/admin/team` | Backed by `AdminUser`, but user management is unspecified |
+| `/admin/customers` | Backed by `Customer`, read-only would be cheap |
+| `/admin/workshop-types` | No model; sessions have no type today |
+| `/admin/dashboard/charts` | Year-over-year series plus traffic by source/device/location — the traffic half needs Feature 11 analytics |
+| `/admin/settings/*` (6 paths) | Sub-resources of `SiteSetting` |
+
+**None of this is a bug.** Those screens fall back to fixtures and show the
+demo-data chip. But it is unbudgeted work, and it should be a decision rather
+than something discovered during a launch checklist.
 
 ---
 

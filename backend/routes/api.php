@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
+use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\V1\Admin\WorkshopSessionController as AdminWorkshopSessionController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\BlogPostController;
 use App\Http\Controllers\Api\V1\BookingController;
@@ -108,6 +112,26 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::middleware('staff_or_admin')->group(function () {
                 Route::get('/inventory', [AdminInventoryController::class, 'index'])->name('inventory.index');
                 Route::get('/feedback', [AdminFeedbackController::class, 'index'])->name('feedback.index');
+
+                // Dashboard. Direct queries, no pre-aggregation — the README
+                // requires metrics to reflect live data on every load.
+                Route::get('/dashboard/metrics', [AdminDashboardController::class, 'metrics'])->name('dashboard.metrics');
+
+                // Orders. Viewing and moving an order through fulfilment is
+                // Staff work; issuing a refund is not, and that is enforced on
+                // the submitted status inside UpdateOrderStatusRequest.
+                Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+                Route::get('/orders/{reference}', [AdminOrderController::class, 'show'])->name('orders.show');
+                Route::patch('/orders/{reference}', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
+
+                // Bookings and workshop capacity (Feature 7 admin side).
+                Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
+                Route::patch('/bookings/{booking}', [AdminBookingController::class, 'updateStatus'])->name('bookings.update-status');
+
+                Route::get('/workshop-sessions', [AdminWorkshopSessionController::class, 'index'])->name('workshop-sessions.index');
+                Route::post('/workshop-sessions', [AdminWorkshopSessionController::class, 'store'])->name('workshop-sessions.store');
+                Route::put('/workshop-sessions/{workshopSession}', [AdminWorkshopSessionController::class, 'update'])->name('workshop-sessions.update');
+                Route::delete('/workshop-sessions/{workshopSession}', [AdminWorkshopSessionController::class, 'destroy'])->name('workshop-sessions.destroy');
             });
 
             // Products: pricing/catalogue changes are Admin-only, not Staff

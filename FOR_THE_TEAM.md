@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (customer accounts and feedback — `AUTH_ENABLED` can be flipped on)
+- **Last updated:** 27 August 2026 (admin operations API — orders, bookings, workshop capacity, dashboard metrics)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
-| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. Runs on bundled fixtures; see the entry below |
+| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **11 of its 30 API paths now exist**; the rest still fall back to fixtures behind the demo-data chip. See "Admin screens with nothing behind them" in `docs/api-contract.md` — a third of them have no model and are not in the README |
 | Tests | **77 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
@@ -52,7 +52,61 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — customer accounts and feedback
+### 27 August 2026 (latest) — the admin operations API
+
+Orders, bookings, workshop capacity and dashboard metrics. Eleven of the admin
+app's thirty API paths now exist.
+
+- **Admin gets its own order resource, and the difference is real.** Money is
+  `{ amount, currency }` here rather than a bare integer — the admin app's
+  `Money` type makes the pair inseparable — and `payment_reference` is present.
+  It is withheld from customers because it is the gateway's internal id, but it
+  is exactly what someone reconciles against a Paystack dashboard.
+- **Order search covers the shipping address, not just the customer record.**
+  Guests have no Customer row, so searching only `customers` would make half
+  the orders unfindable by name.
+- **`refunded` is Admin-only, enforced on the submitted value rather than the
+  route.** The same endpoint is legal for Staff right up until they ask for a
+  refund. The 403 carries a sentence rather than a raw blob, which the README
+  asks for explicitly.
+- **Promoting a waitlisted booking re-checks capacity under a row lock.** It is
+  the one status change that can oversell — every other transition moves a seat
+  the booking already holds. Two staff promoting from the same waitlist at once
+  must not both land in the last seat.
+- **Two guards on sessions**, both returning 422 with the number of people
+  affected: capacity cannot be cut below the seats already taken, and a session
+  with bookings cannot be deleted. Either would leave someone turning up to a
+  seat that no longer exists.
+- **Revenue on the dashboard is split by currency and never summed.** Adding
+  GHS and USD needs a rate, and that rate would then disagree with every
+  order's own locked `fx_rate_applied`.
+- **`unreadMessages` and `openReturns` come back `null`, not `0`.** There is no
+  inbox and no returns table. A confident zero reads as "no open returns"
+  rather than "returns do not exist" — and this app's own rule is that invented
+  numbers must look invented. **Kirk: the type says `number`, so those two need
+  to tolerate null.**
+
+**Caught while writing it:** the order search was first written with Postgres's
+`ILIKE`, which does not exist in SQLite — and `phpunit.xml` runs the suite on
+`sqlite`. It would have passed in production and thrown in CI, or the reverse
+had it gone the other way. Now `LOWER(...) LIKE`, with a small helper for the
+JSON path since Postgres wants `col->>'key'` and SQLite wants `json_extract`.
+Verified against both. **Worth knowing generally: the test suite does not
+exercise the production database.** Every `jsonb` column is plain JSON under
+test. Nothing is wrong today, but that gap is where this class of bug lives.
+
+**The bigger finding, and it needs a decision.** The admin app calls thirty
+distinct endpoints. Only five of the nineteen still missing are specified in
+README Feature 9 (blog, pages, site-settings, newsletter, categories). The rest
+— returns, shipments, media, a three-endpoint inbox, an audit log, team
+management, customers, workshop types, dashboard charts and six settings
+sub-resources — **have no model and appear nowhere in the README.** This is the
+same pattern as `ProductReviews.vue`: a screen was built past the spec and now
+implies backend scope nobody has budgeted. Full table in
+`docs/api-contract.md`. **Awaiting a decision on which of those are launch
+scope.**
+
+### 27 August 2026 — customer accounts and feedback
 
 `POST /register`, `POST /login`, `POST /logout`, `GET /me`, `GET /orders`, and
 `POST /feedback` with its admin read side. Sanctum SPA cookie sessions on the
@@ -1562,6 +1616,8 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
+| 28 | **Nineteen admin endpoints have no backend, and fourteen have no model or spec** | The admin app calls 30 paths; 11 exist. Of the 19 missing, only blog/pages/site-settings/newsletter/categories are in README Feature 9. The others — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
+| 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
 | 25 | **Seeded collection assignments are a guess** | `database/data/design-products.json` assigns each of the six designed products to a collection (Obrempong / Sikapa / Slides). The design fixture never carried one, so these are a first pass. Categories are derived from `product_type` and are safe; **the collections need the brand to confirm.** |
 | 26 | **Listing filters only ever see the first page** | The shop page sends `type`, `color`, `size`, `width`, `category`, `q`, `sale` and `sort` as query params, `ProductController::index` ignores every one of them, and `matchesFilters()` filters client-side over a 12-per-page response. Invisible at six products; wrong at sixty. Server-side filtering is the fix — see `docs/api-contract.md`, "Known gaps". |
