@@ -7,12 +7,12 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 26 August 2026 (first entry below — the 22 missing storefront routes)
-- **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
-- **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
-  `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
-  the search panel, About, Sustainability) went in ahead of it — read the
-  "Uncommitted work" note at the end of *Recent changes* before you branch.
+- **Last updated:** 27 August 2026 (first entry below — the sticky header)
+- **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
+- **Working tree:** clean, and `dev` is pushed. The 27 Aug work is seven commits
+  on `dev` starting at `d201f5a` — the Template B design pass and everything
+  that followed from it. `dev` is ahead of `main`; merging it is a separate
+  decision.
 
 ---
 
@@ -21,14 +21,15 @@ This file is the *status* layer on top of those two — it does not restate them
 | Area | Status |
 |---|---|
 | Storefront — Home | **Built** from Figma |
-| Storefront — Shop listing + Product detail + Cart drawer | **Built** from Figma |
+| Storefront — Shop listing + Product detail + Cart drawer | **Built** from Figma; restyled 27 Aug to the approved Template B mockup — sizes on cards, thumbnail-rail gallery, WhatsApp order handoff |
 | Storefront — News & Events (listing + article) | **Built** from Figma *(uncommitted)* |
 | Storefront — About | **Built** from Figma *(uncommitted)* |
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
+| Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
-| Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI. `POST /checkout/session` does not exist, so placing an order is inert |
+| Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI, restyled 27 Aug as a Shopify-style checkout on its own stripped layout. `POST /checkout/session` does not exist, so placing an order is inert |
 | Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
-| Storefront — Booking | **Scaffold stubs only** — `BookingCalendar` has no date picker, `WaitlistBanner` emits an event nothing listens for, sessions are a hardcoded `[]` |
+| Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. Runs on bundled fixtures; see the entry below |
@@ -49,7 +50,435 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 26 August 2026 (latest) — the 22 missing storefront routes
+### 27 August 2026 (latest) — the header is sticky
+
+`Header.vue` is `sticky top-0` rather than `relative`, matching the approved
+mockup, which wraps the announcement strip *and* the nav rows in one sticky
+block. The whole chrome travels: the announcement bar, the logo row and the
+category row. Currency, search and the cart are reachable from anywhere on a
+page now.
+
+**Anchors are handled once, in `main.css`, not per target.** A sticky header
+covers the top of the viewport for *every* in-page anchor on the site, so the
+offset is `scroll-padding-top` on `html` — 7rem below `md`, 11.5rem above it,
+which is the header's own height at each breakpoint plus a little air. Putting
+`scroll-mt` on individual targets would mean remembering it on every new anchor,
+and forgetting is silent: the heading just lands under the header. Verified —
+`/about#progress` lands 144px down against a 91px header on a phone, and 216px
+against a 159px header at 1440.
+
+**The mobile drawer gained `max-h-[calc(100dvh-7rem)] overflow-y-auto`.** It
+lives inside the header, and a sticky element taller than the viewport cannot
+be scrolled to the bottom of — with three categories expanded it would have
+trapped its own last links.
+
+**Worth a look:** the header is 159px at desktop — announcement strip, logo row,
+category row. That is a lot of permanently-occupied viewport, and it is the
+price of the earlier decision to keep both nav rows. Dropping the announcement
+strip out of the sticky region (letting it scroll away while the nav stays) is
+a two-line change if it proves too heavy in use.
+
+The checkout has its own header (`layouts/checkout.vue`) and is deliberately
+**not** sticky — Shopify's checkout header is not, and a checkout with fewer
+fixed distractions is the whole point of that layout.
+
+### 27 August 2026 — checkout rebuilt as a Shopify-style checkout
+
+`/checkout` now looks like a standard Shopify checkout: stripped chrome, a
+`Cart › Information › Shipping › Payment` breadcrumb, the form in a measured
+column on the left, and the order summary in a tinted panel bleeding to the
+right edge of the viewport. Below `lg` the summary collapses into the "Show
+order summary" bar Shopify puts above everything.
+
+**New `layouts/checkout.vue`.** A single centred logo and a row of policy links,
+nothing else. Shopify strips its checkout for the reason every checkout is
+stripped — a nav bar at the payment step is a row of exits — and the mega menu,
+search panel and footer columns are all exits. Two things are kept that Shopify
+has no equivalent for:
+
+- **`CartDrawer`**, because "Return to cart" has to open something and this
+  app's cart is a drawer, not a page.
+- **`WhatsAppButton`**, because README Feature 6's acceptance criteria say it is
+  visible on *every* storefront route, and it is currently the only way to
+  actually complete an order while payment is inert.
+
+**It stays three steps** rather than becoming Shopify's newer one-page checkout.
+The step machinery here is real — Information validates before it will advance —
+and collapsing it would mean either throwing that away or validating a whole
+page at once.
+
+**`CartSummary` → `OrderSummary`**, rebuilt to the Shopify pattern: square
+thumbnails with the quantity on a badge on the corner, a discount-code row, then
+subtotal / savings / shipping / total with the currency code set small against
+the total.
+
+**`CheckoutForm`** is split into Contact and Delivery in Shopify's field order —
+country first, since it routes the courier and changes the fields under it —
+and its action row is Shopify's: the way back as a quiet link on the left, the
+way forward as the only button on the right. The shipping step gained the
+review block Shopify shows above the method choice ("Contact … Change",
+"Ship to … Change"), which is the step's only reassurance that it is quoting
+for the right address.
+
+**The Shipping row never shows a number.** It says "Calculated at the next step",
+then "Yango · quoted at payment". The real figure comes from the courier quote
+at checkout-session creation, which is not built, and putting a guess in the
+Total is how someone ends up surprised at the payment screen. Shopify shows
+"Calculated at next step" for exactly this reason.
+
+**The discount code field is inert by design**, following the same shape as the
+payment step and the account pages: it waits ~600ms and then explains that there
+is no discounts endpoint, rather than firing a request that would 404. It is in
+because a Shopify checkout without one is not recognisable — but it is the
+third inert control on this page, so if that starts to feel like too much dead
+UI, this is the one to drop.
+
+**A layout note worth keeping.** The tinted column stretches to the footer via
+`flex-1` the whole way up from `layouts/checkout`, not `min-h-full`: a
+percentage height against a flex-sized ancestor does not reliably resolve, and
+the first attempt left the tint stopping mid-page on the short payment step.
+
+**Verified** at 1440 and 390 across all three steps, with a seeded cart.
+
+### 27 August 2026 — product detail: panel width and price treatment
+
+**The purchase panel is wider.** It was `md:340 / lg:384`; it is now
+`md:340 / lg:400 / xl:440`. `md` is untouched deliberately — at 768 the row is
+already close to an even split (340 panel against a 324 gallery), and widening
+there would have squeezed the main image to about 210px. The extra room goes
+where there is room to give: 440px at 1440 against 384px before, which is what
+makes the description and the fit/model rows read as paragraphs rather than as
+a narrow column.
+
+**Discounted prices read as one price and one qualifier now**, not two
+competing figures. `PriceDisplay` used to render the was-price *first*, at the
+same size as the live price, faded to 50% opacity — so the eye landed on the
+crossed-out number and had to work out which of two equally sized figures it
+was actually paying.
+
+It now leads with the live price, which turns **`sale` red** when it is a
+discount, followed by the was-price at `0.8em` in muted grey with a 1px rule.
+Three notes on that:
+
+- `sale` (`#D0021B`) is what `tailwind.config.ts` documents the token for —
+  "the Sale nav item **and sale pricing**" — and it is what the product card's
+  own discount chip already uses. The price was the one place not honouring it.
+- `0.8em`, not a fixed size, so it scales with whatever type the parent sets:
+  12px on a card, 24px in the purchase panel, without a second set of values.
+- `items-baseline` keeps the two on one line despite the size gap.
+
+`ProductPurchasePanel`'s `[&_s]:opacity-50` override is gone — that is the
+component's job now, and an arbitrary variant reaching into another component's
+markup was the wrong lever.
+
+Every consumer inherits this: the product card, the cart drawer and line items,
+the checkout summary and the payment step.
+
+**Not changed, and worth knowing:** the size row still wraps to an orphan on a
+product with nine sizes (eight then one). It wrapped before too — at 384px it
+split 7/2 — so this is not a regression, and the fix would be shrinking the
+46×44 box the mockup specifies. Left alone.
+
+### 27 August 2026 — the footer cut back to the mockup
+
+Four columns of eighteen links became the approved mockup's two: **Shop** (Best
+Sellers, Sandals, Ahenema, Bookings) and **House** (Stories, About, Shipping &
+Returns, Privacy Policy), with the brand column and the newsletter either side
+on the mockup's `1.4fr 1fr 1fr 1.4fr` tracks. The seven-item legal row is gone.
+
+What came out and why:
+
+- **Facebook and Twitter pointed at `/`.** Placeholders for accounts that are
+  not modelled anywhere. Only Instagram is, and it moved to the social row
+  beside the newsletter where the mockup puts it, next to WhatsApp.
+- **Two identical "Sitemap" links**, both resolving to `/sitemap.xml`. That was
+  **open issue #18** — removing both closes it.
+- **Log In / Sign Up** — reachable from the header's account icon, which is
+  where people look, and both pages are inert until customer auth exists.
+- **The Company column** duplicated About's own section nav (About,
+  Environmental Initiatives, Factories), which is now one merged page anyway.
+
+**The address is Haatso, not the mockup's "Osu."** Haatso is what the brand
+guidelines give, and `/stores` deliberately publishes no street address because
+inventing one is worse than omitting it. It links to `/stores`, which also keeps
+that page reachable now the Connect column is gone.
+
+**Height.** With four links a column the band read as a strip stuck to the
+bottom of the page, so its vertical rhythm now matches `.section-y`
+(12 / 16 / 90) — the same ladder every full-width section above it sits on.
+Measured: 387px at 1440, against roughly 400px in the mockup.
+
+**Seven routes lost their only inbound link** and are now reachable by URL and
+sitemap only: `/gift-cards`, `/international`, `/accessibility`, `/affiliates`,
+`/legal/do-not-sell`, `/legal/supply-chain`, `/legal/vendor-code`. Three of
+those are placeholder-by-design (gift cards and affiliates announce programmes
+that do not exist; the three legal drafts are unreviewed — issue #14). The ones
+worth a second look are **`/accessibility`** and **`/international`**, which are
+real content. Nothing else was orphaned: `/stores` has the address link,
+`/careers` is a card in About's More to Explore, and `/legal/terms` is linked
+from the register page's consent line.
+
+### 27 August 2026 — Sustainability merged into About
+
+`/sustainability` no longer exists. About and Sustainability were telling one
+story across two routes, so they are now one page with the section nav moving
+between the parts of it — which is what that tab row was always for. Before the
+merge, four of its seven tabs left the page entirely.
+
+`/sustainability` is a **301** to `/about#sustainability` (`nuxt.config.ts`),
+not a 302: the old URL was indexable and linked from the footer, the home page
+and the About tab row, so its ranking should transfer rather than be split.
+Every link that pointed at it — footer "Environmental Initiatives", the home
+editorial pair and sustainability banner — now points at the anchor.
+
+**Page order** is About's own story first (hero → CMS statement → Our Factories
+→ Our Quality → Our Prices), then everything that came across from
+Sustainability (mission → slogan ticker → Our Progress → The Latest), then More
+to Explore and the social CTA.
+
+**Components moved** from `components/sustainability/` into `components/about/`,
+so the auto-import prefix matches the page they serve: `ArticleGrid` →
+`AboutStoriesGrid`, plus `AboutProgressGrid`, `AboutSloganTicker`,
+`AboutSocialCta`. The directory is gone.
+
+**Two things did not come across verbatim:**
+
+- The old masthead's `Gold Coast Tokota` wordmark at `display-brand`. A page has
+  one masthead and About already has one; a second brand-sized wordmark two
+  thirds of the way down read as the start of a different page. Its mission copy
+  ("We're on a mission to clean up a dirty industry") survives as the
+  sustainability section's heading. **This retires open issue #9**, which was
+  about that token's very airy leading at the mobile floor.
+- "The Latest" was two rows of six with a "Load More Articles" button paging
+  through the programme feed. On a merged page that is a second, filtered copy
+  of `/blog` — and `/blog` gained its own category filter earlier the same day.
+  It is one row of three with a link to `/blog?category=Sustainability`.
+
+**New: `AboutSustainabilitySection.vue`** carries the mission heading and, under
+it, the **mission and vision statements verbatim from the brand guidelines**.
+Those had no home anywhere on the storefront before, and the merged page is
+where a reader is already asking what the company is for.
+
+**An anchor changed.** The "Designed to last" feature section carried
+`id="sustainability"` — a leftover that would now collide with the real
+sustainability block. It is `id="quality"`. Nothing linked to the old one.
+
+**The section nav is six tabs**, trimmed at the customer's request: About · Our
+Workshop · Designed to Last · Sustainability · The Latest · Partnerships.
+Removed: Radical Transparency, Our Progress, Our Carbon Commitment, Annual
+Impact Report. "Cleaner Manufacturing" and "Workshop" merged into **Our
+Workshop** — they pointed at the same subject from two directions, and booking
+is a top-level header item, so nothing is unreachable.
+
+The sections the first two named are **still on the page** and still have their
+anchors (`#prices`, `#progress`) — a section nav is a shortcut list, not a table
+of contents. If the intent was to remove those sections too, say so; note that
+`#prices` is the one carrying the Everlane price-breakdown bitmap (issue #2).
+
+`placeholder: true` now has **no users left** in `utils/navigation.ts` — the
+Annual Impact Report was the last one.
+
+### 27 August 2026 — the approved "Template B" design pass
+
+The customer reviewed a second design mockup (`Gold Coast Tokota.html` at the
+repo root — a self-contained Design Canvas bundle) and chose **variant B**. That
+file's A|B|C toggle only swaps the *home hero*; everything else in it — the gold
+accent, the announcement bar, the product cards, the product gallery, the
+bookings flow, the footer, the WhatsApp handoff — is shared across all three. So
+"Template B" means that design language, with the split hero.
+
+**It is a layer on the existing design, not a replacement.** The customer was
+explicit that the app's current look should stay. Confirmed before any code was
+written:
+
+| Decision | Choice |
+|---|---|
+| Typography | **Unchanged.** No Cormorant Garamond, no Work Sans, no webfont. The mockup's serif was declined; the Helvetica Neue stack and the fluid display ladder stand. |
+| Gold | Brand-PDF `#D4AF37` as the named token, with the mockup's `#8A6A1C` / `#E8D9AD` as the readable text tints. |
+| Header | Dark chrome treatment, **both nav rows and the mega menus kept**. |
+| Announcement bar | Rotating, but seeded with brand-safe copy and made admin-editable. |
+| Stories | The article page simplified; filtering added to the index rather than removed. |
+| WhatsApp | Product page, product card, cart drawer, and the existing checkout one. |
+
+**Design tokens** (`frontend/tailwind.config.ts`). Four new colours, annotated
+as a separate block because they do *not* come from the Figma file the rest of
+the palette was transcribed from: `gold` `#D4AF37`, `gold-deep` `#8A6A1C` (gold
+as text on light), `gold-soft` `#E8D9AD` (gold as text on dark), `chrome`
+`#111111` (the header/footer ground — not a redefinition of `ink`, which stays
+pure black and which the whole app leans on). Also `sale-on-dark` `#FF6B7A`:
+`sale` measures about 2.2:1 against `chrome`, so the header's Sale item needed
+its own value rather than a low-contrast exception.
+
+`main.css` gains `.chrome-dark` / `.on-light`. The base `:focus-visible` ring is
+graphite and is invisible on the new dark chrome; `.chrome-dark` flips it white,
+and `.on-light` flips it back inside the light panels nested in it (mega menu,
+search band, mobile accordion).
+
+**Header** (`Header.vue`, new `AnnouncementBar.vue`, `CurrencyToggle.vue`,
+`utils/navigation.ts`). Dark ground, white logo, gold cart bubble.
+
+The announcement strip rotates a list of messages with a cross-fade, sourced
+from the new admin-editable `SiteSetting.announcements`, and carries a **second
+line** — support hours plus a WhatsApp link. The hours are the ones published in
+the brand guidelines and sit in a constant with that noted; unlike the rotating
+line they are a service fact, not a commercial claim. The link is hidden below
+`sm`, where the floating WhatsApp button is already on screen.
+
+Both lines are centred **against the bar**, not against the space left over
+beside the flag and currency cluster. From `sm` the row is the same
+`grid-cols-[1fr_auto_1fr]` the logo row uses: two equal flanks, content in the
+middle. Below `sm` the flank collapses and the marquee takes the width — going
+back to absolute positioning for the cluster is what caused the 41px overlap in
+closed issue #1.
+
+**The nav items are the mockup's.** Row 2 is now Shop · Bookings · Stories ·
+About · Sustainability; row 3 is Best Sellers · Sandals · Ahenema · Sale. That
+retires the seven department placeholders (Mens, Womens, Kids, New Arrivals,
+Best-Sellers, Merchandise, Custom Shoes) — they filtered on `?category=`, a
+`departments` field only the design catalogue carries and the API has never
+returned, so every one of those tabs would have shown the whole catalogue on
+real data. `?type=` is a facet the shop genuinely filters, and it is verified:
+`?type=sandals` → 1 product, `?type=slippers` → 3, unfiltered → 6.
+
+The mega menus are kept, as agreed, but their contents were rebuilt for the same
+reason — every link used to point at `?collection=gift-guide` and friends, which
+nothing filters on, so the panel looked complete while every link in it silently
+returned the unfiltered catalogue. They now use `type` / `sort` / `sale` only,
+which is why the `MegaMenu.placeholder` flag could be deleted outright.
+
+`Shop` stays in row 2 even though the mockup has no plain "Shop" item: row 3
+only offers filtered entries, and dropping the one unfiltered way into the
+catalogue would be a usability regression rather than a design decision. `Sale`
+stays in row 3 for the mirror-image reason — sale pricing is fully built, and
+the `sale` token exists for that one item.
+
+Renaming `News & Events` to `Stories` in the nav made the page it opens
+disagree with it, so `/blog`'s heading and SEO title, and the home carousel's
+heading, moved to "Stories" too. The currency control is the mockup's **GHS|USD
+segmented pair** — `CurrencyToggle.vue` already implemented that shape and was
+sitting unused, so it was restyled and adopted rather than a third toggle being
+written. The old single button showed only the *current* currency, so a visitor
+could not see the other one existed without clicking.
+
+Structure is untouched: three rows, mega menus, mobile drawer, search panel,
+country flag, the hover-close timing, all of it. Only the surface changed. The
+`sm`-and-below marquee stays — it was a measured fix for a real 41px overlap
+(closed issue #1), not decoration.
+
+**This closes issue #17.** The bar used to say "Sign Up For Texts" and link to
+an email form. That copy is gone.
+
+**Footer** (`Footer.vue`, `NewsletterForm.vue`). Moved to the chrome ground with
+the mockup's arrangement: brand column (white logo, one-line description,
+contact), the four existing link sets beside it, and the newsletter as an inline
+bordered field with a gold "Join" (`NewsletterForm` gained a `tone` prop). Every
+existing link set was kept — they are real routes the mockup's two columns do
+not cover. Bottom bar behind a hairline, copyright left, domain right.
+
+**Product card** (`ProductCard.vue`, new `SizeSelector.vue`). The big one. It
+now carries a hover cross-fade to a second image, a stock badge driven by
+`merchandising_badge` (which the API already returned and nothing rendered), the
+**size picker**, an Add to cart, and an Order-on-WhatsApp button.
+
+`SizeSelector.vue` is shared with the detail panel, which had its own inline
+copy. Three states, and the third is the point: a size that is made but not
+currently sellable is *drawn*, struck through with a diagonal rule, not hidden —
+so a customer can see the product runs in their size and ask about a restock
+instead of concluding it was never made for them.
+
+New `composables/useAddToCart.ts` — the card and the detail page now both add to
+the cart, and the synthetic `inventoryItemId` has to match between them or the
+same pair added from the grid and from the detail page would sit in the basket
+as two separate lines.
+
+**Product detail** (`ProductGallery.vue`, `ProductPurchasePanel.vue`). The
+gallery is the mockup's thumbnail rail — a column of 4:5 thumbs beside one large
+4:5 frame, active thumb outlined, hover previewing the next shot. It replaces a
+flat 2-up grid that put every photo on screen at half width each. Below `sm` the
+rail is a horizontal row. The panel keeps everything it had (colour swatches,
+service promises, description, fit, the phone-only sticky CTA) and gains the
+`{Collection} Collection` eyebrow and the "Prefer to order via WhatsApp?" button.
+
+**Cart drawer.** A whole-basket WhatsApp handoff beside Checkout, composing every
+line into one message. Not in the mockup — the mockup can only hand off a single
+product — but it is what a customer with three pairs in the basket actually
+needs. Quoted in cedis regardless of display currency, because the conversation
+ends in a real order and USD on the storefront is a derived display figure.
+
+**Bookings** — rebuilt, and this fixes three defects, not just the styling.
+`BookingCalendar.vue` is gone (it was named for a calendar it never had) and is
+replaced by `SessionPicker.vue`, the mockup's selectable session cards with
+green "N spots left" / red "Full" capacity chips.
+
+- `GET /workshop-sessions` **had never been called from the frontend** — the form
+  passed a hardcoded `[]`, so the list was always empty no matter what was seeded.
+  It is wired now.
+- The old prop type expected `booked_count`; the API returns `remaining_capacity`.
+  Capacity would have rendered `NaN` the moment real sessions arrived.
+- **Both forms would have failed validation on every submit.** They sent `name`,
+  `email` and `phone` at the top level and `details.measurements` /
+  `details.pickup_or_delivery`; `StoreBookingRequest` validates contact details
+  *inside* `details`, and expects `details.size`, `details.foot_length` and
+  `details.fulfilment`. The forms now match the request — which also means the
+  DIY form finally has the EU-size and foot-length inputs the mockup designs.
+- `attendee_count` and `pickup_or_delivery` both sat in form state with no UI
+  control, submitted as silent defaults. Both are now rendered.
+- `WaitlistBanner` emitted a `joinWaitlist` event nothing listened for, so the
+  button was inert. It is an explanatory panel now: the backend already files a
+  booking as `waitlisted` when capacity is gone, so joining the waitlist *is*
+  submitting the form, and the submit button relabels itself to say so.
+- Both submits gained loading and error states; neither had any.
+
+**Stories.** `/blog` was already the plain grid the mockup shows — the
+complexity was in the article. `BlogPost.vue` replaces a 691px full-bleed hero
+with a gradient scrim, a 14px solid rule and a floating share rail 148px from
+the lede with one narrow centred column: meta line, title, 16:9 cover, body. The
+prose scale came down from 24px to 20px at 1440 to suit the narrower measure.
+The "Shop Our Products" grid is gone from `/blog/[slug]` — it rendered four
+unrelated design-catalogue products and was the heaviest block on the page. The
+related-posts rail now actually matches on category, and says "Related stories"
+rather than "More Stories". Per the customer's steer, filtering was *added* to
+the index: category chips with the state in the URL, the way `/shop` does facets.
+
+**Three enabling fixes**, without which the above would have been broken or
+misleading:
+
+1. **Per-size stock from the API.** `ProductResource` returned no `sizes` and no
+   `size_availability`; the data was in `inventory_items.variant_attributes` but
+   only ever aggregated into an `in_stock` boolean. `Product` gained
+   `size_availability` and `sizes` accessors and the resource exposes both.
+   Without this the size pickers would have gone blank the day real products
+   landed.
+2. **The FX rate was never fetched.** Nothing in the frontend called
+   `GET /fx-rate`, so `fxRate` stayed `0` and **every USD price rendered as
+   `$0`** the moment anyone used the currency toggle. New `plugins/fx-rate.ts`
+   fetches it; `currency.displayCurrency` falls back to GHS when no rate is
+   available, so a missing rate now shows cedis rather than a confident wrong
+   number. `PriceDisplay` and `TransparentPricing` both use it.
+3. **The currency choice now persists** in a `gct_currency` cookie, same pattern
+   as the cart. It still does *not* infer a currency from the visitor's country —
+   that is the commercial decision still sitting open below.
+
+**What was deliberately not carried over from the mockup:** its A|B|C home-layout
+switcher, its 2|3|4|6 column-count buttons on the shop toolbar, its hardcoded
+`rate: 0.08`, its placeholder session dates, and its invented sub-collections.
+
+**Not done, and why:** `ProductPurchasePanel` still does not receive `liveStock`.
+The plan called for wiring it, but `useInventoryPolling` targets
+`/products/{id}/stock`, which does not exist in `routes/api.php` — passing it
+would 404 on a timer. The panel reads `size_availability` from the product
+payload instead, which is now real. Wire the polling when the endpoint lands.
+
+**Verified:** `npm run build` clean (the six postcss lexical warnings are
+pre-existing — same count before and after). `npm run check:responsive` reports
+no horizontal overflow and no sub-44px tap targets. Dev server walked across
+`/`, `/shop`, `/shop/[slug]`, `/booking`, `/blog`, `/blog/[slug]`, `/checkout`,
+`/about` — all 200, no new router warnings (the two `/sitemap.xml` ones are
+issue #18, still open). **The backend changes are syntax-checked only**: there is
+no local `.env` or Postgres in this working copy, so the migration and seeder
+have not been run. Do that first.
+
+### 26 August 2026 — the 22 missing storefront routes
 
 The header and footer linked to 22 routes that did not exist. Every one logged a
 router warning in dev and would have 404'd in production, and five of them
@@ -729,7 +1158,16 @@ order:
 
 ### Storefront
 
-- **Booking page** (`/booking`) — the four components are stubs.
+- ~~**Booking page** (`/booking`) — the four components are stubs.~~ — **closed
+  27 Aug.** Sessions are fetched, capacity and waitlist render, and both forms
+  now send the payload `StoreBookingRequest` actually validates. What is left is
+  backend: an upload endpoint for DIY reference images (the form records the
+  file *name* and asks the customer to send the photo over WhatsApp, because
+  `details.reference_image` is typed as a string and nothing accepts a binary).
+- **Wire `useInventoryPolling`** into `ProductPurchasePanel`'s `liveStock` prop
+  once `GET /products/{id}/stock` exists. Per-size stock is real in the product
+  payload as of 27 Aug, so the panel is correct without polling — it just will
+  not update while someone is looking at the page.
 - **Checkout + order confirmation** — both built out (26 Aug), but inert at the
   payment boundary until `POST /checkout/session` and `GET /orders/{id}` exist.
 - **Wire the pages to real endpoints** as each API lands, and delete the
@@ -747,20 +1185,27 @@ order:
   Postgres bigint. Fix when the real session shape lands.
 - **The legal and help pages are unreviewed placeholder copy.** See the open
   decisions table — this is the highest-risk item on this list before launch.
+- **The announcement bar needs an admin editor.** `SiteSetting.announcements`
+  is a JSON array on the API and the storefront renders it, but the admin app
+  has no field for it, so today it can only be changed by re-seeding. It is the
+  place the brand's delivery and payment claims live — see the open decision
+  about the mockup's copy.
 - **Sitemap misses blog posts and products** — `@nuxtjs/sitemap` can't enumerate
   `[slug]` params. `server/api/__sitemap__/urls.ts` does this for legal and help;
   extend it.
-- **Currency toggle does not follow the flag.** The header now knows the
-  visitor's country but `stores/currency.ts` still defaults everyone to GHS,
-  and the README asks for the choice to persist via cookie. Deliberately left
-  alone — defaulting a country to a currency is a commercial decision, not a
-  technical one. Decide GH → GHS / everyone else → USD (or otherwise) and wire
-  it, respecting an explicit user choice over the geo default.
+- **Currency toggle does not follow the flag.** The header knows the visitor's
+  country but `stores/currency.ts` still defaults everyone to GHS. The cookie
+  half of this is done (27 Aug — `gct_currency`, and an explicit choice already
+  wins), but the *geo default* is deliberately still not wired: deciding
+  GH → GHS / everyone else → USD is a commercial decision, not a technical one.
 - **`public/design/flag.svg`** is now unused; kept only as the original Figma
   export. Delete it once nobody wants the reference.
-- **Placeholder nav targets** are flagged `placeholder: true` in
-  `utils/navigation.ts`. Grep that flag to find what still needs a real route
-  (currently: seven mega-menu categories, and "Annual Impact Report").
+- ~~**Placeholder nav targets** are flagged `placeholder: true`~~ — **closed
+  27 Aug.** Nothing in `utils/navigation.ts` carries the flag any more: the
+  seven mega-menu categories went with the Template B nav, the menus now link
+  only to filters `/shop` implements, and the Annual Impact Report tab was
+  removed with the About section-nav trim. The flag is gone from the types too,
+  so re-add it deliberately if a stand-in destination ever comes back.
 
 ### Admin dashboard
 
@@ -806,20 +1251,23 @@ will light up:
 |---|---|---|
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
 | 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
-| 15 | **`/about#dei` repointed to `/careers#dei`** | The About page never had a `dei` anchor. `/careers` now has a real DEI section, but its copy is a placeholder too. If DEI belongs on About, that needs brand-written text. **Awaiting a decision.** |
+| 15 | **DEI has no link anywhere** | Was "`/about#dei` repointed to `/careers#dei`". The footer link that raised this went with the 27 Aug footer trim, so nothing now links to `/careers#dei` at all — the section exists and its copy is still a placeholder. The decision is no longer *where* DEI lives but **whether it needs a home**; if it does, it needs brand-written text and a link. **Awaiting a decision.** |
 | 16 | **The testimonial names a product that doesn't exist** | Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
-| 17 | **"Sign Up For Texts" links to an email form** | The announcement bar copy says texts; `#newsletter` is the footer's email signup. Either the copy or the destination is wrong — a brand decision, not a bug to guess at. |
-| 18 | **The footer lists two identical sitemap links** | "Sitemap Pages" and "Sitemap Products" both point at `/sitemap.xml`. Collapse to one, or emit a product sitemap. |
+| 17 | ~~**"Sign Up For Texts" links to an email form**~~ | **Closed 27 Aug 2026.** The announcement bar was rebuilt as the approved mockup's rotating strip and that copy no longer exists. |
+| 21 | **The approved mockup asserts two things the project cannot back up** | Template B's announcement bar reads "Free delivery in Accra" and "Order online, pick up in Osu". Checkout charges GH₵25 for Accra delivery, and the address on file in the brand PDF is Haatso, not Osu. Neither line shipped. The bar renders "Handcrafted in Ghana / Pay with MoMo or card / We ship worldwide" instead, and `SiteSetting.announcements` makes the real copy a settings change rather than a deploy. **Confirm both claims with the brand**, then set them. |
+| 22 | **DIY reference images are not uploaded** | The booking form has the mockup's dropzone, but `StoreBookingRequest` types `details.reference_image` as a string and no endpoint accepts a binary. The form records the file *name* and tells the customer, in place, to send the photo over WhatsApp with a prefilled link. Honest, but it is a stopgap — an upload endpoint (and storage) is the real fix. |
+| 18 | ~~**The footer lists two identical sitemap links**~~ | **Closed 27 Aug 2026.** Both went when the footer was cut back to the approved mockup's link set. A product sitemap is still worth emitting — see the sitemap item under *What is left to do*. |
+| 23 | **Seven routes now have no inbound link** | Cutting the footer back to the mockup orphaned `/gift-cards`, `/international`, `/accessibility`, `/affiliates` and three `/legal/**` drafts. They resolve and stay in the sitemap. Four are placeholder-by-design, but **`/accessibility` and `/international` are real content** — decide whether they earn a link somewhere (a slim utility row in the bottom bar would hold both) or stay unadvertised until launch. |
 | 19 | **Gift cards are announced but don't exist** | `/gift-cards` explains the programme and both forms are inert. Making it real is backend scope: a `GiftCard` model with a code and balance, issuance on purchase, and a redemption step in the checkout session. |
 | 20 | **`/size-guide` conversions are the standard ladder, not measured lasts** | The EU/UK/US table is the generic conversion, not Gold Coast Tokota's own lasts. A chart wrong by half a size causes returns — confirm against production lasts before launch. |
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
 | 3 | **About "Designed to last" copy was rewritten** | Figma's text names Everlane, cashmere sweaters and Peruvian Pima tees. Adapted to the brand. All other copy is verbatim from the design. |
 | 4 | **"Our Carbon Commitment" is tagged `Style`** | Straight from Figma `10:958`; looks like a design slip. Transcribed faithfully — flag if it should read Sustainability. |
-| 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. |
+| 5 | **FX provider unchosen** | Blocks Feature 2. README "Clarifications Needed" #2. The *frontend* half is no longer blocked as of 27 Aug — `plugins/fx-rate.ts` consumes `GET /fx-rate`, and prices fall back to cedis when no rate is available rather than rendering `$0`. What is still missing is a real provider behind `FxRateService`; it currently serves a `seed-placeholder` rate. |
 | 6 | **Fish Africa coverage unverified** | Blocks confidence in Feature 8. README "Clarifications Needed" #3. |
 | 7 | **Engagement end date unconfirmed** | README "Clarifications Needed" #1. |
 | 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
-| 9 | **Marquee line-height on the Sustainability masthead** | `display-brand` keeps Figma's 176/96 ratio, so at the mobile floor (36px) the leading is 66px — very airy. Faithful to the design, but it may be a Figma artifact rather than intent. Cheap to change to ~1.1 if it is. |
+| 9 | ~~**Marquee line-height on the Sustainability masthead**~~ | **Closed 27 Aug 2026.** The masthead was the only user of `display-brand`, whose 176/96 Figma leading measured 66px at the 36px mobile floor. It went with the About/Sustainability merge — About already had a hero, and a second brand-sized wordmark mid-page read as a different page starting. The token is still defined and now unused; delete it if nothing claims it. |
 | 11 | **The WhatsApp inbox implies scope README does not cover** | README Feature 6 specifies a `wa.me` deep link and states "no API integration required". `/inbox` needs the Business Cloud API, a verified WABA, approved templates and a webhook receiver. It ships as a clearly-labelled simulation; **whether to fund the real integration is awaiting a decision.** |
 | 12 | **Role model disagrees across sources** | README and `admin_users.role` say two tiers; the brand PDF names three; the business asked for four (adding a time-boxed `intern`). The admin UI implements four. **The database enum and role middleware still need widening** — until then the server cannot enforce what the UI presents. |
 | 13 | **WhatsApp number is provisional** | The PDF gives `+233 25 753 4297` annotated "(update with official number)". It is seeded into site settings and surfaced with a warning on `/settings/whatsapp`. Needs confirming before launch. |
@@ -836,7 +1284,21 @@ will light up:
   lands, wire it up *and remove the fallback*.
 - **Design tokens live in `frontend/tailwind.config.ts`**, each annotated with
   its Figma style name. Add tokens there rather than using arbitrary values, so
-  design and code stay reconcilable.
+  design and code stay reconcilable. The gold/chrome block at the bottom of the
+  colour list is annotated separately on purpose — it comes from the approved
+  Template B mockup and the brand PDF, not from the Figma file, and trying to
+  reconcile it against a Figma style name will waste your afternoon.
+- **Dark chrome needs `.chrome-dark`, and light panels inside it need
+  `.on-light`.** The base `:focus-visible` ring is graphite and vanishes on the
+  header and footer ground; a white one vanishes on the mega menu. Both classes
+  are in `main.css`. If you add a light panel inside the header, mark it.
+- **One size picker: `components/shop/SizeSelector.vue`.** The card and the
+  detail panel both use it, at `sm` and `lg`. Do not write a third — the
+  three-state treatment (and especially the struck-through unavailable state) is
+  the part customers read, and two versions of it drift.
+- **Adding to the cart goes through `useAddToCart()`.** The synthetic
+  `inventoryItemId` has to match everywhere or the same pair added from two
+  places becomes two cart lines.
 - **Breakpoints are a ladder, not a switch.** base = phone · `sm` (640) large
   phone, 2-up grids · `md` (768) tablet, side-by-side splits begin · `lg` (1024)
   full desktop structure · `xl`/`2xl` reclaim width. **Never jump base → `lg`** —

@@ -8,10 +8,15 @@ const config = useRuntimeConfig()
 const route = useRoute()
 const router = useRouter()
 
-// Sidebar facets. `category` is deliberately NOT one of them: the header's
-// category nav uses `?category=mens` for the *department*, while the sidebar's
+// Sidebar facets. `category` is deliberately NOT one of them: `?category=` is
+// the *department* (mens/womens/kids/merchandise), while the sidebar's
 // "Category" group filters product type. Sharing one key would make a link from
-// the nav filter every product out.
+// elsewhere filter every product out.
+//
+// The header no longer emits `?category=` — its nav moved to `?type=` with the
+// Template B labels on 27 Aug, because departments only exist on the design
+// catalogue and the API has never returned them. The search panel still links
+// two department views, and the key still works.
 type FacetKey = 'type' | 'color' | 'size' | 'width'
 const FACET_KEYS: FacetKey[] = ['type', 'color', 'size', 'width']
 

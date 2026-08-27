@@ -17,77 +17,62 @@ const blocks = computed(() => {
 </script>
 
 <template>
-  <article class="flex w-full flex-col items-start">
-    <!-- Hero -->
-    <header
-      class="page-gutter relative flex min-h-[420px] w-full flex-col items-start justify-end overflow-hidden py-12 lg:min-h-[691px] lg:py-[70px]"
-    >
+  <!-- Simplified to the approved Template B article layout: one narrow centred
+       column, a quiet meta line, the cover image, then the body.
+
+       What it replaces: a 691px full-bleed hero with a gradient scrim and the
+       title reversed out over the photo, then a 14px solid rule, then a
+       two-column band with a floating share rail 148px away from the lede. Four
+       different arrangements before a reader reached the first paragraph. -->
+  <article class="page-gutter mx-auto flex w-full max-w-[calc(52rem+120px)] flex-col items-center py-10 lg:py-16">
+    <header class="flex w-full flex-col items-center gap-4 text-center">
+      <p class="text-caption uppercase tracking-[1px] text-muted">
+        <time :datetime="post.published_at">{{ formatPostDate(post.published_at) }}</time>
+        <template v-if="post.category">
+          &nbsp;&middot;&nbsp;{{ post.category }}
+        </template>
+      </p>
+
+      <h1 class="w-full text-display-section font-normal text-black">{{ post.title }}</h1>
+
+      <p v-if="post.subtitle" class="w-full max-w-[640px] text-lede font-light text-muted">
+        {{ post.subtitle }}
+      </p>
+
+      <BlogShare :title="post.title" />
+    </header>
+
+    <div class="mt-10 aspect-[16/9] w-full overflow-hidden bg-surface">
       <img
         :src="post.hero_image || post.cover_image || '/design/news-placeholder.png'"
         :alt="post.title"
-        class="absolute inset-0 size-full object-cover"
+        class="size-full object-cover"
       >
-      <!-- Scrim: the design's hero photography is dark, but CMS-uploaded art
-           won't always be, and the title must stay legible either way. -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-
-      <div class="relative flex w-full max-w-[940px] flex-col items-start justify-end gap-2.5">
-        <p
-          v-if="post.category"
-          class="flex items-center justify-center rounded-[30px] border border-white px-5 py-2 text-center text-caption font-light text-white"
-        >
-          {{ post.category }}
-        </p>
-        <div class="flex w-full flex-col items-start gap-[18px] text-white">
-          <h1 class="w-full text-article-hero font-normal">{{ post.title }}</h1>
-          <p v-if="post.subtitle" class="w-full text-lede font-light">
-            {{ post.subtitle }}
-          </p>
-        </div>
-      </div>
-    </header>
-
-    <!-- Lede, with the share rail alongside -->
-    <div class="page-gutter flex w-full flex-col gap-10 py-16 lg:py-[115px]">
-      <div class="h-3.5 w-full bg-black lg:h-[14px]" />
-
-      <div class="flex w-full flex-col items-start gap-8 md:flex-row md:gap-12 lg:gap-[148px]">
-        <div class="flex shrink-0 flex-col gap-2">
-          <BlogShare :title="post.title" />
-          <time :datetime="post.published_at" class="text-caption text-muted">
-            {{ formatPostDate(post.published_at) }}
-          </time>
-        </div>
-
-        <p v-if="post.lede" class="min-w-0 flex-1 text-article-lg font-normal text-black">
-          {{ post.lede }}
-        </p>
-      </div>
     </div>
 
+    <p v-if="post.lede" class="mt-10 w-full max-w-[680px] text-article-lg font-normal text-black">
+      {{ post.lede }}
+    </p>
+
     <!-- Body -->
-    <template v-for="(block, index) in blocks" :key="index">
-      <div
-        v-if="block.type === 'image'"
-        class="page-gutter flex w-full items-center justify-center overflow-hidden py-12 lg:py-[100px]"
-      >
+    <div class="mt-10 flex w-full flex-col items-center gap-10">
+      <template v-for="(block, index) in blocks" :key="index">
         <img
+          v-if="block.type === 'image'"
           :src="block.src"
           :alt="block.alt"
-          class="max-h-[1054px] w-full max-w-[1046px] object-cover"
+          class="w-full object-cover"
           loading="lazy"
         >
-      </div>
-
-      <div v-else class="page-gutter w-full py-12 lg:py-[100px]">
         <div
-          class="post-body mx-auto flex w-full max-w-[984px] flex-col items-start gap-8 text-black lg:gap-11"
+          v-else
+          class="post-body flex w-full max-w-[680px] flex-col items-start gap-6 text-black"
           v-html="block.html"
         />
-      </div>
-    </template>
+      </template>
+    </div>
 
-    <p v-if="!blocks.length" class="page-gutter mx-auto w-full max-w-[984px] py-16 text-center text-body text-muted">
+    <p v-if="!blocks.length" class="w-full py-10 text-center text-body text-muted">
       This story hasn’t been published in full yet.
     </p>
   </article>
@@ -114,9 +99,12 @@ const blocks = computed(() => {
 }
 
 .post-body :deep(p) {
-  /* Body copy grows from 16px to the editorial 24px at 1440. */
-  font-size: clamp(16px, 13.714px + 0.714vw, 24px);
-  line-height: 1.5;
+  /* Body copy grows from 16px to 20px at 1440. It used to reach the editorial
+     24px, which was set for a 984px measure; this column is 680px, and 24px
+     across 680px runs to about 45 characters a line — too short to read
+     comfortably. */
+  font-size: clamp(16px, 14.857px + 0.357vw, 20px);
+  line-height: 1.6;
   font-weight: 300;
   letter-spacing: 0.64px;
   width: 100%;

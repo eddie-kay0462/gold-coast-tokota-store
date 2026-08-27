@@ -18,6 +18,8 @@ class SiteSettingResource extends JsonResource
             'hero_headline' => $this->hero_headline,
             'hero_image' => $this->hero_image,
             'diy_turnaround_estimate' => $this->diy_turnaround_estimate,
+            // Rotating announcement-bar messages, in display order.
+            'announcements' => $this->announcements ?? [],
             'updated_at' => $this->updated_at,
         ];
     }

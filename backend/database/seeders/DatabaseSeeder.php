@@ -32,6 +32,17 @@ class DatabaseSeeder extends Seeder
             'whatsapp_default_message' => 'Hi! I have a question about your sandals.',
             'contact_email' => 'hello@goldcoasttokota.store',
             'diy_turnaround_estimate' => '2-3 weeks',
+            // Deliberately conservative. The approved mockup's bar reads
+            // "Free delivery in Accra" and "Order online, pick up in Osu";
+            // neither is confirmed — checkout charges for Accra delivery, and
+            // the brand's address is Haatso, not Osu. Seed only what the rest
+            // of the project can stand behind and let the brand edit the rest
+            // from admin. See FOR_THE_TEAM.md open decisions.
+            'announcements' => [
+                'Handcrafted in Ghana',
+                'Pay with MoMo or card',
+                'We ship worldwide',
+            ],
         ]);
 
         // All page seeding lives in PageSeeder so the CMS slugs are in one place.

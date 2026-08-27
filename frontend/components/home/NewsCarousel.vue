@@ -35,7 +35,7 @@ const { railEl, pageCount, activeIndex, canScrollPrev, canScrollNext, scrollToPa
 <template>
   <section class="page-gutter section-y mx-auto flex w-full max-w-[1560px] flex-col items-start gap-[30px]">
     <div class="flex w-full flex-col items-center gap-3 text-center text-ink">
-      <h2 class="w-full text-display-sm">News &amp; Events</h2>
+      <h2 class="w-full text-display-sm">Stories</h2>
       <p class="w-full text-body">
         Learn more about our brand, our sustainability journey and upcoming community events
       </p>

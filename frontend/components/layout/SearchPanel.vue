@@ -53,7 +53,9 @@ watch(
     enter-from-class="opacity-0"
     leave-to-class="opacity-0"
   >
-    <div v-if="open" class="w-full bg-white" @keydown.esc="close">
+    <!-- `on-light` puts the graphite focus ring back: this panel is a light
+         child of the dark header, which switches the ring to white. -->
+    <div v-if="open" class="on-light w-full bg-white" @keydown.esc="close">
       <!-- Search field -->
       <form
         class="flex w-full items-start border-t border-line px-5 py-6 md:px-10 lg:px-[120px] xl:px-[326px]"

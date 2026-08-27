@@ -12,6 +12,12 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
     heroHeadline: '',
     heroImage: '',
     diyTurnaroundEstimate: '',
+    /**
+     * Rotating announcement-bar messages, in display order. Admin-editable
+     * because the copy makes commercial claims (delivery, payment methods)
+     * that must not need a deploy to correct.
+     */
+    announcements: [] as string[],
   }),
   actions: {
     setSettings(settings: Partial<ReturnType<typeof useSiteSettingsStore>['$state']>) {

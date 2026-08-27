@@ -30,6 +30,13 @@ export type ApiProduct = {
   /** Renders as a "Pre-Order" badge and blocks immediate add-to-cart. */
   is_pre_order?: boolean
   /**
+   * Stock-driven merchandising badge from the API (`limited_stock`,
+   * `out_of_stock`, `back_in_stock`). `out_of_stock` and `limited_stock` are
+   * always computed server-side from live inventory so they cannot go stale;
+   * anything else is an editorial value set in admin.
+   */
+  merchandising_badge?: string | null
+  /**
    * Product type — what the sidebar's "Category" facet filters on
    * (`ahenema`, `slippers`, …). Distinct from `departments` below.
    */
@@ -41,6 +48,13 @@ export type ApiProduct = {
   departments?: string[]
   sizes?: string[]
   widths?: string[]
+  /**
+   * Merchandising grouping from the API (`CollectionResource`) — Obrempong,
+   * Sikapa, Slides. The detail page prints it as the eyebrow above the name.
+   */
+  collection?: { id?: number, name: string, slug: string } | null
+  /** Top-level catalogue split from the API (`CategoryResource`) — Sandals, Ahenema. */
+  category?: { id?: number, name: string, slug: string } | null
 
   // --- Detail-page fields (absent from listing responses) ---
   /** Long-form copy under the buy panel; `description_heading` titles it. */

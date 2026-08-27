@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
 import { DESIGN_POSTS, SUSTAINABILITY_POSTS } from '~/utils/newsPosts'
-import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -31,15 +30,23 @@ if (!post.value) {
   throw createError({ statusCode: 404, statusMessage: 'Story not found', fatal: true })
 }
 
-/** Other stories, newest first, excluding the one being read. */
-const related = computed(() =>
-  [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS]
+/**
+ * Genuinely related stories: same category first, then the newest of everything
+ * else to fill the row. It used to be "all posts minus this one, newest first"
+ * under a "More Stories" heading — which is a feed, not a relationship.
+ */
+const related = computed(() => {
+  const others = [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS]
     .filter((entry) => entry.slug !== slug.value)
     .sort((a, b) => b.published_at.localeCompare(a.published_at))
-    .slice(0, 3),
-)
 
-const products = computed(() => DESIGN_PRODUCTS.slice(0, 4))
+  const category = post.value?.category
+  if (!category) return others.slice(0, 3)
+
+  const sameCategory = others.filter((entry) => entry.category === category)
+  const rest = others.filter((entry) => entry.category !== category)
+  return [...sameCategory, ...rest].slice(0, 3)
+})
 
 useSeoMeta({
   title: () => `${post.value?.title ?? 'Story'} — Gold Coast Tokota`,
@@ -56,21 +63,9 @@ useSeoMeta({
   <div v-if="post" class="flex w-full flex-col items-start">
     <BlogPost :post="post" />
 
-    <!-- Shop Our Products -->
-    <section class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-center gap-10">
-      <h2 class="w-full text-center text-article-lg font-normal text-black">
-        Shop Our Products
-      </h2>
-
-      <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
-        <li v-for="product in products" :key="product.slug" class="min-w-0">
-          <ShopProductCard :product="product" />
-        </li>
-      </ul>
-
-      <CommonBrandButton to="/shop">Shop Now</CommonBrandButton>
-    </section>
-
+    <!-- The "Shop Our Products" grid that used to sit here is gone. It rendered
+         the first four products in the design catalogue with no relationship to
+         the story being read, and it was the single heaviest block on the page. -->
     <BlogRelatedPosts :posts="related" />
   </div>
 </template>

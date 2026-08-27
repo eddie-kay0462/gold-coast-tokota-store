@@ -10,23 +10,24 @@ export type MegaMenuPromo = {
 export type MegaMenu = {
   columns: { heading: string, links: NavLink[] }[]
   promos: MegaMenuPromo[]
-  /**
-   * True when the menu's copy and promo artwork are stand-ins awaiting design
-   * sign-off. Only `Mens` is drawn in Figma (node 6:368); every other category
-   * reuses that structure verbatim. Grep this flag to find what still needs
-   * real content before launch.
-   */
-  placeholder?: boolean
 }
 
 export type NavItem = NavLink & { accent?: boolean, menu?: MegaMenu }
 
-// Row 2 of the header.
+// Row 2 of the header — the non-shopping destinations.
+//
+// `Bookings` and `Stories` are the approved Template B mockup's own labels.
+// `Shop` stays even though the mockup has no plain "Shop" item: row 3 only
+// offers *filtered* entries to the catalogue, and dropping the one unfiltered
+// way in would be a usability regression, not a design decision.
 export const primaryNav: NavLink[] = [
-  { label: 'News & Events', to: '/blog' },
   { label: 'Shop', to: '/shop' },
+  { label: 'Bookings', to: '/booking' },
+  { label: 'Stories', to: '/blog' },
+  // `Sustainability` used to sit beside this. It is a section of About now
+  // (27 Aug) — the two routes were telling one story — and `/sustainability`
+  // 301s here.
   { label: 'About', to: '/about' },
-  { label: 'Sustainability', to: '/sustainability' },
 ]
 
 /** Merges extra query params into a base route, preserving what's already there. */
@@ -38,9 +39,8 @@ function withParams(baseTo: string, params: Record<string, string>): string {
   return query ? `${path}?${query}` : path!
 }
 
-// Both promo tiles come from the Mens panel. Categories without their own
-// artwork reuse them so the layout is representative; swap per category once
-// real photography exists.
+// Both promo tiles come from the Figma Mens panel; they are the only two pieces
+// of menu artwork that exist. Swap them per category once real photography does.
 const promoArtwork = {
   ahenema: { image: '/design/menu-ahenema.png', alt: 'Blue and black leather ahenema sandals' },
   closedToe: { image: '/design/menu-closed-toe.png', alt: 'Closed-toe leather shoes in tan and black' },
@@ -48,35 +48,41 @@ const promoArtwork = {
 
 /**
  * Builds the two-column + two-promo panel drawn in Figma, rebased onto a given
- * category route. Every category gets the identical structure; only the route
- * each link resolves to and the gendered "Top Rated" label differ.
+ * shop route.
+ *
+ * Every link here resolves to a filter `/shop` actually implements — `type`,
+ * `sort` and `sale`, the keys `pages/shop/index.vue` reads. The previous
+ * version pointed at `?collection=gift-guide`, `?collection=new-ahenema` and
+ * friends, which nothing filters on: the panel looked complete and every link
+ * in it silently returned the unfiltered catalogue. That is why these menus
+ * were all flagged `placeholder` — they no longer need to be.
+ *
+ * Rebasing is what makes one template serve every item: opened from Sandals,
+ * "New Arrivals" means new sandals; opened from Sale, it means new sale items.
  */
-function createCategoryMenu(
-  baseTo: string,
-  options: { topRatedLabel: string, placeholder?: boolean },
-): MegaMenu {
+function createShopMenu(baseTo: string, label: string): MegaMenu {
   return {
-    placeholder: options.placeholder,
     columns: [
       {
-        heading: 'Highlights',
+        heading: 'Shop All',
         links: [
-          { label: 'Shop All New Arrivals', to: withParams(baseTo, { sort: 'newest' }) },
-          { label: 'The Gift Guide', to: withParams(baseTo, { collection: 'gift-guide' }) },
-          { label: 'New Ahenema', to: withParams(baseTo, { collection: 'new-ahenema' }) },
-          { label: 'New Shoes', to: withParams(baseTo, { collection: 'new-shoes' }) },
-          { label: 'Product Bundles', to: withParams(baseTo, { collection: 'bundles' }) },
-          { label: 'Under ₵200', to: withParams(baseTo, { max_price: '200' }) },
+          { label: `All ${label}`, to: baseTo },
+          { label: 'Ahenema', to: withParams(baseTo, { type: 'ahenema' }) },
+          { label: 'Sandals', to: withParams(baseTo, { type: 'sandals' }) },
+          { label: 'Slippers', to: withParams(baseTo, { type: 'slippers' }) },
+          { label: 'Closed-Toe Shoes', to: withParams(baseTo, { type: 'closed-toe' }) },
+          { label: 'Merchandise', to: withParams(baseTo, { type: 'merchandise' }) },
         ],
       },
       {
         heading: 'Featured Shops',
         links: [
-          { label: 'Latest and Greatest Ahenema', to: withParams(baseTo, { collection: 'latest-ahenema' }) },
-          { label: 'Closed-Toe Shoes', to: withParams(baseTo, { collection: 'closed-toe' }) },
-          { label: 'Customised Sandals', to: '/booking' },
+          { label: 'New Arrivals', to: withParams(baseTo, { sort: 'newest' }) },
           { label: 'Best Sellers', to: withParams(baseTo, { sort: 'best-selling' }) },
-          { label: options.topRatedLabel, to: withParams(baseTo, { sort: 'top-rated' }) },
+          { label: 'Top Rated', to: withParams(baseTo, { sort: 'top-rated' }) },
+          { label: 'On Sale', to: withParams(baseTo, { sale: 'true' }) },
+          // Custom work is a booking, not a catalogue filter.
+          { label: 'Customised Sandals', to: '/booking' },
         ],
       },
     ],
@@ -84,99 +90,84 @@ function createCategoryMenu(
       {
         label: 'Latest and Greatest Ahenema',
         ...promoArtwork.ahenema,
-        to: withParams(baseTo, { collection: 'latest-ahenema' }),
+        to: withParams(baseTo, { type: 'ahenema', sort: 'newest' }),
       },
       {
         label: 'Closed-Toe\nShoes',
         ...promoArtwork.closedToe,
-        to: withParams(baseTo, { collection: 'closed-toe' }),
+        to: withParams(baseTo, { type: 'closed-toe' }),
       },
     ],
   }
 }
 
-// Row 3 — category entry points. `Mens` matches the Figma frame exactly; the
-// rest are placeholders built from the same template (see MegaMenu.placeholder).
+/**
+ * Row 3 — the catalogue entry points, taken from the approved Template B
+ * mockup's nav: Best Sellers, Sandals, Ahenema.
+ *
+ * This replaces the seven department placeholders that used to live here
+ * (Mens, Womens, Kids, New Arrivals, Best-Sellers, Merchandise, Custom Shoes).
+ * They were flagged `placeholder: true` because `?category=mens` and friends
+ * filter on a `departments` field only the design catalogue carries — the API's
+ * `ProductResource` has never returned it, so those tabs would have shown the
+ * whole catalogue on real data. `?type=` is a facet the shop genuinely filters.
+ *
+ * `Sale` is not in the mockup and is kept deliberately: sale pricing is built
+ * (`compare_at_ghs`, the discount badge, the struck compare-at price), and the
+ * `sale` colour token exists for this one item.
+ */
 export const categoryNav: NavItem[] = [
   {
-    label: 'Mens',
-    to: '/shop?category=mens',
-    menu: createCategoryMenu('/shop?category=mens', { topRatedLabel: 'Top Rated Men’s Sandals' }),
-  },
-  {
-    label: 'Womens',
-    to: '/shop?category=womens',
-    menu: createCategoryMenu('/shop?category=womens', {
-      topRatedLabel: 'Top Rated Women’s Sandals',
-      placeholder: true,
-    }),
-  },
-  {
-    label: 'Kids',
-    to: '/shop?category=kids',
-    menu: createCategoryMenu('/shop?category=kids', {
-      topRatedLabel: 'Top Rated Kids’ Sandals',
-      placeholder: true,
-    }),
-  },
-  {
-    label: 'New Arrivals',
-    to: '/shop?sort=newest',
-    menu: createCategoryMenu('/shop?sort=newest', {
-      topRatedLabel: 'Top Rated New Arrivals',
-      placeholder: true,
-    }),
-  },
-  {
-    label: 'Best-Sellers',
+    label: 'Best Sellers',
     to: '/shop?sort=best-selling',
-    menu: createCategoryMenu('/shop?sort=best-selling', {
-      topRatedLabel: 'Top Rated Best-Sellers',
-      placeholder: true,
-    }),
+    menu: createShopMenu('/shop?sort=best-selling', 'Best Sellers'),
   },
   {
-    label: 'Merchandise',
-    to: '/shop?category=merchandise',
-    menu: createCategoryMenu('/shop?category=merchandise', {
-      topRatedLabel: 'Top Rated Merchandise',
-      placeholder: true,
-    }),
+    label: 'Sandals',
+    to: '/shop?type=sandals',
+    menu: createShopMenu('/shop?type=sandals', 'Sandals'),
   },
   {
-    label: 'Custom Shoes',
-    to: '/booking',
-    menu: createCategoryMenu('/booking', {
-      topRatedLabel: 'Top Rated Custom Builds',
-      placeholder: true,
-    }),
+    label: 'Ahenema',
+    to: '/shop?type=ahenema',
+    menu: createShopMenu('/shop?type=ahenema', 'Ahenema'),
   },
   {
     label: 'Sale',
     to: '/shop?sale=true',
     accent: true,
-    menu: createCategoryMenu('/shop?sale=true', {
-      topRatedLabel: 'Top Rated Sale Items',
-      placeholder: true,
-    }),
+    menu: createShopMenu('/shop?sale=true', 'Sale'),
   },
 ]
 
 /**
- * The About page's own section nav (Figma 6:554). Every tab but the Annual
- * Impact Report now has a real destination — the brand-story sections drawn on
- * this page, the Sustainability page, its stories, and the workshop booking
- * flow. The report is not a designed page yet, so it resolves to the nearest
- * existing one and is flagged `placeholder`; grep the flag to find what still
- * needs a real route.
+ * The About page's own section nav (Figma 6:554).
+ *
+ * Since Sustainability was merged into About (27 Aug) this is what moves a
+ * reader between the parts of one long page, which is what a section nav is
+ * for — before the merge, four of its seven tabs left the page entirely.
+ *
+ * Trimmed to six on 27 Aug at the customer's request — Radical Transparency,
+ * Our Progress, Our Carbon Commitment and Annual Impact Report came out. The
+ * sections those first two named are still on the page and still have their
+ * anchors (`#prices`, `#progress`); a section nav is a shortcut list, not a
+ * table of contents.
+ *
+ * Every tab now resolves to something real, so nothing here is flagged
+ * `placeholder` any more — the last user of that flag was the Annual Impact
+ * Report, which was pointing at the nearest existing section because the report
+ * itself has never been designed.
  */
-export const aboutSectionNav: (NavLink & { placeholder?: boolean })[] = [
+export const aboutSectionNav: NavLink[] = [
   { label: 'About', to: '/about' },
-  { label: 'Cleaner Manufacturing', to: '/about#factories' },
-  { label: 'Workshop', to: '/booking' },
-  { label: 'Environmental Initiatives', to: '/sustainability' },
-  { label: 'Our Carbon Commitment', to: '/blog/our-carbon-commitment' },
-  { label: 'Annual Impact Report', to: '/sustainability', placeholder: true },
+  // "Cleaner Manufacturing" and "Workshop" were separate tabs pointing at the
+  // same subject from two directions — the factories section on this page, and
+  // the booking page. One tab now, on the section that explains the work.
+  // Booking is a top-level header item (`Bookings`), so nothing is lost.
+  { label: 'Our Workshop', to: '/about#factories' },
+  { label: 'Designed to Last', to: '/about#quality' },
+  { label: 'Sustainability', to: '/about#sustainability' },
+  { label: 'The Latest', to: '/about#stories' },
   { label: 'Partnerships', to: '/blog/partnerships-for-change' },
 ]
 

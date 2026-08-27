@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import type { ApiProduct } from '~/utils/catalog'
 import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
-import { useCartStore } from '~/stores/cart'
 
 const route = useRoute()
 const config = useRuntimeConfig()
-const cart = useCartStore()
-const { addToCart: addToCartEvent } = useAnalytics()
+const addToCartLine = useAddToCart()
 
 const slug = computed(() => String(route.params.slug))
 
@@ -57,37 +55,28 @@ const breadcrumb = computed(() => {
   return type ? `${department} / ${type}` : department
 })
 
+/**
+ * The stock badge from the approved mockup, shared with the product card so
+ * the grid and the detail page never disagree about availability.
+ */
+const STOCK_BADGES: Record<string, { label: string, class: string }> = {
+  limited_stock: { label: 'Limited stock', class: 'bg-gold text-chrome' },
+  back_in_stock: { label: 'Back in stock', class: 'bg-chrome text-white' },
+  out_of_stock: { label: 'Out of stock', class: 'bg-line text-muted' },
+}
+
+const stockBadge = computed(() => {
+  const badge = product.value?.merchandising_badge
+  return badge ? STOCK_BADGES[badge] ?? null : null
+})
+
 const recommended = computed(() =>
   DESIGN_PRODUCTS.filter((entry) => entry.slug !== slug.value).slice(0, 4),
 )
 
 function addToCart({ size, color }: { size: string, color: string }) {
-  const entry = product.value
-  if (!entry) return
-
-  cart.addItem({
-    productId: entry.slug,
-    // Real inventory item ids arrive with Feature 2/3; until then the variant
-    // key keeps distinct size/colour selections as separate cart lines.
-    inventoryItemId: `${entry.slug}:${size}:${color}`,
-    slug: entry.slug,
-    name: entry.name,
-    image: entry.images?.[0],
-    variantLabel: [size, color].filter(Boolean).join(' | '),
-    quantity: 1,
-    unitPriceGhs: entry.base_price_ghs,
-    compareAtGhs: entry.compare_at_ghs,
-  })
-
-  addToCartEvent({
-    currency: 'GHS',
-    value: entry.base_price_ghs / 100,
-    items: [{ item_id: entry.slug, item_name: entry.name, quantity: 1 }],
-  })
-
-  // Opening the sidecart is the confirmation that the add worked, and puts
-  // checkout one click away.
-  cart.openDrawer()
+  if (!product.value) return
+  addToCartLine(product.value, { size, color })
 }
 
 useSeoMeta({
@@ -108,6 +97,7 @@ useSeoMeta({
         :images="gallery"
         :name="product.name"
         :discount-label="discountLabel"
+        :stock-badge="stockBadge"
       />
       <ShopProductPurchasePanel
         :product="product"

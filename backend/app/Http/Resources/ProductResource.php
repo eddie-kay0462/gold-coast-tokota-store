@@ -29,6 +29,10 @@ class ProductResource extends JsonResource
             'is_featured' => $this->is_featured,
             'in_stock' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->in_stock),
             'merchandising_badge' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->effective_badge),
+            // The storefront strikes through sizes it cannot sell, so it needs
+            // the range and the per-size sellable count — not just `in_stock`.
+            'sizes' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->sizes),
+            'size_availability' => $this->when($this->relationLoaded('inventoryItems'), fn () => (object) $this->size_availability),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

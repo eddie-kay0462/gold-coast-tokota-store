@@ -12,12 +12,13 @@ const currency = useCurrencyStore()
 const lines = computed(() =>
   props.breakdown.map((line) => ({
     ...line,
-    // Same GHS → USD derivation the rest of the storefront uses.
+    // Same GHS → USD derivation the rest of the storefront uses, including
+    // the fallback to cedis when no rate has been fetched yet.
     display: formatMoney(
-      currency.active === 'GHS'
+      currency.displayCurrency === 'GHS'
         ? line.amount_ghs
         : Math.round(line.amount_ghs * currency.fxRate),
-      currency.active,
+      currency.displayCurrency,
       { compact: true },
     ),
   })),
