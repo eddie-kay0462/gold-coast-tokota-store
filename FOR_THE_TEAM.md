@@ -85,10 +85,47 @@ graphite and is invisible on the new dark chrome; `.chrome-dark` flips it white,
 and `.on-light` flips it back inside the light panels nested in it (mega menu,
 search band, mobile accordion).
 
-**Header** (`Header.vue`, new `AnnouncementBar.vue`, `CurrencyToggle.vue`). Dark
-ground, white logo, gold cart bubble. The announcement strip now rotates a list
-of messages with a cross-fade, sourced from the new admin-editable
-`SiteSetting.announcements`. The currency control is the mockup's **GHS|USD
+**Header** (`Header.vue`, new `AnnouncementBar.vue`, `CurrencyToggle.vue`,
+`utils/navigation.ts`). Dark ground, white logo, gold cart bubble.
+
+The announcement strip rotates a list of messages with a cross-fade, sourced
+from the new admin-editable `SiteSetting.announcements`, and carries a **second
+line** — support hours plus a WhatsApp link. The hours are the ones published in
+the brand guidelines and sit in a constant with that noted; unlike the rotating
+line they are a service fact, not a commercial claim. The link is hidden below
+`sm`, where the floating WhatsApp button is already on screen.
+
+Both lines are centred **against the bar**, not against the space left over
+beside the flag and currency cluster. From `sm` the row is the same
+`grid-cols-[1fr_auto_1fr]` the logo row uses: two equal flanks, content in the
+middle. Below `sm` the flank collapses and the marquee takes the width — going
+back to absolute positioning for the cluster is what caused the 41px overlap in
+closed issue #1.
+
+**The nav items are the mockup's.** Row 2 is now Shop · Bookings · Stories ·
+About · Sustainability; row 3 is Best Sellers · Sandals · Ahenema · Sale. That
+retires the seven department placeholders (Mens, Womens, Kids, New Arrivals,
+Best-Sellers, Merchandise, Custom Shoes) — they filtered on `?category=`, a
+`departments` field only the design catalogue carries and the API has never
+returned, so every one of those tabs would have shown the whole catalogue on
+real data. `?type=` is a facet the shop genuinely filters, and it is verified:
+`?type=sandals` → 1 product, `?type=slippers` → 3, unfiltered → 6.
+
+The mega menus are kept, as agreed, but their contents were rebuilt for the same
+reason — every link used to point at `?collection=gift-guide` and friends, which
+nothing filters on, so the panel looked complete while every link in it silently
+returned the unfiltered catalogue. They now use `type` / `sort` / `sale` only,
+which is why the `MegaMenu.placeholder` flag could be deleted outright.
+
+`Shop` stays in row 2 even though the mockup has no plain "Shop" item: row 3
+only offers filtered entries, and dropping the one unfiltered way into the
+catalogue would be a usability regression rather than a design decision. `Sale`
+stays in row 3 for the mirror-image reason — sale pricing is fully built, and
+the `sale` token exists for that one item.
+
+Renaming `News & Events` to `Stories` in the nav made the page it opens
+disagree with it, so `/blog`'s heading and SEO title, and the home carousel's
+heading, moved to "Stories" too. The currency control is the mockup's **GHS|USD
 segmented pair** — `CurrencyToggle.vue` already implemented that shape and was
 sitting unused, so it was restyled and adopted rather than a third toggle being
 written. The old single button showed only the *current* currency, so a visitor
@@ -935,8 +972,10 @@ order:
 - **`public/design/flag.svg`** is now unused; kept only as the original Figma
   export. Delete it once nobody wants the reference.
 - **Placeholder nav targets** are flagged `placeholder: true` in
-  `utils/navigation.ts`. Grep that flag to find what still needs a real route
-  (currently: seven mega-menu categories, and "Annual Impact Report").
+  `utils/navigation.ts`. Grep that flag to find what still needs a real route.
+  As of 27 Aug only **"Annual Impact Report"** is left: the seven mega-menu
+  categories are gone, and the menus themselves now link only to filters
+  `/shop` implements, so `MegaMenu.placeholder` was removed from the type.
 
 ### Admin dashboard
 

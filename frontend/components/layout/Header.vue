@@ -107,10 +107,17 @@ function isCategoryActive(to: string) {
 
          The strip is `ink` (#000) against the header's `chrome` (#111) — the
          same two-tone relationship the approved mockup draws. -->
-    <div class="chrome-dark flex w-full items-center gap-3 bg-ink px-5 text-white lg:px-[30px]">
+    <div class="chrome-dark flex w-full items-center gap-3 bg-ink px-5 text-white sm:grid sm:grid-cols-[1fr_auto_1fr] lg:px-[30px]">
+      <!-- Empty left flank. From `sm` this row is the same three-column grid the
+           logo row below uses: two equal `1fr` flanks with the content in an
+           `auto` track between them, so the message is centred against the *bar*
+           rather than against whatever space the flag and currency cluster leave
+           over. Below `sm` the flank collapses and the marquee takes the width. -->
+      <span class="hidden sm:block" aria-hidden="true" />
+
       <LayoutAnnouncementBar />
 
-      <div class="flex shrink-0 items-center gap-2.5">
+      <div class="flex shrink-0 items-center justify-end gap-2.5">
         <img
           :key="geo.country"
           :src="flagUrl(geo.country)"

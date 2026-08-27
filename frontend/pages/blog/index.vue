@@ -54,10 +54,10 @@ const items = computed(() =>
 )
 
 useSeoMeta({
-  title: 'News & Events — Gold Coast Tokota',
+  title: 'Stories — Gold Coast Tokota',
   description:
     'Learn more about our brand, our sustainability journey and upcoming community events.',
-  ogTitle: 'News & Events — Gold Coast Tokota',
+  ogTitle: 'Stories — Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -66,7 +66,7 @@ useSeoMeta({
 <template>
   <div class="page-gutter mx-auto flex w-full max-w-[1440px] flex-col items-center gap-12 py-12 lg:gap-16 lg:pb-[90px] lg:pt-[30px]">
     <div class="flex w-full flex-col items-center gap-4 text-center font-light text-black">
-      <h1 class="w-full text-display-md">News &amp; Events</h1>
+      <h1 class="w-full text-display-md">Stories</h1>
       <p class="w-full text-body">
         Learn more about our brand, our sustainability journey and upcoming community events
       </p>
