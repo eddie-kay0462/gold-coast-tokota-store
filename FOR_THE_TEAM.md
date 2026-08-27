@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (the product API contract — backend now sends every field the storefront reads, bar reviews)
+- **Last updated:** 27 August 2026 (Feature 3's two read endpoints — the storefront polls real stock now, and admin Inventory has an API)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -52,7 +52,45 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — the product API contract closed
+### 27 August 2026 (latest) — Feature 3's read endpoints
+
+`GET /products/{slug}/stock` and `GET /admin/inventory`. Both are exposure
+rather than construction: `InventoryReservationService` already did the hard
+part (`SELECT … FOR UPDATE`, correct concurrent-hold semantics) and
+`ReleaseExpiredReservations` was already scheduled. `useInventoryPolling` had
+been polling into the void since it was written.
+
+- **The stock endpoint reports *sellable* stock, not the raw column.** A unit
+  held by someone else's in-progress payment is not purchasable, and offering
+  it is worse than showing it as gone. It keeps the key name the composable
+  already reads (`quantity_available`) — the storefront's sense of "available"
+  has always meant "available to buy".
+- **It also returns `size_availability`, which nothing reads yet.**
+  `ProductPurchasePanel` takes a `liveStock` prop as a per-size map, and
+  `[slug].vue` doesn't pass it — the composable only surfaces the aggregate.
+  Sending the map now means wiring those together is a frontend change with no
+  second API round trip. **Kirk: that connection is yours and it is small.**
+- **`/admin/inventory` deliberately reports the opposite number.** Its
+  `?low_stock=true` filter compares raw `quantity_available <=
+  low_stock_threshold`, ignoring reservations, because it answers "what do we
+  need to make more of" — a reserved unit is still on the shelf. Rows carry
+  both counts plus `sellable_quantity`; "12 in stock, 11 spoken for" is a very
+  different operational picture from "12 in stock". Tests pin both readings so
+  nobody later "fixes" one into the other.
+- **Admin *and* Staff can read it.** Restocking is day-to-day operations, not a
+  pricing decision — `staff_or_admin`, not `admin`.
+
+**Fixed on the way past, and it predates this change:** an unauthenticated
+request to any `/api/*` route returned **500, not 401**, unless it sent
+`Accept: application/json`. Laravel's `Authenticate` middleware was redirecting
+guests to a `login` route this app has no reason to define — both frontends own
+their own login screens — and the lookup threw. The admin SPA always sends the
+header, so nobody had seen it; anything else hitting an API URL got an HTML
+stack trace where a 401 belonged. `redirectGuestsTo` now returns null for
+`api/*`. This affected the already-shipped `/admin/me` and every admin route,
+not just the new one.
+
+### 27 August 2026 — the product API contract closed
 
 The storefront's `ApiProduct` type declared **thirteen fields that
 `ProductResource` never sent**. Every page built against them had been falling
@@ -1299,12 +1337,12 @@ In dependency order:
    (exchangerate.host) and `RefreshFxRate` is scheduled — only the access key
    is missing. *What is left: server-side listing filters, before the catalogue
    outgrows one page.*
-2. **Feature 3 — Inventory.** Mostly built: `InventoryReservationService` does
-   `SELECT … FOR UPDATE` with correct concurrent-hold semantics, and
-   `ReleaseExpiredReservations` is scheduled. *What is left is exposure, not
-   construction:* `GET /products/{slug}/stock` (the composable
-   `useInventoryPolling` is already polling into the void) and
-   `GET /admin/inventory` with the low-stock filter.
+2. ~~**Feature 3 — Inventory.**~~ — **closed 27 Aug.** Reservations with
+   row-level locking, the scheduled release job, `GET /products/{slug}/stock`
+   and `GET /admin/inventory` with the low-stock filter all exist and are
+   tested. *What is left is on the storefront:* `[slug].vue` doesn't pass
+   `liveStock` to `ProductPurchasePanel`, so the polled per-size map the API
+   now sends goes nowhere. Small frontend wiring, no API work.
 3. **Feature 4 — Checkout & payments.** Orders, Paystack (GHS) + Stripe (USD)
    session creation and webhook verification, FX rate locked at checkout.
 4. **Feature 5 — Delivery.** Yango (domestic) and DHL (international) quote/booking.

@@ -75,6 +75,7 @@ Anything that writes them directly is a bug.
 |---|---|---|
 | GET | `/products` | Paginated, 12/page. `?category_id=` `?featured=` |
 | GET | `/products/{slug}` | |
+| GET | `/products/{slug}/stock` | Live stock for the polling composable — see below |
 | GET | `/categories` `/collections` | |
 | GET | `/fx-rate` | |
 | GET | `/pages/{slug}` · `/site-settings` | |
@@ -83,18 +84,18 @@ Anything that writes them directly is a bug.
 | POST | `/newsletter` | |
 | GET | `/workshop-sessions` · POST `/bookings` | |
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
+| GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` — 50/page |
 | POST/PUT/DELETE | `/admin/products` | Admin role only |
 
 ### Specified, not yet built
 
 | Method | Path | Consumer | Stage |
 |---|---|---|---|
-| GET | `/products/{slug}/stock` | `composables/useInventoryPolling.ts` | 2 |
 | POST | `/checkout/session` | `components/checkout/PaymentStep.vue` | 3 |
 | GET | `/orders/{id}` | `pages/order-confirmation/[id].vue` | 3 |
 | POST | `/webhooks/paystack` · `/webhooks/stripe` | gateways | 3 |
 | POST | `/feedback` | `components/forms/FeedbackForm.vue` | 6 |
-| GET | `/admin/inventory` · `/admin/dashboard/metrics` | admin app | 2, 7 |
+| GET | `/admin/dashboard/metrics` | admin app | 7 |
 
 `POST /checkout/session` has its request and response already written out in a
 comment at `frontend/components/checkout/PaymentStep.vue:13`:
@@ -105,6 +106,46 @@ POST /checkout/session { items, currency, shipping_address, delivery_method }
   → USD: a Stripe PaymentIntent client secret to confirm
   → gateway redirects back to /order-confirmation/{id}
 ```
+
+---
+
+## Stock (`GET /products/{slug}/stock`)
+
+Polled every 15–30s by `frontend/composables/useInventoryPolling.ts` while a
+product detail page is open, and paused when the tab is backgrounded.
+
+```json
+{ "data": {
+  "slug": "kentehene-collection",
+  "quantity_available": 22,
+  "size_availability": { "39": 4, "40": 9, "41": 6, "42": 0, "43": 3 },
+  "in_stock": true,
+  "merchandising_badge": null
+} }
+```
+
+**`quantity_available` is sellable stock** — physical minus reserved — not the
+raw `inventory_items.quantity_available` column. A unit held by someone else's
+in-progress payment is not purchasable, and offering it is worse than showing it
+as gone. The key keeps the name the composable already reads; the storefront's
+sense of "available" has always meant "available to buy".
+
+**This endpoint cannot oversell anything.** It takes no locks and creates no
+reservations. Correctness lives in `InventoryReservationService` at checkout,
+and holds regardless of how stale this response is by the time someone acts on
+it — which is what makes a polling interval an acceptable design here at all.
+
+`size_availability` is included even though the composable only reads the
+aggregate today: `ProductPurchasePanel` takes a `liveStock` prop as a per-size
+map and nothing currently passes it. Wiring those two together is a frontend
+change with no further API work.
+
+**`/admin/inventory` reports the opposite number on purpose.** Its
+`?low_stock=true` filter compares raw `quantity_available <= low_stock_threshold`,
+ignoring reservations, because it answers "what do we need to make more of" —
+and a reserved unit is still on the shelf. Rows carry both counts plus
+`sellable_quantity`, since "12 in stock, 11 spoken for" is a very different
+operational picture from "12 in stock".
 
 ---
 

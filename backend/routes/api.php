@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\BlogPostController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\V1\FxRateController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductStockController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
 use App\Http\Controllers\Api\V1\WorkshopSessionController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +27,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // for products live under the /admin prefix below.
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
+    // Polled by the storefront while a product page is open (Feature 3). A
+    // plain read — checkout's row-level locking is what actually prevents
+    // overselling, so this being stale is a display concern, never a
+    // correctness one.
+    Route::get('/products/{slug}/stock', [ProductStockController::class, 'show'])->name('products.stock');
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/fx-rate', [FxRateController::class, 'show'])->name('fx-rate.show');
@@ -51,6 +58,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::middleware('auth:admin')->group(function () {
             Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
             Route::get('/me', [AdminAuthController::class, 'me'])->name('me');
+
+            // Inventory is Admin *and* Staff: restocking is day-to-day
+            // operations, not a pricing decision.
+            Route::middleware('staff_or_admin')->group(function () {
+                Route::get('/inventory', [AdminInventoryController::class, 'index'])->name('inventory.index');
+            });
 
             // Products: pricing/catalogue changes are Admin-only, not Staff
             // (README two-tier role rule — Staff has no pricing access).
