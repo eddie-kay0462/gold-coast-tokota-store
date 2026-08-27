@@ -3,14 +3,19 @@
 use App\Http\Controllers\Api\V1\Admin\BlogPostController as AdminBlogPostController;
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
+use App\Http\Controllers\Api\V1\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\V1\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Api\V1\Admin\ShipmentController as AdminShipmentController;
 use App\Http\Controllers\Api\V1\Admin\SiteSettingController as AdminSiteSettingController;
+use App\Http\Controllers\Api\V1\Admin\TeamController as AdminTeamController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopSessionController as AdminWorkshopSessionController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
 use App\Http\Controllers\Api\V1\BlogPostController;
@@ -161,6 +166,34 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 // Site Settings is readable by Staff (the WhatsApp number shows
                 // on screens they use) but writable only by Admin — see below.
                 Route::get('/site-settings', [AdminSiteSettingController::class, 'show'])->name('site-settings.show');
+
+                Route::get('/dashboard/charts', [AdminDashboardController::class, 'charts'])->name('dashboard.charts');
+
+                // Customers are read-only: their details are theirs to change,
+                // and deletion is a data-protection policy question rather than
+                // a button.
+                Route::get('/customers', [AdminCustomerController::class, 'index'])->name('customers.index');
+                Route::get('/customers/{customer}', [AdminCustomerController::class, 'show'])->name('customers.show');
+
+                // Shipments are a view over orders, not a second table — see
+                // ShipmentController.
+                Route::get('/shipments', [AdminShipmentController::class, 'index'])->name('shipments.index');
+
+                // Media library. This is what makes products.images fillable.
+                Route::get('/media', [AdminMediaController::class, 'index'])->name('media.index');
+                Route::post('/media', [AdminMediaController::class, 'store'])->name('media.store');
+                Route::delete('/media/{mediaAsset}', [AdminMediaController::class, 'destroy'])->name('media.destroy');
+
+                // Read-only reflections of how the system is configured. No
+                // write endpoints: changing a gateway key from a web form would
+                // let the running config and the deployment's config disagree.
+                Route::prefix('settings')->name('settings.')->group(function () {
+                    Route::get('/commerce', [AdminSettingsController::class, 'commerce'])->name('commerce');
+                    Route::get('/payments', [AdminSettingsController::class, 'payments'])->name('payments');
+                    Route::get('/delivery', [AdminSettingsController::class, 'delivery'])->name('delivery');
+                    Route::get('/notifications', [AdminSettingsController::class, 'notifications'])->name('notifications');
+                    Route::get('/whatsapp', [AdminSettingsController::class, 'whatsapp'])->name('whatsapp');
+                });
             });
 
             // Products: pricing/catalogue changes are Admin-only, not Staff
@@ -169,6 +202,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 // Site Settings: named in the README's two-tier rule alongside
                 // pricing and refunds as Admin-only.
                 Route::put('/site-settings', [AdminSiteSettingController::class, 'update'])->name('site-settings.update');
+
+                // Who has access is the most privileged decision in the system.
+                // A Staff user able to create an Admin would make the two-tier
+                // rule decorative.
+                Route::get('/team', [AdminTeamController::class, 'index'])->name('team.index');
+                Route::post('/team', [AdminTeamController::class, 'store'])->name('team.store');
+                Route::put('/team/{adminUser}', [AdminTeamController::class, 'update'])->name('team.update');
+                Route::delete('/team/{adminUser}', [AdminTeamController::class, 'destroy'])->name('team.destroy');
 
                 Route::post('/products', [AdminProductController::class, 'store'])->name('products.store');
                 Route::put('/products/{product}', [AdminProductController::class, 'update'])->name('products.update');

@@ -105,6 +105,12 @@ Anything that writes them directly is a bug.
 | PUT | `/admin/site-settings` | **Admin only** |
 | GET | `/admin/newsletter` · `/admin/newsletter/export` | Read-only. Export streams CSV |
 | GET | `/admin/categories` | Categories and collections together |
+| GET | `/admin/customers` · `/admin/customers/{id}` | Read-only. `?q=` |
+| GET/POST | `/admin/team` · PUT/DELETE `/admin/team/{id}` | **Admin only** |
+| GET | `/admin/shipments` | A view over orders. `?provider=` `?status=` |
+| GET | `/admin/dashboard/charts` | Year-over-year series |
+| GET/POST | `/admin/media` · DELETE `/admin/media/{id}` | Image library |
+| GET | `/admin/settings/{commerce\|payments\|delivery\|notifications\|whatsapp}` | Read-only config reflections |
 | POST/PUT/DELETE | `/admin/products` | Admin role only |
 
 ### Specified, not yet built
@@ -351,29 +357,28 @@ invented.
 
 ## Admin screens with nothing behind them
 
-The admin app calls 30 distinct endpoints. **Sixteen now exist**, and every
-endpoint README Feature 9 specifies is built. What remains is entirely
-unspecified surface:
+The admin app calls 30 distinct endpoints. **Twenty-two now exist.** What
+remains is the surface whose data model cannot be guessed from a screen:
 
-**Not in the README at all, and with no model behind them** — these are screens
-the admin app grew beyond the spec, the same way `ProductReviews.vue` did:
-
-| Path | What it would need |
+| Path | Why it is still a question |
 |---|---|
-| `/admin/returns` | A returns/RMA model and a workflow nobody has specified |
-| `/admin/shipments` | Derivable from orders once Feature 5 books real deliveries |
-| `/admin/media` | A media library — also what product `images` needs to be uploadable at all |
-| `/admin/inbox/threads` · `/messages` · `/templates` | A whole customer-messaging system |
-| `/admin/activity` · `/admin/audit` | An audit log |
-| `/admin/team` | Backed by `AdminUser`, but user management is unspecified |
-| `/admin/customers` | Backed by `Customer`, read-only would be cheap |
-| `/admin/workshop-types` | No model; sessions have no type today |
-| `/admin/dashboard/charts` | Year-over-year series plus traffic by source/device/location — the traffic half needs Feature 11 analytics |
-| `/admin/settings/*` (6 paths) | Sub-resources of `SiteSetting` |
+| `/admin/inbox/threads` · `/messages` · `/templates` | Could be WhatsApp thread history, a ticketing system, or email. Each produces a completely different schema |
+| `/admin/returns` | Could be a real RMA workflow, or a note on an order because the brand handles returns over WhatsApp like they handle sales |
+| `/admin/activity` · `/admin/audit` | Buildable, but retention and what-gets-logged are policy questions with compliance weight |
+| `/admin/workshop-types` | Sessions have no type concept; adding one changes the booking model |
 
-**None of this is a bug.** Those screens fall back to fixtures and show the
-demo-data chip. But it is unbudgeted work, and it should be a decision rather
-than something discovered during a launch checklist.
+The cost asymmetry is the whole argument for asking rather than guessing: a
+wrong guess on customers costs an hour, a wrong guess on an inbox leaves a
+production schema and screens built against it.
+
+**Built since this section was first written:** `/admin/customers`,
+`/admin/team`, `/admin/shipments`, `/admin/dashboard/charts`, `/admin/media`
+and the five `/admin/settings/*` panels — all documented above under
+"Admin: platform".
+
+**None of what remains is a bug.** Those four screens fall back to fixtures and
+show the demo-data chip. But they are unbudgeted work, and that should be a
+decision rather than something discovered during a launch checklist.
 
 ---
 

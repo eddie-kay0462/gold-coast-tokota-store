@@ -43,4 +43,41 @@ return [
         'key' => env('EXCHANGERATE_HOST_KEY'),
     ],
 
+    // Feature 4 payment gateways. Every value below is empty today; the
+    // `.env.example` has carried these names since scaffolding but nothing
+    // read them, so `config('services.paystack.secret')` was always null —
+    // including in PaymentGatewayFactory, which therefore fell through to
+    // FakeGateway for the right reason by accident. Binding them here makes
+    // that check real, and lets the admin settings panel report honestly
+    // whether payments are actually configured.
+    'paystack' => [
+        'public' => env('PAYSTACK_PUBLIC_KEY'),
+        'secret' => env('PAYSTACK_SECRET_KEY'),
+        'webhook_secret' => env('PAYSTACK_WEBHOOK_SECRET'),
+    ],
+
+    'stripe' => [
+        'public' => env('STRIPE_PUBLIC_KEY'),
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    // Feature 5 couriers.
+    'yango' => [
+        'base_url' => env('YANGO_API_BASE_URL'),
+        'key' => env('YANGO_API_KEY'),
+    ],
+
+    'dhl' => [
+        'base_url' => env('DHL_API_BASE_URL'),
+        'key' => env('DHL_API_KEY'),
+    ],
+
+    // Feature 8 SMS.
+    'fish_africa' => [
+        'base_url' => env('FISH_AFRICA_BASE_URL', 'https://api.letsfish.africa'),
+        'app_id' => env('FISH_AFRICA_APP_ID'),
+        'app_secret' => env('FISH_AFRICA_APP_SECRET'),
+    ],
+
 ];
