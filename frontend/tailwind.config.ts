@@ -29,9 +29,34 @@ export default <Partial<Config>>{
         surface: '#F5F4F4',
         // Figma: Red — reserved for the Sale nav item and sale pricing.
         sale: '#D0021B',
+        // The same red lifted for use on the dark chrome. `sale` measures
+        // about 2.2:1 against `chrome`, well under the 4.5:1 floor, so the
+        // header's Sale item needs its own value rather than a lower-contrast
+        // exception. Same hue; only the lightness moves.
+        'sale-on-dark': '#FF6B7A',
         // Figma: Timberwolf — the warm stone ground behind the About page's
         // alternating story sections (10:645, 10:648).
         timberwolf: '#E6DED8',
+
+        // --- Template B accent set ---------------------------------------
+        // These four do not come from the Figma file above. They come from the
+        // approved "Template B" mockup (`Gold Coast Tokota.html` at the repo
+        // root) and the brand guidelines PDF, which the customer signed off on
+        // after that Figma file was built. Keep them annotated separately so
+        // nobody tries to reconcile them against a Figma style name.
+        //
+        // Brand PDF, "Gold Coast Gold" — the signature accent. An accent only:
+        // fills, rules and badges. Never a background for body copy, and never
+        // text on white (it fails contrast — use `gold-deep` for that).
+        gold: '#D4AF37',
+        // Gold as *text on light*. The mockup's own gold text value.
+        'gold-deep': '#8A6A1C',
+        // Gold as *text on dark* or over photography. The mockup's value.
+        'gold-soft': '#E8D9AD',
+        // The chrome ground: header, footer and the announcement strip. Not
+        // `ink` — `ink` is pure #000 and the whole app already leans on it, so
+        // this is a second, softer near-black rather than a redefinition.
+        chrome: '#111111',
       },
       fontFamily: {
         // The design specifies Helvetica Neue Light (300) throughout; no

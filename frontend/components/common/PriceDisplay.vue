@@ -16,14 +16,21 @@ const props = defineProps<{
 
 const currency = useCurrencyStore()
 
-/** USD is always derived from GHS × the live rate, never a stored field. */
-function toActive(ghsMinorUnits: number) {
-  if (currency.active === 'GHS') return ghsMinorUnits
+/**
+ * USD is always derived from GHS × the live rate, never a stored field.
+ *
+ * `displayCurrency` — not `active` — is what gets rendered: the rate is
+ * fetched at runtime and is 0 until it lands, and multiplying by 0 would print
+ * a confident "$0" on every price in the shop. Falling back to the cedi price
+ * is the honest failure.
+ */
+function toDisplay(ghsMinorUnits: number) {
+  if (currency.displayCurrency === 'GHS') return ghsMinorUnits
   return Math.round(ghsMinorUnits * currency.fxRate)
 }
 
 const price = computed(() =>
-  formatMoney(toActive(props.basePriceGhs), currency.active, { compact: props.compact }),
+  formatMoney(toDisplay(props.basePriceGhs), currency.displayCurrency, { compact: props.compact }),
 )
 
 const isDiscounted = computed(
@@ -32,7 +39,7 @@ const isDiscounted = computed(
 
 const comparePrice = computed(() =>
   isDiscounted.value
-    ? formatMoney(toActive(props.compareAtGhs!), currency.active, { compact: props.compact })
+    ? formatMoney(toDisplay(props.compareAtGhs!), currency.displayCurrency, { compact: props.compact })
     : null,
 )
 </script>

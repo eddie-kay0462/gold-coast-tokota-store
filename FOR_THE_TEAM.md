@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 26 August 2026 (first entry below — the 22 missing storefront routes)
+- **Last updated:** 27 August 2026 (first entry below — the approved Template B design pass)
 - **Last commit on `main`:** `393413a` — *feat(header): centered brand logo on website header*
 - **Working tree:** clean. The 26 Aug work is ten commits on `dev`, starting at
   `820a277`, not yet pushed. Earlier uncommitted work (News & Events,
@@ -21,14 +21,14 @@ This file is the *status* layer on top of those two — it does not restate them
 | Area | Status |
 |---|---|
 | Storefront — Home | **Built** from Figma |
-| Storefront — Shop listing + Product detail + Cart drawer | **Built** from Figma |
+| Storefront — Shop listing + Product detail + Cart drawer | **Built** from Figma; restyled 27 Aug to the approved Template B mockup — sizes on cards, thumbnail-rail gallery, WhatsApp order handoff |
 | Storefront — News & Events (listing + article) | **Built** from Figma *(uncommitted)* |
 | Storefront — About | **Built** from Figma *(uncommitted)* |
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. Auth and payment are inert by design; see the entry below |
 | Storefront — Checkout | **Built to the payment boundary** — 3-step flow, real validation, currency-routed gateway UI. `POST /checkout/session` does not exist, so placing an order is inert |
 | Storefront — Order confirmation | **Built** — full receipt, three states, webhook-race polling. Waiting on `GET /orders/{id}` |
-| Storefront — Booking | **Scaffold stubs only** — `BookingCalendar` has no date picker, `WaitlistBanner` emits an event nothing listens for, sessions are a hardcoded `[]` |
+| Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. Runs on bundled fixtures; see the entry below |
@@ -49,7 +49,170 @@ inert at their last step.
 Everything below happened over four working days (18–21 August). The 19–20 Aug
 work is **not yet committed** — see the note at the end of this section.
 
-### 26 August 2026 (latest) — the 22 missing storefront routes
+### 27 August 2026 (latest) — the approved "Template B" design pass
+
+The customer reviewed a second design mockup (`Gold Coast Tokota.html` at the
+repo root — a self-contained Design Canvas bundle) and chose **variant B**. That
+file's A|B|C toggle only swaps the *home hero*; everything else in it — the gold
+accent, the announcement bar, the product cards, the product gallery, the
+bookings flow, the footer, the WhatsApp handoff — is shared across all three. So
+"Template B" means that design language, with the split hero.
+
+**It is a layer on the existing design, not a replacement.** The customer was
+explicit that the app's current look should stay. Confirmed before any code was
+written:
+
+| Decision | Choice |
+|---|---|
+| Typography | **Unchanged.** No Cormorant Garamond, no Work Sans, no webfont. The mockup's serif was declined; the Helvetica Neue stack and the fluid display ladder stand. |
+| Gold | Brand-PDF `#D4AF37` as the named token, with the mockup's `#8A6A1C` / `#E8D9AD` as the readable text tints. |
+| Header | Dark chrome treatment, **both nav rows and the mega menus kept**. |
+| Announcement bar | Rotating, but seeded with brand-safe copy and made admin-editable. |
+| Stories | The article page simplified; filtering added to the index rather than removed. |
+| WhatsApp | Product page, product card, cart drawer, and the existing checkout one. |
+
+**Design tokens** (`frontend/tailwind.config.ts`). Four new colours, annotated
+as a separate block because they do *not* come from the Figma file the rest of
+the palette was transcribed from: `gold` `#D4AF37`, `gold-deep` `#8A6A1C` (gold
+as text on light), `gold-soft` `#E8D9AD` (gold as text on dark), `chrome`
+`#111111` (the header/footer ground — not a redefinition of `ink`, which stays
+pure black and which the whole app leans on). Also `sale-on-dark` `#FF6B7A`:
+`sale` measures about 2.2:1 against `chrome`, so the header's Sale item needed
+its own value rather than a low-contrast exception.
+
+`main.css` gains `.chrome-dark` / `.on-light`. The base `:focus-visible` ring is
+graphite and is invisible on the new dark chrome; `.chrome-dark` flips it white,
+and `.on-light` flips it back inside the light panels nested in it (mega menu,
+search band, mobile accordion).
+
+**Header** (`Header.vue`, new `AnnouncementBar.vue`, `CurrencyToggle.vue`). Dark
+ground, white logo, gold cart bubble. The announcement strip now rotates a list
+of messages with a cross-fade, sourced from the new admin-editable
+`SiteSetting.announcements`. The currency control is the mockup's **GHS|USD
+segmented pair** — `CurrencyToggle.vue` already implemented that shape and was
+sitting unused, so it was restyled and adopted rather than a third toggle being
+written. The old single button showed only the *current* currency, so a visitor
+could not see the other one existed without clicking.
+
+Structure is untouched: three rows, mega menus, mobile drawer, search panel,
+country flag, the hover-close timing, all of it. Only the surface changed. The
+`sm`-and-below marquee stays — it was a measured fix for a real 41px overlap
+(closed issue #1), not decoration.
+
+**This closes issue #17.** The bar used to say "Sign Up For Texts" and link to
+an email form. That copy is gone.
+
+**Footer** (`Footer.vue`, `NewsletterForm.vue`). Moved to the chrome ground with
+the mockup's arrangement: brand column (white logo, one-line description,
+contact), the four existing link sets beside it, and the newsletter as an inline
+bordered field with a gold "Join" (`NewsletterForm` gained a `tone` prop). Every
+existing link set was kept — they are real routes the mockup's two columns do
+not cover. Bottom bar behind a hairline, copyright left, domain right.
+
+**Product card** (`ProductCard.vue`, new `SizeSelector.vue`). The big one. It
+now carries a hover cross-fade to a second image, a stock badge driven by
+`merchandising_badge` (which the API already returned and nothing rendered), the
+**size picker**, an Add to cart, and an Order-on-WhatsApp button.
+
+`SizeSelector.vue` is shared with the detail panel, which had its own inline
+copy. Three states, and the third is the point: a size that is made but not
+currently sellable is *drawn*, struck through with a diagonal rule, not hidden —
+so a customer can see the product runs in their size and ask about a restock
+instead of concluding it was never made for them.
+
+New `composables/useAddToCart.ts` — the card and the detail page now both add to
+the cart, and the synthetic `inventoryItemId` has to match between them or the
+same pair added from the grid and from the detail page would sit in the basket
+as two separate lines.
+
+**Product detail** (`ProductGallery.vue`, `ProductPurchasePanel.vue`). The
+gallery is the mockup's thumbnail rail — a column of 4:5 thumbs beside one large
+4:5 frame, active thumb outlined, hover previewing the next shot. It replaces a
+flat 2-up grid that put every photo on screen at half width each. Below `sm` the
+rail is a horizontal row. The panel keeps everything it had (colour swatches,
+service promises, description, fit, the phone-only sticky CTA) and gains the
+`{Collection} Collection` eyebrow and the "Prefer to order via WhatsApp?" button.
+
+**Cart drawer.** A whole-basket WhatsApp handoff beside Checkout, composing every
+line into one message. Not in the mockup — the mockup can only hand off a single
+product — but it is what a customer with three pairs in the basket actually
+needs. Quoted in cedis regardless of display currency, because the conversation
+ends in a real order and USD on the storefront is a derived display figure.
+
+**Bookings** — rebuilt, and this fixes three defects, not just the styling.
+`BookingCalendar.vue` is gone (it was named for a calendar it never had) and is
+replaced by `SessionPicker.vue`, the mockup's selectable session cards with
+green "N spots left" / red "Full" capacity chips.
+
+- `GET /workshop-sessions` **had never been called from the frontend** — the form
+  passed a hardcoded `[]`, so the list was always empty no matter what was seeded.
+  It is wired now.
+- The old prop type expected `booked_count`; the API returns `remaining_capacity`.
+  Capacity would have rendered `NaN` the moment real sessions arrived.
+- **Both forms would have failed validation on every submit.** They sent `name`,
+  `email` and `phone` at the top level and `details.measurements` /
+  `details.pickup_or_delivery`; `StoreBookingRequest` validates contact details
+  *inside* `details`, and expects `details.size`, `details.foot_length` and
+  `details.fulfilment`. The forms now match the request — which also means the
+  DIY form finally has the EU-size and foot-length inputs the mockup designs.
+- `attendee_count` and `pickup_or_delivery` both sat in form state with no UI
+  control, submitted as silent defaults. Both are now rendered.
+- `WaitlistBanner` emitted a `joinWaitlist` event nothing listened for, so the
+  button was inert. It is an explanatory panel now: the backend already files a
+  booking as `waitlisted` when capacity is gone, so joining the waitlist *is*
+  submitting the form, and the submit button relabels itself to say so.
+- Both submits gained loading and error states; neither had any.
+
+**Stories.** `/blog` was already the plain grid the mockup shows — the
+complexity was in the article. `BlogPost.vue` replaces a 691px full-bleed hero
+with a gradient scrim, a 14px solid rule and a floating share rail 148px from
+the lede with one narrow centred column: meta line, title, 16:9 cover, body. The
+prose scale came down from 24px to 20px at 1440 to suit the narrower measure.
+The "Shop Our Products" grid is gone from `/blog/[slug]` — it rendered four
+unrelated design-catalogue products and was the heaviest block on the page. The
+related-posts rail now actually matches on category, and says "Related stories"
+rather than "More Stories". Per the customer's steer, filtering was *added* to
+the index: category chips with the state in the URL, the way `/shop` does facets.
+
+**Three enabling fixes**, without which the above would have been broken or
+misleading:
+
+1. **Per-size stock from the API.** `ProductResource` returned no `sizes` and no
+   `size_availability`; the data was in `inventory_items.variant_attributes` but
+   only ever aggregated into an `in_stock` boolean. `Product` gained
+   `size_availability` and `sizes` accessors and the resource exposes both.
+   Without this the size pickers would have gone blank the day real products
+   landed.
+2. **The FX rate was never fetched.** Nothing in the frontend called
+   `GET /fx-rate`, so `fxRate` stayed `0` and **every USD price rendered as
+   `$0`** the moment anyone used the currency toggle. New `plugins/fx-rate.ts`
+   fetches it; `currency.displayCurrency` falls back to GHS when no rate is
+   available, so a missing rate now shows cedis rather than a confident wrong
+   number. `PriceDisplay` and `TransparentPricing` both use it.
+3. **The currency choice now persists** in a `gct_currency` cookie, same pattern
+   as the cart. It still does *not* infer a currency from the visitor's country —
+   that is the commercial decision still sitting open below.
+
+**What was deliberately not carried over from the mockup:** its A|B|C home-layout
+switcher, its 2|3|4|6 column-count buttons on the shop toolbar, its hardcoded
+`rate: 0.08`, its placeholder session dates, and its invented sub-collections.
+
+**Not done, and why:** `ProductPurchasePanel` still does not receive `liveStock`.
+The plan called for wiring it, but `useInventoryPolling` targets
+`/products/{id}/stock`, which does not exist in `routes/api.php` — passing it
+would 404 on a timer. The panel reads `size_availability` from the product
+payload instead, which is now real. Wire the polling when the endpoint lands.
+
+**Verified:** `npm run build` clean (the six postcss lexical warnings are
+pre-existing — same count before and after). `npm run check:responsive` reports
+no horizontal overflow and no sub-44px tap targets. Dev server walked across
+`/`, `/shop`, `/shop/[slug]`, `/booking`, `/blog`, `/blog/[slug]`, `/checkout`,
+`/about` — all 200, no new router warnings (the two `/sitemap.xml` ones are
+issue #18, still open). **The backend changes are syntax-checked only**: there is
+no local `.env` or Postgres in this working copy, so the migration and seeder
+have not been run. Do that first.
+
+### 26 August 2026 — the 22 missing storefront routes
 
 The header and footer linked to 22 routes that did not exist. Every one logged a
 router warning in dev and would have 404'd in production, and five of them
@@ -729,7 +892,16 @@ order:
 
 ### Storefront
 
-- **Booking page** (`/booking`) — the four components are stubs.
+- ~~**Booking page** (`/booking`) — the four components are stubs.~~ — **closed
+  27 Aug.** Sessions are fetched, capacity and waitlist render, and both forms
+  now send the payload `StoreBookingRequest` actually validates. What is left is
+  backend: an upload endpoint for DIY reference images (the form records the
+  file *name* and asks the customer to send the photo over WhatsApp, because
+  `details.reference_image` is typed as a string and nothing accepts a binary).
+- **Wire `useInventoryPolling`** into `ProductPurchasePanel`'s `liveStock` prop
+  once `GET /products/{id}/stock` exists. Per-size stock is real in the product
+  payload as of 27 Aug, so the panel is correct without polling — it just will
+  not update while someone is looking at the page.
 - **Checkout + order confirmation** — both built out (26 Aug), but inert at the
   payment boundary until `POST /checkout/session` and `GET /orders/{id}` exist.
 - **Wire the pages to real endpoints** as each API lands, and delete the
@@ -747,15 +919,19 @@ order:
   Postgres bigint. Fix when the real session shape lands.
 - **The legal and help pages are unreviewed placeholder copy.** See the open
   decisions table — this is the highest-risk item on this list before launch.
+- **The announcement bar needs an admin editor.** `SiteSetting.announcements`
+  is a JSON array on the API and the storefront renders it, but the admin app
+  has no field for it, so today it can only be changed by re-seeding. It is the
+  place the brand's delivery and payment claims live — see the open decision
+  about the mockup's copy.
 - **Sitemap misses blog posts and products** — `@nuxtjs/sitemap` can't enumerate
   `[slug]` params. `server/api/__sitemap__/urls.ts` does this for legal and help;
   extend it.
-- **Currency toggle does not follow the flag.** The header now knows the
-  visitor's country but `stores/currency.ts` still defaults everyone to GHS,
-  and the README asks for the choice to persist via cookie. Deliberately left
-  alone — defaulting a country to a currency is a commercial decision, not a
-  technical one. Decide GH → GHS / everyone else → USD (or otherwise) and wire
-  it, respecting an explicit user choice over the geo default.
+- **Currency toggle does not follow the flag.** The header knows the visitor's
+  country but `stores/currency.ts` still defaults everyone to GHS. The cookie
+  half of this is done (27 Aug — `gct_currency`, and an explicit choice already
+  wins), but the *geo default* is deliberately still not wired: deciding
+  GH → GHS / everyone else → USD is a commercial decision, not a technical one.
 - **`public/design/flag.svg`** is now unused; kept only as the original Figma
   export. Delete it once nobody wants the reference.
 - **Placeholder nav targets** are flagged `placeholder: true` in
@@ -808,7 +984,9 @@ will light up:
 | 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
 | 15 | **`/about#dei` repointed to `/careers#dei`** | The About page never had a `dei` anchor. `/careers` now has a real DEI section, but its copy is a placeholder too. If DEI belongs on About, that needs brand-written text. **Awaiting a decision.** |
 | 16 | **The testimonial names a product that doesn't exist** | Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
-| 17 | **"Sign Up For Texts" links to an email form** | The announcement bar copy says texts; `#newsletter` is the footer's email signup. Either the copy or the destination is wrong — a brand decision, not a bug to guess at. |
+| 17 | ~~**"Sign Up For Texts" links to an email form**~~ | **Closed 27 Aug 2026.** The announcement bar was rebuilt as the approved mockup's rotating strip and that copy no longer exists. |
+| 21 | **The approved mockup asserts two things the project cannot back up** | Template B's announcement bar reads "Free delivery in Accra" and "Order online, pick up in Osu". Checkout charges GH₵25 for Accra delivery, and the address on file in the brand PDF is Haatso, not Osu. Neither line shipped. The bar renders "Handcrafted in Ghana / Pay with MoMo or card / We ship worldwide" instead, and `SiteSetting.announcements` makes the real copy a settings change rather than a deploy. **Confirm both claims with the brand**, then set them. |
+| 22 | **DIY reference images are not uploaded** | The booking form has the mockup's dropzone, but `StoreBookingRequest` types `details.reference_image` as a string and no endpoint accepts a binary. The form records the file *name* and tells the customer, in place, to send the photo over WhatsApp with a prefilled link. Honest, but it is a stopgap — an upload endpoint (and storage) is the real fix. |
 | 18 | **The footer lists two identical sitemap links** | "Sitemap Pages" and "Sitemap Products" both point at `/sitemap.xml`. Collapse to one, or emit a product sitemap. |
 | 19 | **Gift cards are announced but don't exist** | `/gift-cards` explains the programme and both forms are inert. Making it real is backend scope: a `GiftCard` model with a code and balance, issuance on purchase, and a redemption step in the checkout session. |
 | 20 | **`/size-guide` conversions are the standard ladder, not measured lasts** | The EU/UK/US table is the generic conversion, not Gold Coast Tokota's own lasts. A chart wrong by half a size causes returns — confirm against production lasts before launch. |
@@ -836,7 +1014,21 @@ will light up:
   lands, wire it up *and remove the fallback*.
 - **Design tokens live in `frontend/tailwind.config.ts`**, each annotated with
   its Figma style name. Add tokens there rather than using arbitrary values, so
-  design and code stay reconcilable.
+  design and code stay reconcilable. The gold/chrome block at the bottom of the
+  colour list is annotated separately on purpose — it comes from the approved
+  Template B mockup and the brand PDF, not from the Figma file, and trying to
+  reconcile it against a Figma style name will waste your afternoon.
+- **Dark chrome needs `.chrome-dark`, and light panels inside it need
+  `.on-light`.** The base `:focus-visible` ring is graphite and vanishes on the
+  header and footer ground; a white one vanishes on the mega menu. Both classes
+  are in `main.css`. If you add a light panel inside the header, mark it.
+- **One size picker: `components/shop/SizeSelector.vue`.** The card and the
+  detail panel both use it, at `sm` and `lg`. Do not write a third — the
+  three-state treatment (and especially the struck-through unavailable state) is
+  the part customers read, and two versions of it drift.
+- **Adding to the cart goes through `useAddToCart()`.** The synthetic
+  `inventoryItemId` has to match everywhere or the same pair added from two
+  places becomes two cart lines.
 - **Breakpoints are a ladder, not a switch.** base = phone · `sm` (640) large
   phone, 2-up grids · `md` (768) tablet, side-by-side splits begin · `lg` (1024)
   full desktop structure · `xl`/`2xl` reclaim width. **Never jump base → `lg`** —

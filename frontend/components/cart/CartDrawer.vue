@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { PhX } from '@phosphor-icons/vue'
+import { PhWhatsappLogo as WhatsappLogo, PhX } from '@phosphor-icons/vue'
 import { useCartStore } from '~/stores/cart'
+import { formatMoney } from '~/utils/formatters'
 import type { ApiProduct } from '~/utils/catalog'
 import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
@@ -24,6 +25,33 @@ const recommendations = computed(() => {
 })
 
 const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
+
+/**
+ * The whole-basket handoff to WhatsApp.
+ *
+ * The approved mockup puts a WhatsApp order button on the product card and the
+ * product page, but has nothing here — which leaves a customer with three pairs
+ * in the basket re-typing all three into a chat. This composes the basket into
+ * one message instead.
+ *
+ * Prices are always quoted in cedis regardless of the display currency: the
+ * conversation ends in a real order, and USD on the storefront is a derived
+ * display figure, not a price anyone is committing to.
+ */
+const whatsappOrderMessage = computed(() => {
+  const lines = cart.items.map((item) => {
+    const variant = item.variantLabel ? ` — ${item.variantLabel}` : ''
+    return `• ${item.name}${variant} × ${item.quantity}`
+  })
+
+  return [
+    "Hi Gold Coast Tokota, I'd like to order:",
+    ...lines,
+    `Subtotal ${formatMoney(cart.subtotalGhs, 'GHS', { compact: true })}`,
+  ].join('\n')
+})
+
+const { href: whatsappHref } = useWhatsApp(whatsappOrderMessage)
 
 function close() {
   cart.closeDrawer()
@@ -208,6 +236,19 @@ onBeforeUnmount(() => {
             <CommonBrandButton full @click="goToCheckout">
               Continue to Checkout
             </CommonBrandButton>
+
+            <!-- Hidden entirely when no WhatsApp number is configured:
+                 `useWhatsApp` returns null rather than an invalid wa.me link. -->
+            <a
+              v-if="whatsappHref"
+              :href="whatsappHref"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex min-h-[44px] w-full items-center justify-center gap-2 border border-graphite bg-white px-4 text-center text-label uppercase text-graphite transition-colors hover:bg-graphite hover:text-white"
+            >
+              <WhatsappLogo :size="18" weight="fill" />
+              Order on WhatsApp instead
+            </a>
 
             <p class="w-full text-center text-caption font-normal text-black">
               Psst, get it now before it sells out.

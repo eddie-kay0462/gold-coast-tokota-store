@@ -1,11 +1,22 @@
 <script setup lang="ts">
-defineProps<{ sessionId: string }>()
-const emit = defineEmits<{ joinWaitlist: [sessionId: string] }>()
+/**
+ * Shown when the selected workshop session is full.
+ *
+ * This used to emit a `joinWaitlist` event that nothing listened for, so the
+ * button did nothing at all. It is a plain explanatory panel now: the backend
+ * already handles the waitlist itself — `BookingController` locks the session
+ * row and files the booking as `waitlisted` when capacity is gone — so joining
+ * the waitlist *is* submitting the form, and a second button implying a
+ * separate action was the wrong model.
+ */
+defineProps<{ label?: string }>()
 </script>
 
 <template>
-  <div class="min-w-0 rounded bg-amber-50 px-3 py-2 text-caption text-amber-800">
-    Session full —
-    <button type="button" class="underline" @click="emit('joinWaitlist', sessionId)">join waitlist</button>
+  <div class="flex w-full flex-col gap-1 bg-chrome px-4 py-3.5 text-white">
+    <p class="text-caption font-normal uppercase tracking-[1px] text-gold">Waitlist</p>
+    <p class="text-label text-white/80">
+      {{ label ?? 'This session is full. Send your details anyway and we will hold your place on the waitlist — we will be in touch the moment a spot opens.' }}
+    </p>
   </div>
 </template>

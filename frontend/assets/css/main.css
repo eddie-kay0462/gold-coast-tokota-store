@@ -18,6 +18,21 @@
 }
 
 @layer components {
+  /* The header and footer sit on the dark chrome ground, where the graphite
+     focus ring above is effectively invisible. Mark a dark region with
+     `chrome-dark` and the ring goes white inside it.
+
+     Light panels *nested* in a dark region — the mega menu, the search band,
+     the mobile menu's expanded sections — carry `on-light` to put the ring
+     back, since a white outline on a white panel is the same bug in reverse. */
+  .chrome-dark :focus-visible {
+    @apply outline-white;
+  }
+
+  .chrome-dark .on-light :focus-visible {
+    @apply outline-graphite;
+  }
+
   /* The one horizontal page gutter. Before this existed every section invented
      its own value (fourteen different desktop paddings across the app), which
      left neighbouring sections visibly out of alignment and some content — the

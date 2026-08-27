@@ -1,59 +1,176 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 
+const config = useRuntimeConfig()
 const siteSettings = useSiteSettingsStore()
-const form = reactive({ measurements: '', name: '', email: '', phone: '', pickupOrDelivery: 'pickup' })
+
+const form = reactive({
+  size: '',
+  footLength: '',
+  fulfilment: 'pickup' as 'pickup' | 'delivery',
+  name: '',
+  email: '',
+  phone: '',
+})
+
 const referenceImage = ref<File | null>(null)
 const submitted = ref(false)
+const pendingSubmit = ref(false)
+const error = ref('')
 
 function onFileChange(event: Event) {
   referenceImage.value = (event.target as HTMLInputElement).files?.[0] ?? null
 }
 
-async function onSubmit() {
-  const config = useRuntimeConfig()
-  const body = new FormData()
-  body.append('type', 'diy_order')
-  body.append('details[measurements]', form.measurements)
-  body.append('details[pickup_or_delivery]', form.pickupOrDelivery)
-  body.append('name', form.name)
-  body.append('email', form.email)
-  body.append('phone', form.phone)
-  if (referenceImage.value) body.append('reference_image', referenceImage.value)
+/**
+ * Reference photos travel over WhatsApp, not through this form.
+ * `StoreBookingRequest` types `details.reference_image` as a string, and there
+ * is no upload endpoint behind it — so the filename is recorded here to tie the
+ * two together, and the customer is told plainly where to send the photo.
+ */
+const { href: whatsappHref } = useWhatsApp(
+  () => `Hi Gold Coast Tokota, here is the reference photo for my DIY sandal order${form.name ? ` (${form.name})` : ''}.`,
+)
 
-  await $fetch(`${config.public.apiBase}/bookings`, { method: 'POST', body })
-  submitted.value = true
+async function onSubmit() {
+  if (pendingSubmit.value) return
+  pendingSubmit.value = true
+  error.value = ''
+
+  try {
+    // Every field lives under `details`, which is what StoreBookingRequest
+    // validates — including the contact fields, which used to be sent at the
+    // top level where the request never looked.
+    await $fetch(`${config.public.apiBase}/bookings`, {
+      method: 'POST',
+      body: {
+        type: 'diy_order',
+        details: {
+          size: form.size,
+          foot_length: Number(form.footLength),
+          fulfilment: form.fulfilment,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          reference_image: referenceImage.value?.name ?? null,
+        },
+      },
+    })
+    submitted.value = true
+  }
+  catch {
+    error.value = 'We could not submit that order. Check your details and try again, or message us on WhatsApp.'
+  }
+  finally {
+    pendingSubmit.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="mt-6">
-    <BookingCalendar mode="diy" :diy-turnaround-estimate="siteSettings.diyTurnaroundEstimate" />
-    <form v-if="!submitted" class="mt-4 space-y-4" @submit.prevent="onSubmit">
-      <FormsFormField
-        v-model="form.measurements"
-        label="Sandal specs / measurements"
-        name="measurements"
-        type="textarea"
-        required
-      />
-      <div class="flex w-full min-w-0 flex-col gap-1.5">
-        <label for="reference_image" class="text-caption font-normal text-graphite">Reference image</label>
-        <!-- A bare file input has an unbounded intrinsic width; `w-full min-w-0`
-             keeps it inside a 320px viewport. -->
-        <input
-          id="reference_image"
-          type="file"
-          accept="image/*"
-          class="w-full min-w-0 border border-line bg-white p-2.5 text-caption text-graphite file:mr-3 file:min-h-[36px] file:border-0 file:bg-surface file:px-3 file:text-caption file:text-graphite"
-          @change="onFileChange"
-        >
+  <div class="mt-8">
+    <div v-if="submitted" class="border border-line bg-surface px-6 py-14 text-center">
+      <p class="text-display-sm font-light text-black">Order received</p>
+      <p class="mt-2 text-label text-muted">We will confirm by email and SMS.</p>
+    </div>
+
+    <form
+      v-else
+      class="mx-auto flex w-full max-w-[640px] flex-col gap-4 border border-line p-6"
+      @submit.prevent="onSubmit"
+    >
+      <div class="grid gap-4 sm:grid-cols-2">
+        <FormsFormField
+          v-model="form.size"
+          label="Sandal size (EU)"
+          name="size"
+          placeholder="e.g. 42"
+          required
+        />
+        <FormsFormField
+          v-model="form.footLength"
+          label="Foot length (cm)"
+          name="foot_length"
+          type="number"
+          placeholder="e.g. 27.5"
+          required
+        />
       </div>
-      <FormsFormField v-model="form.name" label="Name" name="name" required />
-      <FormsFormField v-model="form.email" label="Email" name="email" type="email" required />
-      <FormsFormField v-model="form.phone" label="Phone" name="phone" required />
-      <CommonBrandButton full type="submit">Submit DIY Order</CommonBrandButton>
+
+      <!-- Reference image. The dashed well is the approved mockup's dropzone;
+           the native input sits inside it so keyboard and screen-reader users
+           get the real control. -->
+      <div class="flex w-full min-w-0 flex-col gap-1.5">
+        <label for="reference_image" class="text-caption font-normal text-graphite">
+          Reference image
+        </label>
+        <div class="w-full border border-dashed border-line bg-white p-4">
+          <input
+            id="reference_image"
+            type="file"
+            accept="image/*"
+            class="w-full min-w-0 text-caption text-graphite file:mr-3 file:min-h-[36px] file:border-0 file:bg-surface file:px-3 file:text-caption file:text-graphite"
+            @change="onFileChange"
+          >
+        </div>
+        <p class="text-caption text-muted">
+          We record the file name with your order and collect the photo itself over
+          WhatsApp — there is no image upload on this form yet.
+          <a
+            v-if="whatsappHref"
+            :href="whatsappHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-gold-deep underline"
+          >Send it now</a>
+        </p>
+      </div>
+
+      <!-- `pickup_or_delivery` sat in the form state with no control and was
+           submitted as a silent default. The mockup designs the choice. -->
+      <fieldset class="flex w-full min-w-0 flex-col gap-1.5">
+        <legend class="text-caption font-normal text-graphite">Fulfilment</legend>
+        <div class="flex flex-col gap-2 sm:flex-row">
+          <label
+            v-for="option in [
+              { value: 'pickup', label: 'Pickup in Accra' },
+              { value: 'delivery', label: 'Delivery' },
+            ]"
+            :key="option.value"
+            class="flex min-h-[44px] flex-1 cursor-pointer items-center gap-2.5 border px-4 text-label text-graphite"
+            :class="form.fulfilment === option.value ? 'border-graphite bg-surface' : 'border-line bg-white'"
+          >
+            <input
+              v-model="form.fulfilment"
+              type="radio"
+              name="fulfilment"
+              :value="option.value"
+              class="accent-graphite"
+            >
+            {{ option.label }}
+          </label>
+        </div>
+      </fieldset>
+
+      <FormsFormField v-model="form.name" label="Full name" name="name" required autocomplete="name" />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <FormsFormField v-model="form.email" label="Email" name="email" type="email" required autocomplete="email" />
+        <FormsFormField v-model="form.phone" label="Phone (WhatsApp)" name="phone" type="tel" required autocomplete="tel" />
+      </div>
+
+      <div
+        v-if="siteSettings.diyTurnaroundEstimate"
+        class="flex items-center justify-between border-t border-line pt-4 text-caption text-muted"
+      >
+        <span>Current turnaround</span>
+        <span class="font-normal text-graphite">{{ siteSettings.diyTurnaroundEstimate }}</span>
+      </div>
+
+      <CommonInlineNotice v-if="error" variant="warning">{{ error }}</CommonInlineNotice>
+
+      <CommonBrandButton full type="submit" :disabled="pendingSubmit">
+        {{ pendingSubmit ? 'Sending…' : 'Submit request' }}
+      </CommonBrandButton>
     </form>
-    <p v-else>Order submitted — check your email/SMS for confirmation.</p>
   </div>
 </template>

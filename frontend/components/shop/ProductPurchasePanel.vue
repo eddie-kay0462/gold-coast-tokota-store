@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
 import type { ApiProduct } from '~/utils/catalog'
 
 const props = defineProps<{
@@ -51,6 +52,18 @@ function submit() {
 
 const rating = computed(() => props.product.rating)
 
+/** "Obrempong Collection" — the eyebrow the approved mockup sets above the name. */
+const collectionLabel = computed(() => {
+  const collection = props.product.collection?.name
+  return collection ? `${collection} Collection` : null
+})
+
+// Prefilled with the product and, once picked, the size.
+const { href: whatsappHref } = useWhatsApp(() => {
+  const sizePart = selectedSize.value ? ` in size ${selectedSize.value}` : ''
+  return `Hi Gold Coast Tokota, I'd like to order the ${props.product.name}${sizePart}.`
+})
+
 // Drives the phone-only sticky CTA: visible exactly while the inline button is
 // off screen. An IntersectionObserver rather than a scroll listener so there is
 // no work on the main thread between crossings.
@@ -78,6 +91,9 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
   >
     <!-- Identity -->
     <div class="flex w-full flex-col gap-1 border-b border-surface pb-4">
+      <p v-if="collectionLabel" class="text-tag uppercase tracking-[1px] text-muted">
+        {{ collectionLabel }}
+      </p>
       <p class="text-caption text-muted">{{ breadcrumb }}</p>
 
       <div class="flex w-full items-start gap-2.5 text-display-sm font-light">
@@ -128,25 +144,20 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
     <!-- Size -->
     <div v-if="product.sizes?.length" class="flex w-full flex-col gap-2.5 py-[18px]">
       <div class="flex w-full items-start justify-between text-caption">
-        <span class="font-normal text-black">Size</span>
+        <span class="font-normal text-black">Select size (EU)</span>
         <NuxtLink to="/size-guide" class="-my-3 flex min-h-[44px] items-center py-3 font-light text-graphite underline">Size Guide</NuxtLink>
       </div>
 
-      <div class="flex w-full flex-wrap gap-3">
-        <button
-          v-for="size in product.sizes"
-          :key="size"
-          type="button"
-          class="flex size-11 shrink-0 items-center justify-center text-caption disabled:cursor-not-allowed disabled:opacity-50"
-          :class="size === selectedSize ? 'bg-ink text-surface' : 'bg-surface text-graphite'"
-          :disabled="!stockFor(size)"
-          :aria-pressed="size === selectedSize"
-          :aria-label="stockFor(size) ? `Size ${size}` : `Size ${size} — out of stock`"
-          @click="selectedSize = size"
-        >
-          {{ size }}
-        </button>
-      </div>
+      <!-- Same three-state selector the product card uses, one size up. The
+           unavailable state is struck through rather than hidden, so the size
+           range stays legible. -->
+      <ShopSizeSelector
+        v-model="selectedSize"
+        size="lg"
+        :sizes="product.sizes"
+        :availability="availability"
+        :ignore-stock="product.is_pre_order"
+      />
 
       <p v-if="selectedSize && !selectedInStock" class="text-caption text-sale">
         Size {{ selectedSize }} is out of stock.
@@ -162,6 +173,21 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
         {{ product.is_pre_order ? 'Pre-Order' : 'Add to Cart' }}
       </CommonBrandButton>
       <p v-if="!selectedSize" class="text-caption text-muted">Select a size to continue.</p>
+
+      <!-- The handoff to WhatsApp, from the approved mockup. Prefilled with the
+           product and the chosen size so the shop can answer in one message.
+           Hidden entirely when no number is configured — `useWhatsApp` returns
+           null rather than an invalid wa.me link (README Feature 6). -->
+      <a
+        v-if="whatsappHref"
+        :href="whatsappHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex min-h-[44px] w-full items-center justify-center gap-2 border border-graphite bg-white px-4 text-center text-label uppercase text-graphite transition-colors hover:bg-graphite hover:text-white"
+      >
+        <WhatsappLogo :size="18" weight="fill" />
+        Prefer to order via WhatsApp?
+      </a>
     </div>
 
     <!-- Phone-only sticky CTA. The inline button above is far below the fold on

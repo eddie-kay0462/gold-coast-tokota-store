@@ -70,6 +70,56 @@ class Product extends Model
     }
 
     /**
+     * Per-size sellable stock, keyed by the `size` in each variant's
+     * `variant_attributes` — e.g. `['40' => 3, '41' => 0]`.
+     *
+     * The storefront needs this per size, not aggregated: the product card and
+     * the purchase panel both strike through the sizes that cannot be bought,
+     * and `in_stock` alone cannot tell them which ones those are. Sellable
+     * (available minus reserved) for the same reason `in_stock` uses it —
+     * offering a unit held by someone else's in-progress payment is worse than
+     * showing it as gone.
+     *
+     * Variants carrying no `size` are skipped rather than bucketed under an
+     * empty key; a product with no sized variants returns an empty map, which
+     * the frontend reads as "this product has no size axis".
+     *
+     * @return array<string, int>
+     */
+    public function getSizeAvailabilityAttribute(): array
+    {
+        $map = [];
+
+        foreach ($this->inventoryItems as $item) {
+            $size = $item->variant_attributes['size'] ?? null;
+
+            if ($size === null || $size === '') {
+                continue;
+            }
+
+            $size = (string) $size;
+            $map[$size] = ($map[$size] ?? 0) + $item->sellable_quantity;
+        }
+
+        // Natural sort so 5, 40, 41 order as sizes rather than as strings.
+        uksort($map, static fn ($a, $b) => strnatcmp($a, $b));
+
+        return $map;
+    }
+
+    /**
+     * Every size this product is made in, in order — including the ones that
+     * are currently out of stock, which still render (struck through) so the
+     * customer can see the range and ask about a restock.
+     *
+     * @return array<int, string>
+     */
+    public function getSizesAttribute(): array
+    {
+        return array_keys($this->size_availability);
+    }
+
+    /**
      * Storefront merchandising badge (LIMITED STOCK / BACK IN STOCK / OUT OF
      * STOCK). out_of_stock and limited_stock are always computed from live
      * inventory so they can never go stale; merchandising_badge is only

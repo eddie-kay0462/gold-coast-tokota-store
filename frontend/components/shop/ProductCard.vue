@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
 import type { ApiProduct } from '~/utils/catalog'
 
 const props = defineProps<{ product: ApiProduct }>()
 
 const image = computed(() => props.product.images?.[0] || '/design/product-kentehene.png')
+/** The approved design cross-fades to a second shot on hover. Optional: most
+ *  products still carry a single image, and the fade is skipped for those. */
+const hoverImage = computed(() => props.product.images?.[1] ?? null)
 
 const isOnSale = computed(
   () => !!props.product.compare_at_ghs && props.product.compare_at_ghs > props.product.base_price_ghs,
@@ -16,6 +20,23 @@ const discountLabel = computed(() => {
   return `${Math.round(off * 100)}% off`
 })
 
+/**
+ * The stock badge from the approved mockup, bottom-left of the image. Distinct
+ * from the top-left price/pre-order chips above, which are the original design's
+ * and say something different (a promotion, not availability).
+ */
+const STOCK_BADGES: Record<string, { label: string, class: string }> = {
+  limited_stock: { label: 'Limited stock', class: 'bg-gold text-chrome' },
+  back_in_stock: { label: 'Back in stock', class: 'bg-chrome text-white' },
+  out_of_stock: { label: 'Out of stock', class: 'bg-line text-muted' },
+}
+
+const stockBadge = computed(() =>
+  props.product.merchandising_badge ? STOCK_BADGES[props.product.merchandising_badge] ?? null : null,
+)
+
+const isSoldOut = computed(() => props.product.merchandising_badge === 'out_of_stock')
+
 // The design shows one swatch pre-selected on each card: the colourway the
 // pictured image belongs to. Hovering a swatch is a product-detail concern, so
 // here the swatches are indicators, not controls.
@@ -24,16 +45,60 @@ const selectedColorIndex = computed(() => {
   const index = colors.findIndex((color) => color.name === props.product.color)
   return index === -1 ? 0 : index
 })
+
+// --- Size + add to cart ---------------------------------------------------
+// The approved design puts the size picker on the card itself, so a customer
+// can buy from the grid without opening the product. Everything below exists
+// for that.
+
+const selectedSize = ref<string | null>(null)
+const sizes = computed(() => props.product.sizes ?? [])
+
+function stockFor(size: string) {
+  if (props.product.is_pre_order) return 1
+  const availability = props.product.size_availability
+  if (!availability) return 1
+  return availability[size] ?? 0
+}
+
+const canAdd = computed(
+  () => !isSoldOut.value && !!selectedSize.value && stockFor(selectedSize.value) > 0,
+)
+
+const addToCart = useAddToCart()
+
+function add() {
+  if (!canAdd.value) return
+  addToCart(props.product, { size: selectedSize.value, color: props.product.color })
+}
+
+// --- WhatsApp -------------------------------------------------------------
+// Prefilled with the product and, once one is picked, the size — so the
+// conversation starts with everything the shop needs to reply to it.
+const { href: whatsappHref } = useWhatsApp(() => {
+  const sizePart = selectedSize.value ? ` in size ${selectedSize.value}` : ''
+  return `Hi Gold Coast Tokota, I'd like to order the ${props.product.name}${sizePart}.`
+})
 </script>
 
 <template>
-  <article class="relative flex min-w-0 flex-col gap-2.5">
+  <article class="group/card relative flex min-w-0 flex-col gap-2.5">
     <NuxtLink :to="`/shop/${product.slug}`" class="group flex flex-col gap-2.5">
-      <div class="relative aspect-[9/10] w-full overflow-hidden">
+      <div class="relative aspect-[9/10] w-full overflow-hidden bg-surface">
         <img
           :src="image"
           :alt="product.name"
-          class="size-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-[1.02]"
+          class="size-full object-cover"
+          loading="lazy"
+        >
+        <!-- Cross-fade to the second shot. `pointer-events-none` so it never
+             steals the hover that is revealing it. -->
+        <img
+          v-if="hoverImage"
+          :src="hoverImage"
+          alt=""
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-500 motion-safe:group-hover/card:opacity-100"
           loading="lazy"
         >
 
@@ -52,6 +117,15 @@ const selectedColorIndex = computed(() => {
             Pre-Order
           </span>
         </div>
+
+        <!-- Stock badge, bottom-left, from the approved mockup. -->
+        <span
+          v-if="stockBadge"
+          class="absolute bottom-2 left-2 px-2.5 py-1.5 text-tag uppercase"
+          :class="stockBadge.class"
+        >
+          {{ stockBadge.label }}
+        </span>
       </div>
 
       <div class="flex flex-col gap-[3px] text-caption">
@@ -93,5 +167,32 @@ const selectedColorIndex = computed(() => {
         {{ tag }}
       </li>
     </ul>
+
+    <!-- Buy block. Outside the NuxtLink above: these are controls, and nesting
+         a button inside an anchor is invalid and unusable with a keyboard. -->
+    <div v-if="sizes.length" class="mt-auto flex flex-col gap-2.5 pt-1">
+      <ShopSizeSelector
+        v-model="selectedSize"
+        size="sm"
+        :sizes="sizes"
+        :availability="product.size_availability"
+        :ignore-stock="product.is_pre_order"
+      />
+
+      <CommonBrandButton full variant="ink" :disabled="!canAdd" @click="add">
+        {{ isSoldOut ? 'Out of stock' : product.is_pre_order ? 'Pre-Order' : 'Add to cart' }}
+      </CommonBrandButton>
+
+      <a
+        v-if="whatsappHref"
+        :href="whatsappHref"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex min-h-[44px] w-full items-center justify-center gap-2 border border-graphite bg-white px-3 text-center text-caption uppercase tracking-[1px] text-graphite transition-colors hover:bg-graphite hover:text-white"
+      >
+        <WhatsappLogo :size="16" weight="fill" />
+        Order on WhatsApp
+      </a>
+    </div>
   </article>
 </template>

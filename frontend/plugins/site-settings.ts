@@ -8,7 +8,7 @@ export default defineNuxtPlugin(async () => {
   const siteSettings = useSiteSettingsStore()
 
   const { data } = await useAsyncData('site-settings', () =>
-    $fetch<{ data: Record<string, string> }>(`${config.public.apiBase}/site-settings`),
+    $fetch<{ data: Record<string, any> }>(`${config.public.apiBase}/site-settings`),
   )
 
   if (data.value?.data) {
@@ -21,6 +21,9 @@ export default defineNuxtPlugin(async () => {
       heroHeadline: data.value.data.hero_headline,
       heroImage: data.value.data.hero_image,
       diyTurnaroundEstimate: data.value.data.diy_turnaround_estimate,
+      announcements: Array.isArray(data.value.data.announcements)
+        ? data.value.data.announcements.filter((line: unknown): line is string => typeof line === 'string' && line.trim() !== '')
+        : [],
     })
   }
 })
