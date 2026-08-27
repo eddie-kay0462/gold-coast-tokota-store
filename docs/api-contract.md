@@ -111,6 +111,8 @@ Anything that writes them directly is a bug.
 | GET | `/admin/dashboard/charts` | Year-over-year series |
 | GET/POST | `/admin/media` · DELETE `/admin/media/{id}` | Image library |
 | GET | `/admin/settings/{commerce\|payments\|delivery\|notifications\|whatsapp}` | Read-only config reflections |
+| GET | `/admin/settings/diy-turnaround` | Per-order-type estimates. Staff may read |
+| PUT | `/admin/settings/diy-turnaround` | **Admin only** |
 | POST/PUT/DELETE | `/admin/products` | Admin role only |
 
 ### Specified, not yet built
@@ -357,7 +359,7 @@ invented.
 
 ## Admin screens with nothing behind them
 
-The admin app calls 30 distinct endpoints. **Twenty-two now exist.** What
+The admin app calls 30 distinct endpoints. **Twenty-three now exist.** What
 remains is the surface whose data model cannot be guessed from a screen:
 
 | Path | Why it is still a question |
@@ -372,8 +374,8 @@ wrong guess on customers costs an hour, a wrong guess on an inbox leaves a
 production schema and screens built against it.
 
 **Built since this section was first written:** `/admin/customers`,
-`/admin/team`, `/admin/shipments`, `/admin/dashboard/charts`, `/admin/media`
-and the five `/admin/settings/*` panels — all documented above under
+`/admin/team`, `/admin/shipments`, `/admin/dashboard/charts`, `/admin/media`,
+`/admin/settings/diy-turnaround` and the five `/admin/settings/*` panels — all documented above under
 "Admin: platform".
 
 **None of what remains is a bug.** Those four screens fall back to fixtures and

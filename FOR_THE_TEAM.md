@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (customers, team, shipments, charts, media library and the settings panels — 22 of 30 admin paths now real)
+- **Last updated:** 27 August 2026 (DIY turnaround tiers — 23 of 30 admin paths real; the 7 left are genuine owner questions)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
 - **Working tree:** carries one uncommitted change — `backend/package.json`, the
   headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
-| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **22 of its 30 API paths now exist.** The 8 that remain (inbox ×3, returns, activity, audit, workshop-types) are the ones whose data model cannot be guessed from a screen — see open decision 28 |
+| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **23 of its 30 API paths now exist.** The 7 that remain (inbox ×3, returns, activity, audit, workshop-types) are all genuine business-owner questions, not backlog — see open decision 28 |
 | Tests | **77 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
@@ -52,7 +52,37 @@ inert at their last step.
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — customers, team, shipments, charts, media, settings
+### 27 August 2026 (latest) — DIY turnaround tiers
+
+`GET/PUT /admin/settings/diy-turnaround`. **23 of the admin app's 30 paths are
+now real**, and the 7 that remain are all genuine questions for the business
+owner rather than work anyone can just do.
+
+I had called this one a five-minute routing job. It was not: the admin Workshops
+screen asks for a **list of five turnaround tiers** keyed by order type, not the
+single `diy_turnaround_estimate` string that already existed. Still plainly
+buildable — the shape is fully determined by the screen — just not trivial.
+
+- **Stored as `jsonb` on `site_settings`, following `announcements`.** Five lines
+  of editorial copy the brand rewrites; never queried, never joined.
+- **It lives on the SiteSetting controller, not SettingsController.** The other
+  `/admin/settings/*` endpoints are read-only reflections of `.env`; this one is
+  content, and it is writable. It is routed under the settings prefix only
+  because that is where the admin screen looks for it.
+- **Admin writes, Staff reads** — the README lists the DIY turnaround estimate
+  under Site Settings, which is Admin-tier.
+- **`estimate` is free text.** "1-2 business days" and "1-3 weeks (depending on
+  quantity)" are both real answers; forcing a number would make the second
+  unsayable.
+- **The single `diy_turnaround_estimate` string stays.** `DiyOrderForm.vue`
+  quotes one figure and has no order-type selector to pick a tier with. Both are
+  on the public `/site-settings` response now, so **Kirk can switch the form to
+  per-type with no further API work** whenever the form grows a selector.
+
+Seeded with the five tiers the screen was designed against, so a fresh database
+shows real content rather than an empty list.
+
+### 27 August 2026 — customers, team, shipments, charts, media, settings
 
 Six endpoint groups that had no README spec but an obvious shape. **22 of the
 admin app's 30 paths are now real.** Building these was cheaper than deciding
@@ -1722,7 +1752,7 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
-| 28 | **Eight admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **22 now exist.** What is left is inbox (×3), returns, activity, audit and workshop-types. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. The remainder — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
+| 28 | **Seven admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **23 now exist.** What is left is inbox (×3), returns, activity, audit and workshop-types — all four underlying questions have been written up for the business owner. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. The remainder — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
 | 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
 | 25 | **Seeded collection assignments are a guess** | `database/data/design-products.json` assigns each of the six designed products to a collection (Obrempong / Sikapa / Slides). The design fixture never carried one, so these are a first pass. Categories are derived from `product_type` and are safe; **the collections need the brand to confirm.** |

@@ -193,6 +193,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     Route::get('/delivery', [AdminSettingsController::class, 'delivery'])->name('delivery');
                     Route::get('/notifications', [AdminSettingsController::class, 'notifications'])->name('notifications');
                     Route::get('/whatsapp', [AdminSettingsController::class, 'whatsapp'])->name('whatsapp');
+
+                    // Editorial content rather than config, so it lives on the
+                    // SiteSetting controller — routed here because that is
+                    // where the admin Workshops screen looks for it.
+                    Route::get('/diy-turnaround', [AdminSiteSettingController::class, 'diyTurnaround'])->name('diy-turnaround');
                 });
             });
 
@@ -202,6 +207,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 // Site Settings: named in the README's two-tier rule alongside
                 // pricing and refunds as Admin-only.
                 Route::put('/site-settings', [AdminSiteSettingController::class, 'update'])->name('site-settings.update');
+                Route::put('/settings/diy-turnaround', [AdminSiteSettingController::class, 'updateDiyTurnaround'])->name('settings.diy-turnaround.update');
 
                 // Who has access is the most privileged decision in the system.
                 // A Staff user able to create an Admin would make the two-tier

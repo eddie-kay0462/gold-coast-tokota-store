@@ -32,6 +32,16 @@ class DatabaseSeeder extends Seeder
             'whatsapp_default_message' => 'Hi! I have a question about your sandals.',
             'contact_email' => 'hello@goldcoasttokota.store',
             'diy_turnaround_estimate' => '2-3 weeks',
+            // Per-order-type estimates for the admin Workshops screen. These
+            // are the brand's to rewrite; seeded so a fresh database matches
+            // what the screen was designed against rather than showing nothing.
+            'diy_turnaround_tiers' => [
+                ['id' => 'standard', 'label' => 'Standard sandal order', 'estimate' => '1-2 business days', 'sort_order' => 1],
+                ['id' => 'custom', 'label' => 'Custom sandal order', 'estimate' => '3-5 business days', 'sort_order' => 2],
+                ['id' => 'kit', 'label' => 'DIY sandal kit', 'estimate' => '1-2 business days', 'sort_order' => 3],
+                ['id' => 'bulk', 'label' => 'Bulk orders (20+ pairs)', 'estimate' => '1-3 weeks (depending on quantity)', 'sort_order' => 4],
+                ['id' => 'corporate', 'label' => 'Corporate & event orders', 'estimate' => '1-2 weeks (subject to project scope)', 'sort_order' => 5],
+            ],
             // Deliberately conservative. The approved mockup's bar reads
             // "Free delivery in Accra" and "Order online, pick up in Osu";
             // neither is confirmed — checkout charges for Accra delivery, and

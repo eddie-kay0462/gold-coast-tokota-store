@@ -15,11 +15,13 @@ class SiteSetting extends Model
         'hero_headline',
         'hero_image',
         'diy_turnaround_estimate',
+        'diy_turnaround_tiers',
         'announcements',
     ];
 
     protected $casts = [
         'announcements' => 'array',
+        'diy_turnaround_tiers' => 'array',
     ];
 
     /** Single-row resource — creates the row on first access if missing. */

@@ -343,4 +343,70 @@ class AdminPlatformTest extends TestCase
             $this->getJson("/api/v1/admin{$path}")->assertUnauthorized();
         }
     }
+
+    // --- DIY turnaround tiers -------------------------------------------
+
+    public function test_staff_can_read_the_diy_turnaround_tiers(): void
+    {
+        \App\Models\SiteSetting::current()->update(['diy_turnaround_tiers' => [
+            ['id' => 'kit', 'label' => 'DIY sandal kit', 'estimate' => '1-2 business days', 'sort_order' => 3],
+            ['id' => 'standard', 'label' => 'Standard sandal order', 'estimate' => '1-2 business days', 'sort_order' => 1],
+        ]]);
+
+        $response = $this->actingAs($this->staff(), 'admin')
+            ->getJson('/api/v1/admin/settings/diy-turnaround');
+
+        $response->assertOk();
+        // Sorted server-side, so every client renders the same order without
+        // having to remember to.
+        $response->assertJsonPath('data.0.id', 'standard');
+        $response->assertJsonPath('data.1.id', 'kit');
+    }
+
+    /** The README lists DIY turnaround under Site Settings, which is Admin-tier. */
+    public function test_staff_cannot_edit_the_diy_turnaround_tiers(): void
+    {
+        $this->actingAs($this->staff(), 'admin')
+            ->putJson('/api/v1/admin/settings/diy-turnaround', ['tiers' => [
+                ['id' => 'standard', 'label' => 'Changed', 'estimate' => 'instantly', 'sort_order' => 1],
+            ]])
+            ->assertForbidden();
+    }
+
+    public function test_an_admin_edit_reaches_the_public_endpoint(): void
+    {
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson('/api/v1/admin/settings/diy-turnaround', ['tiers' => [
+                ['id' => 'bulk', 'label' => 'Bulk orders', 'estimate' => '1-3 weeks', 'sort_order' => 1],
+            ]])
+            ->assertOk();
+
+        $this->getJson('/api/v1/site-settings')
+            ->assertOk()
+            ->assertJsonPath('data.diy_turnaround_tiers.0.estimate', '1-3 weeks');
+    }
+
+    public function test_two_tiers_cannot_share_an_id(): void
+    {
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson('/api/v1/admin/settings/diy-turnaround', ['tiers' => [
+                ['id' => 'bulk', 'label' => 'One', 'estimate' => 'a week', 'sort_order' => 1],
+                ['id' => 'bulk', 'label' => 'Two', 'estimate' => 'a month', 'sort_order' => 2],
+            ]])
+            ->assertStatus(422);
+    }
+
+    /**
+     * "1-3 weeks (depending on quantity)" is a legitimate answer. Forcing a
+     * number here would make it unsayable.
+     */
+    public function test_an_estimate_can_be_free_text(): void
+    {
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson('/api/v1/admin/settings/diy-turnaround', ['tiers' => [
+                ['id' => 'bulk', 'label' => 'Bulk', 'estimate' => '1-3 weeks (depending on quantity)', 'sort_order' => 1],
+            ]])
+            ->assertOk()
+            ->assertJsonPath('data.0.estimate', '1-3 weeks (depending on quantity)');
+    }
 }

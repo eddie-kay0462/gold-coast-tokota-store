@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateDiyTurnaroundRequest;
 use App\Http\Requests\Admin\UpdateSiteSettingRequest;
 use App\Http\Resources\SiteSettingResource;
 use App\Models\SiteSetting;
@@ -44,5 +45,36 @@ class SiteSettingController extends Controller
         return (new SiteSettingResource($settings->fresh()))
             ->response()
             ->setStatusCode(200);
+    }
+
+    /**
+     * DIY turnaround tiers, for the admin Workshops screen.
+     *
+     * Editorial content rather than configuration, which is why it lives here
+     * and not in SettingsController alongside the read-only reflections of
+     * `.env`. Sorted server-side so every client renders the same order without
+     * having to remember to.
+     */
+    public function diyTurnaround(): JsonResponse
+    {
+        return response()->json(['data' => $this->sortedTiers(SiteSetting::current())]);
+    }
+
+    public function updateDiyTurnaround(UpdateDiyTurnaroundRequest $request): JsonResponse
+    {
+        $settings = SiteSetting::current();
+        $settings->update(['diy_turnaround_tiers' => $request->validated('tiers')]);
+
+        return response()->json(['data' => $this->sortedTiers($settings->fresh())]);
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function sortedTiers(SiteSetting $settings): array
+    {
+        $tiers = $settings->diy_turnaround_tiers ?? [];
+
+        usort($tiers, fn ($a, $b) => ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0));
+
+        return $tiers;
     }
 }
