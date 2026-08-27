@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
+import { whatsappMessage } from '~/utils/whatsapp'
 
 const config = useRuntimeConfig()
 const siteSettings = useSiteSettingsStore()
@@ -28,9 +29,10 @@ function onFileChange(event: Event) {
  * is no upload endpoint behind it — so the filename is recorded here to tie the
  * two together, and the customer is told plainly where to send the photo.
  */
-const { href: whatsappHref } = useWhatsApp(
-  () => `Hi Gold Coast Tokota, here is the reference photo for my DIY sandal order${form.name ? ` (${form.name})` : ''}.`,
-)
+const referencePhotoMessage = computed(() => whatsappMessage.diyReference(form.name))
+
+/** The way out when the submit fails — same request, different channel. */
+const whatsappFallbackMessage = computed(() => whatsappMessage.diyOrder())
 
 async function onSubmit() {
   if (pendingSubmit.value) return
@@ -59,7 +61,7 @@ async function onSubmit() {
     submitted.value = true
   }
   catch {
-    error.value = 'We could not submit that order. Check your details and try again, or message us on WhatsApp.'
+    error.value = 'We could not submit that order. Check your details and try again, or send it to us directly.'
   }
   finally {
     pendingSubmit.value = false
@@ -116,13 +118,11 @@ async function onSubmit() {
         <p class="text-caption text-muted">
           We record the file name with your order and collect the photo itself over
           WhatsApp — there is no image upload on this form yet.
-          <a
-            v-if="whatsappHref"
-            :href="whatsappHref"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-gold-deep underline"
-          >Send it now</a>
+          <CommonWhatsAppLink
+            source="diy-reference"
+            variant="quiet"
+            :message="referencePhotoMessage"
+          >Send it now</CommonWhatsAppLink>
         </p>
       </div>
 
@@ -166,7 +166,14 @@ async function onSubmit() {
         <span class="font-normal text-graphite">{{ siteSettings.diyTurnaroundEstimate }}</span>
       </div>
 
-      <CommonInlineNotice v-if="error" variant="warning">{{ error }}</CommonInlineNotice>
+      <CommonInlineNotice v-if="error" variant="warning">
+        {{ error }}
+        <template #action>
+          <CommonWhatsAppLink source="booking-error" variant="quiet" :message="whatsappFallbackMessage">
+            Send it on WhatsApp instead
+          </CommonWhatsAppLink>
+        </template>
+      </CommonInlineNotice>
 
       <CommonBrandButton full type="submit" :disabled="pendingSubmit">
         {{ pendingSubmit ? 'Sending…' : 'Submit request' }}

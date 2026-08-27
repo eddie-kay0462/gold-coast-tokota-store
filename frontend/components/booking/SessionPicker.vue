@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 export type WorkshopSession = {
   id: number | string
   scheduled_date: string | null
@@ -75,8 +76,17 @@ function formatDate(value: string | null) {
     </ul>
 
     <CommonInlineNotice v-else title="No sessions are open right now">
-      New workshop dates go up regularly. Message us on WhatsApp and we will let
-      you know as soon as the next one opens.
+      New workshop dates go up regularly. Ask us and we will let you know as soon
+      as the next one opens.
+      <template #action>
+        <CommonWhatsAppLink
+          source="booking-waitlist"
+          variant="quiet"
+          :message="whatsappMessage.workshop()"
+        >
+          Ask about the next session
+        </CommonWhatsAppLink>
+      </template>
     </CommonInlineNotice>
   </div>
 </template>

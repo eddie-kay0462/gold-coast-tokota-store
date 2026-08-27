@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 /**
  * Gift cards — BUILT BUT DELIBERATELY INACTIVE.
  *
@@ -15,7 +16,6 @@ const codeError = ref<string | undefined>()
 const checking = ref(false)
 const notice = ref<string | null>(null)
 
-const { href: whatsappHref } = useWhatsApp()
 
 async function onRedeem() {
   notice.value = null
@@ -83,9 +83,9 @@ useSeoMeta({
           <p class="w-full text-caption text-muted">
             Tell us the amount and who it’s for, and we’ll send a card you can pass on.
           </p>
-          <CommonBrandButton v-if="whatsappHref" :to="whatsappHref" full>
+          <CommonWhatsAppLink source="gift-cards" variant="solid" full :message="whatsappMessage.giftEnquiry()">
             Arrange a gift
-          </CommonBrandButton>
+          </CommonWhatsAppLink>
           <CommonBrandButton to="/contact" variant="white" full>Contact us</CommonBrandButton>
         </div>
       </div>

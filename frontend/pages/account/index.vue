@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 import { isValidEmail } from '~/utils/validators'
 
 /**
@@ -11,7 +12,6 @@ import { isValidEmail } from '~/utils/validators'
  * creation"), so most people arriving here have an order and no account.
  */
 const { isAuthenticated, user } = useAuth()
-const { href: whatsappHref } = useWhatsApp()
 
 const lookup = reactive({ reference: '', email: '' })
 const lookupErrors = reactive<{ reference?: string, email?: string }>({})
@@ -124,7 +124,11 @@ useSeoMeta({
           <li><NuxtLink to="/help/returns" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Returns</NuxtLink></li>
           <li><NuxtLink to="/help/shipping" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Shipping</NuxtLink></li>
           <li><NuxtLink to="/contact" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Contact us</NuxtLink></li>
-          <li v-if="whatsappHref"><a :href="whatsappHref" target="_blank" rel="noopener noreferrer" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">WhatsApp</a></li>
+          <li>
+            <CommonWhatsAppLink source="account" variant="quiet" :message="whatsappMessage.general()">
+              WhatsApp
+            </CommonWhatsAppLink>
+          </li>
         </ul>
       </div>
     </section>

@@ -7,13 +7,13 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (the collapsing category row; the 24 Aug dev-server entry below merged in from a local stash)
-- **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
-- **Working tree:** carries one uncommitted change — `backend/package.json`, the
-  headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
-  eight commits on `dev` starting at `d201f5a` — the Template B design pass and
-  everything that followed from it. `dev` is ahead of `main`; merging it is a
-  separate decision.
+- **Last updated:** 27 August 2026 (first entry below — the WhatsApp channel, built out)
+- **Last commit on `main`:** `977d33a` — *Merge branch 'dev'*
+- **Working tree:** clean, and `dev` is pushed. The 27 Aug work is nine commits
+  on `dev` starting at `d201f5a` — the Template B design pass and everything
+  that followed from it — plus the backend dev-server fix described in the
+  24 August entry, which is committed now rather than sitting in the working
+  tree. `dev` is ahead of `main`; merging it is a separate decision.
 
 ---
 
@@ -49,9 +49,105 @@ inert at their last step.
 ## Recent changes
 
 Newest first. Everything from 18 August onward, and all of it is committed and
-pushed to `dev` except the `backend/package.json` fix noted in the header above.
+pushed to `dev`.
 
-### 27 August 2026 (latest) — the category row collapses on scroll
+### 27 August 2026 (latest) — the WhatsApp channel, built out
+
+Feature 6 was implemented but shallow. An audit of all sixteen call sites found
+**eleven sending the same generic message** ("Hi! I have a question about your
+sandals.") — from the cart, the stores page, an order enquiry — so the business
+opened every one of them not knowing what it was about; **six places telling the
+customer to use WhatsApp with nothing to click**; and **no WhatsApp at all on the
+order-confirmation success screen**, the highest-intent moment on the site.
+
+This pass makes the channel match what the three source documents actually
+specify.
+
+**One message catalogue — `frontend/utils/whatsapp.ts`.** README Feature 6 says
+the number and default message must come from `SiteSetting`, "not hardcoded in
+multiple places". That was true of the number and false of the messages. There
+is now one typed builder per intent, and the intents are the five the brand's
+own WhatsApp auto-reply enumerates: shop sandals · Sandal Sip & Paint · school
+or group tour · partnerships and bulk orders · sustainability. Arriving already
+in one of those lanes saves the first two messages of every conversation.
+
+One thing to know if you add a product: `withArticle()` exists because half the
+catalogue is "The Kentehene Collection" and half is "Flavourful Cross Slippers",
+and a fixed `the ` prefix produced "order the The Kentehene Collection".
+
+**`useWhatsApp` had a real bug.** It interpolated the stored number raw. The
+settings field asks for "international format, including the country code" and
+the admin app's own fixture stores `+233257534297`, so a perfectly reasonable
+saved value produced a URL containing a literal `+` and spaces — **and it still
+rendered as a working button**. That is exactly the edge case Feature 6 calls
+out. The number is normalised to digits now, and anything with too few digits
+left resolves to `null`, which every caller already treats as "render nothing".
+Also: no more bare trailing `?text=` when there is no message, and an
+empty-string message falls through to the configured default instead of
+suppressing it.
+
+**One affordance component — `components/common/WhatsAppLink.vue`.** There were
+five labels and three button treatments for the same action. This owns the
+`v-if` guard, the 44px target, `rel="noopener noreferrer"`, the glyph and the
+analytics click, in four variants (`outlined` / `solid` / `gold` / `quiet`).
+`gold` is the approved mockup's gold-on-black About button.
+
+**Analytics.** `whatsapp_click` fires with a `source` naming the affordance.
+Deliberately outside Feature 11's four standard e-commerce events: WhatsApp is
+the only path that can complete an order while payment is inert, and it was the
+one conversion route with no measurement at all. The admin dashboard already
+renders a "WhatsApp" traffic-channel tile with nothing behind it — this is what
+can eventually feed it.
+
+**Settings caught up with the admin app.** `admin/types/settings.ts` already
+declared `whatsappGreeting` and `businessHours`, and the admin WhatsApp screen
+already bound inputs to both — the API simply never returned them. Both columns
+exist now, seeded from the brand guidelines: the greeting is the full "Default
+Greeting Message", and the announcement bar's business hours moved out of a
+hardcoded constant into `SiteSetting` (its own comment had asked for this). The
+greeting is WhatsApp Business profile copy — stored so the owner manages one
+copy of it, never rendered on the storefront.
+
+**`runtimeConfig.public.whatsappNumber` is no longer dead.** It was declared,
+documented in `.env.example`, and read nowhere. It is now the fallback when
+`GET /site-settings` is unreachable — without it a single failed request removes
+the only working ordering channel from every page at once. The database value
+always wins, so the "no deploy" criterion holds.
+
+**New surfaces**, each answering a specific line in the specs:
+
+| Surface | Why |
+|---|---|
+| About — gold **Chat on WhatsApp** on the dark band | The approved mockup. The band was Instagram-only, so the page's closing CTA pointed at a feed rather than at the channel that can take an order. |
+| Order confirmation — **Track this order on WhatsApp**, with the order number | Brand guidelines: "shipping updates via email or WhatsApp once dispatched". |
+| `/help/returns`, `/help/shipping`, `/help/bulk-orders` — slug-aware CTA | Guidelines: a return or exchange is *initiated* on WhatsApp. All three articles said "message us" and gave nothing to tap. |
+| Booking — a **By appointment** block | Three of the six experiences in the guidelines (Corporate Team Building, Cultural Craft, International Visitor) run by appointment, so they have no `WorkshopSession` and never will. WhatsApp was their only possible route and they had none. |
+| Size guide, shop empty state, accessibility statement | Sizing is the commonest pre-purchase question; much of the catalogue is made to order, so "no results" is often "not right now"; and asking someone who is struggling with the page to fill in a form is the wrong way round. |
+
+**Six dead ends closed** — `SessionPicker` (no sessions), `OrderSummary`
+(discount codes), both booking-form error states, and the returns and
+accessibility articles. `CommonInlineNotice` gained an `action` slot for this:
+a notice that explains a dead end can now offer the way out of it.
+
+**A z-index collision, found on the way.** The product page's phone-only sticky
+Add-to-Cart bar and the floating WhatsApp button are both fixed to the bottom of
+a phone viewport and were both at `z-40`, overlapping in the right corner. The
+first fix put the bar on top and hid the button completely — it is a full-width
+white band. The button sits above it now (`z-45`, added to the scale in
+`tailwind.config.ts`) and the bar carries right padding so its own button never
+runs under the circle. The stacking order in `layouts/default.vue` documents it.
+
+**Verified:** with no number configured, **zero** `wa.me` links render on `/`,
+`/shop`, `/about`, `/booking` or `/help/returns`. With `+233 25 753 4297` set,
+every link on twelve routes resolves to `https://wa.me/233257534297` — the
+normaliser and the env fallback both work. Messages were read back from the DOM
+on each surface: the size clause appears only once a size is picked, the cart and
+checkout messages list each line and quote the subtotal in cedis, and each
+by-appointment card names its own experience. `whatsapp_click` fires with
+`{ source: "product-card" }` against a `gtag` stub. Build and
+`check:responsive` clean.
+
+### 27 August 2026 — the category row collapses on scroll
 
 The header's third row (Best Sellers · Sandals · Ahenema · Sale) now folds
 upward as soon as the page starts moving and drops back down at the top. The

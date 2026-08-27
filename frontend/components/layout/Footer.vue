@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { PhInstagramLogo as InstagramLogo, PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
+import { whatsappMessage } from '~/utils/whatsapp'
+import { PhInstagramLogo as InstagramLogo } from '@phosphor-icons/vue'
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 
 const siteSettings = useSiteSettingsStore()
@@ -46,16 +47,12 @@ const columns = computed(() => [
   },
 ])
 
-const { href: whatsappHref } = useWhatsApp()
-
-const socials = computed(() => [
+/** Instagram only — WhatsApp renders through `CommonWhatsAppLink` beside it. */
+const socials = computed(() =>
   siteSettings.instagramUrl
-    ? { label: 'Instagram', href: siteSettings.instagramUrl, icon: InstagramLogo }
-    : null,
-  whatsappHref.value
-    ? { label: 'WhatsApp', href: whatsappHref.value, icon: WhatsappLogo }
-    : null,
-].filter((entry): entry is { label: string, href: string, icon: typeof InstagramLogo } => !!entry))
+    ? [{ label: 'Instagram', href: siteSettings.instagramUrl, icon: InstagramLogo }]
+    : [],
+)
 </script>
 
 <template>
@@ -138,7 +135,18 @@ const socials = computed(() => [
         <p class="text-label text-white/60">Stories and new releases.</p>
         <FormsNewsletterForm source="footer" tone="dark" />
 
-        <ul v-if="socials.length" class="flex flex-wrap items-center gap-5">
+        <ul class="flex flex-wrap items-center gap-5">
+          <li>
+            <CommonWhatsAppLink
+              source="footer"
+              variant="quiet"
+              icon
+              :message="whatsappMessage.general()"
+              class="!text-white/70 decoration-white/30 hover:!text-white"
+            >
+              WhatsApp
+            </CommonWhatsAppLink>
+          </li>
           <li v-for="social in socials" :key="social.label">
             <a
               :href="social.href"

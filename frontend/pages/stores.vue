@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 
 /**
@@ -11,7 +12,6 @@ import { useSiteSettingsStore } from '~/stores/siteSettings'
  * through the booking flow, which is a real, built page.
  */
 const siteSettings = useSiteSettingsStore()
-const { href: whatsappHref } = useWhatsApp()
 
 useSeoMeta({
   title: 'Our stores — Gold Coast Tokota',
@@ -54,9 +54,9 @@ useSeoMeta({
           </ul>
           <div class="flex w-full flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-start">
             <CommonBrandButton to="/booking">Book a visit</CommonBrandButton>
-            <CommonBrandButton v-if="whatsappHref" :to="whatsappHref" variant="white">
+            <CommonWhatsAppLink source="stores" :message="whatsappMessage.visit()">
               Ask for directions
-            </CommonBrandButton>
+            </CommonWhatsAppLink>
           </div>
         </div>
 
