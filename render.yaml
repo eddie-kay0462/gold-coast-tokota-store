@@ -36,6 +36,12 @@ envVarGroups:
     # dashboard per Feature 12/13 — never committed to version control.
     # Every name here is one config/services.php actually reads; the old
     # FX_RATE_API_KEY entry matched nothing in the codebase.
+    - key: PAYSTACK_BASE_URL
+      value: https://api.paystack.co
+    # Where Paystack returns the customer after payment. Must be the
+    # storefront's public origin, not the API's.
+    - key: STOREFRONT_URL
+      sync: false
     - key: PAYSTACK_PUBLIC_KEY
       sync: false
     - key: PAYSTACK_SECRET_KEY

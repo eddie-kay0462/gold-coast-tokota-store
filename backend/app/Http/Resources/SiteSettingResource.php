@@ -14,6 +14,13 @@ class SiteSettingResource extends JsonResource
             'whatsapp_default_message' => $this->whatsapp_default_message,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
+            // §12, §14 and §24 — the brand facts the storefront was
+            // hard-coding. Editable from admin so the provisional phone
+            // number can be corrected without a deploy.
+            'address' => $this->address,
+            'business_hours' => $this->business_hours,
+            'greeting_message' => $this->greeting_message,
+            'tagline' => $this->tagline,
             'instagram_url' => $this->instagram_url,
             'hero_headline' => $this->hero_headline,
             'hero_image' => $this->hero_image,

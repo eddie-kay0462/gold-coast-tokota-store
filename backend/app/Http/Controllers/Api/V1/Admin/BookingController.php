@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateBookingStatusRequest;
 use App\Http\Resources\Admin\AdminBookingResource;
+use App\Jobs\SendBookingNotification;
 use App\Models\Booking;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,7 +49,16 @@ class BookingController extends Controller
             && in_array($target, ['pending', 'confirmed', 'completed'], true);
 
         if (! $isPromotion) {
+            $wasConfirmed = $booking->status === 'confirmed';
             $booking->update(['status' => $target]);
+
+            // Only on the transition *into* confirmed. Re-saving a booking
+            // that was already confirmed — correcting a note, say — must not
+            // text the customer a second time (README Feature 8 names the
+            // trigger as the status *change*, not the status).
+            if ($target === 'confirmed' && ! $wasConfirmed) {
+                SendBookingNotification::dispatch($booking, 'confirmed');
+            }
 
             return new AdminBookingResource($booking->load(['customer', 'workshopSession']));
         }
@@ -70,6 +80,12 @@ class BookingController extends Controller
                 'message' => 'That session is full. Cancel or move an existing booking before promoting from the waitlist.',
             ], 409);
         }
+
+        // The waitlist-promotion trigger. Dispatched after the transaction
+        // commits, so the worker cannot read the booking before it exists;
+        // and only on a genuine promotion, which is what $isPromotion above
+        // has already established.
+        SendBookingNotification::dispatch($result, 'waitlist_promoted');
 
         return new AdminBookingResource($result->load(['customer', 'workshopSession']));
     }

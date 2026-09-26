@@ -43,19 +43,32 @@ return [
         'key' => env('EXCHANGERATE_HOST_KEY'),
     ],
 
-    // Feature 4 payment gateways. Every value below is empty today; the
-    // `.env.example` has carried these names since scaffolding but nothing
-    // read them, so `config('services.paystack.secret')` was always null —
-    // including in PaymentGatewayFactory, which therefore fell through to
-    // FakeGateway for the right reason by accident. Binding them here makes
-    // that check real, and lets the admin settings panel report honestly
-    // whether payments are actually configured.
+    // Feature 4 payments. §13 of the brand document names Paystack as the
+    // payment gateway, settling in GHS, and §22.12 repeats it — so this is
+    // the only gateway the application routes to. See PaymentGatewayFactory.
     'paystack' => [
+        'base_url' => env('PAYSTACK_BASE_URL', 'https://api.paystack.co'),
         'public' => env('PAYSTACK_PUBLIC_KEY'),
         'secret' => env('PAYSTACK_SECRET_KEY'),
+        // Paystack signs webhooks with the secret key itself; this exists for
+        // deployments that rotate a separate value into it.
         'webhook_secret' => env('PAYSTACK_WEBHOOK_SECRET'),
+        // Where the customer is returned to after paying. The storefront, not
+        // the API — the first entry in FRONTEND_URLS is the storefront by
+        // convention (the second is admin).
+        'callback_base_url' => env('STOREFRONT_URL', strtok(
+            (string) env('FRONTEND_URLS', 'http://localhost:3000'),
+            ',',
+        )),
     ],
 
+    // Retained but unrouted. The README's Feature 4 pairs Stripe with USD;
+    // §13 of the brand document names Paystack alone and puts Visa,
+    // Mastercard and Verve under it, which covers a dollar card payment. The
+    // config binding stays so the settings panel can keep reporting honestly
+    // that nothing is configured, and so restoring a second gateway is a
+    // factory change rather than an archaeology exercise.
+    // **Flagged for the business owner — see FOR_THE_TEAM.md.**
     'stripe' => [
         'public' => env('STRIPE_PUBLIC_KEY'),
         'secret' => env('STRIPE_SECRET_KEY'),

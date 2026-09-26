@@ -6,6 +6,7 @@ use App\Models\AdminUser;
 use App\Models\Customer;
 use App\Models\MediaAsset;
 use App\Models\Order;
+use App\Models\SiteSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +19,11 @@ use Tests\TestCase;
 class AdminPlatformTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function superAdmin(): AdminUser
+    {
+        return AdminUser::factory()->create(['role' => 'super_admin']);
+    }
 
     private function admin(): AdminUser
     {
@@ -76,12 +82,30 @@ class AdminPlatformTest extends TestCase
 
     // --- team -----------------------------------------------------------
 
-    public function test_staff_cannot_reach_team_management(): void
+    /**
+     * Everyone can see who is on the team — §18 gives no tier a reason to be
+     * surprised by that, and the dashboard's Roles & access screen is gated on
+     * `team.view`, which Staff holds.
+     */
+    public function test_staff_can_see_the_team_but_not_change_it(): void
     {
-        $this->actingAs($this->staff(), 'admin')->getJson('/api/v1/admin/team')->assertForbidden();
+        $this->actingAs($this->staff(), 'admin')->getJson('/api/v1/admin/team')->assertOk();
+
+        $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/team', [
+            'name' => 'New Staffer',
+            'email' => 'staff@goldcoasttokota.store',
+            'password' => 'correct-horse-battery',
+            'password_confirmation' => 'correct-horse-battery',
+            'role' => 'staff',
+        ])->assertForbidden();
     }
 
-    public function test_an_admin_can_create_a_staff_account(): void
+    /**
+     * §18: an Admin "cannot modify system-level settings" — users are the most
+     * privileged of those. Until the role tiers widened, this was unenforceable
+     * because `super_admin` could not exist.
+     */
+    public function test_an_admin_cannot_create_an_account(): void
     {
         $response = $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/team', [
             'name' => 'New Staffer',
@@ -91,34 +115,117 @@ class AdminPlatformTest extends TestCase
             'role' => 'staff',
         ]);
 
+        $response->assertForbidden();
+        $response->assertJsonPath('message', 'Only the Super Admin can add or change team members.');
+    }
+
+    public function test_a_super_admin_can_create_a_staff_account(): void
+    {
+        $response = $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
+            'name' => 'New Staffer',
+            'email' => 'staff@goldcoasttokota.store',
+            'password' => 'correct-horse-battery',
+            'password_confirmation' => 'correct-horse-battery',
+            'role' => 'staff',
+        ]);
+
         $response->assertCreated();
         $response->assertJsonPath('data.role', 'staff');
+        $response->assertJsonPath('data.role_label', 'Staff');
         $this->assertArrayNotHasKey('password', $response->json('data'));
     }
 
-    /** Otherwise you cannot undo it, and if you are the last admin nobody can. */
-    public function test_an_admin_cannot_change_their_own_role(): void
+    /** An intern account with no expiry is just a weaker staff account. */
+    public function test_an_intern_account_needs_an_access_expiry(): void
     {
-        $admin = $this->admin();
+        $payload = [
+            'name' => 'Intern',
+            'email' => 'intern@goldcoasttokota.store',
+            'password' => 'correct-horse-battery',
+            'password_confirmation' => 'correct-horse-battery',
+            'role' => 'intern',
+        ];
+
+        $this->actingAs($this->superAdmin(), 'admin')
+            ->postJson('/api/v1/admin/team', $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('access_expires_at');
+
+        $this->actingAs($this->superAdmin(), 'admin')
+            ->postJson('/api/v1/admin/team', [...$payload, 'access_expires_at' => now()->addDays(30)->toIso8601String()])
+            ->assertCreated();
+    }
+
+    /** And an expiry on a permanent tier would silently lock someone out. */
+    public function test_only_an_intern_can_have_an_access_expiry(): void
+    {
+        $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
+            'name' => 'Staffer',
+            'email' => 'staffer@goldcoasttokota.store',
+            'password' => 'correct-horse-battery',
+            'password_confirmation' => 'correct-horse-battery',
+            'role' => 'staff',
+            'access_expires_at' => now()->addDays(30)->toIso8601String(),
+        ])->assertStatus(422)->assertJsonValidationErrors('access_expires_at');
+    }
+
+    /** A lapsed account still signs in — it has to, or nobody can see why. */
+    public function test_a_lapsed_intern_holds_no_capabilities(): void
+    {
+        $intern = AdminUser::factory()->create([
+            'role' => 'intern',
+            'access_expires_at' => now()->subDay(),
+        ]);
+
+        $response = $this->actingAs($intern, 'admin')->getJson('/api/v1/admin/orders');
+
+        $response->assertForbidden();
+        $this->actingAs($intern, 'admin')->getJson('/api/v1/admin/me')
+            ->assertOk()
+            ->assertJsonPath('data.has_lapsed', true)
+            ->assertJsonPath('data.capabilities', []);
+    }
+
+    public function test_extending_an_interns_access_is_recorded(): void
+    {
+        $intern = AdminUser::factory()->create([
+            'role' => 'intern',
+            'access_expires_at' => now()->addDays(3),
+        ]);
+
+        $response = $this->actingAs($this->superAdmin(), 'admin')->putJson(
+            "/api/v1/admin/team/{$intern->id}",
+            ['access_expires_at' => now()->addDays(33)->toIso8601String()],
+        );
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.access_extensions'));
+        $this->assertSame(30, $response->json('data.access_extensions.0.days'));
+    }
+
+    /** Otherwise you cannot undo it, and if you are the last one nobody can. */
+    public function test_a_super_admin_cannot_change_their_own_role(): void
+    {
+        $admin = $this->superAdmin();
 
         $this->actingAs($admin, 'admin')
             ->putJson("/api/v1/admin/team/{$admin->id}", ['role' => 'staff'])
             ->assertStatus(422);
 
-        $this->assertSame('admin', $admin->fresh()->role);
+        $this->assertSame('super_admin', $admin->fresh()->role);
     }
 
-    public function test_the_last_admin_account_cannot_be_deleted(): void
+    public function test_the_last_super_admin_account_cannot_be_deleted(): void
     {
-        $admin = $this->admin();
+        $admin = $this->superAdmin();
         $other = $this->staff();
 
         $this->actingAs($admin, 'admin')
             ->deleteJson("/api/v1/admin/team/{$other->id}")
             ->assertNoContent();
 
-        // Now only one admin remains; a second admin is needed to even try.
-        $second = $this->admin();
+        // Now only one super admin remains; a second is needed to even try.
+        $second = $this->superAdmin();
         $this->actingAs($second, 'admin')
             ->deleteJson("/api/v1/admin/team/{$admin->id}")
             ->assertNoContent();
@@ -130,7 +237,7 @@ class AdminPlatformTest extends TestCase
 
     public function test_a_blank_password_on_update_leaves_it_unchanged(): void
     {
-        $admin = $this->admin();
+        $admin = $this->superAdmin();
         $target = $this->staff();
         $before = $target->password;
 
@@ -281,16 +388,51 @@ class AdminPlatformTest extends TestCase
 
     public function test_settings_panels_are_readable_by_staff(): void
     {
-        foreach (['commerce', 'payments', 'delivery', 'notifications', 'whatsapp'] as $panel) {
+        foreach (['commerce', 'delivery', 'notifications', 'whatsapp'] as $panel) {
             $this->actingAs($this->staff(), 'admin')
                 ->getJson("/api/v1/admin/settings/{$panel}")
                 ->assertOk();
         }
     }
 
+    /**
+     * §18 is explicit that an Admin "cannot modify system-level settings [or]
+     * payment credentials". Masked or not, this panel is where those live.
+     */
+    public function test_the_payments_panel_is_super_admin_only(): void
+    {
+        $this->actingAs($this->staff(), 'admin')
+            ->getJson('/api/v1/admin/settings/payments')->assertForbidden();
+
+        $this->actingAs($this->admin(), 'admin')
+            ->getJson('/api/v1/admin/settings/payments')
+            ->assertForbidden()
+            ->assertJsonPath('message', 'Payment credentials are restricted to the Super Admin.');
+
+        $this->actingAs($this->superAdmin(), 'admin')
+            ->getJson('/api/v1/admin/settings/payments')->assertOk();
+    }
+
+    /** §9's window is seven days from receipt. This panel used to say 30. */
+    public function test_the_commerce_panel_quotes_the_published_policy_figures(): void
+    {
+        $this->actingAs($this->staff(), 'admin')->getJson('/api/v1/admin/settings/commerce')
+            ->assertJsonPath('data.returns_window_days', 7)
+            ->assertJsonPath('data.processing_hours', 48);
+    }
+
+    /** §8's international table, which two of these bands used to understate. */
+    public function test_the_delivery_panel_quotes_the_published_delivery_times(): void
+    {
+        $this->actingAs($this->staff(), 'admin')->getJson('/api/v1/admin/settings/delivery')
+            ->assertJsonPath('data.domestic_eta_label', '1–2 business days')
+            ->assertJsonPath('data.international_bands.0.region', 'West Africa')
+            ->assertJsonPath('data.international_bands.0.eta', '5–10 business days');
+    }
+
     public function test_settings_panels_are_read_only(): void
     {
-        $this->actingAs($this->admin(), 'admin')
+        $this->actingAs($this->superAdmin(), 'admin')
             ->putJson('/api/v1/admin/settings/payments', ['paystack_enabled' => true])
             ->assertStatus(405);
     }
@@ -306,7 +448,7 @@ class AdminPlatformTest extends TestCase
             'services.stripe.public' => 'pk_live_abcdefgh1234',
         ]);
 
-        $response = $this->actingAs($this->admin(), 'admin')->getJson('/api/v1/admin/settings/payments');
+        $response = $this->actingAs($this->superAdmin(), 'admin')->getJson('/api/v1/admin/settings/payments');
 
         $body = $response->getContent();
         $this->assertStringNotContainsString('sk_live_supersecretvalue', $body);
@@ -324,7 +466,7 @@ class AdminPlatformTest extends TestCase
     {
         config(['services.paystack.secret' => null]);
 
-        $this->actingAs($this->admin(), 'admin')->getJson('/api/v1/admin/settings/payments')
+        $this->actingAs($this->superAdmin(), 'admin')->getJson('/api/v1/admin/settings/payments')
             ->assertJsonPath('data.paystack_enabled', false)
             ->assertJsonPath('data.paystack_public_key_masked', null);
     }
@@ -348,7 +490,7 @@ class AdminPlatformTest extends TestCase
 
     public function test_staff_can_read_the_diy_turnaround_tiers(): void
     {
-        \App\Models\SiteSetting::current()->update(['diy_turnaround_tiers' => [
+        SiteSetting::current()->update(['diy_turnaround_tiers' => [
             ['id' => 'kit', 'label' => 'DIY sandal kit', 'estimate' => '1-2 business days', 'sort_order' => 3],
             ['id' => 'standard', 'label' => 'Standard sandal order', 'estimate' => '1-2 business days', 'sort_order' => 1],
         ]]);

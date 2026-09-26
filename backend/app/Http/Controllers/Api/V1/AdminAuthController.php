@@ -20,6 +20,10 @@ class AdminAuthController extends Controller
         $request->authenticate();
         $request->session()->regenerate();
 
+        // The team screen shows it, and a dormant account holding standing
+        // access is worth being able to see.
+        $request->user('admin')->forceFill(['last_active_at' => now()])->save();
+
         return new AdminUserResource($request->user('admin'));
     }
 

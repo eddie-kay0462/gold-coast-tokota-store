@@ -19,11 +19,21 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Seeded as super_admin, not admin: §18 puts team management and
+        // payment configuration outside the Admin tier, so an `admin` seed
+        // would leave a fresh database with nobody able to create the first
+        // real account.
+        //
+        // The five people §17 names are deliberately NOT seeded. The document
+        // gives their roles and job titles but no email addresses, and
+        // inventing credentials for real colleagues is not something a seeder
+        // should do — see FOR_THE_TEAM.md.
         if (! AdminUser::query()->where('email', 'admin@goldcoasttokota.store')->exists()) {
             AdminUser::factory()->create([
-                'name' => 'Test Admin',
+                'name' => 'Test Super Admin',
+                'job_title' => 'Founder & CEO',
                 'email' => 'admin@goldcoasttokota.store',
-                'role' => 'admin',
+                'role' => 'super_admin',
             ]);
         }
 
@@ -31,16 +41,39 @@ class DatabaseSeeder extends Seeder
             'whatsapp_number' => '233200000000',
             'whatsapp_default_message' => 'Hi! I have a question about your sandals.',
             'contact_email' => 'hello@goldcoasttokota.store',
-            'diy_turnaround_estimate' => '2-3 weeks',
+            // §12. The document annotates the phone number "(update with the
+            // official number)", so it is seeded as given and flagged in
+            // admin rather than treated as final — see FOR_THE_TEAM.md.
+            'contact_phone' => '+233 25 753 4297',
+            'address' => 'Haatso, Accra, Ghana',
+            // §14.
+            'business_hours' => 'Monday – Saturday: 9:00 AM – 5:00 PM (GMT)',
+            'greeting_message' => implode("\n", [
+                'Welcome to Gold Coast Tokota!',
+                '',
+                'Thank you for contacting us. We create handcrafted sustainable footwear from recycled materials while celebrating Ghanaian culture through immersive experiences and craftsmanship.',
+                '',
+                'Whether you are looking to shop our handcrafted sandals, book a Sandal Sip & Paint experience, schedule a school or group tour, discuss partnerships or bulk orders, or learn more about our sustainability initiatives — we are here to help.',
+                '',
+                'Our team typically responds during business hours: Monday – Saturday, 9:00 AM – 5:00 PM (GMT).',
+                '',
+                'Gold Coast Tokota — Crafted with Purpose. Inspired by Culture.',
+            ]),
+            // §24.
+            'tagline' => 'Crafted with Purpose. Inspired by Culture.',
+            // §16's "DIY Sandal Kit" row. Was '2-3 weeks', which contradicted
+            // the published turnaround table outright — the storefront's DIY
+            // order form quotes this string directly.
+            'diy_turnaround_estimate' => '1–2 business days',
             // Per-order-type estimates for the admin Workshops screen. These
             // are the brand's to rewrite; seeded so a fresh database matches
             // what the screen was designed against rather than showing nothing.
             'diy_turnaround_tiers' => [
-                ['id' => 'standard', 'label' => 'Standard sandal order', 'estimate' => '1-2 business days', 'sort_order' => 1],
-                ['id' => 'custom', 'label' => 'Custom sandal order', 'estimate' => '3-5 business days', 'sort_order' => 2],
-                ['id' => 'kit', 'label' => 'DIY sandal kit', 'estimate' => '1-2 business days', 'sort_order' => 3],
-                ['id' => 'bulk', 'label' => 'Bulk orders (20+ pairs)', 'estimate' => '1-3 weeks (depending on quantity)', 'sort_order' => 4],
-                ['id' => 'corporate', 'label' => 'Corporate & event orders', 'estimate' => '1-2 weeks (subject to project scope)', 'sort_order' => 5],
+                ['id' => 'standard', 'label' => 'Standard sandal order', 'estimate' => '1–2 business days', 'sort_order' => 1],
+                ['id' => 'custom', 'label' => 'Custom sandal order', 'estimate' => '3–5 business days', 'sort_order' => 2],
+                ['id' => 'kit', 'label' => 'DIY sandal kit', 'estimate' => '1–2 business days', 'sort_order' => 3],
+                ['id' => 'bulk', 'label' => 'Bulk orders (20+ pairs)', 'estimate' => '1–3 weeks (depending on quantity)', 'sort_order' => 4],
+                ['id' => 'corporate', 'label' => 'Corporate & event orders', 'estimate' => '1–2 weeks (subject to project scope)', 'sort_order' => 5],
             ],
             // Deliberately conservative. The approved mockup's bar reads
             // "Free delivery in Accra" and "Order online, pick up in Osu";
@@ -54,6 +87,10 @@ class DatabaseSeeder extends Seeder
                 'We ship worldwide',
             ],
         ]);
+
+        // The six experiences §15 publishes, with their real days, times and
+        // capacity ceilings.
+        $this->call(WorkshopTypeSeeder::class);
 
         // All page seeding lives in PageSeeder so the CMS slugs are in one place.
         $this->call(PageSeeder::class);

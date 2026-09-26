@@ -5,8 +5,8 @@ namespace App\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
- * Site Settings — **Admin only**, named explicitly in the README's two-tier
- * rule alongside pricing and refunds. The route carries the `admin` middleware;
+ * Site Settings — **Admin only**, named explicitly in the README's role rule
+ * alongside pricing and refunds. The route carries `capability:settings.write`;
  * this class validates shape.
  */
 class UpdateSiteSettingRequest extends FormRequest
@@ -26,6 +26,12 @@ class UpdateSiteSettingRequest extends FormRequest
             'whatsapp_default_message' => ['sometimes', 'nullable', 'string', 'max:500'],
             'contact_email' => ['sometimes', 'nullable', 'email', 'max:255'],
             'contact_phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'business_hours' => ['sometimes', 'nullable', 'string', 'max:255'],
+            // §14's greeting runs to a dozen lines, so it is not held to the
+            // 500 characters the customer's prefilled message is.
+            'greeting_message' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'tagline' => ['sometimes', 'nullable', 'string', 'max:120'],
             'instagram_url' => ['sometimes', 'nullable', 'url', 'max:255'],
             'hero_headline' => ['sometimes', 'nullable', 'string', 'max:255'],
             'hero_image' => ['sometimes', 'nullable', 'string', 'max:2048'],

@@ -19,6 +19,8 @@ class WorkshopSessionController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $sessions = WorkshopSession::query()
+            ->with('workshopType')
+            ->when($request->filled('type'), fn ($q) => $q->where('workshop_type_id', $request->integer('type')))
             // Admin needs past sessions too — the storefront list hides them,
             // but "who came last month" is an admin question.
             ->when($request->boolean('upcoming'), fn ($q) => $q->whereDate('scheduled_date', '>=', today()))
@@ -36,7 +38,7 @@ class WorkshopSessionController extends Controller
             'created_by_admin_id' => $request->user('admin')->id,
         ]);
 
-        return new AdminWorkshopSessionResource($session);
+        return new AdminWorkshopSessionResource($session->load('workshopType'));
     }
 
     public function update(StoreWorkshopSessionRequest $request, WorkshopSession $workshopSession): JsonResponse|AdminWorkshopSessionResource
@@ -54,7 +56,7 @@ class WorkshopSessionController extends Controller
 
         $workshopSession->update($request->validated());
 
-        return new AdminWorkshopSessionResource($workshopSession->fresh());
+        return new AdminWorkshopSessionResource($workshopSession->fresh('workshopType'));
     }
 
     public function destroy(WorkshopSession $workshopSession): JsonResponse|Response

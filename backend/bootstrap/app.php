@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureCapability;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -24,9 +25,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // not share a budget once they are signed in.
         $middleware->api(prepend: ['throttle:api']);
 
+        // One admin authorisation primitive: the capability a route needs.
+        // `capability:orders.view`, or several comma-separated, all required.
+        // See App\Support\AdminCapability for the matrix and why the old
+        // admin/staff_or_admin pair could not express it.
         $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureAdminRole::class,
-            'staff_or_admin' => \App\Http\Middleware\EnsureStaffOrAdminRole::class,
+            'capability' => EnsureCapability::class,
         ]);
 
         // A guest hitting an API route gets 401, never a redirect. Returning

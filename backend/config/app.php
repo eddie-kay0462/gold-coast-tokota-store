@@ -56,6 +56,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Storefront URL
+    |--------------------------------------------------------------------------
+    |
+    | Where the public Nuxt storefront lives. This API is headless, so any link
+    | it emails a customer — a password reset, most obviously — has to point at
+    | the storefront rather than at itself. Defaults to the first entry in
+    | FRONTEND_URLS, which is the storefront by convention (the second is
+    | admin); config/services.php derives Paystack's callback the same way.
+    |
+    */
+
+    'storefront_url' => rtrim((string) env('STOREFRONT_URL', strtok(
+        (string) env('FRONTEND_URLS', 'http://localhost:3000'),
+        ',',
+    )), '/'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

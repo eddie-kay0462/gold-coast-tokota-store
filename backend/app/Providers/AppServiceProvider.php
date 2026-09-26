@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Notifications\NotificationChannelFactory;
+use App\Services\Notifications\NotificationDispatcher;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,7 +16,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Feature 8. Resolved through the factory so which SMS channel is in
+        // play — Fish Africa or the log fallback — is decided in exactly one
+        // place, the same way PaymentGatewayFactory decides between Paystack
+        // and FakeGateway. Jobs type-hint the dispatcher and never the
+        // channels, so a test can swap the whole thing out in one line.
+        $this->app->singleton(
+            NotificationDispatcher::class,
+            fn () => (new NotificationChannelFactory)->make(),
+        );
     }
 
     /**

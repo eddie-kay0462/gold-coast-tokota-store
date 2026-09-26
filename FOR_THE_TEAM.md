@@ -7,13 +7,12 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 27 August 2026 (hardening — FX staleness, API rate limiting, and four bugs in the deploy blueprint)
+- **Last updated:** 8 September 2026 (password reset + DIY photo uploads; catalogue filtering server-side; Feature 8; admin catalogue reads)
 - **Last commit on `main`:** `fc84d9e` — *Merge branch 'backend' into main*
-- **Working tree:** carries one uncommitted change — `backend/package.json`, the
-  headless-API script fix described in the 24 Aug entry below. The 27 Aug work is
-  eight commits on `dev` starting at `d201f5a` — the Template B design pass and
-  everything that followed from it. `dev` is ahead of `main`; merging it is a
-  separate decision.
+- **Working tree:** the 28 Aug work is uncommitted on `feat/backend`, and
+  `backend/package.json` still carries the headless-API script fix described in
+  the 24 Aug entry. The 27 Aug work is eight commits on `dev` starting at
+  `d201f5a`. `dev` is ahead of `main`; merging it is a separate decision.
 
 ---
 
@@ -28,14 +27,14 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. **Auth is no longer inert on the API side:** register/login/logout/me and order history all exist on the `web` guard, so `AUTH_ENABLED` in `composables/useAuth.ts` can be flipped. `POST /feedback` exists too |
-| Storefront — Checkout | **Built to the payment boundary.** `POST /checkout/session` now exists and works end to end — prices, shipping quote, FX lock, stock reservation, order creation. What is still inert is the last hop: `PaymentStep.placeOrder()` is still the simulated version, and `FakeGateway` stands in for Paystack/Stripe until their keys exist |
+| Storefront — Checkout | **Built to the payment boundary.** `POST /checkout/session` works end to end — prices, shipping quote, FX lock, stock reservation, order creation — and `PaystackService` plus its webhook are written (28 Aug). What is still inert is the last hop: `PaymentStep.placeOrder()` is the simulated version, and `FakeGateway` stands in until `PAYSTACK_SECRET_KEY` exists. **Both currencies now redirect; the USD `client_secret` branch is dead code** |
 | Storefront — Order confirmation | **Built, and no longer waiting.** `GET /orders/{reference}` exists and satisfies `ApiOrder` in full. Note the key: **reference, not numeric id** — `/orders/1` is a 404 by design |
 | Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
-| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **23 of its 30 API paths now exist.** The 7 that remain (inbox ×3, returns, activity, audit, workshop-types) are all genuine business-owner questions, not backlog — see open decision 28 |
-| Tests | **225 passing.** Nine feature test files — admin auth, admin products, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products. This row previously read "none beyond Laravel's two `ExampleTest` placeholders", which was wrong and made the backend look further behind than it was |
+| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **25 of its 30 API paths now exist**, and the four tiers are enforced server-side for the first time (28 Aug). The 5 that remain (inbox ×3, activity, audit) are genuine business-owner questions, not backlog — see open decision 28 |
+| Tests | **272 passing.** Twelve feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -49,10 +48,395 @@ inert at their last step.
 
 ## Recent changes
 
+### 8 September 2026 (latest) — password reset, and DIY photos stop travelling by WhatsApp
+
+Two smaller gaps closed, both of which had a built frontend waiting on them.
+
+**Customer password reset.** `POST /forgot-password` and `POST /reset-password`
+on the `web` guard. The groundwork was already done — `passwords.customers` was
+wired to `password_reset_tokens` and `Customer` was a proper `Authenticatable`
+— so this is the flow, not the plumbing.
+
+- **`/forgot-password` answers identically whether or not the address has an
+  account**, and validates format only. `exists:customers,email` would have
+  been the obvious rule and would have leaked the same thing through a 422:
+  either turns the endpoint into a way to test which of a list of addresses
+  shops here.
+- Throttled 6/min per IP on top of the broker's own per-email throttle. The
+  endpoint sends mail to an address the *caller* chooses, so an unthrottled one
+  is a way to use this API to spam a third party.
+- A reset rotates `remember_token`, so "remember me" cookies issued before it
+  stop working — somebody resetting a password may be doing it *because* an old
+  session is not theirs.
+- **The link points at the storefront, not the API.** Laravel's built-in
+  notification builds its URL from `route('password.reset')`, a named web route
+  a headless API has no reason to define, so
+  `Customer::sendPasswordResetNotification` is overridden to assemble
+  `{storefront}/account/reset-password?token=…&email=…` and send it through the
+  Feature 8 dispatcher. Email only — its SMS body is deliberately null, because
+  a reset link is a credential and SMS is forwarded, screenshotted and read off
+  lock screens.
+- New config: `app.storefront_url`, from `STOREFRONT_URL`, defaulting to the
+  first entry in `FRONTEND_URLS`.
+
+⚠️ **The storefront has no reset pages yet.** `frontend/pages/account/` has
+login, register, index, orders and settings. The backend is complete and
+tested; two screens (request a link, set a new password) are needed before a
+customer can actually use it. Note also that *profile editing* — listed
+alongside password reset in the older note about customer auth — is still
+outstanding.
+
+**DIY reference photos.** `POST /booking-uploads`, then send the returned
+`path` as `details.reference_image`. Until now the form recorded the
+customer's *filename* and asked them to send the photo over WhatsApp — which
+worked, but put the one thing the workshop needs to make the sandal on a
+different channel from the order it belongs to.
+
+**This is the only unauthenticated write-to-disk endpoint on the API** — guest
+bookings are supported, so it cannot sit behind a login — and it is treated
+accordingly: 5MB cap, an allowlist checked against file contents, a
+`dimensions` rule that forces every upload through an image decoder (so a
+renamed script that satisfies the mime check still fails), a
+Laravel-generated storage name so a hostile filename never reaches the
+filesystem, and 10/hour per IP.
+
+`PruneOrphanedBookingUploads` runs daily and deletes unattached uploads older
+than 24 hours. **Without it an unauthenticated upload endpoint grows the disk
+without limit**, and every customer who picks a photo then changes their mind
+leaves a file behind for good. Attached uploads are never pruned regardless of
+age — the workshop may not make the sandal for weeks.
+
+`reference_image_url` on `AdminBookingResource` is null unless the field holds
+a path this API issued: historical bookings carry a filename there, and turning
+that into a URL would give every one of them a broken image. The same prefix
+check stops an arbitrary string being rendered as a link.
+
+⚠️ **`DiyOrderForm.vue` still sends the filename**, so nothing changes for
+customers until it POSTs the file first and sends the returned path. Validation
+stays permissive so the current form keeps working in the meantime.
+
+⚠️ **Uploads land on container-local disk**, which on Render does not survive a
+redeploy — so a reference photo will vanish on the next deploy. That is the
+pre-existing storage problem the audit lists as D3, not something this change
+introduced, but this endpoint is the second feature now depending on it.
+
+Backend tests: **358 passing**, up from 327. Both new suites were run against
+Postgres as well as SQLite.
+
+### 8 September 2026 — `/shop`'s filters were quietly wrong past 12 products
+
+`GET /products` understood `category_id` and `featured` and nothing else, so
+`frontend/pages/shop/index.vue` filtered **client-side over a single page of
+12**. Every facet was therefore correct only while the catalogue fitted on one
+page, and wrong with no error to notice after that. The page's own comment
+said "the API is expected to filter server-side"; now it does.
+
+`ProductFilter` implements the query string the storefront already sends —
+`?type=&color=&size=&width=&category=&q=&sale=&sort=` — unchanged, because the
+page was written against it. Within one facet the match is OR, across facets
+AND, which is what the sidebar's checkboxes mean.
+
+**Four decisions inside it:**
+
+- **`sort=top-rated` is not honoured, and cannot be.** There is no ratings data
+  anywhere in the system — reviews are unplanned scope with a built UI and no
+  model (open decision 24). Inventing a `rating` column to satisfy a sort would
+  be building the whole reviews feature by the back door, so an unrecognised
+  sort falls through to the default instead. A shopper clicking "Top Rated"
+  gets products, not a 422 — but the API does not pretend to have sorted.
+- **`best-selling` sums `quantity`, not order lines.** One order for nine pairs
+  is nine sales. It counts only orders where money settled and stayed, so a
+  product everybody sent back cannot lead the best-sellers.
+- **Colour is a substring match against colourway names**, mirroring the
+  storefront exactly — a facet value of `tan` has to find "Tan Leather", which
+  JSON containment cannot express.
+- **Search covers the same fields as the storefront's own local predicate.**
+  The page falls back to a bundled catalogue when the API is unreachable, and a
+  search that returns different things depending on whether the API answered is
+  a miserable bug to chase.
+
+**The default sort is now featured-first, then newest.** The storefront labels
+the unsorted view "Featured", so that is what the word had to mean.
+
+Backend tests: **327 passing**, up from 302. 25 new, several of which
+deliberately create more than one page of products — the old bug was invisible
+on a small fixture, so a test that cannot see it is not a test.
+
+#### Both database engines were actually exercised this time
+
+Every clause was checked to compile on Postgres *and* SQLite rather than
+assumed: `whereJsonContains` becomes `@>` on one and a `json_each` subquery on
+the other; `LOWER(CAST(col AS text)) LIKE ?` works on both; `ILIKE` is
+deliberately absent. **The full suite was run against a scratch Postgres
+database as well as the SQLite default** — which is the remedy issue 29 asks
+for, and it immediately found two things.
+
+One was mine, caught before it shipped: `best-selling` first used `withSum`
+plus an ordered alias, and a product that has never sold aggregates to NULL —
+**Postgres sorts NULLs first under `DESC`**, so the best-sellers list would
+have opened with everything that had never sold. It is now a correlated
+subquery with `COALESCE(..., 0)`, ordered on directly, because Postgres also
+refuses an output alias inside an ORDER BY expression.
+
+The other two are **pre-existing test-harness failures on Postgres, not
+production bugs** — see the new issue 36 below.
+
+### 8 September 2026 — Feature 8: customers finally hear back
+
+**Until today a customer paid and heard nothing.** There was no `app/Mail/` and
+no `app/Notifications/` at all — the `OrderPaid` event existed with one
+listener on it, and the second half of what that event was created for had
+never been written.
+
+Five triggers now dispatch, four of them the ones README Feature 8 names and
+one from the brand document:
+
+| Trigger | Fires on | Source |
+|---|---|---|
+| `order_placed` | `OrderPaid`, from the Paystack webhook | README Feature 8 |
+| `order_shipped` | admin order status → `shipped` | §"Domestic Shipping" |
+| `booking_submitted` | `POST /bookings` | README Feature 8 |
+| `booking_confirmed` | admin booking status → `confirmed` | README Feature 8 |
+| `waitlist_promoted` | a waitlisted booking promoted into a free place | README Feature 8 |
+
+**Shape.** `NotificationChannel` is the same contract shape as `PaymentGateway`
+and `DeliveryProvider`, for the same reason: the concrete SMS implementation
+needs a credential nobody has, so the interface is what lets the rest be built
+and tested now. `MailChannel` always runs; SMS resolves to
+`FishAfricaSmsService` when credentials exist and `LogSmsChannel` when they do
+not — the FakeGateway pattern, so the feature is exercised end to end either
+way and the log says which one ran. Copy for all five messages lives in one
+class, `TransactionalMessages`, so a promise cannot end up worded two ways.
+
+**Four decisions worth knowing:**
+
+- **Order confirmation hangs off `OrderPaid`, never off checkout.** An open
+  payment session is a customer looking at a payment page, not a sale.
+- **Status triggers fire on the transition, not the status.** Re-saving an
+  already-shipped order sends nothing. Two tests cover exactly this.
+- **`NotificationDispatcher` never throws.** Feature 8's acceptance criteria
+  make notification failure non-fatal, so each channel is tried independently
+  and a failure is logged and stepped over. A bounced text must not fail an
+  order whose money has been taken and whose stock has been decremented.
+- **Every timeframe in the copy is quoted from the brand document** — 48-hour
+  processing, 1–2 day domestic delivery, the 7-day return window (read from
+  `ReturnPolicy::WINDOW_DAYS`, not retyped). §22.3 forbids changing any of
+  them, and an email is exactly where an invented one becomes a promise to a
+  customer. A test fails if the confirmation stops saying 48 hours.
+
+**Deliberately not built: workshop reminders and return-resolution notices.**
+I had listed both in `BACKEND_REMAINING.md`, then dropped them — neither
+document states either one, and §22 says not to invent a policy the brand
+document does not state. Scheduling a reminder means choosing how far ahead it
+goes out, which is a business decision, not a technical default.
+
+**Phone numbers are normalised to E.164.** Ghanaian numbers are written locally
+as `024 123 4567`, and that leading zero has to become +233 or every domestic
+text silently goes nowhere — the kind of failure nobody notices until a
+customer complains. Eight cases are covered.
+
+**Still unverified:** `FishAfricaSmsService`'s request shape is written from
+the README's description of the provider and has never run against the live
+API. Expect to correct the token exchange and the send payload when keys land;
+that is why they are in one small class behind the interface. The README also
+asks for a sandbox test first — Ghana network delivery rates are explicitly
+unverified.
+
+Backend tests: **302 passing**, up from 280. One of them is end-to-end and
+unfaked: a signed Paystack webhook goes in and a confirmation email addressed
+to the customer comes out, which is the only test that would catch the listener
+being unregistered. Another renders all five Blade templates for real, since
+`Mail::fake()` does not and a broken template would otherwise pass.
+
+### 8 September 2026 — the admin catalogue can finally read itself
+
+**`GET /admin/products` and `GET /admin/products/{id}` did not exist.**
+`routes/api.php` registered `POST`, `PUT` and `DELETE` for admin products and
+no reads at all, so three shipped admin screens — `products/index.vue`,
+`products/[id].vue` and `settings/seo.vue` — were pinned to fixtures with no
+way off them. The public `GET /products` was never a substitute: it is scoped
+`active()` and pages at 12, so a draft product was invisible to the screen
+whose job is to manage it.
+
+Both endpoints now exist on `products.view`, which every tier down to Intern
+holds — reading the catalogue is not the same as repricing it. Reads are
+deliberately unscoped, and support `?active=` (tri-state: absent means
+everything, which is what the All tab wants), `?q=` over name and SKU,
+`?category_id=` and `?per_page=` (default 100, capped 200).
+
+**One latent bug fixed on the way past.** The write endpoints returned the
+storefront's `ProductResource`, whose `base_price_ghs` is a bare integer — but
+the admin app types product prices as `Money` (`{ amount, currency }`), so
+every successful save was handing the client a shape it could not read. All
+five endpoints now return the new `AdminProductResource`. Two tests moved to
+the new shape with it; that is a deliberate contract change on endpoints whose
+only consumer is the admin app.
+
+The rolled-up `low_stock` flag tests each variant against its *own* threshold
+rather than comparing summed totals — a product with 60 units of size 42 and
+none of size 39 needs a restock, and the summed comparison would say otherwise.
+
+Backend tests: **280 passing**, up from 272.
+
+Also added at the repo root: **`BACKEND_REMAINING.md`**, a full audit of what
+is left on the backend to make the app functional — 23 items in four buckets
+(buildable now / blocked on a credential / blocked on a decision / production
+readiness), with a suggested order. It is a point-in-time audit, not a second
+status log; this file stays the running one.
+
+### 28 August 2026 — `GOLD_COAST_TOKOTA.md` answers six open questions
+
+The brand document landed at the repo root, and it is the source of truth for
+business rules — §22 says so explicitly: do not invent a policy it does not
+state, and do not change one it does. **Six things that had been sitting as open
+decisions turned out to be written down in it.** `CLAUDE.md` now names it, and
+where it and the README disagree it wins.
+
+Backend tests: **272 passing**, up from 235. Migrations verified against a
+scratch Postgres database as well as the SQLite suite, because two of them do
+things SQLite would not have caught.
+
+#### The role model finally matches what the dashboard presents (closes #12)
+
+This was the oldest of the three-way disagreements: README says two tiers,
+`admin_users.role` said two, the admin app implements four. §17 names the real
+roster against tiers and §18 defines them, and §22.14 makes the Super Admin /
+Admin / Staff model binding.
+
+**The two middlewares are gone.** `EnsureAdminRole` and
+`EnsureStaffOrAdminRole` could only ask "admin or not", and §18 does not divide
+that way — an Admin may change prices and issue refunds but *"cannot modify
+system-level settings [or] payment credentials"*, while Staff may adjust stock
+but not price it. Both of those sit on the same side of a two-value check, so
+**neither was enforceable**. There is now one middleware, `capability:<name>`,
+and every admin route names what it needs.
+
+- `App\Support\AdminCapability` is the matrix, and it is the **server-side twin
+  of `admin/utils/permissions.ts`** — the frontend had already derived the same
+  table from the same paragraph. Change both or neither; a capability in one and
+  not the other is either a button that 403s or an action nobody can reach.
+- `admin_users.role` is a plain string now, with `access_expires_at`,
+  `access_extensions`, `job_title`, `avatar` and `last_active_at` beside it.
+  `job_title` because §17 gives one for every person; the rest because the
+  dashboard's Roles & access screen was built against them.
+- **`intern` is kept**, though the document does not mention it. It is the
+  fourth tier the business asked for and it already ships in the dashboard; the
+  document does not contradict it. A lapsed intern still authenticates — it has
+  to, or nobody can see why they are locked out — but holds no capabilities.
+- **Team management moved from Admin to Super Admin.** So did the payments
+  settings panel. Both follow directly from §18's sentence, and both changed a
+  test's expectation rather than adding one.
+- The seeded account is `super_admin`, not `admin`. An `admin` seed would leave
+  a fresh database with nobody able to create the first real account.
+- **The five people §17 names are not seeded.** The document gives their roles
+  and job titles but no email addresses, and inventing credentials for real
+  colleagues is not a seeder's job. **Someone needs to supply five email
+  addresses** before handover, or the roster stays theoretical.
+
+#### Paystack is the only gateway now — and Kirk has a small change to make
+
+§13 names one payment provider, settling in Ghana Cedis, accepting Visa,
+Mastercard, Verve, MTN/Telecel/AirtelTigo mobile money and bank transfer. §22.12
+repeats it in a line. **Stripe is not mentioned anywhere in the document**, and
+a dollar card payment is a card payment.
+
+`PaymentGatewayFactory` therefore routes both currencies to Paystack; the
+GHS/USD split is gone.
+
+- **`PaystackService` is written and untested against the live API**, because
+  `PAYSTACK_SECRET_KEY` is still empty. Everything but the key exists —
+  transaction initialisation, verification, signature checking. Getting a test
+  key is still an hour of somebody's time and it is still the critical path.
+- **`POST /webhooks/paystack` exists**, with `processed_webhook_events` behind
+  it. A replayed delivery creates no second payment and no double decrement, and
+  there is a test that proves it rather than a comment claiming it. Amount and
+  currency are checked against the order — a partial payment is not a completed
+  sale.
+- `OrderPaid` fires from the webhook, never from checkout: an open payment
+  session is a customer looking at a payment page, not a sale. Its queued
+  listener finalises the stock hold.
+- **Kirk:** a USD checkout no longer returns a `client_secret`; it returns an
+  `authorization_url` exactly as a cedi checkout does. The currency branch in
+  `PaymentStep.vue` has nothing on the other side of it now. Redirect whenever
+  `authorization_url` is present — correct today, and still correct if a second
+  gateway is ever added back.
+- **Flag for the business owner:** the README specified Stripe for USD and the
+  brand document does not. If dollar settlement through Stripe is actually
+  wanted, this is a factory change and the config binding is still there — but
+  it needs saying, because right now the document and the README disagree and
+  the document wins.
+
+#### Returns and workshop types: two of the "unguessable" admin endpoints (narrows #28)
+
+Both were open decisions purely because the README covers neither, so their data
+model could not be guessed from a screen. §9/§21 and §15 write both out in full.
+That turned them from questions into transcription.
+
+**Returns** (`ReturnPolicy`) — seven days from *receipt*, three accepted reasons
+(all of them the seller's error), four non-returnable categories, refunds in
+7–14 business days on the original method, shipping refundable only when the
+error was ours.
+
+- **No customer-facing endpoint.** §9 gives one route in for a return —
+  "Return / Exchange Contact: WhatsApp" — so a request arrives as a message and
+  staff record it. A self-service portal is new scope.
+- Two schema facts it needed: `orders.delivered_at`, because the window runs
+  from receipt and `status = 'delivered'` said *that* it arrived but not *when*;
+  and `products.is_returnable`, because §9 excludes custom and personalised
+  products outright and the alternatives were `product_type` (the listing facet)
+  and `tags` (free-text merchandising copy) — keying a refund decision off a
+  badge name would let a rename change what customers are owed.
+- Eligibility is assessed once and frozen. It is a decision made against the
+  policy as it stood that day, and staff can override it: §9's "damaged through
+  misuse" is a judgement made on seeing the pair.
+- The one interpretation, flagged: §9 excludes sale items "unless defective",
+  and separately lists three accepted reasons that are *all* faults. Read as
+  covering all three. A size exchange on a clearance item is not covered, which
+  is the case the wording exists for.
+
+**Workshop types** — §15's six experiences, each with its own recurrence, slot,
+duration and capacity ceiling.
+
+- **A session had no name until now.** It was a date, a time and a seat count,
+  so the storefront's booking page could not tell a Saturday Sip & Paint from a
+  Friday Be a Shoemaker for a Day, and the admin Workshops screen had nothing to
+  group under. Every session belongs to a type, and a session may not exceed its
+  type's published ceiling (§22.15).
+- **`GET /workshop-types` is public as well as admin.** Three of the six run
+  only by appointment and so never appear in the session list — without it, half
+  the published programme is invisible to customers.
+- Read-only over the API: the days, times and capacities are published
+  commitments and §22.3 forbids changing them without instruction. What changes
+  day to day is a session scheduled against a type.
+
+#### Four published figures were wrong, and one contradicted itself
+
+Small, and the kind of thing nobody finds until a customer quotes it back.
+
+- **The admin commerce panel said the returns window was 30 days.** §9 says
+  seven. That figure appears nowhere in the document; an admin reading the panel
+  would have promised four times the real window.
+- **The delivery panel's ETA bands were guesses**, and two understated §8's
+  published table — West Africa read "5-9 working days" against a published
+  5–10, and the domestic label read "2-4" against a published 1–2. All of them
+  now come from `DeliveryEstimates`, which is §8 transcribed, and the order
+  response carries the band for its own destination plus the 48-hour processing
+  time — so the confirmation page, the policy page and admin cannot quote three
+  different numbers.
+- **`diy_turnaround_estimate` was seeded as "2-3 weeks"**, against §16's DIY
+  sandal kit row of 1–2 business days. The storefront's DIY form quotes that
+  string directly. The five per-type tiers were already right; the single string
+  contradicted the table beside it.
+- §12, §14 and §24 gave four brand facts nothing held — the Haatso address, the
+  Mon–Sat 9–5 trading hours, the default greeting and the tagline. All four are
+  `site_settings` columns now, so the provisional phone number §12 flags can be
+  corrected without a deploy.
+
+
 Newest first. Everything from 18 August onward, and all of it is committed and
 pushed to `dev` except the `backend/package.json` fix noted in the header above.
 
-### 27 August 2026 (latest) — hardening
+### 27 August 2026 — hardening
 
 Stage 8. FX staleness, a baseline rate limit, and **four bugs in the deploy
 config that would each have broken something in production.**
@@ -1691,33 +2075,49 @@ In dependency order:
    `ProductController`, `FxRateService` and the full storefront contract all
    exist; see `docs/api-contract.md`. The FX provider is chosen
    (exchangerate.host) and `RefreshFxRate` is scheduled — only the access key
-   is missing. *What is left: server-side listing filters, before the catalogue
-   outgrows one page.*
+   is missing. ~~*What is left: server-side listing filters.*~~ — **filters,
+   search and sorting closed 8 Sep**; `sort=top-rated` is the one part that
+   cannot be built, because it needs the reviews model open decision 24 is
+   waiting on.
 2. ~~**Feature 3 — Inventory.**~~ — **closed 27 Aug.** Reservations with
    row-level locking, the scheduled release job, `GET /products/{slug}/stock`
    and `GET /admin/inventory` with the low-stock filter all exist and are
    tested. *What is left is on the storefront:* `[slug].vue` doesn't pass
    `liveStock` to `ProductPurchasePanel`, so the polled per-size map the API
    now sends goes nowhere. Small frontend wiring, no API work.
-3. **Feature 4 — Checkout & payments.** *Half done.* `POST /checkout/session`
-   and `GET /orders/{reference}` exist, with pricing, shipping quote, FX lock,
-   stock reservation and order creation all tested. *What is left:*
-   `PaystackService` and `StripeService` behind `PaymentGateway` (**blocked on
-   keys — both are self-serve, an hour's work**), the two webhook receivers,
-   a `processed_webhook_events` table for idempotency, and the `OrderPlaced`
-   event that finalises inventory and triggers notifications.
+3. **Feature 4 — Checkout & payments.** *Code-complete, waiting on one key.*
+   `POST /checkout/session`, `GET /orders/{reference}`, `PaystackService`,
+   `POST /webhooks/paystack` with `processed_webhook_events` idempotency, and
+   the `OrderPaid` event that finalises inventory all exist and are tested
+   (28 Aug). §13 settled the gateway question — Paystack for both currencies,
+   no Stripe. *What is left is `PAYSTACK_SECRET_KEY`*, which is self-serve and
+   an hour of somebody's time. The notification listener landed on `OrderPaid`
+   on 8 Sep, so a paid order now emails the customer.
 4. **Feature 5 — Delivery.** Yango (domestic) and DHL (international) quote/booking.
-5. **Feature 7 — Bookings.** Workshop sessions with capacity + waitlist, and
-   the unlimited DIY queue.
-6. **Feature 8 — Notifications.** Fish Africa SMS + transactional email behind
-   a swappable `NotificationService`. *Sandbox test recommended first — Ghana
-   network delivery rates unverified (README "Clarifications Needed" #3).*
-7. ~~**Feature 9 — CMS + admin API.**~~ — **the specified half closed 27 Aug.**
+5. **Feature 7 — Bookings.** Workshop sessions with capacity + waitlist and the
+   unlimited DIY queue exist; the programme behind them landed 28 Aug (§15's six
+   experiences, `GET /workshop-types` public and admin). ~~*What is left:* an
+   upload endpoint for DIY reference images.~~ — **the upload endpoint landed
+   8 Sep** (`POST /booking-uploads`, with a daily prune of abandoned files);
+   the storefront form still has to use it. *What is left is the
+   by-appointment enquiry path*, since three of the six experiences have no
+   bookable date to attach a booking to — open decision 35, a business
+   question.
+6. ~~**Feature 8 — Notifications.**~~ — **closed 8 Sep.** All five triggers
+   dispatch behind a swappable `NotificationChannel`; email needs no
+   credential (`MAIL_MAILER=log`), and SMS falls back to `LogSmsChannel`
+   until Fish Africa keys exist. *What is left is the credential and a
+   sandbox test — Ghana network delivery rates unverified (README
+   "Clarifications Needed" #3) — plus correcting `FishAfricaSmsService`'s
+   request shape against the live API, which has never been run.*
+7. ~~**Feature 9 — CMS + admin API.**~~ — **the specified half closed 27 Aug, and role enforcement 28 Aug.**
    Products, inventory, feedback, orders, bookings, workshop sessions,
    dashboard metrics, blog, pages, site settings, newsletter and taxonomy all
-   exist, and `PageEditor` submissions are sanitised server-side. *What is left
-   is the 14 admin paths that are **not** in the README and have no model* —
-   see open decision 28. That is a scope conversation, not a task.
+   exist, and `PageEditor` submissions are sanitised server-side. Returns and the workshop programme
+   followed on 28 Aug once the brand document supplied their rules, and the
+   four role tiers are enforced server-side for the first time. *What is left is
+   the 5 admin paths that are in neither document and have no model* — see open
+   decision 28. That is a scope conversation, not a task.
 
 8. **Customer accounts.** ~~Register/login/logout/me, order history.~~ —
    **closed 27 Aug.**
@@ -1730,6 +2130,16 @@ In dependency order:
   backend: an upload endpoint for DIY reference images (the form records the
   file *name* and asks the customer to send the photo over WhatsApp, because
   `details.reference_image` is typed as a string and nothing accepts a binary).
+- **Drop the USD branch at the payment step.** `PaymentStep.vue` branches on
+  currency to choose between a redirect and a Stripe client secret; since 28 Aug
+  both currencies come back with an `authorization_url` and `client_secret` is
+  always null (§13 — Paystack is the only gateway). Redirect whenever
+  `authorization_url` is present. Small, and the checkout cannot complete
+  without it once a real key lands.
+- **Name the workshop on the booking page.** Sessions now carry
+  `workshop_type` (`GET /workshop-sessions`), and `GET /workshop-types` lists
+  all six experiences including the three that run by appointment and never
+  appear in the session list.
 - **Wire `useInventoryPolling`** into `ProductPurchasePanel`'s `liveStock` prop
   once `GET /products/{id}/stock` exists. Per-size stock is real in the product
   payload as of 27 Aug, so the panel is correct without polling — it just will
@@ -1742,8 +2152,10 @@ In dependency order:
   26 Aug.** All 22 are built. A router warning in dev is now a regression, not
   something to expect; that is the fastest check that a nav change is sound.
 - **Customer auth is inert.** The pages are complete and validate, but nothing
-  authenticates until `backend/routes/api.php` gains a `CustomerAuthController`
-  (register / login / logout / me / profile / password reset). The model side is
+  authenticates until the storefront is wired up. The backend side is now done
+  except profile editing: register / login / logout / me landed 27 Aug and
+  **password reset on 8 Sep** — though the storefront has no
+  `account/reset-password` page for the emailed link to land on yet. The model side is
   already done: `Customer` is an `Authenticatable` with `HasApiTokens` and hashed
   passwords, the `web` guard is configured, `passwords.customers` is wired, and
   Sanctum's `guard` array lists `web`. Grep `AUTH_ENABLED` for the frontend side.
@@ -1781,6 +2193,8 @@ will light up:
 1. **The `/api/v1/admin/*` surface** — ~21 paths. The exact list is the routing
    table in `admin/fixtures/index.ts`; each key there is an endpoint the UI
    already calls, and the fixture next to it is the response shape it expects.
+   **27 of 30 now exist** — the product reads closed on 8 Sep; what is left is
+   the inbox (×3), activity and audit, which is open decision 28, not a task.
 2. **Admin login** — no `AuthController`, no route, no Form Request. Until it
    exists `pages/login.vue` is inert by design and no route middleware is
    registered. Wiring it is: `GET /sanctum/csrf-cookie`, `POST /admin/login`,
@@ -1815,13 +2229,17 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
+| 33 | **The brand document and the README disagree about Stripe** | README Feature 4 pairs Stripe with USD; `GOLD_COAST_TOKOTA.md` §13 names Paystack alone as the payment gateway, settles in GHS, and lists Visa/Mastercard/Verve under it. §22 says the document is the source of truth and not to change what it states, so **both currencies now route to Paystack** and `client_secret` is always null. The Stripe config binding is retained but unrouted, so restoring it is a factory change. **Needs a sentence from the business owner**: is dollar settlement through Stripe actually wanted, or was the README's split an assumption? |
+| 34 | **Nobody has supplied email addresses for the five people §17 names** | The document gives Samuel Kumi-Gyau, Mary Seade, Isaac, Isaaka and Peter with their roles, job titles and tiers — everything a seeder needs except the one field an account is keyed on. Inventing addresses for real colleagues is not something a seeder should do, so the roster is unseeded and the only account on a fresh database is the test super admin. **Five email addresses closes it.** |
+| 35 | **Three of the six workshop experiences cannot actually be booked** | §15 runs Corporate Team Building, Cultural Craft and International Visitor "By Appointment" — no standing schedule, so no `workshop_session` for a booking to attach to. `GET /workshop-types` advertises them and `requires_appointment` flags them, but a customer who picks one has nowhere to go except the WhatsApp link. An enquiry path (a booking with no session, or a routed form) is the fix; **whether it is a booking or an enquiry is a business question**, so it is not guessed. |
+| 36 | **Two tests fail on Postgres but pass on SQLite — neither is a production bug** | Found by running the whole suite against a scratch Postgres database on 8 Sep, which is what issue 29 recommends. (a) `PaystackPaymentTest > a replayed webhook…` fails with `SQLSTATE[25P02] current transaction is aborted`. The webhook's idempotency catches a unique-constraint violation from `ProcessedWebhookEvent::create()`; on Postgres a failed statement poisons the surrounding transaction, and under `RefreshDatabase` **the test itself is that transaction**. In production there is no wrapping transaction, so the catch works and the endpoint is correct. It is still worth hardening — if anyone ever wraps that handler in a transaction, idempotency breaks on Postgres and only on Postgres; `insertOrIgnore` or a savepoint would remove the trap. (b) `FeedbackTest > feedback is listed newest first` passes `created_at` to `Feedback::create()`, but `created_at` is not in the model's `$fillable`, so it is silently dropped and both rows get the same timestamp — the ordering is then a coin flip that SQLite happens to win. A test bug, not an API bug. **Neither was touched on 8 Sep**: both are outside the catalogue-filter change, and quietly editing the payment path while doing something else is how a money bug gets in. |
 | 30 | **Production serves the API with `php artisan serve`** | The Dockerfile's CMD is Laravel's built-in dev server: single-threaded, explicitly not for production in Laravel's own docs. It will work for a demo and fall over under real traffic. The fix is a proper process manager — FrankenPHP is the smallest change (one base-image swap plus a Caddyfile), php-fpm + nginx the conventional one. **Not done in the hardening pass deliberately:** it is a container change that cannot be verified without an actual deploy, and shipping an unverified web server swap is worse than a documented known issue. Needs one deploy to test. |
-| 28 | **Seven admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **23 now exist.** What is left is inbox (×3), returns, activity, audit and workshop-types — all four underlying questions have been written up for the business owner. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. The remainder — returns, shipments, media library, a 3-endpoint inbox, audit log, team, customers, workshop-types, dashboard charts, 6 settings sub-resources — **are not in the README and have no model.** Same pattern as the reviews UI. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
+| 28 | **Five admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **27 now exist** (the two product reads landed 8 Sep). What is left is inbox (×3), activity and audit. **Returns and workshop-types came off this list on 28 Aug**: they were unguessable only because the README covers neither, and §9/§21 and §15 of the brand document write both out in full — which made them transcription rather than invention. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. What is left — a 3-endpoint inbox, an activity feed and an audit log — **is in neither the README nor the brand document, and has no model.** Same pattern as the reviews UI: the inbox could be WhatsApp thread history, a ticketing system or email, and each produces a different schema; the audit log's retention and scope are policy questions with compliance weight. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
 | 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
 | 25 | **Seeded collection assignments are a guess** | `database/data/design-products.json` assigns each of the six designed products to a collection (Obrempong / Sikapa / Slides). The design fixture never carried one, so these are a first pass. Categories are derived from `product_type` and are safe; **the collections need the brand to confirm.** |
 | 26 | **Listing filters only ever see the first page** | The shop page sends `type`, `color`, `size`, `width`, `category`, `q`, `sale` and `sort` as query params, `ProductController::index` ignores every one of them, and `matchesFilters()` filters client-side over a 12-per-page response. Invisible at six products; wrong at sixty. Server-side filtering is the fix — see `docs/api-contract.md`, "Known gaps". |
-| 27 | **13 of 15 third-party credentials are empty** | Everything in `backend/.env` for Paystack, Stripe, Yango, DHL, Fish Africa and exchangerate.host. Paystack and Stripe test keys are self-serve and enough to build the whole of Feature 4. The rest need business accounts requested by a human, with real lead times — **they gate Features 4, 5 and 8, so request them now**, not on arrival at the stage. |
+| 27 | **The third-party credentials are still empty** | Everything in `backend/.env` for Paystack, Yango, DHL, Fish Africa and exchangerate.host. **Paystack is now the whole of the payments story** (§13) and its test key is self-serve — an hour of somebody's time, and the only thing between `PaystackService` and a working checkout. The rest need business accounts requested by a human, with real lead times — **they gate Features 4, 5 and 8, so request them now**, not on arrival at the stage. Stripe's keys are no longer needed unless the business overrules §13. |
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
 | 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
 | 15 | **DEI has no link anywhere** | Was "`/about#dei` repointed to `/careers#dei`". The footer link that raised this went with the 27 Aug footer trim, so nothing now links to `/careers#dei` at all — the section exists and its copy is still a placeholder. The decision is no longer *where* DEI lives but **whether it needs a home**; if it does, it needs brand-written text and a link. **Awaiting a decision.** |
@@ -1842,8 +2260,8 @@ will light up:
 | 8 | **App chrome is 8–12px out of alignment with page content** | Content now sits at a 60px desktop gutter everywhere (`.page-gutter`). `Header.vue` is still at 68px, `Footer.vue` at 72px, `MegaMenuPanel.vue` at 140px and `SearchPanel.vue` at 156/326px — all Figma-exact. Moving them to 60px would line the nav and footer edges up with the content below, but it visibly changes brand chrome. **Awaiting a decision.** |
 | 9 | ~~**Marquee line-height on the Sustainability masthead**~~ | **Closed 27 Aug 2026.** The masthead was the only user of `display-brand`, whose 176/96 Figma leading measured 66px at the 36px mobile floor. It went with the About/Sustainability merge — About already had a hero, and a second brand-sized wordmark mid-page read as a different page starting. The token is still defined and now unused; delete it if nothing claims it. |
 | 11 | **The WhatsApp inbox implies scope README does not cover** | README Feature 6 specifies a `wa.me` deep link and states "no API integration required". `/inbox` needs the Business Cloud API, a verified WABA, approved templates and a webhook receiver. It ships as a clearly-labelled simulation; **whether to fund the real integration is awaiting a decision.** |
-| 12 | **Role model disagrees across sources** | README and `admin_users.role` say two tiers; the brand PDF names three; the business asked for four (adding a time-boxed `intern`). The admin UI implements four. **The database enum and role middleware still need widening** — until then the server cannot enforce what the UI presents. |
-| 13 | **WhatsApp number is provisional** | The PDF gives `+233 25 753 4297` annotated "(update with official number)". It is seeded into site settings and surfaced with a warning on `/settings/whatsapp`. Needs confirming before launch. |
+| 12 | ~~**Role model disagrees across sources**~~ | **Closed 28 Aug 2026.** `GOLD_COAST_TOKOTA.md` §17/§18/§22.14 settled it. The enum is a string, `super_admin` exists, and the two role middlewares were replaced by one capability check mirroring `admin/utils/permissions.ts` — because §18's line about Admins not touching system settings or payment credentials cannot be expressed as "admin or not". `intern` was kept: not in the document, but not contradicted by it, and already shipped. **Still open, and small: nobody has supplied email addresses for the five people §17 names**, so the roster cannot be seeded. |
+| 13 | **WhatsApp number is provisional** | §12 gives `+233 25 753 4297` annotated "(update with official number)". Seeded into site settings and surfaced with a warning on `/settings/whatsapp`. As of 28 Aug the address, trading hours, greeting and tagline sit beside it as editable columns, so correcting the number is a settings change rather than a deploy. **Still needs confirming before launch.** |
 | 10 | **`Toast.vue` has no placement, and no consumer** | It renders in normal flow with no shared region in `layouts/default.vue`, so every caller would invent its own positioning. Nothing mounts it yet, so where toasts appear, how they stack, and whether they clear the fixed WhatsApp button is undecided. Width is bounded; placement is **awaiting a decision** when something first needs it. |
 
 ---

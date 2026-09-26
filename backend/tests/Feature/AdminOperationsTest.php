@@ -9,6 +9,7 @@ use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\WorkshopSession;
+use App\Models\WorkshopType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -234,7 +235,10 @@ class AdminOperationsTest extends TestCase
 
     public function test_staff_can_create_a_workshop_session(): void
     {
+        $type = WorkshopType::factory()->create(['name' => 'Sandal Sip & Paint', 'capacity' => 20]);
+
         $response = $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/workshop-sessions', [
+            'workshop_type_id' => $type->id,
             'scheduled_date' => today()->addWeek()->toDateString(),
             'scheduled_slot' => '10:00 - 13:00',
             'capacity' => 8,
@@ -243,11 +247,40 @@ class AdminOperationsTest extends TestCase
         $response->assertCreated();
         $response->assertJsonPath('data.capacity', 8);
         $response->assertJsonPath('data.remaining_capacity', 8);
+        $response->assertJsonPath('data.workshop_type_name', 'Sandal Sip & Paint');
+    }
+
+    /**
+     * A session with no experience attached is a date and a seat count nobody
+     * can describe to a customer — which is the state the booking page was
+     * stuck in before §15 gave the programme a shape.
+     */
+    public function test_a_session_must_belong_to_a_workshop_type(): void
+    {
+        $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/workshop-sessions', [
+            'scheduled_date' => today()->addWeek()->toDateString(),
+            'scheduled_slot' => '10:00 - 13:00',
+            'capacity' => 8,
+        ])->assertStatus(422)->assertJsonValidationErrors('workshop_type_id');
+    }
+
+    /** §15 publishes a maximum per experience; §22.15 says to enforce it. */
+    public function test_a_session_cannot_exceed_the_published_capacity_for_its_type(): void
+    {
+        $type = WorkshopType::factory()->create(['name' => 'Be a Shoemaker for a Day', 'capacity' => 10]);
+
+        $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/workshop-sessions', [
+            'workshop_type_id' => $type->id,
+            'scheduled_date' => today()->addWeek()->toDateString(),
+            'scheduled_slot' => '09:00 - 16:00',
+            'capacity' => 11,
+        ])->assertStatus(422)->assertJsonValidationErrors('capacity');
     }
 
     public function test_a_session_cannot_be_scheduled_in_the_past(): void
     {
         $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/workshop-sessions', [
+            'workshop_type_id' => WorkshopType::factory()->create()->id,
             'scheduled_date' => today()->subDay()->toDateString(),
             'scheduled_slot' => '10:00 - 13:00',
             'capacity' => 8,

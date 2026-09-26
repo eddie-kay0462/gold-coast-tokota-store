@@ -89,16 +89,21 @@ Anything that writes them directly is a bug.
 | POST | `/logout` · GET `/me` · GET `/orders` | `auth:web`. `/orders` is the signed-in customer's own history |
 | POST | `/feedback` | Guest-friendly. Throttled 10/min |
 | POST | `/newsletter` | |
-| GET | `/workshop-sessions` · POST `/bookings` | |
+| GET | `/workshop-types` | The six experiences §15 publishes, active only |
+| GET | `/workshop-sessions` · POST `/bookings` | Sessions carry their `workshop_type` |
+| POST | `/webhooks/paystack` | HMAC-signed, idempotent. Throttled 300/min — see below |
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
 | GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` — 50/page |
 | GET | `/admin/feedback` | Admin **and** Staff. Read-only, newest first — 50/page |
 | GET | `/admin/dashboard/metrics` | Admin **and** Staff. Live queries, no caching |
 | GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` — 25/page |
-| PATCH | `/admin/orders/{reference}` | Status. **`refunded` is Admin-only** |
+| PATCH | `/admin/orders/{reference}` | Status. **`refunded` needs `orders.refund`**. `delivered` stamps `delivered_at` |
+| GET/POST | `/admin/returns` · GET `/admin/returns/{id}` | `returns.view`. `?status=` `?reason=` — 25/page |
+| PATCH | `/admin/returns/{id}` | `returns.resolve` (Admin+). `refunded` also needs `orders.refund` |
 | GET | `/admin/bookings` | `?status=` `?type=` `?workshop_session_id=` |
 | PATCH | `/admin/bookings/{id}` | Status, incl. waitlist promotion |
-| GET/POST | `/admin/workshop-sessions` | `?upcoming=true` on index |
+| GET | `/admin/workshop-types` | `bookings.view`. Read-only — the published programme |
+| GET/POST | `/admin/workshop-sessions` | `?upcoming=true` `?type=` on index. `workshop_type_id` required on create |
 | PUT/DELETE | `/admin/workshop-sessions/{id}` | Capacity editing, guarded — see below |
 | GET/POST | `/admin/blog` · GET/PUT/DELETE `/admin/blog/{id}` | Includes drafts. Body sanitised server-side |
 | GET | `/admin/pages` · `/admin/pages/{id}` | |
@@ -108,21 +113,54 @@ Anything that writes them directly is a bug.
 | GET | `/admin/newsletter` · `/admin/newsletter/export` | Read-only. Export streams CSV |
 | GET | `/admin/categories` | Categories and collections together |
 | GET | `/admin/customers` · `/admin/customers/{id}` | Read-only. `?q=` |
-| GET/POST | `/admin/team` · PUT/DELETE `/admin/team/{id}` | **Admin only** |
+| GET | `/admin/team` | `team.view` — every tier holds it |
+| POST/PUT/DELETE | `/admin/team/{id}` | **`team.manage` — Super Admin only** |
 | GET | `/admin/shipments` | A view over orders. `?provider=` `?status=` |
 | GET | `/admin/dashboard/charts` | Year-over-year series |
 | GET/POST | `/admin/media` · DELETE `/admin/media/{id}` | Image library |
-| GET | `/admin/settings/{commerce\|payments\|delivery\|notifications\|whatsapp}` | Read-only config reflections |
+| GET | `/admin/settings/{commerce\|delivery\|notifications\|whatsapp}` | Read-only config reflections. `settings.view` |
+| GET | `/admin/settings/payments` | **`settings.payments` — Super Admin only** (§18) |
 | GET | `/admin/settings/diy-turnaround` | Per-order-type estimates. Staff may read |
-| PUT | `/admin/settings/diy-turnaround` | **Admin only** |
-| POST/PUT/DELETE | `/admin/products` | Admin role only |
+| PUT | `/admin/settings/diy-turnaround` | `settings.write` — Admin+ |
+| GET | `/admin/products` · `/admin/products/{id}` | `products.view` — every tier. **Unscoped:** drafts included. `?active=` `?q=` `?category_id=` `?per_page=` |
+| POST/PUT | `/admin/products` | `products.write` **and** `pricing.write` — Admin+ |
+| DELETE | `/admin/products/{id}` | `products.delete` — Admin+ |
+
+#### The admin product shape is not the storefront's
+
+All five `/admin/products` endpoints — reads *and* writes — return
+`AdminProductResource`, not the storefront's `ProductResource`. Three
+differences, each load-bearing:
+
+- **`base_price_ghs` is `{ amount, currency }`**, not a bare integer, matching
+  the admin app's `Money` type. The write endpoints used to echo the storefront
+  shape, which the admin app would have read as a malformed object; that was
+  fixed when the read endpoints landed rather than left as two shapes for one
+  entity.
+- **No `price_usd`.** The admin screens derive dollars at render time from the
+  cached rate so the editable cedi field and the read-only dollar figure move
+  together as you type. README Feature 2 forbids a stored USD price, and a
+  server-side one here would be a second source of truth for it.
+- **Stock is rolled up** (`total_available`, `total_reserved`, `low_stock`)
+  rather than per-variant. `low_stock` is true when *any* variant is at or
+  below its own threshold — a product with 60 of size 42 and none of size 39
+  needs a restock, and comparing summed totals would hide that.
+
+`GET /admin/products` pages at 100 (override with `?per_page=`, capped at 200),
+far above the storefront's 12: the admin table searches, sorts and pages
+client-side over the set it is handed, so a small page would leave those
+controls quietly operating on a fraction of the catalogue.
+
 
 ### Specified, not yet built
 
 | Method | Path | Consumer | Stage |
 |---|---|---|---|
-| POST | `/webhooks/paystack` · `/webhooks/stripe` | gateways | 3 |
-| GET | `/admin/dashboard/metrics` | admin app | 7 |
+| GET | `/admin/inbox/{threads\|messages\|templates}` | admin app | new scope — see open decisions |
+| GET | `/admin/activity` · `/admin/audit` | admin app | new scope — see open decisions |
+
+`/webhooks/paystack` shipped; `/webhooks/stripe` will not — see the payments
+note below.
 
 `POST /checkout/session` has its request and response already written out in a
 comment at `frontend/components/checkout/PaymentStep.vue:13`:
@@ -133,6 +171,64 @@ POST /checkout/session { items, currency, shipping_address, delivery_method }
   → USD: a Stripe PaymentIntent client secret to confirm
   → gateway redirects back to /order-confirmation/{id}
 ```
+
+**The USD line is now out of date, and the storefront needs a small change.**
+§13 of `GOLD_COAST_TOKOTA.md` names Paystack as the payment gateway and does
+not mention Stripe; both currencies route to Paystack, so `client_secret` is
+always `null` and USD gets an `authorization_url` exactly as GHS does. The
+currency branch in `PaymentStep.vue` has nothing on the other side of it.
+Redirect on `authorization_url` whenever it is present — that is correct today
+and stays correct if a second gateway is ever added back.
+
+---
+
+## Catalogue filtering (`GET /products`)
+
+Server-side as of 8 Sep. The query string is the one
+`frontend/pages/shop/index.vue` already sends, unchanged — the page was written
+against it, and a different contract would mean editing both sides for nothing.
+
+| Param | Meaning |
+|---|---|
+| `q` | Free text over name, colour, product type and tags |
+| `type` | `product_type` — the sidebar's "Category" group |
+| `color` | Substring of any colourway name (`tan` finds "Tan Leather") |
+| `size` | Any variant made in that size, in stock or not |
+| `width` | `widths` array |
+| `category` | **The department** (`mens`/`womens`/`kids`/`merchandise`), *not* the catalogue category |
+| `category_id` · `collection_id` | The real taxonomy ids |
+| `sale=true` | `compare_at_ghs` present **and** genuinely higher |
+| `featured=true` | Featured only |
+| `sort` | `newest` · `best-selling` (default: featured first, then newest) |
+| `per_page` | Default 12, capped at 48 |
+
+Values are comma-separated. **Within one facet the match is OR; across facets
+it is AND** — two colours widen the result, a colour plus a size narrows it.
+
+Four things worth knowing before editing `ProductFilter`:
+
+- **`?category=` is the department, not the category.** The sidebar's
+  "Category" group filters `type` instead. Sharing one key would filter every
+  product out, which is why the storefront comments on it so emphatically.
+- **`sort=top-rated` is not honoured, and cannot be.** There is no ratings data
+  anywhere in this system — reviews are unplanned scope with a fully built UI
+  and no model (open decision 24). Inventing a `rating` column to satisfy the
+  sort would be building the reviews feature by the back door. An unrecognised
+  sort falls through to the default rather than erroring, because a shopper who
+  clicks "Top Rated" should still get products.
+- **`best-selling` sums `quantity`, not order lines**, and counts only orders
+  where money settled and stayed (`paid`/`processing`/`shipped`/`delivered`) —
+  a product everybody sent back must not lead the best-sellers.
+- **Search deliberately covers the same fields as the storefront's own local
+  predicate.** The page falls back to filtering a bundled catalogue when the API
+  is unreachable, and a search returning different things depending on whether
+  the API answered is a miserable bug to chase.
+
+Every clause is portable across Postgres and SQLite (known issue 29) —
+`whereJsonContains` compiles to `@>` on one and a `json_each` subquery on the
+other, and `LOWER(CAST(col AS text)) LIKE ?` works on both. `ILIKE` is
+deliberately absent. **The filter suite was run against both drivers**, not
+just the SQLite default.
 
 ---
 
@@ -191,9 +287,15 @@ operational picture from "12 in stock".
 ```
 
 Returns `201` with `{ data: <Order>, payment: { gateway, reference, authorization_url, client_secret } }`.
-GHS gets an `authorization_url` to redirect to; USD gets a `client_secret` to
-confirm. `country` is **required** — it routes the courier, so a missing one is
-a validation error rather than an unpriced order.
+**Both currencies get an `authorization_url` to redirect to**, and
+`client_secret` is always `null` — see the payments note above. `country` is
+**required** — it routes the courier, so a missing one is a validation error
+rather than an unpriced order.
+
+The `Order` in `data` also carries `processing_hours` (48) and a
+`delivery_estimate` band resolved from the destination, both straight from §8
+of the brand document, so the confirmation page quotes the published figure
+rather than inventing one.
 
 **No prices are accepted from the request.** The client sends an inventory item
 and a quantity; unit price, shipping and total are all read or computed
@@ -221,20 +323,105 @@ All of it inside one transaction: a failure at any step rolls the order away
 | `422` | Validation, including a missing `country` |
 | `503` | USD checkout with no FX rate to lock |
 
-### Until gateway credentials exist
+### Payments: one gateway, Paystack
 
-`PaymentGatewayFactory` resolves `FakeGateway` in every environment, logging
-that it did. It shapes its response like the real thing so the storefront's
-branching can be built now, but it never moves money and never confirms
+§13 of `GOLD_COAST_TOKOTA.md` names Paystack as the payment gateway — settling
+in Ghana Cedis, accepting Visa, Mastercard, Verve, MTN/Telecel/AirtelTigo mobile
+money and bank transfer — and §22.12 repeats it in a line. Nothing in the
+document mentions Stripe. `PaymentGatewayFactory` therefore routes **both**
+currencies to Paystack; the currency split is gone, and so is
+`client_secret`.
+
+`PaystackService` is complete and untested against the live API, because
+`PAYSTACK_SECRET_KEY` is still empty. Amounts are sent in the currency's
+subunit, which is what every money column in this codebase already holds, so
+nothing is scaled on the way out — there is a test asserting that specifically,
+since a factor of a hundred here is a real charge of the wrong size.
+
+Without a key, `PaymentGatewayFactory` still resolves `FakeGateway` in every
+environment and logs that it did. It shapes its response like the real thing so
+the storefront can be built now, but it never moves money and never confirms
 anything — an order it opens stays `pending` until a webhook says otherwise,
-which is exactly how Paystack and Stripe behave. Nothing downstream can come to
-depend on a fake payment having "succeeded".
+which is exactly how Paystack behaves.
 
-Delivery is the same shape: `YangoService` and `DhlService` implement the real
-interface with static rate tables. Ghana standard is ₵25, free over ₵1,500 —
-matching what the product page already promises — and express is ₵50.
-International is ₵350 / ₵600. Swapping in live quotes changes only the body of
-`quote()`.
+### `POST /webhooks/paystack`
+
+Where an order actually becomes paid. Three properties, in order:
+
+1. **Authenticity.** HMAC-SHA512 of the *raw* body with the secret key,
+   compared constant-time against `x-paystack-signature`. Unsigned or
+   mis-signed bodies get `401` and change nothing. This is the only thing
+   separating a real payment notification from someone marking their own order
+   paid.
+2. **Idempotency.** `processed_webhook_events` carries a unique
+   `(gateway, event_id)`; the insert either succeeds — first delivery — or
+   violates the constraint, in which case the retry is acknowledged and
+   dropped. Without it a replay would finalise the same reservation twice: one
+   sale, two decrements. There is a test.
+3. **Speed.** Everything downstream of "the money arrived" hangs off the queued
+   `OrderPaid` event, so a slow mailer cannot cause a timeout that triggers a
+   retry of a payment already recorded.
+
+A signed request always gets `200`, including for events nothing acts on — a
+4xx would put Paystack into a retry loop over a message that is never going to
+be interesting. A charge whose amount or currency does not match the order is
+logged and refused: a partial payment is not a completed sale.
+
+Point the Paystack dashboard at `POST {API}/api/v1/webhooks/paystack`.
+
+### Delivery, until courier credentials exist
+
+`YangoService` and `DhlService` implement the real interface with static rate
+tables. Ghana standard is ₵25, free over ₵1,500 — matching what the product
+page already promises — and express is ₵50. International is ₵350 / ₵600.
+Swapping in live quotes changes only the body of `quote()`.
+
+Delivery *times*, unlike rates, are not guesses: `DeliveryEstimates` is §8's
+published table transcribed, and every surface reads it rather than carrying
+its own copy.
+
+## Notifications (Feature 8)
+
+Not an endpoint — nothing about notifications is client-driven — but part of
+the contract, because five customer-facing messages now fire from server-side
+triggers.
+
+| Trigger | Fires on | Source |
+|---|---|---|
+| `order_placed` | `OrderPaid`, from the Paystack webhook | README Feature 8 |
+| `order_shipped` | admin order status → `shipped` | brand document, Domestic Shipping |
+| `booking_submitted` | `POST /bookings` | README Feature 8 |
+| `booking_confirmed` | admin booking status → `confirmed` | README Feature 8 |
+| `waitlist_promoted` | a waitlisted booking promoted into a free place | README Feature 8 |
+
+Four rules worth knowing before touching any of it:
+
+1. **Order confirmation hangs off `OrderPaid`, never off checkout.** An open
+   payment session is a customer looking at a payment page, not a sale.
+2. **Status triggers fire on the transition, not the status.** Re-saving an
+   already-shipped order sends nothing; a customer told twice that their order
+   shipped has been given wrong information, not extra service.
+3. **Delivery failure is non-fatal.** `NotificationDispatcher` never throws —
+   each channel is tried independently and a failure is logged and stepped
+   over. Feature 8's acceptance criteria require that a bounced text cannot
+   fail an order whose money has already been taken.
+4. **Every timeframe in the copy is quoted from `GOLD_COAST_TOKOTA.md`** — the
+   48-hour processing window, 1–2 day domestic delivery, the 7-day return
+   window. §22.3 forbids changing any of them, and an email is exactly where an
+   invented one becomes a promise. A test asserts the confirmation still says
+   48 hours.
+
+Without `FISH_AFRICA_APP_ID`/`_SECRET` the SMS channel resolves to
+`LogSmsChannel`, which writes the message to the log instead of sending it —
+the same fallback shape `PaymentGatewayFactory` uses for `FakeGateway`.
+`GET /admin/settings/notifications` reports `sms_channel: log_only` in that
+state rather than implying texts are going out.
+
+**Workshop reminders and return-resolution notices were deliberately not
+built.** Neither document states either one, and §22 forbids inventing a policy
+the brand document does not state.
+
+---
 
 ## Orders (`GET /orders/{reference}`)
 
@@ -288,6 +475,102 @@ and if post-purchase account creation ever does, letting registration claim one
 would hand anyone who knows a customer's email their full order history. Any
 future claiming flow needs an emailed confirmation link.
 
+## Password reset
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/forgot-password` | `{ email }` — throttled 6/min per IP |
+| POST | `/reset-password` | `{ token, email, password, password_confirmation }` |
+
+**`/forgot-password` always answers the same thing**, whether or not the
+address has an account, and validates the email for *format only* — no
+`exists:customers,email`. Either would turn it into an enumeration oracle: a
+way to test which of a list of addresses shops here. The broker's own 60-second
+per-email throttle sits underneath, so a real address does not get repeat
+emails; the route's per-IP ceiling is what stops a script working a list. It
+also sends mail to an address the caller chooses, which is the other reason it
+is capped.
+
+**`/reset-password` does distinguish failure** (422 on an expired, used or
+forged token) — by then the customer is holding a link we sent them, and a dead
+link has to say so or they will retype it. It reveals nothing new, since anyone
+with the token already had the email.
+
+A reset rotates `remember_token`, invalidating "remember me" cookies issued
+before it — somebody resetting a password may be doing it *because* an old
+session is not theirs — and fires `Illuminate\Auth\Events\PasswordReset`.
+
+### The link points at the storefront
+
+`Customer::sendPasswordResetNotification` is overridden. Laravel's built-in
+notification builds its URL from `route('password.reset')`, a named web route a
+headless API has no reason to define; the page that accepts the token belongs
+to the Nuxt storefront. The link is:
+
+```
+{config('app.storefront_url')}/account/reset-password?token={token}&email={email}
+```
+
+**That page does not exist yet** — `frontend/pages/account/` has `login`,
+`register`, `index`, `orders` and `settings` and no reset page. The backend is
+complete and tested; the storefront needs the two screens (request a link, set a
+new password) before a customer can use it. `app.storefront_url` reads
+`STOREFRONT_URL`, defaulting to the first entry in `FRONTEND_URLS`.
+
+The email goes through the Feature 8 dispatcher like every other customer
+message, and is **email-only — its `sms` body is deliberately null.** A reset
+link is a credential, and SMS is forwarded, screenshotted and read off lock
+screens.
+
+---
+
+## DIY reference photos
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/booking-uploads` | multipart `file` — throttled 10/hour per IP |
+
+Two steps rather than a multipart booking: upload here, then send the returned
+`path` as `details.reference_image` when creating the booking. That keeps
+`POST /bookings` plain JSON, and an abandoned form leaves a file rather than a
+half-made booking.
+
+```
+POST /booking-uploads  (file)
+  → 201 { data: { path, url, filename } }
+POST /bookings         { …, details: { …, reference_image: <path> } }
+```
+
+**This is the only unauthenticated write-to-disk endpoint on the API.** Guest
+bookings are supported by design, so it cannot sit behind a login, and
+everything a session would normally provide has to be done here instead:
+
+- 5MB cap, an allowlist checked against file *contents* (`mimes`), and a
+  `dimensions` rule that forces the file through an image decoder — so a
+  renamed script that satisfies the mime check still fails.
+- Laravel generates the stored name, so a hostile original filename never
+  reaches the filesystem and the URL is not guessable from the customer's name
+  or the date. That unguessability matters: the file is on the `public` disk,
+  so anyone holding the URL can open it. If reference photos are ever judged
+  sensitive, the change is a private disk plus a signed admin-only route.
+- `PruneOrphanedBookingUploads` runs daily and deletes unattached uploads older
+  than 24 hours. Without it, an unauthenticated upload endpoint grows the disk
+  without limit. Attached uploads are never pruned regardless of age.
+
+`AdminBookingResource` exposes `reference_image_url`, and it is **null unless
+`reference_image` holds a path this API issued.** Bookings taken before this
+endpoint existed recorded the customer's *filename* there (the photo came over
+WhatsApp), so turning that into a URL would give every historical booking a
+broken image — and the prefix check is also what stops an arbitrary string in
+that field being rendered as a link.
+
+**The storefront still sends the filename.** `DiyOrderForm.vue` sets
+`reference_image: referenceImage.value?.name`. It needs to POST the file here
+first and send the returned `path` instead; validation stays permissive
+(`nullable|string|max:255`) so the current form keeps working until it does.
+
+---
+
 ## Feedback
 
 `POST /feedback` takes `{ name, email, message, rating? }` and returns `201`
@@ -305,9 +588,49 @@ quietly edit it is worse than one that cannot. The resource emits
 
 ---
 
+## Admin: roles and capabilities
+
+**Routes name the capability they need, not the tier allowed to reach them.**
+`EnsureAdminRole` and `EnsureStaffOrAdminRole` are gone; there is one
+middleware, `capability:<name>` (several comma-separated means all are
+required), checked against `App\Support\AdminCapability`.
+
+The old pair could only ask "admin or not", and §18 of the brand document does
+not divide that way: an Admin may change prices and issue refunds but **cannot
+modify system-level settings or payment credentials**, while a Staff member may
+adjust stock but not price it. Both of those sit on the same side of a
+two-value check, so neither was enforceable.
+
+Four tiers. §17/§18 name three — Super Admin, Admin, Staff — and `intern` is the
+fourth the business asked for, already shipped in the dashboard as a time-boxed
+read-only account. `admin_users.role` is now a plain string with
+`access_expires_at`, `access_extensions`, `job_title`, `avatar` and
+`last_active_at` alongside it.
+
+| Tier | Holds |
+|---|---|
+| `super_admin` | Everything |
+| `admin` | Everything except `settings.payments`, `settings.fx`, `team.manage` |
+| `staff` | Operations: orders, returns, shipments, inventory, bookings, content drafts, media upload. No pricing, refunds, deletions or settings writes |
+| `intern` | Read-only, plus drafting an inbox reply. Lapses on `access_expires_at` |
+
+A **lapsed** account still authenticates and can still reach `GET /admin/me` and
+`POST /admin/logout` — it has to, or the person cannot see why they are locked
+out — but holds no capabilities at all until someone extends it.
+
+`GET /admin/me` sends the server's `capabilities` array. `admin/utils/permissions.ts`
+keeps its own copy for hiding buttons; the two must agree, and shipping the
+server's answer means they can be compared rather than assumed equal.
+
+Every 403 carries a written sentence (`message`), not a raw blob — README
+Feature 9 requires it, and the copy matches the frontend's `denialMessage()`
+so a refusal reads the same whichever side caught it.
+
+---
+
 ## Admin: operations
 
-Everything under `/admin/*` is Admin **and** Staff except where noted. Money in
+Everything under `/admin/*` is Staff-and-above except where noted. Money in
 admin responses is `{ amount, currency }`, not a bare integer — the admin app's
 `Money` type makes the pair inseparable so a number can never be mistaken for a
 price. This is the one place admin and storefront shapes deliberately differ.
@@ -325,10 +648,66 @@ would be unfindable. It uses `LOWER(...) LIKE`, not Postgres's `ILIKE`:
 production is Postgres but the test suite runs on SQLite, and a search that
 works in only one environment is worse than a slightly longer clause.
 
-**`refunded` is Admin-only.** The README names refunds alongside pricing and
-site settings in the two-tier rule. It is enforced on the submitted *value*
-rather than the route, because the same endpoint is legal for Staff right up
-until they ask for a refund — and the 403 carries a sentence, not a raw blob.
+**`refunded` needs `orders.refund`** (Admin and above). The README names refunds
+alongside pricing and site settings, and §18 keeps money away from the Staff
+tier. It is enforced on the submitted *value* rather than the route, because
+the same endpoint is legal for Staff right up until they ask for a refund — and
+the 403 carries a sentence, not a raw blob.
+
+**`delivered` stamps `delivered_at`**, once. §9 runs the returns window from the
+day the order is *received*, so that is the moment the clock starts; a
+correction back to `shipped` and forward again does not quietly extend a
+customer's window.
+
+### Returns and exchanges
+
+§9 and §21 of the brand document, transcribed into `ReturnPolicy`: a seven-day
+window from receipt, three accepted reasons (all of them the seller's error) and
+a separate size-exchange path, four non-returnable categories, refunds in 7–14
+business days on the original method, and shipping refundable only when the
+error was Gold Coast Tokota's.
+
+**There is no customer-facing endpoint.** §9 gives exactly one route in for a
+return — "Return / Exchange Contact: WhatsApp" — so a request arrives as a
+message and staff record it. A self-service portal is new scope, and §22.2 says
+not to invent policy that is not written down.
+
+Eligibility is assessed once, at the moment the request is recorded, and frozen:
+it is a decision made against the policy as it stood that day, and a later
+policy change must not silently rewrite a call someone already made. Staff can
+override it — §9's "products damaged through misuse" is a judgement made on
+seeing the pair, which no rule can reach from the order alone.
+
+Two facts the schema gained for this: `orders.delivered_at` (the window runs
+from receipt, and `status = 'delivered'` said *that* it arrived but not *when*)
+and `products.is_returnable` (§9 excludes custom and personalised products
+outright, and `product_type` is the listing facet while `tags` is free-text
+merchandising copy — keying a refund off either would let a badge rename change
+what customers are owed). Sale items are *not* flagged: "clearance or sale
+items, unless defective" is conditional, so it is decided per request against
+`compare_at_ghs`.
+
+### The workshop programme
+
+`workshop_types` is §15's table — six experiences, each with its own recurrence,
+slot, duration and capacity ceiling — and every session now belongs to one.
+Before this a session was a date, a time and a seat count with **no name**, so
+the booking page could not tell a Saturday Sip & Paint from a Friday Be a
+Shoemaker for a Day.
+
+Capacity lives in both places deliberately: the type carries the published
+ceiling ("up to 40 students"), the session carries what is actually offered on
+the day, which may be lower. A session may never exceed its type's ceiling —
+§22.15 asks for capacity to be enforced where the booking system supports it.
+
+Three of the six run only by appointment and so never appear in the session
+list; `requires_appointment` is the flag to branch on, not the days label.
+`GET /workshop-types` exists publicly for exactly that reason — without it half
+the published programme is invisible to customers.
+
+The types are read-only over the API. Their days, times and capacities are
+published commitments and §22.3 forbids changing them without instruction; what
+changes day to day is a session scheduled against one.
 
 ### Bookings and workshop capacity
 
@@ -361,28 +740,32 @@ invented.
 
 ## Admin screens with nothing behind them
 
-The admin app calls 30 distinct endpoints. **Twenty-three now exist.** What
+The admin app calls 30 distinct endpoints. **Twenty-five now exist.** What
 remains is the surface whose data model cannot be guessed from a screen:
 
 | Path | Why it is still a question |
 |---|---|
 | `/admin/inbox/threads` · `/messages` · `/templates` | Could be WhatsApp thread history, a ticketing system, or email. Each produces a completely different schema |
-| `/admin/returns` | Could be a real RMA workflow, or a note on an order because the brand handles returns over WhatsApp like they handle sales |
 | `/admin/activity` · `/admin/audit` | Buildable, but retention and what-gets-logged are policy questions with compliance weight |
-| `/admin/workshop-types` | Sessions have no type concept; adding one changes the booking model |
 
 The cost asymmetry is the whole argument for asking rather than guessing: a
 wrong guess on customers costs an hour, a wrong guess on an inbox leaves a
 production schema and screens built against it.
 
-**Built since this section was first written:** `/admin/customers`,
-`/admin/team`, `/admin/shipments`, `/admin/dashboard/charts`, `/admin/media`,
-`/admin/settings/diy-turnaround` and the five `/admin/settings/*` panels — all documented above under
-"Admin: platform".
+**Two came off this list when `GOLD_COAST_TOKOTA.md` arrived.** Returns and
+workshop types were open because the README covers neither, so the data model
+was unguessable. §9/§21 and §15 write both down in full — a seven-day window
+with named reasons and exclusions, and six experiences with their own
+recurrences and capacity ceilings — which turned them from questions into
+transcription. Both are built and documented above.
 
-**None of what remains is a bug.** Those four screens fall back to fixtures and
-show the demo-data chip. But they are unbudgeted work, and that should be a
-decision rather than something discovered during a launch checklist.
+**Built earlier from an obvious shape:** `/admin/customers`, `/admin/team`,
+`/admin/shipments`, `/admin/dashboard/charts`, `/admin/media`,
+`/admin/settings/diy-turnaround` and the `/admin/settings/*` panels.
+
+**None of what remains is a bug.** Those screens fall back to fixtures and show
+the demo-data chip. But they are unbudgeted work, and that should be a decision
+rather than something discovered during a launch checklist.
 
 ---
 
@@ -400,6 +783,12 @@ Four things the API needs in production that are easy to miss, all now in
   without the link every uploaded image 404s.
 - **Env var names that match `config/services.php`.** The blueprint previously
   set `FX_RATE_API_KEY`, which nothing reads.
+- **`STOREFRONT_URL` set to the storefront's public origin**, not the API's. It
+  is where Paystack returns the customer after payment; wrong, and every paid
+  customer lands on a 404 instead of their confirmation page.
+- **The Paystack webhook registered** in the Paystack dashboard, pointing at
+  `POST {API}/api/v1/webhooks/paystack`. Without it no order ever leaves
+  `pending`, however many payments succeed.
 
 > **Known issue:** the container still serves the API with
 > `php artisan serve`, Laravel's single-threaded dev server. Fine for a demo,

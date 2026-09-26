@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Delivery\DeliveryEstimates;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,12 @@ class OrderResource extends JsonResource
             'delivery_provider' => $this->delivery_provider,
             'delivery_reference' => $this->delivery_reference,
             'shipping_address' => (object) $this->shipping_address,
+            // §8's published promises, resolved for this order's destination.
+            // Sent rather than left to the storefront so the confirmation
+            // page, the shipping policy page and the admin screen cannot
+            // quote three different figures.
+            'processing_hours' => DeliveryEstimates::PROCESSING_HOURS,
+            'delivery_estimate' => DeliveryEstimates::for($this->shipping_address['country'] ?? null),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'created_at' => $this->created_at,
         ];

@@ -7,17 +7,17 @@ use App\Models\Order;
 use Illuminate\Support\Str;
 
 /**
- * Stands in for Paystack and Stripe until their credentials exist.
+ * Stands in for Paystack until its credentials exist.
  *
  * This is not a mock confined to the test suite — it is what
- * `PaymentGatewayFactory` resolves in any environment where the real keys are
+ * `PaymentGatewayFactory` resolves in any environment where the real key is
  * absent, so the whole checkout path (pricing, FX lock, reservation, order
  * creation, session response) can be exercised for real while
- * `PAYSTACK_SECRET_KEY` and `STRIPE_SECRET_KEY` are still empty.
+ * `PAYSTACK_SECRET_KEY` is still empty.
  *
  * It never moves money and never confirms anything: an order it opens stays
  * `pending` until a webhook says otherwise, which is exactly how the real
- * gateways behave. That is the point — nothing downstream can accidentally
+ * gateway behaves. That is the point — nothing downstream can accidentally
  * come to depend on a fake payment having "succeeded".
  */
 class FakeGateway implements PaymentGateway
@@ -36,12 +36,11 @@ class FakeGateway implements PaymentGateway
         return new PaymentSession(
             gateway: $this->simulating,
             reference: $reference,
-            // Shaped like the real thing so the storefront's branching can be
-            // written and tested now rather than after the keys land.
-            authorizationUrl: $order->currency === 'GHS'
-                ? url("/fake-gateway/{$reference}")
-                : null,
-            clientSecret: $order->currency === 'USD' ? "{$reference}_secret" : null,
+            // Shaped like the real thing, which since §13 settled the gateway
+            // question means a redirect URL in both currencies — Paystack has
+            // no client secret to confirm in the browser.
+            authorizationUrl: url("/fake-gateway/{$reference}"),
+            clientSecret: null,
         );
     }
 }

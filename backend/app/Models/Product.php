@@ -25,6 +25,7 @@ class Product extends Model
         'is_active',
         'is_featured',
         'is_pre_order',
+        'is_returnable',
         'merchandising_badge',
         'product_type',
         'departments',
@@ -47,6 +48,7 @@ class Product extends Model
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'is_pre_order' => 'boolean',
+        'is_returnable' => 'boolean',
         'base_price_ghs' => 'integer',
         'compare_at_ghs' => 'integer',
     ];
@@ -64,6 +66,16 @@ class Product extends Model
     public function inventoryItems(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
+    }
+
+    /**
+     * Only used to count sales for the `best-selling` sort — see ProductFilter.
+     * Items carry a snapshot of the product at purchase time, so this is a
+     * historical record and not a way to read a product's current details.
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
     }
 
     public function scopeActive(Builder $query): Builder

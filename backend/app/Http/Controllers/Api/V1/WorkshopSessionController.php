@@ -12,6 +12,7 @@ class WorkshopSessionController extends Controller
     public function index(): AnonymousResourceCollection
     {
         $sessions = WorkshopSession::query()
+            ->with('workshopType')
             ->upcoming()
             ->orderBy('scheduled_date')
             ->get();

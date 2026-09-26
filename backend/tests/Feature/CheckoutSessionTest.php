@@ -6,7 +6,6 @@ use App\Models\FxRate;
 use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\Product;
-use App\Services\Checkout\CheckoutSessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -118,7 +117,13 @@ class CheckoutSessionTest extends TestCase
         $response->assertJsonPath('data.fx_rate_applied', null);
     }
 
-    public function test_usd_orders_route_to_stripe_and_snapshot_the_rate(): void
+    /**
+     * §13 of the brand document names one payment gateway. This test used to
+     * assert USD routed to Stripe — the README's original split — and the
+     * document does not mention Stripe anywhere: Visa, Mastercard and Verve
+     * all sit under Paystack, and settlement is in cedis either way.
+     */
+    public function test_usd_orders_route_to_paystack_and_snapshot_the_rate(): void
     {
         FxRate::factory()->create(['rate' => 0.08]);
         $item = $this->stockedProduct(priceGhs: 60_000);
@@ -126,7 +131,12 @@ class CheckoutSessionTest extends TestCase
         $response = $this->postJson('/api/v1/checkout/session', $this->payload($item, ['currency' => 'USD']));
 
         $response->assertCreated();
-        $response->assertJsonPath('data.payment_gateway', 'stripe');
+        $response->assertJsonPath('data.payment_gateway', 'paystack');
+        // And so it redirects rather than handing back a client secret — the
+        // storefront's currency branch at the payment step is now a branch
+        // with nothing on the other side of it.
+        $this->assertNotNull($response->json('payment.authorization_url'));
+        $this->assertNull($response->json('payment.client_secret'));
         $response->assertJsonPath('data.fx_rate_applied', 0.08);
         // 60000 goods + 2500 domestic standard shipping, converted once.
         $response->assertJsonPath('data.subtotal', 4_800);

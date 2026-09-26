@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateOrderStatusRequest;
 use App\Http\Resources\Admin\AdminOrderResource;
+use App\Jobs\SendOrderNotification;
 use App\Models\Order;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Admin Orders (README Feature 9) — Admin and Staff. Refunds are gated to
@@ -40,8 +41,8 @@ class OrderController extends Controller
                 $query->where(function ($scoped) use ($term) {
                     $scoped
                         ->whereRaw('LOWER(reference) LIKE ?', [$term])
-                        ->orWhereRaw("LOWER(".$this->jsonPath('shipping_address', 'full_name').") LIKE ?", [$term])
-                        ->orWhereRaw("LOWER(".$this->jsonPath('shipping_address', 'email').") LIKE ?", [$term])
+                        ->orWhereRaw('LOWER('.$this->jsonPath('shipping_address', 'full_name').') LIKE ?', [$term])
+                        ->orWhereRaw('LOWER('.$this->jsonPath('shipping_address', 'email').') LIKE ?', [$term])
                         ->orWhereHas('customer', fn ($customer) => $customer
                             ->whereRaw('LOWER(name) LIKE ?', [$term])
                             ->orWhereRaw('LOWER(email) LIKE ?', [$term]));
@@ -67,8 +68,28 @@ class OrderController extends Controller
     public function updateStatus(UpdateOrderStatusRequest $request, string $reference): AdminOrderResource
     {
         $order = Order::query()->where('reference', $reference)->firstOrFail();
+        $status = $request->validated('status');
+        $wasShipped = $order->status === 'shipped';
 
-        $order->update(['status' => $request->validated('status')]);
+        $order->update([
+            'status' => $status,
+            // §9 runs the returns window from the day the order is *received*,
+            // so the moment it is marked delivered is the moment that clock
+            // starts. Set once and kept: a correction back to `shipped` and
+            // forward again should not quietly extend a customer's window.
+            'delivered_at' => $status === 'delivered'
+                ? ($order->delivered_at ?? now())
+                : $order->delivered_at,
+        ]);
+
+        // The brand document's dispatch promise: "Customers receive a
+        // confirmation message and tracking information where available once
+        // their order has been dispatched." On the transition into `shipped`
+        // only — a correction that re-saves an already-shipped order should
+        // not tell the customer it shipped twice.
+        if ($status === 'shipped' && ! $wasShipped) {
+            SendOrderNotification::dispatch($order, 'shipped');
+        }
 
         return new AdminOrderResource($order->load(['customer', 'items']));
     }

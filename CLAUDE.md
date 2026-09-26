@@ -30,8 +30,27 @@ Nuxt 3 (storefront, hybrid SSR/SPA) · Nuxt 3 (admin dashboard, SPA-only, separa
 - SSR routes (frontend/): /, /about, /shop/**, /blog/** — GSAP must be client-only (`onMounted`/`<ClientOnly>`), never touch `window`/`document` during SSR
 - SPA routes (frontend/): /checkout, /order-confirmation/**
 - admin/ is SPA-only in its entirety — no SSR anywhere in that app
-- Two-tier roles: admin (full) vs staff (no pricing/refunds/site-settings) — enforced via `EnsureAdminRole`/`EnsureStaffOrAdminRole` middleware aliases (`admin`, `staff_or_admin`) checked against the `admin` Sanctum guard, not the `web` (Customer) guard
+- **Four role tiers, enforced by capability, not by tier.** `super_admin` /
+  `admin` / `staff` / `intern`. Routes carry `capability:<name>` (comma-separate
+  several; all are required), checked against `App\Support\AdminCapability` on
+  the `admin` Sanctum guard, never the `web` (Customer) guard. The older
+  `EnsureAdminRole`/`EnsureStaffOrAdminRole` pair is gone: it could only ask
+  "admin or not", and `GOLD_COAST_TOKOTA.md` §18 does not divide that way — an
+  Admin may change prices and issue refunds but **not** touch system settings or
+  payment credentials, while Staff may adjust stock but not price it.
+  `AdminCapability` is the server-side twin of `admin/utils/permissions.ts`;
+  **change both or neither**
 - USD is always derived from GHS × FxRate, never a static field; lock the rate at checkout
+- **Paystack is the only payment gateway**, for both GHS and USD.
+  `GOLD_COAST_TOKOTA.md` §13/§22.12 name it and never mention Stripe, so
+  `PaymentGatewayFactory` has no currency split and `client_secret` is always
+  null. The Stripe config binding is retained but unrouted — see FOR_THE_TEAM.md
+- **`GOLD_COAST_TOKOTA.md` (repo root) is the source of truth for business and
+  brand rules** — shipping and returns windows, workshop schedules and
+  capacities, production turnaround, payment methods, role tiers, currency. Its
+  §22 is explicit: do not invent a policy it does not state, and do not change
+  one it does. Where it and the README disagree, it wins, and the deviation gets
+  written down in FOR_THE_TEAM.md
 - Two separate identity models/guards: `Customer` (`web` guard, storefront/guest checkout) and `AdminUser` (`admin` guard, dashboard). No generic Laravel `User` model — it was removed during scaffolding since the spec has no use for it.
 - Backend CORS (`config/cors.php`) allows two origins via `FRONTEND_URLS` (comma-separated): the storefront and the admin app. Sanctum's stateful domains (`SANCTUM_STATEFUL_DOMAINS`) must list both hosts too, or cookie-based admin login will silently fail CSRF/session checks.
 

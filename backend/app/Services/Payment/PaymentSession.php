@@ -5,10 +5,11 @@ namespace App\Services\Payment;
 /**
  * What a gateway hands back once a payment session is open.
  *
- * The two gateways return structurally different things — Paystack a URL to
- * redirect to, Stripe a client secret to confirm in the browser — so both are
- * nullable and the storefront branches on currency, exactly as
- * `CheckoutPaymentStep` already documents.
+ * `clientSecret` is always null now. It existed for Stripe, which §13 of the
+ * brand document does not name — Paystack is the only gateway, and it hands
+ * back a URL to redirect to in either currency. The field stays because a
+ * second gateway would need it again and removing it would break the
+ * storefront's response shape for nothing.
  */
 readonly class PaymentSession
 {
