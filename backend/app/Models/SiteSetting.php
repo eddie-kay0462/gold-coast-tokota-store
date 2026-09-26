@@ -9,11 +9,11 @@ class SiteSetting extends Model
     protected $fillable = [
         'whatsapp_number',
         'whatsapp_default_message',
+        'whatsapp_greeting',
+        'business_hours',
         'contact_email',
         'contact_phone',
         'address',
-        'business_hours',
-        'greeting_message',
         'tagline',
         'instagram_url',
         'hero_headline',

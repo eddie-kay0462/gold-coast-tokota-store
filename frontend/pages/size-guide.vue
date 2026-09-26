@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 /**
  * Linked twice from the product purchase panel, so this is a live path.
  *
@@ -89,8 +90,10 @@ useSeoMeta({
           Send us your measurement and we’ll tell you which size to take. For a custom pair we
           work from your measurements directly — no conversion needed.
         </p>
-        <div class="flex w-full flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-start">
-          <CommonBrandButton to="/contact">Ask us</CommonBrandButton>
+        <div class="flex w-full flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center">
+          <CommonWhatsAppLink source="size-guide" variant="solid" :message="whatsappMessage.sizing()">
+            Ask us on WhatsApp
+          </CommonWhatsAppLink>
           <CommonBrandButton to="/booking" variant="white">Order a custom pair</CommonBrandButton>
         </div>
       </section>

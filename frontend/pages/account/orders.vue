@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 import { AUTH_DISABLED_NOTICE, AUTH_ENABLED } from '~/composables/useAuth'
 
 /**
@@ -12,7 +13,6 @@ import { AUTH_DISABLED_NOTICE, AUTH_ENABLED } from '~/composables/useAuth'
  * `definePageMeta({ middleware: 'auth' })`. It deliberately has none today:
  * a guard would make the page unreachable while nothing can authenticate.
  */
-const { href: whatsappHref } = useWhatsApp()
 
 useSeoMeta({
   title: 'Your orders — Gold Coast Tokota',
@@ -37,9 +37,9 @@ useSeoMeta({
         </p>
         <div class="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-start">
           <CommonBrandButton to="/shop">Shop sandals</CommonBrandButton>
-          <CommonBrandButton v-if="whatsappHref" :to="whatsappHref" variant="white">
+          <CommonWhatsAppLink source="order-help" :message="whatsappMessage.orderHelp()">
             Ask about an order
-          </CommonBrandButton>
+          </CommonWhatsAppLink>
         </div>
       </div>
     </AccountShell>

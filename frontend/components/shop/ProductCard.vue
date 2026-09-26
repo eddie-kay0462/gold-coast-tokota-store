@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
 import type { ApiProduct } from '~/utils/catalog'
+import { whatsappMessage } from '~/utils/whatsapp'
 
 const props = defineProps<{ product: ApiProduct }>()
 
@@ -72,13 +72,6 @@ function add() {
   addToCart(props.product, { size: selectedSize.value, color: props.product.color })
 }
 
-// --- WhatsApp -------------------------------------------------------------
-// Prefilled with the product and, once one is picked, the size — so the
-// conversation starts with everything the shop needs to reply to it.
-const { href: whatsappHref } = useWhatsApp(() => {
-  const sizePart = selectedSize.value ? ` in size ${selectedSize.value}` : ''
-  return `Hi Gold Coast Tokota, I'd like to order the ${props.product.name}${sizePart}.`
-})
 </script>
 
 <template>
@@ -183,16 +176,13 @@ const { href: whatsappHref } = useWhatsApp(() => {
         {{ isSoldOut ? 'Out of stock' : product.is_pre_order ? 'Pre-Order' : 'Add to cart' }}
       </CommonBrandButton>
 
-      <a
-        v-if="whatsappHref"
-        :href="whatsappHref"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex min-h-[44px] w-full items-center justify-center gap-2 border border-graphite bg-white px-3 text-center text-caption uppercase tracking-[1px] text-graphite transition-colors hover:bg-graphite hover:text-white"
+      <CommonWhatsAppLink
+        source="product-card"
+        full
+        :message="whatsappMessage.product(product.name, selectedSize)"
       >
-        <WhatsappLogo :size="16" weight="fill" />
         Order on WhatsApp
-      </a>
+      </CommonWhatsAppLink>
     </div>
   </article>
 </template>

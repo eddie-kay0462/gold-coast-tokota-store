@@ -48,6 +48,12 @@ const icons = { info: PhInfo, warning: PhWarningCircle, success: PhCheckCircle }
     <div class="flex min-w-0 flex-1 flex-col gap-1 text-caption text-graphite">
       <p v-if="title" class="font-normal text-black">{{ title }}</p>
       <p class="min-w-0"><slot /></p>
+      <!-- For notices that explain a dead end and can offer a way out of it —
+           most often a WhatsApp handoff, since that is the channel that still
+           works while checkout, discounts and order lookup are inert. -->
+      <div v-if="$slots.action" class="mt-1 flex flex-wrap items-center gap-3">
+        <slot name="action" />
+      </div>
     </div>
   </div>
 </template>

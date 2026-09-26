@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { whatsappMessage } from '~/utils/whatsapp'
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 
 /**
@@ -9,7 +10,6 @@ import { useSiteSettingsStore } from '~/stores/siteSettings'
  * already posts to `/feedback` and collects exactly name, email and message.
  */
 const siteSettings = useSiteSettingsStore()
-const { href: whatsappHref } = useWhatsApp()
 
 useSeoMeta({
   title: 'Contact us — Gold Coast Tokota',
@@ -41,9 +41,9 @@ useSeoMeta({
         <div class="flex w-full min-w-0 flex-col items-start gap-5 md:w-[300px] md:shrink-0">
           <h2 class="w-full text-display-sm font-normal text-black">Other ways to reach us</h2>
 
-          <CommonBrandButton v-if="whatsappHref" :to="whatsappHref" full>
+          <CommonWhatsAppLink source="contact" variant="solid" full :message="whatsappMessage.general()">
             WhatsApp us
-          </CommonBrandButton>
+          </CommonWhatsAppLink>
 
           <!-- Contact details are admin-editable (SiteSetting), so they render
                only once the store has been populated — same rule as the footer. -->

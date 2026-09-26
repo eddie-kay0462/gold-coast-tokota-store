@@ -12,14 +12,16 @@ class SiteSettingResource extends JsonResource
         return [
             'whatsapp_number' => $this->whatsapp_number,
             'whatsapp_default_message' => $this->whatsapp_default_message,
+            // The auto-reply the business sends on WhatsApp. Owner-managed
+            // here; the storefront stores it but does not render it.
+            'whatsapp_greeting' => $this->whatsapp_greeting,
+            'business_hours' => $this->business_hours,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
             // §12, §14 and §24 — the brand facts the storefront was
             // hard-coding. Editable from admin so the provisional phone
             // number can be corrected without a deploy.
             'address' => $this->address,
-            'business_hours' => $this->business_hours,
-            'greeting_message' => $this->greeting_message,
             'tagline' => $this->tagline,
             'instagram_url' => $this->instagram_url,
             'hero_headline' => $this->hero_headline,

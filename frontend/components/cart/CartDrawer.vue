@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { PhWhatsappLogo as WhatsappLogo, PhX } from '@phosphor-icons/vue'
+import { PhX } from '@phosphor-icons/vue'
 import { useCartStore } from '~/stores/cart'
 import { formatMoney } from '~/utils/formatters'
+import { whatsappMessage } from '~/utils/whatsapp'
 import type { ApiProduct } from '~/utils/catalog'
 import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
@@ -38,20 +39,17 @@ const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
  * conversation ends in a real order, and USD on the storefront is a derived
  * display figure, not a price anyone is committing to.
  */
-const whatsappOrderMessage = computed(() => {
-  const lines = cart.items.map((item) => {
-    const variant = item.variantLabel ? ` — ${item.variantLabel}` : ''
-    return `• ${item.name}${variant} × ${item.quantity}`
-  })
+const whatsappOrderMessage = computed(() =>
+  whatsappMessage.cart(
+    cart.items.map((item) => {
+      const variant = item.variantLabel ? ` — ${item.variantLabel}` : ''
+      return `• ${item.name}${variant} × ${item.quantity}`
+    }),
+    formatMoney(cart.subtotalGhs, 'GHS', { compact: true }),
+  ),
+)
 
-  return [
-    "Hi Gold Coast Tokota, I'd like to order:",
-    ...lines,
-    `Subtotal ${formatMoney(cart.subtotalGhs, 'GHS', { compact: true })}`,
-  ].join('\n')
-})
 
-const { href: whatsappHref } = useWhatsApp(whatsappOrderMessage)
 
 function close() {
   cart.closeDrawer()
@@ -237,18 +235,9 @@ onBeforeUnmount(() => {
               Continue to Checkout
             </CommonBrandButton>
 
-            <!-- Hidden entirely when no WhatsApp number is configured:
-                 `useWhatsApp` returns null rather than an invalid wa.me link. -->
-            <a
-              v-if="whatsappHref"
-              :href="whatsappHref"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex min-h-[44px] w-full items-center justify-center gap-2 border border-graphite bg-white px-4 text-center text-label uppercase text-graphite transition-colors hover:bg-graphite hover:text-white"
-            >
-              <WhatsappLogo :size="18" weight="fill" />
+            <CommonWhatsAppLink source="cart" full :message="whatsappOrderMessage">
               Order on WhatsApp instead
-            </a>
+            </CommonWhatsAppLink>
 
             <p class="w-full text-center text-caption font-normal text-black">
               Psst, get it now before it sells out.

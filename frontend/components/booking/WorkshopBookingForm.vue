@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { WorkshopSession } from './SessionPicker.vue'
 import { useBookingStore } from '~/stores/bookings'
+import { whatsappMessage } from '~/utils/whatsapp'
 
 const config = useRuntimeConfig()
 const bookingStore = useBookingStore()
@@ -38,6 +39,9 @@ const submitted = ref(false)
 const pendingSubmit = ref(false)
 const error = ref('')
 
+/** The way out when the submit fails — same request, different channel. */
+const whatsappFallbackMessage = computed(() => whatsappMessage.workshop())
+
 const canSubmit = computed(() => !!selectedSessionId.value && !pendingSubmit.value)
 
 async function onSubmit() {
@@ -66,7 +70,7 @@ async function onSubmit() {
     bookingStore.reset()
   }
   catch {
-    error.value = 'We could not submit that request. Check your details and try again, or message us on WhatsApp.'
+    error.value = 'We could not submit that request. Check your details and try again, or send it to us directly.'
   }
   finally {
     pendingSubmit.value = false
@@ -115,7 +119,14 @@ async function onSubmit() {
           autocomplete="tel"
         />
 
-        <CommonInlineNotice v-if="error" variant="warning">{{ error }}</CommonInlineNotice>
+        <CommonInlineNotice v-if="error" variant="warning">
+          {{ error }}
+          <template #action>
+            <CommonWhatsAppLink source="booking-error" variant="quiet" :message="whatsappFallbackMessage">
+              Send it on WhatsApp instead
+            </CommonWhatsAppLink>
+          </template>
+        </CommonInlineNotice>
 
         <p v-if="!selectedSessionId" class="text-caption text-muted">
           Choose a session to continue.

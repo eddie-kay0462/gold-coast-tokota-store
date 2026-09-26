@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useCartStore } from '~/stores/cart'
+import { formatMoney } from '~/utils/formatters'
+import { whatsappMessage } from '~/utils/whatsapp'
 /**
  * The payment step — THE ONE INERT BOUNDARY IN CHECKOUT.
  *
@@ -26,7 +29,22 @@ const props = defineProps<{
   fxRate: number
 }>()
 
-const { href: whatsappHref } = useWhatsApp()
+const cart = useCartStore()
+
+/**
+ * The checkout handoff carries the whole basket, exactly like the cart drawer's
+ * — this is the last screen before payment, and payment is inert, so this link
+ * is the one that actually completes the order.
+ */
+const whatsappOrderMessage = computed(() =>
+  whatsappMessage.cart(
+    cart.items.map((item) => {
+      const variant = item.variantLabel ? ` — ${item.variantLabel}` : ''
+      return `• ${item.name}${variant} × ${item.quantity}`
+    }),
+    formatMoney(cart.subtotalGhs, 'GHS', { compact: true }),
+  ),
+)
 
 const gateway = computed(() => (props.currency === 'GHS' ? 'Paystack' : 'Stripe'))
 
@@ -75,13 +93,13 @@ async function placeOrder() {
       {{ submitting ? 'Placing order…' : 'Place order' }}
     </CommonBrandButton>
 
-    <div v-if="whatsappHref" class="flex w-full flex-col items-start gap-2 border-t border-line pt-5">
+    <div class="flex w-full flex-col items-start gap-2 border-t border-line pt-5">
       <p class="w-full text-caption text-muted">
         Prefer to order the way you always have?
       </p>
-      <CommonBrandButton :to="whatsappHref" variant="white" full>
+      <CommonWhatsAppLink source="checkout" full :message="whatsappOrderMessage">
         Continue on WhatsApp
-      </CommonBrandButton>
+      </CommonWhatsAppLink>
     </div>
   </div>
 </template>

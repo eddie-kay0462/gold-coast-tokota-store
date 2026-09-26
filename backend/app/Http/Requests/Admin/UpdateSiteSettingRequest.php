@@ -30,7 +30,7 @@ class UpdateSiteSettingRequest extends FormRequest
             'business_hours' => ['sometimes', 'nullable', 'string', 'max:255'],
             // §14's greeting runs to a dozen lines, so it is not held to the
             // 500 characters the customer's prefilled message is.
-            'greeting_message' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'whatsapp_greeting' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:120'],
             'instagram_url' => ['sometimes', 'nullable', 'url', 'max:255'],
             'hero_headline' => ['sometimes', 'nullable', 'string', 'max:255'],
