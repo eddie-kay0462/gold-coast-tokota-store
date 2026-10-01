@@ -27,6 +27,8 @@ export type ApiProduct = {
   colors?: ProductColor[]
   /** Sustainability/fulfilment badges, e.g. "CUSTOM MADE". */
   tags?: string[]
+  /** What the style is made of, in the order the brand lists it. */
+  materials?: string[]
   /** Renders as a "Pre-Order" badge and blocks immediate add-to-cart. */
   is_pre_order?: boolean
   /**
@@ -49,11 +51,12 @@ export type ApiProduct = {
   sizes?: string[]
   widths?: string[]
   /**
-   * Merchandising grouping from the API (`CollectionResource`) — Obrempong,
-   * Sikapa, Slides. The detail page prints it as the eyebrow above the name.
+   * Merchandising grouping from the API (`CollectionResource`). The detail
+   * page prints it as the eyebrow above the name. Null for the whole current
+   * catalogue: the brand has not grouped its styles into collections.
    */
   collection?: { id?: number, name: string, slug: string } | null
-  /** Top-level catalogue split from the API (`CategoryResource`) — Sandals, Ahenema. */
+  /** Top-level catalogue split from the API (`CategoryResource`) — Slippers, Shoes. */
   category?: { id?: number, name: string, slug: string } | null
 
   // --- Detail-page fields (absent from listing responses) ---
@@ -132,7 +135,7 @@ export const COLOR_FACETS: (Facet & { hex: string })[] = [
 
 /** Figma shows sizes grouped under a "Shoes & Slippers" sub-heading. */
 export const SIZE_GROUPS: { label: string, sizes: string[] }[] = [
-  { label: 'Shoes & Slippers', sizes: ['38', '39', '40', '41', '42', '43', '44', '45'] },
+  { label: 'Shoes & Slippers', sizes: ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] },
 ]
 
 /** Star-rating scale used across the product page. */

@@ -23,12 +23,12 @@ class ProductFactory extends Factory
 
     /** Shipped product photography, so a factory-made product is never imageless. */
     private const IMAGES = [
-        '/design/product-kentehene.png',
-        '/design/product-acheampong.png',
-        '/design/product-adinkra.png',
-        '/design/product-odeneho.png',
-        '/design/product-elevated-odeneho.png',
-        '/design/product-flavourful-cross.png',
+        '/products/abrantie/1-black.webp',
+        '/products/domfo/1-tan.webp',
+        '/products/kania/3-blue.webp',
+        '/products/obaapa/1-blue.webp',
+        '/products/odeneho/1-tan.webp',
+        '/products/osram/1-tan.webp',
     ];
 
     public function definition(): array
@@ -58,6 +58,7 @@ class ProductFactory extends Factory
             'departments' => fake()->randomElements(['mens', 'womens', 'kids'], fake()->numberBetween(1, 2)),
             'widths' => fake()->randomElements(['s', 'm', 'l'], fake()->numberBetween(1, 2)),
             'tags' => [],
+            'materials' => [],
             'is_active' => true,
             'is_featured' => false,
             'is_pre_order' => false,

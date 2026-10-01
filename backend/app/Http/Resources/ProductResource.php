@@ -47,6 +47,8 @@ class ProductResource extends JsonResource
             'departments' => $this->departments,
             'widths' => $this->widths,
             'tags' => $this->tags,
+            // What the style is made of, in the order the brand lists it.
+            'materials' => $this->materials ?? [],
             'color' => $this->color,
             'colors' => $this->colors,
             'in_stock' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->in_stock),

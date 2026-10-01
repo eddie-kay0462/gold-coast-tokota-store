@@ -182,4 +182,70 @@ class InventoryEndpointTest extends TestCase
         $response->assertJsonPath('data.0.quantity_reserved', 4);
         $response->assertJsonPath('data.0.sellable_quantity', 6);
     }
+
+    // --- PATCH /admin/inventory/{id} ------------------------------------
+
+    /** The catalogue is seeded without quantities — this is how stock gets in. */
+    public function test_staff_can_set_the_stock_count(): void
+    {
+        $staff = AdminUser::factory()->create(['role' => 'staff']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 0, 'low_stock_threshold' => 2]);
+
+        $response = $this->actingAs($staff, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => 12]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.quantity_available', 12);
+        $response->assertJsonPath('data.low_stock_threshold', 2);
+        $response->assertJsonPath('data.product_name', $item->product->name);
+        $this->assertSame(12, $item->fresh()->quantity_available);
+    }
+
+    public function test_an_intern_can_see_stock_but_not_change_it(): void
+    {
+        $intern = AdminUser::factory()->create(['role' => 'intern']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 3]);
+
+        $this->actingAs($intern, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => 99])
+            ->assertForbidden();
+
+        $this->assertSame(3, $item->fresh()->quantity_available);
+    }
+
+    public function test_the_count_cannot_drop_below_what_checkouts_are_holding(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 10, 'quantity_reserved' => 4]);
+
+        $this->actingAs($admin, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => 3])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('quantity_available');
+
+        $this->assertSame(10, $item->fresh()->quantity_available);
+    }
+
+    public function test_reserved_stock_is_not_writable_from_admin(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 10, 'quantity_reserved' => 4]);
+
+        $this->actingAs($admin, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_reserved' => 0, 'low_stock_threshold' => 1])
+            ->assertOk();
+
+        $this->assertSame(4, $item->fresh()->quantity_reserved);
+        $this->assertSame(1, $item->fresh()->low_stock_threshold);
+    }
+
+    public function test_a_negative_count_is_refused(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 10]);
+
+        $this->actingAs($admin, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => -1])
+            ->assertUnprocessable();
+    }
 }

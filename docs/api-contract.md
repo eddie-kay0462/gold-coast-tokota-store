@@ -52,6 +52,7 @@ Consumed by `frontend/utils/catalog.ts` (`ApiProduct`). Served by
 | `departments` | string[] | column | `mens` ¦ `womens` ¦ `kids`. What the header nav's `?category=` resolves to |
 | `widths` | string[] | column | `s` ¦ `m` ¦ `l` |
 | `tags` | string[] | column | Free text, e.g. "Custom Made", "Renewed Materials" |
+| `materials` | string[] | column | What the style is made of, in the brand's order, e.g. "Soft leather", "Welt". Not a card badge — that is `tags` |
 | `is_pre_order` | bool | column | Renders a Pre-Order badge, blocks add-to-cart |
 | `is_active` `is_featured` | bool | column | |
 | `in_stock` | bool | inventory | Sellable (available − reserved) > 0 |
@@ -94,6 +95,7 @@ Anything that writes them directly is a bug.
 | POST | `/webhooks/paystack` | HMAC-signed, idempotent. Throttled 300/min — see below |
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
 | GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` — 50/page |
+| PATCH | `/admin/inventory/{id}` | `inventory.adjust` (Staff and up; not Intern). Body: `quantity_available` and/or `low_stock_threshold`, both absolute integers ≥ 0. `422` if the count would fall below `quantity_reserved`. `quantity_reserved` is never writable. Returns the row |
 | GET | `/admin/feedback` | Admin **and** Staff. Read-only, newest first — 50/page |
 | GET | `/admin/dashboard/metrics` | Admin **and** Staff. Live queries, no caching |
 | GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` — 25/page |
@@ -823,7 +825,8 @@ hangs stock, images or a price off a colour — they are swatches. The moment a
 colourway needs its own photos or its own inventory it has become a variant and
 belongs in a table with `inventory_items` pointing at it.
 
-**Seeded collection assignments are a guess.** The design fixture never carried
-a collection, so `database/data/design-products.json` assigns one per product as
-a first pass. Categories are derived from `product_type` and are safe; the
-collections need a human to confirm.
+**Seeded products have no collection.** `database/data/products.json` is the
+client's real catalogue (28 styles, supplied 30 Sep 2026). The client calls each
+style a "collection", which in this schema is a `Product`; they supplied no
+grouping above that, so `collection` is `null` on every seeded product rather
+than guessed. Categories are the client's own split — `slippers` and `shoes`.

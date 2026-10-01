@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 26 September 2026 (`origin/main` merged into `feat/backend`, which brings Kirk's WhatsApp channel work onto the backend branch)
+- **Last updated:** 30 September 2026 (the six demo products replaced by the client's real 28-style catalogue; uncommitted on `feat/backend`)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** clean. The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** the 30 Sep catalogue change is uncommitted. Before it, clean. The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **25 of its 30 API paths now exist**, and the four tiers are enforced server-side for the first time (28 Aug). The 5 that remain (inbox ×3, activity, audit) are genuine business-owner questions, not backlog — see open decision 28 |
-| Tests | **272 passing.** Twelve feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
+| Tests | **368 passing** (30 Sep). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -48,7 +48,75 @@ inert at their last step.
 
 ## Recent changes
 
-### 8 September 2026 (latest) — password reset, and DIY photos stop travelling by WhatsApp
+### 30 September 2026 (latest) — the real catalogue replaces the six demo products
+
+The client sent two Drive folders, "Slippers" (26 styles) and "Shoe" (2). Each
+style has its photographs and a sheet giving price, size range, materials and
+gender. Those 28 are now the catalogue; the six products the storefront was
+mocked up with are gone from both the API seed and the storefront fallback.
+
+- **`backend/database/data/products.json`** (renamed from `design-products.json`)
+  holds the 28. Names, prices, sizes, materials and departments are transcribed
+  from the client's sheets. Prices are the sheet's cedi figure × 100 — 500 on
+  the sheet is `50000` pesewas.
+- **63 photographs in `frontend/public/products/<slug>/`**, resized from
+  3024×4032 iPhone JPEGs (~1.5 MB each) to 1200×1600 WebP — 2.3 MB for the lot.
+  Committed to the storefront rather than uploaded through the media library
+  because uploads sit on Render's container-local disk and do not survive a
+  redeploy (issue D3). Filenames are `<n>-<colour>.webp`.
+- **New `products.materials` column** (jsonb list), emitted by `ProductResource`
+  and added to `ApiProduct`. **Nothing renders it yet** — that is a storefront
+  job. It is not in `tags` because tags are card badges.
+- **`ProductSeeder` no longer overwrites stock.** It used to reset every size to
+  the fixture's number on each run; it now creates missing sizes and leaves
+  existing quantities alone.
+- **`DatabaseSeeder` no longer pads the catalogue with faker products** or
+  creates the Sikapa / Obrempong / Slides collections and the Sandals / Ahenema
+  categories. Categories are now `slippers` and `shoes`, the client's own split.
+- **`frontend/utils/designCatalogue.ts` is the same 28**, generated from the
+  same data. The cart drawer and the detail page's related row read that file
+  directly, so leaving the demo six there would have recommended products that
+  do not exist. `SIZE_GROUPS` gained 36 and 37 — the women's styles start at 36.
+- **`ProductFactory` draws its images from the real photographs.**
+- **`PATCH /admin/inventory/{id}` — stock can now actually be set.** The brand
+  said counts will be entered from admin, and there was no endpoint to do it:
+  `inventory.adjust` existed as a capability and as an "Adjust" button, with
+  nothing behind either. Takes an absolute `quantity_available` and/or
+  `low_stock_threshold`; refuses a count below what pending checkouts hold;
+  never touches `quantity_reserved`. Staff and up. **The admin "Adjust" button
+  in `admin/pages/inventory.vue` still has no click handler** — issue 43.
+- 10 new tests (`ProductSeederTest`, plus five on the adjust endpoint), including one asserting every seeded image
+  path exists under `frontend/public`. **368 passing.**
+
+**An existing database keeps the six demo rows** — the seeder upserts by slug
+and deletes nothing. Locally, `php artisan migrate:fresh --seed`. Anywhere with
+real orders, deactivate them from admin instead.
+
+**Confirmed by the client the same day:** prices are in cedis; "Bona", "Macro"
+and the rest are materials and are stored exactly as written; stock counts will
+be set from admin; basic colour names inferred from the photos are fine.
+
+**Judgment calls, all reversible (issues 38–43):**
+
+- **Stock is entered by the brand from admin, not seeded.** The sheets give no
+  quantities. Production seeds every size at 0; local and test databases get 5
+  per size (`DEV_STOCK_PER_SIZE`) purely so checkout can be exercised.
+- **No descriptions, no was-prices, no cost breakdown.** None were supplied and
+  none were written. The detail page hides those sections.
+- **Colour names are basic colours read off the photographs** — Black, Brown,
+  Tan, Blue, Navy, Green, Red, White, Purple — which the client agreed to on
+  30 Sep. Two-tone pairs take their dominant colour. Each photo is a different colourway, not a different angle — so the card's
+  hover cross-fade and the gallery currently move between colours.
+- **Domfo is seeded as a men's product at GHS 500.** The sheet says unisex,
+  "500 for male / 300 female", sizes 40–45. One product carries one price, and
+  no women's size range was given, so the women's version is not seeded.
+- **Opanyin has two photos, not three.** `IMG_4416` is left out: its clasp looks
+  like another brand's interlocking-letter logo.
+- **The five `is_featured` products are an arbitrary spread** (Abrantie, Domfo,
+  Obaapa, Odeneho, Osram) so the home page has real tiles.
+- **Krakye** is spelt as the folder has it; its sheet says "Kyrakye".
+
+### 8 September 2026 — password reset, and DIY photos stop travelling by WhatsApp
 
 Two smaller gaps closed, both of which had a built frontend waiting on them.
 
@@ -884,7 +952,7 @@ Things in it that are not obvious:
   the listing and total on the detail page. The factory now seeds a real photo,
   and there is a test that fails if that regresses.
 - **The six designed products are now seeded for real.** `ProductSeeder` reads
-  `backend/database/data/design-products.json` — copy, photography, pricing and
+  `backend/database/data/design-products.json` (since replaced by `products.json`, 30 Sep) — copy, photography, pricing and
   per-size stock, generated from the frontend fixture rather than
   hand-transcribed, so the two cannot drift. A seeded database now looks like
   the approved mockup instead of like faker ("Molestiae Hic Veritatis").
@@ -2344,6 +2412,13 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
+| 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
+| 43 | **The admin "Adjust" stock button does nothing** | `admin/pages/inventory.vue` renders it behind `inventory.adjust` with no handler. The API side landed 30 Sep (`PATCH /admin/inventory/{id}`). **Until the button is wired, nobody can enter stock, and production seeds every size at 0** — so this blocks selling anything. |
+| 38 | **The real products have no copy** | No descriptions, no was-prices, no cost breakdown were supplied, and none were invented. The "Transparent Pricing" panel and description block are hidden for every product until the brand writes them. |
+| 39 | **Colourways are photos without variants** | Each of the 63 photos is a different colour of a style, but `colors` is a swatch list with no link to an image or to stock, and sizes are the only inventory axis. A customer cannot currently say *which colour* they are buying. This is the "colour has become a variant" moment the 27 Aug migration comment anticipated — needs a `colour` on `variant_attributes` and per-colour images. **Build before launch.** |
+| 40 | **Domfo's women's price cannot be represented** | Sheet: unisex, 500 male / 300 female, sizes 40–45. Seeded as men's at 500. Needs the women's size range from the client, then either a second product or per-variant pricing. |
+| 41 | **Two things on the sheets still need the client to confirm** | (a) "Krakye" (folder) vs "Kyrakye" (sheet). (b) Whether the 28 styles should be grouped into merchandising collections — `FeaturedCollection.vue`'s fallback tiles still name Sikapa, Obrempong, Kentehene and others that do not exist in the data. *Settled 30 Sep: prices are cedis; the materials lists are stored verbatim.* |
+| 42 | **One Opanyin photo is held back** | `IMG_4416` (beige woven upper) has a clasp resembling another brand's logo. Not published until the client confirms it is theirs to use. |
 | 33 | **The brand document and the README disagree about Stripe** | README Feature 4 pairs Stripe with USD; `GOLD_COAST_TOKOTA.md` §13 names Paystack alone as the payment gateway, settles in GHS, and lists Visa/Mastercard/Verve under it. §22 says the document is the source of truth and not to change what it states, so **both currencies now route to Paystack** and `client_secret` is always null. The Stripe config binding is retained but unrouted, so restoring it is a factory change. **Needs a sentence from the business owner**: is dollar settlement through Stripe actually wanted, or was the README's split an assumption? |
 | 34 | **Nobody has supplied email addresses for the five people §17 names** | The document gives Samuel Kumi-Gyau, Mary Seade, Isaac, Isaaka and Peter with their roles, job titles and tiers — everything a seeder needs except the one field an account is keyed on. Inventing addresses for real colleagues is not something a seeder should do, so the roster is unseeded and the only account on a fresh database is the test super admin. **Five email addresses closes it.** |
 | 35 | **Three of the six workshop experiences cannot actually be booked** | §15 runs Corporate Team Building, Cultural Craft and International Visitor "By Appointment" — no standing schedule, so no `workshop_session` for a booking to attach to. `GET /workshop-types` advertises them and `requires_appointment` flags them, but a customer who picks one has nowhere to go except the WhatsApp link. An enquiry path (a booking with no session, or a routed form) is the fix; **whether it is a booking or an enquiry is a business question**, so it is not guessed. |
@@ -2352,7 +2427,7 @@ will light up:
 | 28 | **Five admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **27 now exist** (the two product reads landed 8 Sep). What is left is inbox (×3), activity and audit. **Returns and workshop-types came off this list on 28 Aug**: they were unguessable only because the README covers neither, and §9/§21 and §15 of the brand document write both out in full — which made them transcription rather than invention. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. What is left — a 3-endpoint inbox, an activity feed and an audit log — **is in neither the README nor the brand document, and has no model.** Same pattern as the reviews UI: the inbox could be WhatsApp thread history, a ticketing system or email, and each produces a different schema; the audit log's retention and scope are policy questions with compliance weight. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
 | 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
-| 25 | **Seeded collection assignments are a guess** | `database/data/design-products.json` assigns each of the six designed products to a collection (Obrempong / Sikapa / Slides). The design fixture never carried one, so these are a first pass. Categories are derived from `product_type` and are safe; **the collections need the brand to confirm.** |
+| 25 | ~~**Seeded collection assignments are a guess**~~ | **Closed 30 Sep.** The six demo products and their guessed collections are gone; the real catalogue is seeded with no collection at all. Whether the brand wants merchandising groupings above its 28 styles is issue 41. |
 | 26 | **Listing filters only ever see the first page** | The shop page sends `type`, `color`, `size`, `width`, `category`, `q`, `sale` and `sort` as query params, `ProductController::index` ignores every one of them, and `matchesFilters()` filters client-side over a 12-per-page response. Invisible at six products; wrong at sixty. Server-side filtering is the fix — see `docs/api-contract.md`, "Known gaps". |
 | 27 | **The third-party credentials are still empty** | Everything in `backend/.env` for Paystack, Yango, DHL, Fish Africa and exchangerate.host. **Paystack is now the whole of the payments story** (§13) and its test key is self-serve — an hour of somebody's time, and the only thing between `PaystackService` and a working checkout. The rest need business accounts requested by a human, with real lead times — **they gate Features 4, 5 and 8, so request them now**, not on arrival at the stage. Stripe's keys are no longer needed unless the business overrules §13. |
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |

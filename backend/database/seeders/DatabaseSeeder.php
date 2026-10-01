@@ -4,11 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\AdminUser;
 use App\Models\BlogPost;
-use App\Models\Category;
-use App\Models\Collection;
 use App\Models\FxRate;
-use App\Models\InventoryItem;
-use App\Models\Product;
 use App\Models\SiteSetting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -121,42 +117,12 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // Categories are the top-nav split; collections are the merchandising
-        // grouping within one (see design_prototype_schema_gaps memory / README
-        // deviation). Names match the colleague's design prototype so seeded
-        // data lines up with what the storefront actually renders.
-        $sandals = Category::query()->firstOrCreate(['slug' => 'sandals'], ['name' => 'Sandals']);
-        $ahenema = Category::query()->firstOrCreate(['slug' => 'ahenema'], ['name' => 'Ahenema']);
-
-        $sikapa = Collection::query()->firstOrCreate(['slug' => 'sikapa'], ['name' => 'Sikapa']);
-        $obrempong = Collection::query()->firstOrCreate(['slug' => 'obrempong'], ['name' => 'Obrempong']);
-        $slides = Collection::query()->firstOrCreate(['slug' => 'slides'], ['name' => 'Slides']);
-
-        // The six products the storefront was actually designed around, with
-        // their real copy, photography and per-size stock. Runs first so a
-        // fresh database looks like the approved mockup rather than like faker.
+        // The brand's real catalogue — 26 slipper styles and 2 shoes, from the
+        // photo folders and price sheets the client supplied. Nothing is
+        // padded with faker any more: 28 real products are enough to exercise
+        // pagination and the listing filters, and a made-up product sitting
+        // next to a real one is indistinguishable from it on the storefront.
         $this->call(ProductSeeder::class);
-
-        // A handful of faker products on top, so pagination, the listing
-        // filters and the empty states have more than six rows to work with.
-        if (Product::query()->count() <= 6) {
-            Product::factory()
-                ->count(3)
-                ->featured()
-                ->has(InventoryItem::factory()->count(2))
-                ->create(['category_id' => $ahenema->id, 'collection_id' => $obrempong->id]);
-
-            Product::factory()
-                ->count(2)
-                ->onSale()
-                ->has(InventoryItem::factory()->count(2))
-                ->create(['category_id' => $sandals->id, 'collection_id' => $sikapa->id]);
-
-            Product::factory()
-                ->count(2)
-                ->has(InventoryItem::factory()->count(2))
-                ->create(['category_id' => $sandals->id, 'collection_id' => $slides->id]);
-        }
 
         // Titles match the colleague's design prototype (Stories section)
         // so /blog has real, on-brand content once the frontend wires it up.
