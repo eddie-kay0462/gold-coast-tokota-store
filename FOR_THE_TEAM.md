@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 2 October 2026 (colour is now a stock axis — customers choose a colourway and the shop knows which pair to send)
+- **Last updated:** 2 October 2026, later (product-page and cart-drawer recommendations come from the database)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** clean. The 1 Oct admin sign-in and storefront checkout and the 2 Oct colour variants are committed on `feat/backend` (`f237f68`) and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** clean. Everything through the 2 Oct recommendations change is committed on `feat/backend` and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built, and signed in for real as of 1 Oct** — 36 routes, dark/light/system theming, four-tier roles. Sanctum login, session restore and sign-out work, so **every screen except the dashboard's activity feed now reads live data**. 25 of its 30 API paths exist; the 5 that remain (inbox ×3, activity, audit) are business-owner questions — see open decision 28 |
-| Tests | **390 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
+| Tests | **397 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -48,7 +48,33 @@ inert at their last step.
 
 ## Recent changes
 
-### 2 October 2026 (latest) — colour is a stock axis (issue 39)
+### 2 October 2026 (latest) — recommendations come from the database
+
+"Recommended Products" on the product page and "Before You Go" in the cart
+drawer both read a hardcoded copy of the catalogue (`utils/designCatalogue.ts`).
+A deactivated, repriced or sold-out style kept being recommended.
+
+- **`GET /products/recommendations?for=…&limit=4`** ranks active products:
+  - shares a department with a `for` product (women's styles for a women's
+    style)
+  - then same category
+  - then in stock
+  - then featured
+  - name breaks ties, so the server render and the browser agree
+
+  `for` products are excluded. Sold-out styles only fill empty slots, so the
+  row isn't blank in production before stock is entered.
+- **Product page:** fetched during the server render with the product
+  (`for` = the product).
+- **Cart drawer:** fetched when the drawer opens or the cart's products change
+  (`for` = everything in the cart), so it never suggests what's already in the
+  cart.
+- Both fall back to the design catalogue only if the API can't be reached,
+  the same as the product page itself.
+- 7 new tests. **397 passing.** Verified in a browser: with Asantewaa
+  deactivated it dropped out of both places, and Ohene took its slot.
+
+### 2 October 2026 — colour is a stock axis (issue 39)
 
 Each photo shows a different colourway of a style, but stock was tracked by
 size alone. A customer couldn't say which colour they wanted, and the shop

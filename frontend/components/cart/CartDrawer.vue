@@ -16,11 +16,34 @@ const closeButton = ref<InstanceType<typeof PhX> | null>(null)
 let previouslyFocused: HTMLElement | null = null
 
 /**
- * Recommendations come from the design catalogue until Feature 2 exposes a
- * recommendations endpoint. Anything already in the cart is filtered out —
- * suggesting what someone just added reads as broken.
+ * Suggestions from `GET /products/recommendations`, ranked against what is in
+ * the cart, which the API also excludes, since suggesting what someone just
+ * added reads as broken. Fetched when the drawer opens or the cart's products
+ * change, not on every page. The design catalogue stands in only if the API
+ * can't be reached.
  */
+const api = useApi()
+const apiRecommendations = ref<ApiProduct[] | null>(null)
+const cartSlugs = computed(() => [...new Set(cart.items.map((item) => item.slug))].sort().join(','))
+/** The cart the current suggestions were ranked for; null until a fetch succeeds. */
+let fetchedFor: string | null = null
+
+watch(
+  [() => cart.isDrawerOpen, cartSlugs],
+  async ([open, slugs]) => {
+    // Reopening with the same cart reuses what was already fetched.
+    if (!open || slugs === fetchedFor) return
+    const response = await api<{ data: ApiProduct[] }>('/products/recommendations', {
+      query: { for: slugs, limit: 4 },
+    }).catch(() => null)
+    apiRecommendations.value = response?.data ?? null
+    fetchedFor = response ? slugs : null
+  },
+  { immediate: true },
+)
+
 const recommendations = computed(() => {
+  if (apiRecommendations.value) return apiRecommendations.value
   const inCart = new Set(cart.items.map((item) => item.slug))
   return DESIGN_PRODUCTS.filter((product) => !inCart.has(product.slug)).slice(0, 4)
 })

@@ -50,6 +50,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public catalogue + live FX rate (Feature 2). Admin-only write endpoints
     // for products live under the /admin prefix below.
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    // Before /products/{slug}, or "recommendations" would be read as a slug.
+    Route::get('/products/recommendations', [ProductController::class, 'recommendations'])->name('products.recommendations');
     Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
     // Polled by the storefront while a product page is open (Feature 3). A
     // plain read — checkout's row-level locking is what actually prevents

@@ -84,8 +84,23 @@ const stockBadge = computed(() => {
   return badge ? STOCK_BADGES[badge] ?? null : null
 })
 
+// From the API, ranked for this product (same department first, in stock
+// first). The design catalogue stands in only if the API can't be reached,
+// as it does for the product itself above.
+const { data: apiRecommended } = await useAsyncData(
+  () => `recommended-${slug.value}`,
+  () =>
+    $fetch<{ data: ApiProduct[] }>(`${config.public.apiBase}/products/recommendations`, {
+      query: { for: slug.value, limit: 4 },
+    })
+      .then((response) => response.data)
+      .catch(() => null),
+  { watch: [slug] },
+)
+
 const recommended = computed(() =>
-  DESIGN_PRODUCTS.filter((entry) => entry.slug !== slug.value).slice(0, 4),
+  apiRecommended.value
+    ?? DESIGN_PRODUCTS.filter((entry) => entry.slug !== slug.value).slice(0, 4),
 )
 
 function addToCart({ size, color }: { size: string, color: string }) {

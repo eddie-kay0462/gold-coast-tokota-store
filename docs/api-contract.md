@@ -81,6 +81,7 @@ Anything that writes them directly is a bug.
 | GET | `/products` | Paginated, 12/page. `?category_id=` `?featured=` |
 | GET | `/products/{slug}` | |
 | GET | `/products/{slug}/stock` | Live stock for the polling composable — see below |
+| GET | `/products/recommendations` | `?for=slug,slug&limit=4` (max 12). Active products ranked: shares a department with a `for` product, same category, in stock, featured; name breaks ties. `for` products are excluded. Product page: `for` = the product; cart drawer: `for` = the cart's products (2 Oct) |
 | GET | `/categories` `/collections` | `/categories` lists only categories with at least one active product (1 Oct) — an empty one would be a link to an empty shop page |
 | GET | `/fx-rate` | |
 | GET | `/pages/{slug}` · `/site-settings` | |
