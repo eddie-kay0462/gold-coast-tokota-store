@@ -105,14 +105,33 @@ class ProductTest extends TestCase
         $response->assertJsonPath('data.price_usd', null);
     }
 
-    public function test_category_index_lists_all_categories(): void
+    public function test_category_index_lists_categories_with_active_products(): void
     {
-        Category::factory()->count(3)->create();
+        $categories = Category::factory()->count(3)->create();
+        foreach ($categories as $category) {
+            Product::factory()->create(['category_id' => $category->id]);
+        }
 
         $response = $this->getJson('/api/v1/categories');
 
         $response->assertOk();
         $this->assertCount(3, $response->json('data'));
+    }
+
+    public function test_category_index_hides_categories_with_nothing_to_browse(): void
+    {
+        $live = Category::factory()->create();
+        Product::factory()->create(['category_id' => $live->id]);
+
+        $retired = Category::factory()->create();
+        Product::factory()->inactive()->create(['category_id' => $retired->id]);
+
+        Category::factory()->create();
+
+        $response = $this->getJson('/api/v1/categories');
+
+        $response->assertOk();
+        $this->assertSame([$live->slug], array_column($response->json('data'), 'slug'));
     }
 
     public function test_collection_index_lists_all_collections(): void

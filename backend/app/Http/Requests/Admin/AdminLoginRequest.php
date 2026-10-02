@@ -21,6 +21,8 @@ class AdminLoginRequest extends FormRequest
         return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            // The admin login form's "Keep me signed in".
+            'remember' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -34,7 +36,7 @@ class AdminLoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::guard('admin')->attempt($this->only('email', 'password'))) {
+        if (! Auth::guard('admin')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

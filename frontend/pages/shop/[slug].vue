@@ -30,7 +30,21 @@ if (!product.value) {
   throw createError({ statusCode: 404, statusMessage: 'Product not found', fatal: true })
 }
 
-const gallery = computed(() => product.value?.images ?? [])
+// The chosen colourway, shared with the purchase panel. Each photograph is a
+// different colour of the style, so the gallery shows the chosen colour's
+// photos rather than cycling through colours the customer didn't pick.
+// Initialised here, not by the panel: the gallery renders before the panel,
+// so a server render would otherwise show every colour and then swap.
+const defaultColour = () => product.value?.color ?? product.value?.colors?.[0]?.name ?? ''
+const selectedColor = ref(defaultColour())
+watch(product, () => { selectedColor.value = defaultColour() })
+
+const gallery = computed(() => {
+  const entry = product.value
+  if (!entry) return []
+  const forColour = entry.colour_images?.[selectedColor.value]
+  return forColour?.length ? forColour : entry.images ?? []
+})
 
 const discountLabel = computed(() => {
   const entry = product.value
@@ -100,6 +114,7 @@ useSeoMeta({
         :stock-badge="stockBadge"
       />
       <ShopProductPurchasePanel
+        v-model:color="selectedColor"
         :product="product"
         :breadcrumb="breadcrumb"
         @add="addToCart"

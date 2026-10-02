@@ -126,6 +126,21 @@ class InventoryEndpointTest extends TestCase
         $this->assertCount(1, $response->json('data'));
     }
 
+    public function test_the_whole_size_run_can_be_fetched_in_one_page(): void
+    {
+        $staff = AdminUser::factory()->create(['role' => 'staff']);
+        InventoryItem::factory()->count(60)->create();
+
+        $default = $this->actingAs($staff, 'admin')->getJson('/api/v1/admin/inventory');
+        $this->assertCount(50, $default->json('data'));
+
+        $all = $this->actingAs($staff, 'admin')->getJson('/api/v1/admin/inventory?per_page=500');
+        $this->assertCount(60, $all->json('data'));
+
+        $capped = $this->actingAs($staff, 'admin')->getJson('/api/v1/admin/inventory?per_page=100000');
+        $capped->assertJsonPath('meta.per_page', 500);
+    }
+
     public function test_inventory_rows_name_the_product_they_belong_to(): void
     {
         $admin = AdminUser::factory()->create(['role' => 'admin']);

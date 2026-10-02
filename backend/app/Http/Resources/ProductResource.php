@@ -51,12 +51,21 @@ class ProductResource extends JsonResource
             'materials' => $this->materials ?? [],
             'color' => $this->color,
             'colors' => $this->colors,
+            // Which photographs show which colourway, so the gallery can
+            // follow the chosen colour. Empty object, not [], when unset.
+            'colour_images' => (object) ($this->colour_images ?? []),
             'in_stock' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->in_stock),
             'merchandising_badge' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->effective_badge),
             // The storefront strikes through sizes it cannot sell, so it needs
             // the range and the per-size sellable count — not just `in_stock`.
             'sizes' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->sizes),
             'size_availability' => $this->when($this->relationLoaded('inventoryItems'), fn () => (object) $this->size_availability),
+            // Per colour, then size: what the panel strikes through once a
+            // colour is picked. `size_availability` is the all-colours sum.
+            'variant_availability' => $this->when(
+                $this->relationLoaded('inventoryItems'),
+                fn () => (object) array_map(fn (array $sizes) => (object) $sizes, $this->variant_availability),
+            ),
 
             // Detail-page copy. Emitted on listings too — they are small, and a
             // separate listing resource would be one more place for the

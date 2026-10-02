@@ -104,6 +104,48 @@ class AdminCmsTest extends TestCase
         $this->assertCount(1, $this->getJson('/api/v1/blog-posts')->json('data'));
     }
 
+    public function test_blog_admin_rows_carry_what_the_cms_table_reads(): void
+    {
+        BlogPost::factory()->create(['author' => null, 'is_published' => false]);
+
+        $row = $this->actingAs($this->staff(), 'admin')->getJson('/api/v1/admin/blog')->json('data.0');
+
+        // The storefront shape had none of these, and /blog crashed on
+        // `authorName.split` the first time it read live data.
+        $this->assertSame('', $row['author_name']);
+        $this->assertFalse($row['is_published']);
+        $this->assertArrayHasKey('updated_at', $row);
+        $this->assertSame('', $row['excerpt']);
+        $this->assertSame('', $row['meta_description']);
+    }
+
+    public function test_editorial_fields_are_saved(): void
+    {
+        $response = $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/blog', [
+            'title' => 'Inside the workshop',
+            'body' => '<p>Body</p>',
+            'author' => 'Gold Coast Tokota',
+            'excerpt' => 'A morning at the bench.',
+            'cover_image_alt' => 'Hands stitching a strap',
+            'meta_description' => 'How a pair is made.',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.author_name', 'Gold Coast Tokota');
+        $response->assertJsonPath('data.excerpt', 'A morning at the bench.');
+        $response->assertJsonPath('data.cover_image_alt', 'Hands stitching a strap');
+        $response->assertJsonPath('data.meta_description', 'How a pair is made.');
+    }
+
+    public function test_a_meta_description_longer_than_a_search_snippet_is_refused(): void
+    {
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/blog', [
+            'title' => 'Too long',
+            'body' => '<p>Body</p>',
+            'meta_description' => str_repeat('a', 201),
+        ])->assertUnprocessable()->assertJsonValidationErrors('meta_description');
+    }
+
     public function test_a_slug_is_derived_from_the_title_when_omitted(): void
     {
         $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/blog', [

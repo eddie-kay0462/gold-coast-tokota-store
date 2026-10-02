@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 30 September 2026 (the six demo products replaced by the client's real 28-style catalogue; uncommitted on `feat/backend`)
+- **Last updated:** 2 October 2026 (colour is now a stock axis — customers choose a colourway and the shop knows which pair to send; uncommitted on `feat/backend`)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** the 30 Sep catalogue change is uncommitted. Before it, clean. The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** the 1 Oct changes (admin sign-in, storefront checkout) and the 2 Oct colour variants are uncommitted. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -27,14 +27,14 @@ This file is the *status* layer on top of those two — it does not restate them
 | Storefront — Sustainability | **Built** from Figma *(uncommitted)* |
 | Storefront — About (now incl. Sustainability) | **Built** from Figma; the two routes merged 27 Aug, `/sustainability` 301s to `/about#sustainability` |
 | Storefront — Account, Legal, Help, Company, Commerce | **Built** 26 Aug — 17 new page files covering 22 routes. **Auth is no longer inert on the API side:** register/login/logout/me and order history all exist on the `web` guard, so `AUTH_ENABLED` in `composables/useAuth.ts` can be flipped. `POST /feedback` exists too |
-| Storefront — Checkout | **Built to the payment boundary.** `POST /checkout/session` works end to end — prices, shipping quote, FX lock, stock reservation, order creation — and `PaystackService` plus its webhook are written (28 Aug). What is still inert is the last hop: `PaymentStep.placeOrder()` is the simulated version, and `FakeGateway` stands in until `PAYSTACK_SECRET_KEY` exists. **Both currencies now redirect; the USD `client_secret` branch is dead code** |
+| Storefront — Checkout | **Works end to end (1 Oct).** `PaymentStep` posts the cart to `POST /checkout/session` and redirects to the gateway; the order confirmation page waits for payment and empties the cart once the order is paid. Locally the fake gateway completes the payment; **real payments need `PAYSTACK_SECRET_KEY`, and production refuses checkout with a 503 until it is set** |
 | Storefront — Order confirmation | **Built, and no longer waiting.** `GET /orders/{reference}` exists and satisfies `ApiOrder` in full. Note the key: **reference, not numeric id** — `/orders/1` is a 404 by design |
 | Storefront — Booking | **Built** 27 Aug — real session list from `GET /workshop-sessions`, capacity chips, waitlist, both forms matched to `StoreBookingRequest`. Was scaffold stubs |
 | Backend API | **Further along than this file used to claim.** `routes/api.php` serves products, categories, collections, fx-rate, workshop-sessions, bookings, blog-posts, newsletter, pages and site-settings, plus a working `AdminAuthController` (`POST /v1/admin/login`, `/logout`, `GET /me`). No customer auth, no checkout, no orders endpoint |
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
-| Admin dashboard | **Built** — 36 routes, dark/light/system theming, four-tier roles. **25 of its 30 API paths now exist**, and the four tiers are enforced server-side for the first time (28 Aug). The 5 that remain (inbox ×3, activity, audit) are genuine business-owner questions, not backlog — see open decision 28 |
-| Tests | **368 passing** (30 Sep). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
+| Admin dashboard | **Built, and signed in for real as of 1 Oct** — 36 routes, dark/light/system theming, four-tier roles. Sanctum login, session restore and sign-out work, so **every screen except the dashboard's activity feed now reads live data**. 25 of its 30 API paths exist; the 5 that remain (inbox ×3, activity, audit) are business-owner questions — see open decision 28 |
+| Tests | **390 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -48,7 +48,187 @@ inert at their last step.
 
 ## Recent changes
 
-### 30 September 2026 (latest) — the real catalogue replaces the six demo products
+### 2 October 2026 (latest) — colour is a stock axis (issue 39)
+
+Each photo shows a different colourway of a style, but stock was tracked by
+size alone. A customer couldn't say which colour they wanted, and the shop
+couldn't know which pair to send: the first real test order read just "42".
+
+- **Stock rows are colour × size.** `variant_attributes` is now
+  `{size, colour}`. Migration `2026_10_02_090000` assigns every existing
+  size-only row to the product's primary colour (`products.color`) and
+  deletes nothing, so entered counts and past orders keep pointing at real
+  rows. The seeder then adds the other colours across the size range: **0 in
+  production**, 5 locally.
+- **Assumption, reversible:** the sheets give one size range per style, so
+  every colour is seeded in every size. A colour that isn't made in some size
+  just stays at 0 in admin.
+- **`colour_images`** (new column, also in `products.json`) maps each colour to
+  its photos, derived from the `<n>-<colour>.webp` filenames. All 28 styles
+  were checked: every colour has a photo and every photo's colour is listed.
+  It lives in its own column because the colour filter substring-searches
+  `colors`, and image paths there would make "tan" match
+  `/products/asan`**`ta`**`ewaa/…`.
+- **API:** `variant_availability` (`{colour: {size: n}}`) on the product and
+  stock endpoints; `size_availability` is still the all-colours sum.
+- **Checkout** takes `colour` per line, case-insensitive. It's required when
+  a size comes in several colours, and refused if the style isn't made in
+  that colour. Order lines read `"42 | Tan"`.
+- **Storefront:**
+  - The product page gallery shows only the chosen colour's photos (picked on
+    the page, so the server render matches).
+  - Sizes are struck through per colour.
+  - A colourway with nothing left gets a struck-through swatch.
+  - The card's quick-add checks the pictured colour's stock.
+  - Checkout sends the colour from the cart line.
+- **Admin:** the inventory list already shows every variant attribute, so
+  rows read "size 42 · colour Tan" with no change; stock is entered per
+  colour. 12 new tests. **390 passing.**
+
+Verified in a browser on local Postgres: the gallery swapped to the Blue photo,
+Blue 43 (zeroed) was struck through for Blue only, Green (zeroed) showed out
+of stock, and the order line read "Domfo Collection 42 | Blue". Stock came off
+the Blue 42 row, not Tan.
+
+**Locally run `php artisan migrate && php artisan db:seed --class=ProductSeeder`**
+to pick this up. To see production-like behaviour locally, run all three of
+`php artisan serve`, `php artisan queue:work` (stock finalising, emails) and
+`php artisan schedule:work` (releases abandoned 15-minute holds).
+
+**Still open:**
+- **Domfo's women's version (issue 40)** — per-variant pricing is now
+  possible, but needs the client's size range and a decision.
+- **The admin product editor can't add a new colourway yet.** New colours need
+  a seed-data change for now.
+
+### 1 October 2026 — checkout works, and so do the storefront's forms
+
+**A customer can now buy something.** Cart → details → shipping → payment →
+gateway → confirmation runs end to end. Verified in a real browser against
+Postgres: the order was created, stock reserved, then finalised once paid, and
+the confirmation email went out.
+
+**Every storefront form had been failing in real browsers.** Newsletter,
+feedback, both booking forms, and now checkout all used bare `$fetch`. The
+storefront's origin is a Sanctum stateful domain, so a browser POST from it
+needs the CSRF handshake, and without it every one was a **419**. The API tests
+never caught it because test requests carry no `Origin` header.
+**`frontend/composables/useApi.ts`** does the handshake (`GET /sanctum/csrf-cookie`,
+then `X-XSRF-TOKEN`) with credentials included. All five forms use it now.
+**Use it for any new storefront write**; customer sign-in will need it too.
+
+**Storefront:**
+
+- **`PaymentStep.placeOrder()` is real.** It posts the cart and redirects to
+  `authorization_url` for both currencies. Errors name the cart line at fault:
+  sold out (409), size not made (422), payment unavailable (503), network. The
+  Stripe wording is gone.
+- **Order confirmation tells the truth about payment.** It used to say "Thank
+  you — your order is in · We've emailed your confirmation" for any order,
+  paid or not. Now:
+  - while polling: "Confirming your payment…"
+  - if polling ends unpaid: "Your payment didn't go through"
+  - only once paid: the thank-you
+- **The cart empties only once the order reads paid**, so someone who backs out
+  of Paystack keeps their basket.
+- The stale "endpoint hasn't been built" copy is gone from both pages.
+
+**Backend:**
+
+- **Checkout lines can be `{slug, size}`** as well as `{inventory_item_id}`.
+  The cart had never held real stock-row ids; it keys lines `slug:size:colour`.
+  Resolving on the server also keeps carts already in customers' cookies
+  working, and extends to `{slug, size, colour}` when colour variants arrive
+  (issue 39). A 409 now carries `line`, the cart index at fault.
+- **Fake gateway completes locally.** Its URL, `/fake-gateway/{ref}`, had no
+  route, so local checkout ended on a 404. `Dev\FakeGatewayController` marks
+  the order paid, fires `OrderPaid` and redirects to the confirmation page;
+  `?outcome=cancel` doesn't pay. **Never registered in production.**
+- **Production without a Paystack key refuses checkout (503).** Before, it
+  handed out the fake gateway's URL, so a customer would type everything in
+  and land on a 404. Now nothing is reserved and nothing is created.
+- 7 new tests. **382 passing.**
+
+**Locally, `OrderPaid`'s work is queued**: stock finalising and the email
+wait in `jobs` until you run `php artisan queue:work`. Production runs a
+worker (`render.yaml`).
+
+### 1 October 2026 — the admin dashboard signs in, and reads the real API
+
+**The headline: the admin app had never once shown live data.** The API side
+of admin login has existed since August, but the admin app's `login()` still
+threw "not built yet", the app booted on a fake demo session, and
+`adminFetch` fell back to fixtures on *any* error, including the 401 every
+unauthenticated call got. So all 25 built admin endpoints were bypassed and
+every screen showed invented numbers. Nobody could enter stock either (issue
+43), and since production seeds every size at 0, nothing could be sold.
+
+**Admin app (`admin/`):**
+
+- **Real sign-in.** `useAuth().login()` → `GET /sanctum/csrf-cookie` →
+  `POST /admin/login`; `restoreSession()` → `GET /admin/me` on boot;
+  `logout()` → `POST /admin/logout`. New `middleware/auth.global.ts` sends
+  signed-out visits to `/login?redirect=…`, with same-app paths only, so
+  `?redirect=//evil.example` goes to `/`. The demo session survives only in
+  `NUXT_PUBLIC_ADMIN_DATA=fixtures` mode, for offline review.
+- **`adminFetch` sends `X-XSRF-TOKEN`** on writes, re-read from the cookie
+  each time because Laravel rotates it at login. Without it every write was a
+  419.
+- **401/419 now redirects to `/login`** instead of quietly showing fixtures.
+- **Writes never fall back to fixtures.** Before, a failed PATCH in `auto`
+  mode swallowed the API's 422 and could look as if it had saved.
+- **Inventory "Adjust" works** (issue 43): `components/inventory/AdjustModal.vue`.
+  The page now asks for `per_page=500`, because a fixed 50 rows showed under a
+  third of the real catalogue's ~170 size rows.
+- **Three crashes that only live data could expose:**
+  - `/` and `/analytics` crashed on the traffic charts. The API sends those
+    as `null` on purpose (no analytics yet, Feature 11); they now render
+    "Not measured yet".
+  - `/blog` crashed because admin blog endpoints returned the storefront
+    shape. See below.
+  - `MetricCard`/`DropdownItem` used `resolveComponent('NuxtLink')` in the
+    template, which renders an inert `<nuxtlink>`, so dashboard tiles looked
+    clickable and went nowhere.
+
+**Backend:**
+
+- **`AdminBlogPostResource`**, the same move products got on 8 Sep. It adds
+  `author_name`, `is_published`, `updated_at`, and three new nullable columns
+  the post editor already has fields for: `excerpt`, `cover_image_alt`,
+  `meta_description` (migration `2026_10_01_090000`).
+- **`GET /admin/inventory?per_page=`**, default 50, max 500.
+- **`GET /categories` lists only categories with an active product.** Seeding
+  never deletes, so any database seeded before 30 Sep, production included,
+  still lists the demo-era Sandals and Ahenema categories, which link to
+  empty pages.
+- **`POST /admin/login` honours `remember`.** The "Keep me signed in" box was
+  being ignored.
+- 7 new tests. **375 passing.**
+
+**Verified in a real browser**, not just the test suite: a Playwright run
+against `php artisan serve` + Postgres + `nuxt dev` covered:
+
+- signed-out redirect
+- bad password showing Laravel's message
+- login landing on the `redirect` target
+- all 17 sidebar screens loading live data with no page errors
+- a stock adjustment saving
+- session surviving a reload
+- sign-out re-locking the app
+
+The dashboard keeps its "Demo data" chip, correctly: `/admin/activity` is
+still one of the five undecided endpoints.
+
+**Local databases are probably behind.** Mine had 8 pending migrations and was
+still serving the six demo products plus seven faker ones. Run
+`php artisan migrate && php artisan db:seed`. The stale products are not
+deleted by the seeder; deactivate them, or `migrate:fresh --seed` if you have
+nothing to keep.
+
+⚠️ **The post editor's Publish button still has no handler**, so blog posts
+can be listed but not yet written from admin. The API side is complete.
+
+### 30 September 2026 — the real catalogue replaces the six demo products
 
 The client sent two Drive folders, "Slippers" (26 styles) and "Shoe" (2). Each
 style has its photographs and a sheet giving price, size range, materials and
@@ -2313,12 +2493,9 @@ In dependency order:
   backend: an upload endpoint for DIY reference images (the form records the
   file *name* and asks the customer to send the photo over WhatsApp, because
   `details.reference_image` is typed as a string and nothing accepts a binary).
-- **Drop the USD branch at the payment step.** `PaymentStep.vue` branches on
-  currency to choose between a redirect and a Stripe client secret; since 28 Aug
-  both currencies come back with an `authorization_url` and `client_secret` is
-  always null (§13 — Paystack is the only gateway). Redirect whenever
-  `authorization_url` is present. Small, and the checkout cannot complete
-  without it once a real key lands.
+- ~~**Drop the USD branch at the payment step.**~~ — **closed 1 Oct** with the
+  checkout wiring. `PaymentStep` redirects to `authorization_url` for both
+  currencies and no longer mentions Stripe.
 - **Name the workshop on the booking page.** Sessions now carry
   `workshop_type` (`GET /workshop-sessions`), and `GET /workshop-types` lists
   all six experiences including the three that run by appointment and never
@@ -2378,10 +2555,10 @@ will light up:
    already calls, and the fixture next to it is the response shape it expects.
    **27 of 30 now exist** — the product reads closed on 8 Sep; what is left is
    the inbox (×3), activity and audit, which is open decision 28, not a task.
-2. **Admin login** — no `AuthController`, no route, no Form Request. Until it
-   exists `pages/login.vue` is inert by design and no route middleware is
-   registered. Wiring it is: `GET /sanctum/csrf-cookie`, `POST /admin/login`,
-   `GET /admin/me`, then add an `auth` middleware to the pages.
+2. ~~**Admin login**~~ — **closed 1 Oct.** `pages/login.vue` signs in through
+   `GET /sanctum/csrf-cookie` → `POST /admin/login`, `plugins/session.client.ts`
+   restores the session from `GET /admin/me`, and `middleware/auth.global.ts`
+   gates every page.
 3. **Widen `admin_users.role`** from `enum('admin','staff')` to four values
    (`super_admin`, `admin`, `staff`, `intern`) and add a nullable
    `access_expires_at` timestamp plus an extensions audit trail. The middleware
@@ -2413,9 +2590,9 @@ will light up:
 | # | Issue | Notes |
 |---|---|---|
 | 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
-| 43 | **The admin "Adjust" stock button does nothing** | `admin/pages/inventory.vue` renders it behind `inventory.adjust` with no handler. The API side landed 30 Sep (`PATCH /admin/inventory/{id}`). **Until the button is wired, nobody can enter stock, and production seeds every size at 0** — so this blocks selling anything. |
+| 43 | ~~**The admin "Adjust" stock button does nothing**~~ | **Closed 1 Oct.** Opens `InventoryAdjustModal`, which PATCHes an absolute count and threshold and shows the API's refusal verbatim when checkouts hold more than the new count. **Stock still has to actually be entered in production** — every size there is 0 until somebody does. |
 | 38 | **The real products have no copy** | No descriptions, no was-prices, no cost breakdown were supplied, and none were invented. The "Transparent Pricing" panel and description block are hidden for every product until the brand writes them. |
-| 39 | **Colourways are photos without variants** | Each of the 63 photos is a different colour of a style, but `colors` is a swatch list with no link to an image or to stock, and sizes are the only inventory axis. A customer cannot currently say *which colour* they are buying. This is the "colour has become a variant" moment the 27 Aug migration comment anticipated — needs a `colour` on `variant_attributes` and per-colour images. **Build before launch.** |
+| 39 | ~~**Colourways are photos without variants**~~ | **Closed 2 Oct** — stock rows are colour × size; see the 2 Oct entry. Original note: | Each of the 63 photos is a different colour of a style, but `colors` is a swatch list with no link to an image or to stock, and sizes are the only inventory axis. A customer cannot currently say *which colour* they are buying. This is the "colour has become a variant" moment the 27 Aug migration comment anticipated — needs a `colour` on `variant_attributes` and per-colour images. **Build before launch.** |
 | 40 | **Domfo's women's price cannot be represented** | Sheet: unisex, 500 male / 300 female, sizes 40–45. Seeded as men's at 500. Needs the women's size range from the client, then either a second product or per-variant pricing. |
 | 41 | **Two things on the sheets still need the client to confirm** | (a) "Krakye" (folder) vs "Kyrakye" (sheet). (b) Whether the 28 styles should be grouped into merchandising collections — `FeaturedCollection.vue`'s fallback tiles still name Sikapa, Obrempong, Kentehene and others that do not exist in the data. *Settled 30 Sep: prices are cedis; the materials lists are stored verbatim.* |
 | 42 | **One Opanyin photo is held back** | `IMG_4416` (beige woven upper) has a clasp resembling another brand's logo. Not published until the client confirms it is theirs to use. |

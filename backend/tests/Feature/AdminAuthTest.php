@@ -45,6 +45,37 @@ class AdminAuthTest extends TestCase
         $this->assertAuthenticatedAs($admin, 'admin');
     }
 
+    public function test_keep_me_signed_in_issues_a_remember_token(): void
+    {
+        $admin = AdminUser::factory()->create([
+            'password' => Hash::make('correct-password'),
+            'remember_token' => null,
+        ]);
+
+        $this->postJson('/api/v1/admin/login', [
+            'email' => $admin->email,
+            'password' => 'correct-password',
+            'remember' => true,
+        ])->assertOk();
+
+        $this->assertNotNull($admin->fresh()->remember_token);
+    }
+
+    public function test_login_without_remember_issues_no_remember_token(): void
+    {
+        $admin = AdminUser::factory()->create([
+            'password' => Hash::make('correct-password'),
+            'remember_token' => null,
+        ]);
+
+        $this->postJson('/api/v1/admin/login', [
+            'email' => $admin->email,
+            'password' => 'correct-password',
+        ])->assertOk();
+
+        $this->assertNull($admin->fresh()->remember_token);
+    }
+
     public function test_login_fails_with_incorrect_password(): void
     {
         AdminUser::factory()->create([

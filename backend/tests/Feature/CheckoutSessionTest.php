@@ -302,6 +302,167 @@ class CheckoutSessionTest extends TestCase
 
     // --- references -----------------------------------------------------
 
+    // --- storefront cart lines (slug + size) ------------------------------
+
+    public function test_a_line_can_name_its_stock_by_slug_and_size(): void
+    {
+        $item = $this->stockedProduct();
+        $slug = $item->product->slug;
+
+        $response = $this->postJson('/api/v1/checkout/session', $this->payload($item, [
+            'items' => [['slug' => $slug, 'size' => '42', 'quantity' => 2]],
+        ]));
+
+        $response->assertCreated();
+        $this->assertSame(2, $item->fresh()->quantity_reserved);
+    }
+
+    public function test_a_size_the_style_is_not_made_in_is_a_validation_error(): void
+    {
+        $item = $this->stockedProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item, [
+            'items' => [['slug' => $item->product->slug, 'size' => '47', 'quantity' => 1]],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('items.0.size');
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item, [
+            'items' => [['slug' => 'no-such-style', 'size' => '42', 'quantity' => 1]],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('items.0.size');
+
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_a_line_needs_either_an_id_or_a_slug(): void
+    {
+        $item = $this->stockedProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item, [
+            'items' => [['quantity' => 1]],
+        ]))->assertUnprocessable()->assertJsonValidationErrors(['items.0.inventory_item_id', 'items.0.slug']);
+    }
+
+    public function test_a_sold_out_line_is_identified_by_its_position_in_the_cart(): void
+    {
+        $plenty = $this->stockedProduct(quantity: 5);
+        $scarce = $this->stockedProduct(quantity: 1);
+
+        $response = $this->postJson('/api/v1/checkout/session', $this->payload($plenty, [
+            'items' => [
+                ['slug' => $plenty->product->slug, 'size' => '42', 'quantity' => 1],
+                ['slug' => $scarce->product->slug, 'size' => '42', 'quantity' => 2],
+            ],
+        ]));
+
+        $response->assertStatus(409);
+        $response->assertJsonPath('line', 1);
+    }
+
+    // --- colour variants (issue 39) ---------------------------------------
+
+    /** @return array{0: Product, 1: InventoryItem, 2: InventoryItem} */
+    private function twoColourProduct(): array
+    {
+        $product = Product::factory()->create(['base_price_ghs' => 50_000]);
+        $tan = InventoryItem::factory()->create([
+            'product_id' => $product->id,
+            'variant_attributes' => ['size' => '42', 'colour' => 'Tan'],
+            'quantity_available' => 3,
+            'quantity_reserved' => 0,
+        ]);
+        $black = InventoryItem::factory()->create([
+            'product_id' => $product->id,
+            'variant_attributes' => ['size' => '42', 'colour' => 'Black'],
+            'quantity_available' => 3,
+            'quantity_reserved' => 0,
+        ]);
+
+        return [$product, $tan, $black];
+    }
+
+    public function test_the_chosen_colour_is_the_one_reserved_and_named_on_the_order(): void
+    {
+        [$product, $tan, $black] = $this->twoColourProduct();
+
+        $response = $this->postJson('/api/v1/checkout/session', $this->payload($tan, [
+            'items' => [['slug' => $product->slug, 'size' => '42', 'colour' => 'black', 'quantity' => 1]],
+        ]));
+
+        $response->assertCreated();
+        $response->assertJsonPath('data.items.0.variant_label', '42 | Black');
+        $this->assertSame(1, $black->fresh()->quantity_reserved);
+        $this->assertSame(0, $tan->fresh()->quantity_reserved);
+    }
+
+    public function test_a_colour_is_required_when_the_size_comes_in_several(): void
+    {
+        [$product, $tan] = $this->twoColourProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($tan, [
+            'items' => [['slug' => $product->slug, 'size' => '42', 'quantity' => 1]],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('items.0.colour');
+    }
+
+    public function test_a_colour_the_style_is_not_made_in_is_refused(): void
+    {
+        [$product, $tan] = $this->twoColourProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($tan, [
+            'items' => [['slug' => $product->slug, 'size' => '42', 'colour' => 'Purple', 'quantity' => 1]],
+        ]))->assertUnprocessable()->assertJsonValidationErrors('items.0.colour');
+
+        $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_a_colour_sent_for_a_style_with_no_colour_axis_is_ignored(): void
+    {
+        $item = $this->stockedProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item, [
+            'items' => [['slug' => $item->product->slug, 'size' => '42', 'colour' => 'Tan', 'quantity' => 1]],
+        ]))->assertCreated();
+    }
+
+    // --- the gateway without a key --------------------------------------
+
+    public function test_production_without_a_paystack_key_refuses_checkout(): void
+    {
+        config(['services.paystack.secret' => null]);
+        $this->app->detectEnvironment(fn () => 'production');
+        $item = $this->stockedProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item))->assertStatus(503);
+
+        $this->assertSame(0, Order::query()->count());
+        $this->assertSame(0, $item->fresh()->quantity_reserved);
+    }
+
+    public function test_the_fake_gateway_page_marks_the_order_paid_and_returns_to_the_storefront(): void
+    {
+        config(['services.paystack.secret' => null, 'services.paystack.callback_base_url' => 'http://shop.test']);
+        $item = $this->stockedProduct();
+
+        $created = $this->postJson('/api/v1/checkout/session', $this->payload($item))->assertCreated();
+        $reference = $created->json('data.reference');
+        $path = parse_url($created->json('payment.authorization_url'), PHP_URL_PATH);
+
+        $this->get($path)->assertRedirect("http://shop.test/order-confirmation/{$reference}");
+
+        $this->assertSame('paid', Order::query()->where('reference', $reference)->value('status'));
+    }
+
+    public function test_cancelling_on_the_fake_gateway_leaves_the_order_pending(): void
+    {
+        config(['services.paystack.secret' => null]);
+        $item = $this->stockedProduct();
+
+        $created = $this->postJson('/api/v1/checkout/session', $this->payload($item))->assertCreated();
+        $path = parse_url($created->json('payment.authorization_url'), PHP_URL_PATH);
+
+        $this->get("{$path}?outcome=cancel")->assertRedirect();
+
+        $this->assertSame('pending', Order::query()->where('reference', $created->json('data.reference'))->value('status'));
+    }
+
     public function test_every_order_gets_an_unguessable_reference(): void
     {
         $item = $this->stockedProduct(quantity: 10);

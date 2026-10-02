@@ -27,9 +27,14 @@ export interface DashboardCharts {
   revenueLastYear: SeriesPoint[]
   ordersThisYear: SeriesPoint[]
   ordersLastYear: SeriesPoint[]
-  trafficBySource: SeriesPoint[]
-  trafficByDevice: SeriesPoint[]
-  trafficByLocation: SeriesPoint[]
+  /**
+   * Null from the live API until analytics (README Feature 11) collects
+   * anything — "not measured", which an empty array would misstate as "no
+   * traffic". See `DashboardController::charts`.
+   */
+  trafficBySource: SeriesPoint[] | null
+  trafficByDevice: SeriesPoint[] | null
+  trafficByLocation: SeriesPoint[] | null
 }
 
 export type ActivityKind =

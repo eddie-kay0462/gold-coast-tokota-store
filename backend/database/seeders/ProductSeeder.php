@@ -68,6 +68,7 @@ class ProductSeeder extends Seeder
                     'images' => $entry['images'],
                     'color' => $entry['color'],
                     'colors' => $entry['colors'],
+                    'colour_images' => $entry['colour_images'] ?? [],
                     'product_type' => $entry['product_type'],
                     'departments' => $entry['departments'],
                     'materials' => $entry['materials'],
@@ -76,41 +77,53 @@ class ProductSeeder extends Seeder
                 ],
             );
 
-            $this->seedInventory($product, $entry['sizes']);
+            $this->seedInventory(
+                $product,
+                $entry['sizes'],
+                array_column($entry['colors'] ?? [], 'name'),
+            );
         }
     }
 
     /**
-     * One InventoryItem per size in the client's range.
+     * One InventoryItem per colour × size.
+     *
+     * The client's sheets give one size range per style, so every colourway
+     * is seeded across the whole range; one a colour isn't made in simply
+     * stays at 0 in admin. A style with no colours gets size-only rows.
      *
      * An existing row keeps its quantity: re-running the seeder against a
      * database where the brand has entered real stock must not reset it.
      *
      * @param  array<int, string>  $sizes
+     * @param  array<int, string>  $colours
      */
-    private function seedInventory(Product $product, array $sizes): void
+    private function seedInventory(Product $product, array $sizes, array $colours): void
     {
-        foreach ($sizes as $size) {
-            // Matched with an explicit JSON-path where() rather than through
-            // firstOrCreate's attribute array: that array doubles as the
-            // attributes for a create, and `variant_attributes->size` is not a
-            // fillable column name.
-            $exists = InventoryItem::query()
-                ->where('product_id', $product->id)
-                ->where('variant_attributes->size', (string) $size)
-                ->exists();
+        foreach ($colours ?: [null] as $colour) {
+            foreach ($sizes as $size) {
+                // Matched with explicit JSON-path where()s rather than through
+                // firstOrCreate's attribute array: that array doubles as the
+                // attributes for a create, and `variant_attributes->size` is
+                // not a fillable column name.
+                $exists = InventoryItem::query()
+                    ->where('product_id', $product->id)
+                    ->where('variant_attributes->size', (string) $size)
+                    ->when($colour, fn ($query) => $query->where('variant_attributes->colour', $colour))
+                    ->exists();
 
-            if ($exists) {
-                continue;
+                if ($exists) {
+                    continue;
+                }
+
+                InventoryItem::query()->create([
+                    'product_id' => $product->id,
+                    'variant_attributes' => array_filter(['size' => (string) $size, 'colour' => $colour]),
+                    'quantity_available' => app()->isProduction() ? 0 : self::DEV_STOCK_PER_SIZE,
+                    'quantity_reserved' => 0,
+                    'low_stock_threshold' => 2,
+                ]);
             }
-
-            InventoryItem::query()->create([
-                'product_id' => $product->id,
-                'variant_attributes' => ['size' => (string) $size],
-                'quantity_available' => app()->isProduction() ? 0 : self::DEV_STOCK_PER_SIZE,
-                'quantity_reserved' => 0,
-                'low_stock_threshold' => 2,
-            ]);
         }
     }
 }

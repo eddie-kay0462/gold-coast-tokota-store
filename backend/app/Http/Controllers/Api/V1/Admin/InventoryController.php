@@ -37,7 +37,11 @@ class InventoryController extends Controller
             // putting at the top of an operational table.
             ->orderBy('quantity_available')
             ->orderBy('id')
-            ->paginate(50)
+            // One row per size, so the real catalogue alone is ~170 rows. The
+            // admin screen asks for the lot (`per_page=500`) and pages
+            // client-side; a fixed 50 hid most of the stock nobody could then
+            // adjust.
+            ->paginate(max(1, min($request->integer('per_page', 50), 500)))
             ->withQueryString();
 
         return InventoryItemResource::collection($items);

@@ -34,6 +34,7 @@ class Product extends Model
         'materials',
         'color',
         'colors',
+        'colour_images',
         'description_heading',
         'model_note',
         'cost_breakdown',
@@ -46,6 +47,7 @@ class Product extends Model
         'tags' => 'array',
         'materials' => 'array',
         'colors' => 'array',
+        'colour_images' => 'array',
         'cost_breakdown' => 'array',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
@@ -150,6 +152,40 @@ class Product extends Model
      *
      * @return array<int, string>
      */
+    /**
+     * Sellable stock by colour, then size — `['Tan' => ['40' => 3, '41' => 0]]`.
+     *
+     * `size_availability` sums across colours, which answers "is size 42 made
+     * at all" but not "is it in Tan"; the purchase panel needs the second once
+     * a colour is chosen. Variants with no `colour` are left out: they belong
+     * to a product with no colour axis, for which `size_availability` alone
+     * is the whole story.
+     *
+     * @return array<string, array<string, int>>
+     */
+    public function getVariantAvailabilityAttribute(): array
+    {
+        $map = [];
+
+        foreach ($this->inventoryItems as $item) {
+            $colour = $item->variant_attributes['colour'] ?? null;
+            $size = $item->variant_attributes['size'] ?? null;
+
+            if (! $colour || $size === null || $size === '') {
+                continue;
+            }
+
+            $size = (string) $size;
+            $map[$colour][$size] = ($map[$colour][$size] ?? 0) + $item->sellable_quantity;
+        }
+
+        foreach ($map as &$sizes) {
+            uksort($sizes, static fn ($a, $b) => strnatcmp($a, $b));
+        }
+
+        return $map;
+    }
+
     public function getSizesAttribute(): array
     {
         return array_map(strval(...), array_keys($this->size_availability));

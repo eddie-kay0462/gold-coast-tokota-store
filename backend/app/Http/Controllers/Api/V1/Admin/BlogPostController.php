@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreBlogPostRequest;
-use App\Http\Resources\BlogPostResource;
+use App\Http\Resources\Admin\AdminBlogPostResource;
 use App\Models\BlogPost;
 use App\Services\Content\HtmlSanitizer;
 use Illuminate\Http\Request;
@@ -37,26 +37,26 @@ class BlogPostController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        return BlogPostResource::collection($posts);
+        return AdminBlogPostResource::collection($posts);
     }
 
-    public function show(BlogPost $blogPost): BlogPostResource
+    public function show(BlogPost $blogPost): AdminBlogPostResource
     {
-        return new BlogPostResource($blogPost);
+        return new AdminBlogPostResource($blogPost);
     }
 
-    public function store(StoreBlogPostRequest $request): BlogPostResource
+    public function store(StoreBlogPostRequest $request): AdminBlogPostResource
     {
         $post = BlogPost::create($this->prepare($request->validated()));
 
-        return new BlogPostResource($post);
+        return new AdminBlogPostResource($post);
     }
 
-    public function update(StoreBlogPostRequest $request, BlogPost $blogPost): BlogPostResource
+    public function update(StoreBlogPostRequest $request, BlogPost $blogPost): AdminBlogPostResource
     {
         $blogPost->update($this->prepare($request->validated(), $blogPost));
 
-        return new BlogPostResource($blogPost->fresh());
+        return new AdminBlogPostResource($blogPost->fresh());
     }
 
     public function destroy(BlogPost $blogPost): Response

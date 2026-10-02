@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import { PhEye, PhEyeSlash, PhInfo, PhWarningCircle } from '@phosphor-icons/vue'
+import { PhEye, PhEyeSlash, PhWarningCircle } from '@phosphor-icons/vue'
 
 /**
- * Admin sign-in.
+ * Admin sign-in — Sanctum SPA cookie auth against the `admin` guard (see
+ * `useAuth().login()`). `middleware/auth.global.ts` sends every signed-out
+ * visit here and returns to `?redirect=` afterwards.
  *
- * BUILT BUT DELIBERATELY INACTIVE, as briefed. The form is complete and
- * validates, but submitting does not authenticate: the Laravel side has no
- * login endpoint yet (no AuthController, no route — README Feature 9), so
- * calling one would just produce a confusing 404.
- *
- * No route middleware is registered anywhere in this app either, so every page
- * remains reachable without signing in. When the endpoint lands, the `submit`
- * body becomes a `GET /sanctum/csrf-cookie` followed by `POST /admin/login`,
- * an `auth` middleware goes on the pages, and nothing else here changes.
+ * In `fixtures` data mode there is no API to sign in to; the app runs on a
+ * demo session and the middleware never lands here.
  */
 definePageMeta({ layout: false })
 useHead({ title: 'Sign in' })
@@ -25,6 +20,9 @@ const submitting = ref(false)
 const notice = ref<string | null>(null)
 
 const errors = reactive<{ email?: string; password?: string }>({})
+
+const { login } = useAuth()
+const route = useRoute()
 
 function validate(): boolean {
   errors.email = !email.value.trim()
@@ -41,13 +39,23 @@ async function submit() {
   if (!validate()) return
 
   submitting.value = true
-  // Deliberate: shows the loading state the real call will have, then explains
-  // why nothing happened instead of failing with a raw network error.
-  await new Promise((r) => setTimeout(r, 600))
-  submitting.value = false
-  notice.value =
-    'Sign-in isn’t enabled yet. The admin login endpoint hasn’t been built on the API side ' +
-    '(README Feature 9), so this form is inactive for now — the dashboard is open without it.'
+  try {
+    await login(email.value.trim(), password.value, remember.value)
+    const target = route.query.redirect
+    await navigateTo(typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') ? target : '/')
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; data?: { errors?: { email?: string[] }; message?: string } }
+    if (e.statusCode === 422) {
+      // Bad credentials, or the five-attempt lockout — Laravel words both.
+      notice.value = e.data?.errors?.email?.[0] ?? e.data?.message ?? 'Those details didn’t match an account.'
+    } else if (!e.statusCode) {
+      notice.value = 'Couldn’t reach the server. Check your connection and try again.'
+    } else {
+      notice.value = `Sign-in failed (error ${e.statusCode}). Try again in a moment.`
+    }
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -83,18 +91,6 @@ async function submit() {
         <p class="mt-1.5 text-ui text-fg-muted">
           Admin dashboard for Gold Coast Tokota.
         </p>
-
-        <div
-          class="mt-6 flex items-start gap-2.5 rounded-lg border border-accent/30 bg-accent-soft
-                 px-3.5 py-3 text-meta text-accent-text"
-        >
-          <PhInfo :size="16" class="mt-px shrink-0" />
-          <p>
-            Authentication isn’t wired up yet — this form is inactive and the dashboard is
-            open without it. Seeded account:
-            <code class="font-mono">admin@goldcoasttokota.store</code>
-          </p>
-        </div>
 
         <form class="mt-6 flex flex-col gap-4" novalidate @submit.prevent="submit">
           <UiField
@@ -147,12 +143,6 @@ async function submit() {
           </p>
         </form>
 
-        <p class="mt-8 text-center text-meta text-fg-faint">
-          <NuxtLink to="/" class="text-accent-text underline-offset-4 hover:underline">
-            Continue to the dashboard
-          </NuxtLink>
-          — no sign-in required while authentication is pending.
-        </p>
       </div>
     </div>
   </div>

@@ -190,6 +190,8 @@ useSeoMeta({
                 :currency="currency.active"
                 :total-ghs="cart.subtotalGhs"
                 :fx-rate="currency.fxRate"
+                :address="address"
+                :delivery-method="deliveryMethod"
               />
 
               <button

@@ -3,6 +3,7 @@
 namespace App\Services\Payment;
 
 use App\Contracts\PaymentGateway;
+use App\Exceptions\PaymentUnavailableException;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -39,7 +40,16 @@ class PaymentGatewayFactory
             return new PaystackService;
         }
 
-        // No key, so every environment gets the fake — and says so. An API
+        // Production never takes the fake: its URL completes a payment that
+        // never happened (see FakeGatewayController), so it exists only
+        // outside production, and a keyless production refuses checkout.
+        if (app()->isProduction()) {
+            Log::error('Checkout refused: PAYSTACK_SECRET_KEY is not set in production.');
+
+            throw new PaymentUnavailableException;
+        }
+
+        // No key outside production, so the fake — and says so. An API
         // that looks like it is taking card payments and is not should be
         // noisy about it, not quiet.
         Log::info('No Paystack secret key configured; using FakeGateway.', [

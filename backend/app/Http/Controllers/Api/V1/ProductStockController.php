@@ -43,6 +43,10 @@ class ProductStockController extends Controller
                 // reads the aggregate today; this is here so wiring the panel to
                 // live stock doesn't need another round trip to the API.
                 'size_availability' => (object) $product->size_availability,
+                'variant_availability' => (object) array_map(
+                    fn (array $sizes) => (object) $sizes,
+                    $product->variant_availability,
+                ),
 
                 'in_stock' => $product->in_stock,
                 'merchandising_badge' => $product->effective_badge,

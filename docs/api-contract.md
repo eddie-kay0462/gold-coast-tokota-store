@@ -23,7 +23,7 @@ in the browser.
 | **USD is always derived** from GHS × the cached `FxRate`, never stored | README Feature 2. The one exception is `orders.fx_rate_applied`, snapshotted at checkout so a charged amount can't move |
 | A price and its was-price convert on the **same** rate | `price_usd` and `compare_at_usd` are computed from one `FxRate` read |
 | `sizes` are **strings**, not integers | PHP casts numeric array keys to ints; the storefront's size facet compares against strings, so an int list matches nothing — silently |
-| Stock-derived fields only appear when `inventoryItems` is loaded | `in_stock`, `merchandising_badge`, `sizes`, `size_availability` |
+| Stock-derived fields only appear when `inventoryItems` is loaded | `in_stock`, `merchandising_badge`, `sizes`, `size_availability`, `variant_availability` |
 | Listing and detail return the **same** product shape | A separate listing resource is one more place for the contract to drift |
 
 ---
@@ -48,6 +48,7 @@ Consumed by `frontend/utils/catalog.ts` (`ApiProduct`). Served by
 | `images` | string[] | column | Paths. **Never empty in seeded data** — `ProductGallery` has no placeholder, so an empty array renders the detail page as a bare grey frame |
 | `color` | string¦null | column | The colourway pictured |
 | `colors` | `{name, hex}[]` | column | Swatch row. `jsonb`, not a table — see "Open decisions" |
+| `colour_images` | `{colour: string[]}` | column | Which of `images` show which colourway (2 Oct). The gallery shows the chosen colour's photos. Its own column, not inside `colors`, because the colour filter substring-searches `colors` |
 | `product_type` | string¦null | column | `ahenema` ¦ `slippers` ¦ `sandals` ¦ `closed-toe`. What the listing sidebar's "Category" facet filters on |
 | `departments` | string[] | column | `mens` ¦ `womens` ¦ `kids`. What the header nav's `?category=` resolves to |
 | `widths` | string[] | column | `s` ¦ `m` ¦ `l` |
@@ -58,7 +59,8 @@ Consumed by `frontend/utils/catalog.ts` (`ApiProduct`). Served by
 | `in_stock` | bool | inventory | Sellable (available − reserved) > 0 |
 | `merchandising_badge` | string¦null | inventory | `out_of_stock` / `limited_stock` always computed live; `back_in_stock` is the one editorial value |
 | `sizes` | string[] | inventory | The full range, **including** out-of-stock sizes — they render struck through |
-| `size_availability` | `{size: int}` | inventory | Sellable count per size |
+| `size_availability` | `{size: int}` | inventory | Sellable count per size, **summed across colours** |
+| `variant_availability` | `{colour: {size: int}}` | inventory | Sellable count per colour and size (2 Oct). What the purchase panel strikes through once a colour is chosen. Rows without a colour (a style with no colour axis) are left out. Also on `GET /products/{slug}/stock` |
 | `cost_breakdown` | `{label, amount_ghs, icon}[]` | column | The "Transparent Pricing" panel. Ordered editorial content |
 | `rating` | object¦null | **not built** | See "Open decisions" |
 | `reviews` | array | **not built** | See "Open decisions" |
@@ -79,7 +81,7 @@ Anything that writes them directly is a bug.
 | GET | `/products` | Paginated, 12/page. `?category_id=` `?featured=` |
 | GET | `/products/{slug}` | |
 | GET | `/products/{slug}/stock` | Live stock for the polling composable — see below |
-| GET | `/categories` `/collections` | |
+| GET | `/categories` `/collections` | `/categories` lists only categories with at least one active product (1 Oct) — an empty one would be a link to an empty shop page |
 | GET | `/fx-rate` | |
 | GET | `/pages/{slug}` · `/site-settings` | |
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
@@ -93,8 +95,8 @@ Anything that writes them directly is a bug.
 | GET | `/workshop-types` | The six experiences §15 publishes, active only |
 | GET | `/workshop-sessions` · POST `/bookings` | Sessions carry their `workshop_type` |
 | POST | `/webhooks/paystack` | HMAC-signed, idempotent. Throttled 300/min — see below |
-| POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard |
-| GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` — 50/page |
+| POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard. Login takes optional `remember` (boolean, the "Keep me signed in" box). Writes need the `X-XSRF-TOKEN` header from the `XSRF-TOKEN` cookie, re-read after login — Laravel rotates it |
+| GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` `?per_page=` — 50/page by default, max 500 (one row per size; the admin screen asks for 500) |
 | PATCH | `/admin/inventory/{id}` | `inventory.adjust` (Staff and up; not Intern). Body: `quantity_available` and/or `low_stock_threshold`, both absolute integers ≥ 0. `422` if the count would fall below `quantity_reserved`. `quantity_reserved` is never writable. Returns the row |
 | GET | `/admin/feedback` | Admin **and** Staff. Read-only, newest first — 50/page |
 | GET | `/admin/dashboard/metrics` | Admin **and** Staff. Live queries, no caching |
@@ -107,7 +109,7 @@ Anything that writes them directly is a bug.
 | GET | `/admin/workshop-types` | `bookings.view`. Read-only — the published programme |
 | GET/POST | `/admin/workshop-sessions` | `?upcoming=true` `?type=` on index. `workshop_type_id` required on create |
 | PUT/DELETE | `/admin/workshop-sessions/{id}` | Capacity editing, guarded — see below |
-| GET/POST | `/admin/blog` · GET/PUT/DELETE `/admin/blog/{id}` | Includes drafts. Body sanitised server-side |
+| GET/POST | `/admin/blog` · GET/PUT/DELETE `/admin/blog/{id}` | Includes drafts. Body sanitised server-side. Returns `AdminBlogPostResource` (1 Oct), not the storefront shape: adds `excerpt`, `cover_image_alt`, `meta_description`, `author_name` (the `author` column), `is_published`, `updated_at`; text fields are `''` rather than null. Writes accept `excerpt` (≤500), `cover_image_alt`, `meta_description` (≤200) |
 | GET | `/admin/pages` · `/admin/pages/{id}` | |
 | PUT | `/admin/pages/{id}` | Body sanitised. **No create or delete** — see below |
 | GET | `/admin/site-settings` | Staff may read |
@@ -278,7 +280,7 @@ operational picture from "12 in stock".
 
 ```json
 {
-  "items": [{ "inventory_item_id": 12, "quantity": 1 }],
+  "items": [{ "slug": "domfo", "size": "42", "quantity": 1 }],
   "currency": "GHS",
   "delivery_method": "standard",
   "shipping_address": {
@@ -287,6 +289,21 @@ operational picture from "12 in stock".
   }
 }
 ```
+
+Each line names its stock row **either** as `inventory_item_id` **or** as
+`slug` + `size` (1 Oct) + `colour` (2 Oct). `colour` is matched
+case-insensitively; it is required when the size comes in more than one
+colourway (`422` on `items.N.colour` otherwise), refused if the style isn't made
+in it, and ignored for a style with no colour axis. The order line's
+`variant_label` reads `"42 | Tan"`. The storefront sends the second: its cart keys lines
+by product and size and has never held real row ids. An unknown slug, or a size
+the style isn't made in, is a `422` on `items.N.size`.
+
+**Browser callers need Sanctum's CSRF handshake** (`GET /sanctum/csrf-cookie`,
+then `X-XSRF-TOKEN` on the POST) because the storefront origin is a stateful
+domain. Without it every POST from the storefront is a `419`. The same applies
+to `/newsletter`, `/feedback`, `/bookings` and `/booking-uploads`. Use
+`frontend/composables/useApi.ts`, not bare `$fetch`.
 
 Returns `201` with `{ data: <Order>, payment: { gateway, reference, authorization_url, client_secret } }`.
 **Both currencies get an `authorization_url` to redirect to**, and
@@ -321,9 +338,23 @@ All of it inside one transaction: a failure at any step rolls the order away
 
 | Code | Means |
 |---|---|
-| `409` | Sold out, or the product went inactive. Body carries `inventory_item_id` and `available`. Not `422` — the request was fine, the world changed |
-| `422` | Validation, including a missing `country` |
-| `503` | USD checkout with no FX rate to lock |
+| `409` | Sold out, or the product went inactive. Body carries `inventory_item_id`, `available`, and `line` — the index of the offending entry in `items`, so the storefront can name it. Not `422` — the request was fine, the world changed |
+| `422` | Validation, including a missing `country` or an unresolvable `slug`/`size` |
+| `503` | USD checkout with no FX rate to lock, **or production with no `PAYSTACK_SECRET_KEY`** |
+
+### Without a Paystack key
+
+Outside production the API answers with `FakeGateway`. Its
+`authorization_url` is `{API}/fake-gateway/{reference}`, a dev-only route that
+does what a successful charge plus its webhook would: marks the order paid,
+fires `OrderPaid`, then redirects to `{STOREFRONT_URL}/order-confirmation/{order reference}`.
+`?outcome=cancel` returns without paying. **That route is not registered in
+production**, and a keyless production refuses checkout with `503` instead. A
+fake gateway there would be a free order for anyone.
+
+`OrderPaid`'s listeners (stock finalising, the confirmation email) are
+**queued**. Locally, run `php artisan queue:work` or they wait in the `jobs`
+table.
 
 ### Payments: one gateway, Paystack
 

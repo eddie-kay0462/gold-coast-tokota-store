@@ -2,7 +2,7 @@
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 import { whatsappMessage } from '~/utils/whatsapp'
 
-const config = useRuntimeConfig()
+const api = useApi()
 const siteSettings = useSiteSettingsStore()
 
 const form = reactive({
@@ -43,7 +43,7 @@ async function onSubmit() {
     // Every field lives under `details`, which is what StoreBookingRequest
     // validates — including the contact fields, which used to be sent at the
     // top level where the request never looked.
-    await $fetch(`${config.public.apiBase}/bookings`, {
+    await api('/bookings', {
       method: 'POST',
       body: {
         type: 'diy_order',

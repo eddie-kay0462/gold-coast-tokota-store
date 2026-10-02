@@ -173,9 +173,16 @@ class CheckoutSessionService
     /** e.g. "42" or "42 | Black" — the label frozen onto the receipt. */
     private function variantLabel(InventoryItem $inventoryItem): ?string
     {
-        $attributes = array_filter($inventoryItem->variant_attributes ?? []);
+        // Size, then colour — "42 | Tan" — however the jsonb happens to order
+        // its keys, then anything else a future variant axis adds.
+        $attributes = $inventoryItem->variant_attributes ?? [];
+        $ordered = array_filter([
+            $attributes['size'] ?? null,
+            $attributes['colour'] ?? null,
+            ...array_values(array_diff_key($attributes, ['size' => 0, 'colour' => 0])),
+        ], fn ($value) => $value !== null && $value !== '');
 
-        return $attributes ? implode(' | ', $attributes) : null;
+        return $ordered ? implode(' | ', $ordered) : null;
     }
 
     /** GHS minor units to the order's currency, at the locked rate. */

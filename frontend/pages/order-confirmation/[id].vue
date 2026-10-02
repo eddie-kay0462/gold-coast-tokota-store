@@ -4,6 +4,7 @@ import { deliveryProviderLabel, isAwaitingPayment } from '~/utils/orders'
 import { ORDER_POLL_INTERVAL_MS, ORDER_POLL_MAX_ATTEMPTS } from '~/utils/constants'
 import { formatMoney } from '~/utils/formatters'
 import { whatsappMessage } from '~/utils/whatsapp'
+import { useCartStore } from '~/stores/cart'
 
 /**
  * Order confirmation.
@@ -11,15 +12,14 @@ import { whatsappMessage } from '~/utils/whatsapp'
  * SPA-only (nuxt.config.ts routeRules) — nothing here is crawlable, and it is
  * per-customer.
  *
- * `GET /api/v1/orders/{id}` has not been built yet (README Feature 4), so the
- * fetch below resolves to null rather than throwing: this app has no
- * `error.vue`, so an unhandled rejection on an SPA route is a blank page. The
- * three states — loading, found, unavailable — are all real states this page
- * will keep once the endpoint exists.
+ * Paystack's `callback_url` lands here as `/order-confirmation/{reference}`
+ * — the order *reference*, not its numeric id (`GET /orders/{reference}`).
+ * The fetch resolves to null rather than throwing: this app has no
+ * `error.vue`, so an unhandled rejection on an SPA route is a blank page.
  *
- * Nothing navigates here yet either. `CheckoutPaymentStep` is this page's only
- * intended entry point and it is inert until the checkout session endpoint
- * lands, so today the page is reachable only by typing the URL.
+ * The cart is emptied only once the order reads paid. A customer who backs
+ * out of Paystack lands here with a pending order and must still have their
+ * basket to try again.
  */
 definePageMeta({ layout: 'default' })
 
@@ -64,6 +64,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => clearInterval(timer))
 
+const cart = useCartStore()
+watch(order, (o) => {
+  if (o && !isAwaitingPayment(o.status) && o.status !== 'cancelled') cart.clear()
+}, { immediate: true })
+
+/** Polling gave up and the order is still unpaid — the payment did not go through. */
+const notPaid = computed(() => !!order.value && isAwaitingPayment(order.value.status) && !stillConfirming.value)
+
 useSeoMeta({
   title: 'Order confirmation — Gold Coast Tokota',
   robots: 'noindex, nofollow',
@@ -82,10 +90,10 @@ useSeoMeta({
     <!-- Endpoint absent, or no such order -->
     <div v-else-if="unavailable" class="flex w-full flex-col items-start gap-5">
       <h1 class="w-full text-display-section font-normal text-black">We can’t show this order</h1>
-      <CommonInlineNotice variant="warning" title="Order lookup isn’t available yet">
-        The orders endpoint hasn’t been built on the API side (README Feature 4), so we can’t
-        load order <strong>{{ route.params.id }}</strong> right now. If you’ve placed an order,
-        it isn’t lost — message us and we’ll confirm it by hand.
+      <CommonInlineNotice variant="warning" title="We couldn’t load this order">
+        We couldn’t find order <strong>{{ route.params.id }}</strong>, or couldn’t reach our
+        server just now. If you’ve paid, your order isn’t lost — message us and we’ll confirm
+        it by hand.
       </CommonInlineNotice>
       <div class="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-start">
         <CommonWhatsAppLink
@@ -102,10 +110,12 @@ useSeoMeta({
     <!-- The receipt -->
     <div v-else-if="order" class="flex w-full flex-col items-start gap-8">
       <header class="flex w-full flex-col items-start gap-3">
-        <h1 class="w-full text-display-section font-normal text-black">Thank you — your order is in</h1>
+        <h1 class="w-full text-display-section font-normal text-black">
+          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : 'Thank you — your order is in' }}
+        </h1>
         <p class="w-full text-body text-graphite">
           Order <strong class="font-normal">{{ order.reference || `#${order.id}` }}</strong>.
-          We’ve emailed your confirmation.
+          <template v-if="!stillConfirming && !notPaid">We’ve emailed your confirmation.</template>
         </p>
         <CommonStatusBadge :status="order.status" />
       </header>
@@ -121,6 +131,13 @@ useSeoMeta({
       >
         Track this order on WhatsApp
       </CommonWhatsAppLink>
+
+      <CommonInlineNotice v-if="notPaid" variant="warning" title="No payment received">
+        We haven’t received payment for this order, so it hasn’t been placed and nothing has been
+        charged. Your cart is still saved — you can
+        <NuxtLink to="/checkout" class="underline">try checking out again</NuxtLink>, or message us
+        on WhatsApp and we’ll help.
+      </CommonInlineNotice>
 
       <CommonInlineNotice v-if="stillConfirming" title="Still confirming your payment">
         Your payment is going through. This page updates on its own — there’s no need to refresh

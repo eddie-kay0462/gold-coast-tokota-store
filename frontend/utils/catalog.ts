@@ -70,6 +70,14 @@ export type ApiProduct = {
    * renders disabled — server-side checks remain the source of truth.
    */
   size_availability?: Record<string, number>
+  /**
+   * Per colour, then size: `{ Tan: { '42': 3 } }`. What the purchase panel
+   * strikes through once a colour is chosen; `size_availability` is the sum
+   * across colours. Absent for products with no colour axis.
+   */
+  variant_availability?: Record<string, Record<string, number>>
+  /** Which of `images` show which colourway: `{ Tan: ['/products/…'] }`. */
+  colour_images?: Record<string, string[]>
   rating?: ProductRating | null
   reviews?: ProductReview[]
   /**

@@ -86,4 +86,70 @@ class ProductSeederTest extends TestCase
         $this->assertSame(17, $item->fresh()->quantity_available);
         $this->assertSame(28, Product::query()->count());
     }
+
+    // --- colour variants (issue 39) ---------------------------------------
+
+    public function test_every_colourway_is_stocked_across_the_whole_size_range(): void
+    {
+        $this->seed(ProductSeeder::class);
+
+        $domfo = Product::query()->with('inventoryItems')->where('slug', 'domfo')->firstOrFail();
+
+        // Four colourways × sizes 40–45.
+        $this->assertCount(24, $domfo->inventoryItems);
+        $this->assertSame(['Tan', 'Green', 'Blue', 'Black'], array_keys($domfo->variant_availability));
+        // PHP turns numeric-string keys into ints; JSON keys are strings again.
+        $this->assertSame(['40', '41', '42', '43', '44', '45'], array_map(strval(...), array_keys($domfo->variant_availability['Green'])));
+    }
+
+    public function test_reseeding_adds_no_duplicate_colour_rows(): void
+    {
+        $this->seed(ProductSeeder::class);
+        $before = InventoryItem::query()->count();
+
+        $this->seed(ProductSeeder::class);
+
+        $this->assertSame($before, InventoryItem::query()->count());
+    }
+
+    public function test_each_colourway_has_its_own_photographs(): void
+    {
+        $this->seed(ProductSeeder::class);
+
+        foreach (Product::query()->get() as $product) {
+            $colours = array_column($product->colors, 'name');
+            $this->assertSame($colours, array_keys($product->colour_images), "{$product->slug} colour_images do not match its colours");
+
+            foreach ($product->colour_images as $colour => $images) {
+                $this->assertNotEmpty($images, "{$product->slug} has no {$colour} photo");
+                foreach ($images as $image) {
+                    $this->assertContains($image, $product->images);
+                }
+            }
+        }
+    }
+
+    public function test_the_product_api_reports_stock_per_colour_and_size(): void
+    {
+        $this->seed(ProductSeeder::class);
+
+        $green41 = InventoryItem::query()
+            ->whereHas('product', fn ($query) => $query->where('slug', 'domfo'))
+            ->where('variant_attributes->colour', 'Green')
+            ->where('variant_attributes->size', '41')
+            ->firstOrFail();
+        $green41->update(['quantity_available' => 0]);
+
+        $this->getJson('/api/v1/products/domfo')
+            ->assertOk()
+            ->assertJsonPath('data.variant_availability.Green.41', 0)
+            ->assertJsonPath('data.variant_availability.Tan.41', 5)
+            // The all-colours sum still counts the other three.
+            ->assertJsonPath('data.size_availability.41', 15)
+            ->assertJsonPath('data.colour_images.Green', ['/products/domfo/2-green.webp']);
+
+        $this->getJson('/api/v1/products/domfo/stock')
+            ->assertOk()
+            ->assertJsonPath('data.variant_availability.Green.41', 0);
+    }
 }

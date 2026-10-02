@@ -14,14 +14,32 @@ const props = defineProps<{
 
 const emit = defineEmits<{ add: [{ size: string, color: string }] }>()
 
-const selectedColor = ref(props.product.color ?? props.product.colors?.[0]?.name ?? '')
+/** Shared with the page, which swaps the gallery to the chosen colourway. */
+const selectedColor = defineModel<string>('color', { default: '' })
+if (!selectedColor.value) selectedColor.value = props.product.color ?? props.product.colors?.[0]?.name ?? ''
 const selectedSize = ref<string | null>(null)
 
 const isOnSale = computed(
   () => !!props.product.compare_at_ghs && props.product.compare_at_ghs > props.product.base_price_ghs,
 )
 
-const availability = computed(() => props.liveStock ?? props.product.size_availability)
+/**
+ * Stock for the chosen colour when the API reports per-colour stock, otherwise
+ * the all-colours sum. Without the per-colour map, picking Tan would show
+ * size 42 as available just because Black has a pair.
+ */
+const availability = computed(
+  () => props.liveStock
+    ?? props.product.variant_availability?.[selectedColor.value]
+    ?? props.product.size_availability,
+)
+
+/** A colourway with nothing left in any size — its swatch is marked. */
+function colourSoldOut(name: string) {
+  if (props.product.is_pre_order) return false
+  const sizes = props.product.variant_availability?.[name]
+  return !!sizes && Object.values(sizes).every((count) => count <= 0)
+}
 
 /**
  * With a stock map present, a size missing from it is out of stock. With no map
@@ -128,11 +146,22 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
         >
           <!-- The swatch stays 32px as drawn; the button around it is 44px. -->
           <span
-            class="block size-8 rounded-full border border-black/10"
-            :class="color.name === selectedColor ? 'ring-1 ring-graphite ring-offset-2' : ''"
+            class="relative block size-8 overflow-hidden rounded-full border border-black/10"
+            :class="[
+              color.name === selectedColor ? 'ring-1 ring-graphite ring-offset-2' : '',
+              colourSoldOut(color.name) ? 'opacity-40' : '',
+            ]"
             :style="{ backgroundColor: color.hex }"
-          />
-          <span class="sr-only">{{ color.name }}</span>
+          >
+            <!-- Struck through, like an unavailable size: still choosable, so
+                 the photos can be seen, but plainly not in stock. -->
+            <span
+              v-if="colourSoldOut(color.name)"
+              class="absolute left-1/2 top-1/2 h-px w-[140%] -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-graphite"
+              aria-hidden="true"
+            />
+          </span>
+          <span class="sr-only">{{ color.name }}{{ colourSoldOut(color.name) ? ' (out of stock)' : '' }}</span>
         </button>
       </div>
     </div>
@@ -156,7 +185,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
       />
 
       <p v-if="selectedSize && !selectedInStock" class="text-caption text-sale">
-        Size {{ selectedSize }} is out of stock.
+        Size {{ selectedSize }} is out of stock<template v-if="product.variant_availability"> in {{ selectedColor }}</template>.
       </p>
       <p v-else-if="product.is_pre_order" class="text-caption text-muted">
         Made to order — pre-order pairs ship within three weeks.

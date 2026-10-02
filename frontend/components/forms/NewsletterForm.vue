@@ -21,12 +21,13 @@ const pending = ref(false)
 
 const isDark = computed(() => props.tone === 'dark')
 
+const api = useApi()
+
 async function onSubmit() {
-  const config = useRuntimeConfig()
   pending.value = true
   error.value = ''
   try {
-    await $fetch(`${config.public.apiBase}/newsletter`, {
+    await api('/newsletter', {
       method: 'POST',
       body: { email: email.value, source: props.source },
     })
