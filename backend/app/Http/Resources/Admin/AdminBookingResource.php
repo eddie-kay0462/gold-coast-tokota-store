@@ -3,9 +3,9 @@
 namespace App\Http\Resources\Admin;
 
 use App\Http\Controllers\Api\V1\BookingUploadController;
+use App\Support\MediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class AdminBookingResource extends JsonResource
 {
@@ -48,6 +48,8 @@ class AdminBookingResource extends JsonResource
             return null;
         }
 
-        return Storage::disk('public')->url($path);
+        // Private in the bucket: a signed link that expires, so a copied URL
+        // stops working rather than exposing a customer's photo for good.
+        return MediaStorage::privateUrl($path);
     }
 }

@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreMediaAssetRequest;
 use App\Http\Resources\Admin\MediaAssetResource;
 use App\Models\MediaAsset;
+use App\Support\MediaStorage;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * The media library — Admin and Staff.
@@ -32,7 +32,7 @@ class MediaController extends Controller
         // Laravel generates the stored name, so a hostile original filename
         // ("../../.env", "shell.php") can never reach the filesystem. The
         // original is kept only as a display label.
-        $path = $file->store('media/'.now()->format('Y/m'), 'public');
+        $path = $file->store('media/'.now()->format('Y/m'), MediaStorage::diskName());
 
         [$width, $height] = @getimagesize($file->getRealPath()) ?: [null, null];
 
@@ -56,7 +56,7 @@ class MediaController extends Controller
         // File first, row second: a missing row pointing at a real file is an
         // orphan nobody can find, which is worse than a row pointing at a
         // missing file — that one at least shows up as a broken image.
-        Storage::disk('public')->delete($mediaAsset->path);
+        MediaStorage::disk()->delete($mediaAsset->path);
         $mediaAsset->delete();
 
         return response()->noContent();

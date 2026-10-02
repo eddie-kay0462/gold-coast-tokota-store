@@ -82,7 +82,10 @@ class OrderLookupTest extends TestCase
         $response->assertJsonPath('data.items.0.variant_label', '42 | Brown');
         $response->assertJsonPath('data.items.0.quantity', 2);
         $response->assertJsonPath('data.items.0.slug', $product->slug);
-        $response->assertJsonPath('data.items.0.image', '/design/product-kentehene.png');
+        // Storefront-relative paths come back absolute, so the image also
+        // loads from the admin's origin and from emails.
+        $this->assertStringEndsWith('/design/product-kentehene.png', $response->json('data.items.0.image'));
+        $this->assertMatchesRegularExpression('#^https?://#', $response->json('data.items.0.image'));
     }
 
     /** product_id is nullOnDelete, so a receipt has to outlive its product. */

@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 2 October 2026, later still (the admin shows product photos)
+- **Last updated:** 2 October 2026, evening (images move to S3 — production photos and uploads no longer live on Render's wiped disk)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** clean. Everything through the 2 Oct admin photos change is committed on `feat/backend` and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** clean. Everything through the 2 Oct S3 change is committed on `feat/backend` and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built, and signed in for real as of 1 Oct** — 36 routes, dark/light/system theming, four-tier roles. Sanctum login, session restore and sign-out work, so **every screen except the dashboard's activity feed now reads live data**. 25 of its 30 API paths exist; the 5 that remain (inbox ×3, activity, audit) are business-owner questions — see open decision 28 |
-| Tests | **399 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
+| Tests | **406 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -48,7 +48,67 @@ inert at their last step.
 
 ## Recent changes
 
-### 2 October 2026 (latest) — the admin can see product photos
+### 2 October 2026 (latest) — images move to S3 (issue D3)
+
+Render's disk is wiped on every deploy, so admin media uploads and customers'
+DIY reference photos would have vanished at each release. The product photos
+had been committed to the storefront to sidestep that. Production now uses an
+**S3 bucket**; local development keeps using the local disk.
+
+**AWS (set up on 2 Oct):**
+- Bucket **`gold-coast-tokota-media`** in **`eu-north-1` (Stockholm)**. London
+  needs the account's "advanced features", which weren't activated.
+- **Versioning is on.**
+- The bucket policy makes **only `products/` and `media/`** publicly readable.
+  `booking-references/` (DIY photos) and everything else is private.
+- The app uses an IAM user, `gold-coast-tokota-api`, limited to this bucket
+  (`GoldCoastTokotaMediaAccess`).
+- ⚠️ **The account is on AWS's free plan: $100 credit, 183 days from 2 Oct.**
+  Upgrade to the paid plan before about late March 2027, or access ends and
+  every product photo stops loading. Usage costs cents a month.
+- ⚠️ **MFA on the account is not yet set up.**
+
+**Code:**
+- **`MEDIA_DISK`** (`public` default, `s3` in production) picks the disk.
+  `App\Support\MediaStorage` is the only code that reads it. Media uploads,
+  DIY uploads, the prune job and booking photo links all go through it.
+- **DIY photos in the admin are signed links that expire after 15 minutes**
+  on S3. A copied link stops working instead of exposing a customer's photo.
+- **Product photos are stored as keys** (`products/domfo/1-tan.webp`), and
+  the API resolves them to absolute URLs. **`images` and `colour_images` on
+  `/products` are now absolute URLs**; the storefront needed no change.
+- **`php artisan media:import-product-photos`** copies
+  `frontend/public/products/**` to the image disk, then repoints only the
+  rows whose file now exists. A failed upload never leaves broken images.
+  Idempotent; `--dry-run` is available.
+- **The API runs it on every boot** (Dockerfile). The container has no
+  `frontend/`, so there it only repoints at photos already in the bucket.
+- The S3 disk now throws on failure, so a failed upload is an error, not a
+  `false` saved as an image path.
+- Added `league/flysystem-aws-s3-v3`. `render.yaml` sets `MEDIA_DISK=s3`,
+  the bucket and the region; **the key pair must be entered in the Render
+  dashboard** (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` on the
+  `tokota-backend` group).
+- 7 new tests. **406 passing.**
+
+**Already done:** all 63 product photos are in the bucket (verified public,
+`image/webp`). Locally they're in `storage/app/public/products`, and the local
+database points at the keys. Checked in a browser: every product photo loads
+on the shop, the product page and the admin. On S3: a signed private link
+returns 200, the same file's plain URL 403.
+
+**For teammates after pulling:** run `composer install`, then
+`php artisan media:import-product-photos` (needs `php artisan storage:link`).
+
+**Still to do:**
+- **Delete `frontend/public/products/`** once production serves from S3. The
+  design-catalogue fallback still points there.
+- **Photo uploads in the admin product editor** are now possible (it's
+  view-only today).
+- 3 pre-existing Composer advisories (`laravel/framework`,
+  `league/commonmark`) want a `composer update`. They are unrelated to S3.
+
+### 2 October 2026 — the admin can see product photos
 
 The admin showed no product photos anywhere: no thumbnail in the products
 list, no photo section in the editor. Showing them wasn't a one-liner, because

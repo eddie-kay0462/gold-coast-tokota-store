@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Services\Currency\FxRateService;
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,7 +36,10 @@ class ProductResource extends JsonResource
                 ? (int) round($this->compare_at_ghs * (float) $fxRate->rate)
                 : null,
             'sku' => $this->sku,
-            'images' => $this->images,
+            // Absolute URLs: stored as keys on the image disk (local storage
+            // in development, the S3 bucket in production) or, before
+            // `media:import-product-photos` runs, storefront paths.
+            'images' => array_values(array_filter(array_map(MediaUrl::absolute(...), $this->images ?? []))),
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
             'is_pre_order' => $this->is_pre_order,
@@ -53,7 +57,10 @@ class ProductResource extends JsonResource
             'colors' => $this->colors,
             // Which photographs show which colourway, so the gallery can
             // follow the chosen colour. Empty object, not [], when unset.
-            'colour_images' => (object) ($this->colour_images ?? []),
+            'colour_images' => (object) array_map(
+                fn (array $paths) => array_values(array_filter(array_map(MediaUrl::absolute(...), $paths))),
+                $this->colour_images ?? [],
+            ),
             'in_stock' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->in_stock),
             'merchandising_badge' => $this->when($this->relationLoaded('inventoryItems'), fn () => $this->effective_badge),
             // The storefront strikes through sizes it cannot sell, so it needs

@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Storage;
-
 /**
  * Turns a stored image reference into a URL any of the three apps can load.
  *
@@ -15,10 +13,10 @@ use Illuminate\Support\Facades\Storage;
  *    storefront", where the photos are committed. Fine on the storefront;
  *    in the admin (another origin) the same path loads the admin's own HTML.
  *    Resolved against `app.storefront_url`.
- *  - `media/2026/10/x.webp` — a bare storage path. Resolved through the
- *    `public` disk, which is also where a bucket URL will come from once
- *    images move to object storage (FOR_THE_TEAM.md D3) — at which point
- *    only this class needs to know.
+ *  - `products/domfo/1-tan.webp`, `media/2026/10/x.webp` — a key on the
+ *    image disk (MediaStorage: local storage in development, the S3 bucket
+ *    in production). This is how product photos are stored once
+ *    `media:import-product-photos` has run.
  */
 final class MediaUrl
 {
@@ -36,6 +34,6 @@ final class MediaUrl
             return rtrim((string) config('app.storefront_url'), '/').$reference;
         }
 
-        return Storage::disk('public')->url($reference);
+        return MediaStorage::url($reference);
     }
 }

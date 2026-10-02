@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,7 +23,7 @@ class OrderItemResource extends JsonResource
             // thumbnails, which are presentation rather than record — so they
             // do come from the live product, and go null when it is gone.
             'slug' => $this->whenLoaded('product', fn () => $this->product?->slug),
-            'image' => $this->whenLoaded('product', fn () => $this->product?->images[0] ?? null),
+            'image' => $this->whenLoaded('product', fn () => MediaUrl::absolute($this->product?->images[0] ?? null)),
         ];
     }
 }

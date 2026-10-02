@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\MediaStorage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class MediaAsset extends Model
 {
@@ -40,6 +40,6 @@ class MediaAsset extends Model
      */
     public function getUrlAttribute(): string
     {
-        return Storage::disk('public')->url($this->path);
+        return MediaStorage::url($this->path);
     }
 }

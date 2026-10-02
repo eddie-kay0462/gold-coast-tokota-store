@@ -146,7 +146,7 @@ class ProductSeederTest extends TestCase
             ->assertJsonPath('data.variant_availability.Tan.41', 5)
             // The all-colours sum still counts the other three.
             ->assertJsonPath('data.size_availability.41', 15)
-            ->assertJsonPath('data.colour_images.Green', ['/products/domfo/2-green.webp']);
+            ->assertJsonPath('data.colour_images.Green', [rtrim(config('app.storefront_url'), '/').'/products/domfo/2-green.webp']);
 
         $this->getJson('/api/v1/products/domfo/stock')
             ->assertOk()

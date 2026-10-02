@@ -45,10 +45,10 @@ Consumed by `frontend/utils/catalog.ts` (`ApiProduct`). Served by
 | `compare_at_ghs` | int¦null | column | Was-price. Present **only** while on sale, and must exceed `base_price_ghs` |
 | `price_usd` | int¦null | derived | `base_price_ghs` × FxRate. `null` if no rate has ever been fetched |
 | `compare_at_usd` | int¦null | derived | Same rate as `price_usd` |
-| `images` | string[] | column | Paths. **Never empty in seeded data** — `ProductGallery` has no placeholder, so an empty array renders the detail page as a bare grey frame |
+| `images` | string[] | column | **Absolute URLs** (2 Oct): stored as keys on the image disk (`products/domfo/1-tan.webp` → local `/storage/…` in development, the S3 bucket in production) and resolved by `App\Support\MediaUrl`. **Never empty in seeded data** — `ProductGallery` has no placeholder, so an empty array renders the detail page as a bare grey frame |
 | `color` | string¦null | column | The colourway pictured |
 | `colors` | `{name, hex}[]` | column | Swatch row. `jsonb`, not a table — see "Open decisions" |
-| `colour_images` | `{colour: string[]}` | column | Which of `images` show which colourway (2 Oct). The gallery shows the chosen colour's photos. Its own column, not inside `colors`, because the colour filter substring-searches `colors` |
+| `colour_images` | `{colour: string[]}` | column | Which of `images` show which colourway (2 Oct), as absolute URLs like `images`. The gallery shows the chosen colour's photos. Its own column, not inside `colors`, because the colour filter substring-searches `colors` |
 | `product_type` | string¦null | column | `ahenema` ¦ `slippers` ¦ `sandals` ¦ `closed-toe`. What the listing sidebar's "Category" facet filters on |
 | `departments` | string[] | column | `mens` ¦ `womens` ¦ `kids`. What the header nav's `?category=` resolves to |
 | `widths` | string[] | column | `s` ¦ `m` ¦ `l` |
@@ -128,7 +128,7 @@ Anything that writes them directly is a bug.
 | GET | `/admin/settings/diy-turnaround` | Per-order-type estimates. Staff may read |
 | PUT | `/admin/settings/diy-turnaround` | `settings.write` — Admin+ |
 | GET | `/admin/products` · `/admin/products/{id}` | `products.view` — every tier. **Unscoped:** drafts included. `?active=` `?q=` `?category_id=` `?per_page=` |
-| — | admin product `image_urls`, `colour_photos` | `AdminProductResource` (2 Oct). `images` stays the raw stored references; `image_urls` are absolute and loadable from the admin's origin (storefront-relative `/products/…` paths resolve against `STOREFRONT_URL`, bare storage paths through the `public` disk — `App\Support\MediaUrl`). `colour_photos` is `[{colour, hex, urls}]` in swatch order |
+| — | admin product `image_urls`, `colour_photos` | `AdminProductResource` (2 Oct). `images` stays the raw stored references; `image_urls` are absolute and loadable from the admin's origin (storefront-relative `/products/…` paths resolve against `STOREFRONT_URL`, bare keys through the image disk — `App\Support\MediaUrl`). `colour_photos` is `[{colour, hex, urls}]` in swatch order |
 | POST/PUT | `/admin/products` | `products.write` **and** `pricing.write` — Admin+ |
 | DELETE | `/admin/products/{id}` | `products.delete` — Admin+ |
 

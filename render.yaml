@@ -32,6 +32,19 @@ envVarGroups:
       value: database
     - key: SESSION_DRIVER
       value: database
+    # Image storage (FOR_THE_TEAM.md D3). Render's own disk is wiped on
+    # every deploy, so production stores photos and uploads in S3. Bucket
+    # and region are not secret; the key pair is set in the dashboard.
+    - key: MEDIA_DISK
+      value: s3
+    - key: AWS_BUCKET
+      value: gold-coast-tokota-media
+    - key: AWS_DEFAULT_REGION
+      value: eu-north-1
+    - key: AWS_ACCESS_KEY_ID
+      sync: false
+    - key: AWS_SECRET_ACCESS_KEY
+      sync: false
     # Payment/delivery/SMS/FX secrets are set directly in the Render
     # dashboard per Feature 12/13 — never committed to version control.
     # Every name here is one config/services.php actually reads; the old

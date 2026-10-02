@@ -4,11 +4,11 @@ namespace App\Jobs;
 
 use App\Http\Controllers\Api\V1\BookingUploadController;
 use App\Models\Booking;
+use App\Support\MediaStorage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Deletes reference photos that never became a booking.
@@ -32,7 +32,7 @@ class PruneOrphanedBookingUploads implements ShouldQueue
 
     public function handle(): void
     {
-        $disk = Storage::disk('public');
+        $disk = MediaStorage::disk();
         $files = $disk->allFiles(BookingUploadController::DIRECTORY);
 
         if ($files === []) {
