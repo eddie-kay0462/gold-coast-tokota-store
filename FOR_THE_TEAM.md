@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 2 October 2026 (colour is now a stock axis — customers choose a colourway and the shop knows which pair to send; uncommitted on `feat/backend`)
+- **Last updated:** 2 October 2026 (colour is now a stock axis — customers choose a colourway and the shop knows which pair to send)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** the 1 Oct changes (admin sign-in, storefront checkout) and the 2 Oct colour variants are uncommitted. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** clean. The 1 Oct admin sign-in and storefront checkout and the 2 Oct colour variants are committed on `feat/backend` (`f237f68`) and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
