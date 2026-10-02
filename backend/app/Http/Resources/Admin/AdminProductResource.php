@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -47,6 +48,23 @@ class AdminProductResource extends JsonResource
             'compare_at_ghs' => $this->compare_at_ghs ? $this->money($this->compare_at_ghs) : null,
 
             'images' => $this->images ?? [],
+            // Loadable from the admin's origin — `images` holds storefront-
+            // relative paths, which resolve to the admin's own HTML there.
+            // `images` stays raw so a save round-trips what is stored.
+            'image_urls' => array_values(array_filter(array_map(MediaUrl::absolute(...), $this->images ?? []))),
+            // Photos grouped by colourway, in swatch order, so the editor can
+            // show which photos belong to Tan, Black, ….
+            'colour_photos' => collect($this->colors ?? [])
+                ->map(fn (array $colour) => [
+                    'colour' => $colour['name'],
+                    'hex' => $colour['hex'] ?? null,
+                    'urls' => array_values(array_filter(array_map(
+                        MediaUrl::absolute(...),
+                        ($this->colour_images ?? [])[$colour['name']] ?? [],
+                    ))),
+                ])
+                ->values()
+                ->all(),
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
             'is_pre_order' => $this->is_pre_order,

@@ -294,4 +294,46 @@ class AdminProductTest extends TestCase
 
         $response->assertUnauthorized();
     }
+
+    // --- photos the admin can actually load ------------------------------
+
+    public function test_storefront_relative_photos_are_resolved_against_the_storefront(): void
+    {
+        config(['app.storefront_url' => 'https://goldcoasttokota.store']);
+        $admin = AdminUser::factory()->create(['role' => 'staff']);
+        $product = Product::factory()->create([
+            'images' => ['/products/domfo/1-tan.webp', 'https://cdn.example/x.webp', 'media/2026/10/y.webp'],
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->getJson("/api/v1/admin/products/{$product->id}");
+
+        $response->assertOk();
+        $urls = $response->json('data.image_urls');
+        $this->assertSame('https://goldcoasttokota.store/products/domfo/1-tan.webp', $urls[0]);
+        $this->assertSame('https://cdn.example/x.webp', $urls[1]);
+        $this->assertStringEndsWith('/storage/media/2026/10/y.webp', $urls[2]);
+        // The raw field is untouched, so a save round-trips what is stored.
+        $response->assertJsonPath('data.images.0', '/products/domfo/1-tan.webp');
+    }
+
+    public function test_photos_are_grouped_by_colourway_in_swatch_order(): void
+    {
+        config(['app.storefront_url' => 'https://goldcoasttokota.store']);
+        $admin = AdminUser::factory()->create(['role' => 'staff']);
+        $product = Product::factory()->create([
+            'colors' => [['name' => 'Brown', 'hex' => '#6B4226'], ['name' => 'Black', 'hex' => '#000000']],
+            'colour_images' => [
+                'Black' => ['/products/nshira/2-black.webp', '/products/nshira/3-black.webp'],
+                'Brown' => ['/products/nshira/1-brown.webp'],
+            ],
+        ]);
+
+        $photos = $this->actingAs($admin, 'admin')
+            ->getJson("/api/v1/admin/products/{$product->id}")
+            ->json('data.colour_photos');
+
+        $this->assertSame(['Brown', 'Black'], array_column($photos, 'colour'));
+        $this->assertCount(2, $photos[1]['urls']);
+        $this->assertSame('https://goldcoasttokota.store/products/nshira/1-brown.webp', $photos[0]['urls'][0]);
+    }
 }

@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 2 October 2026, later (product-page and cart-drawer recommendations come from the database)
+- **Last updated:** 2 October 2026, later still (the admin shows product photos)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** clean. Everything through the 2 Oct recommendations change is committed on `feat/backend` and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** clean. Everything through the 2 Oct admin photos change is committed on `feat/backend` and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -34,7 +34,7 @@ This file is the *status* layer on top of those two — it does not restate them
 | Product API contract | **Closed 27 Aug.** `ProductResource` now emits every field `ApiProduct` declares except `rating`/`reviews`. Documented in `docs/api-contract.md` — update it in the same commit as any response-shape change |
 | Database | Migrations for admin_users, customers, pages, site_settings, categories, products, inventory_items, fx_rates, collections, workshop_sessions, bookings, blog_posts, newsletter_subscribers, orders, order_items |
 | Admin dashboard | **Built, and signed in for real as of 1 Oct** — 36 routes, dark/light/system theming, four-tier roles. Sanctum login, session restore and sign-out work, so **every screen except the dashboard's activity feed now reads live data**. 25 of its 30 API paths exist; the 5 that remain (inbox ×3, activity, audit) are business-owner questions — see open decision 28 |
-| Tests | **397 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
+| Tests | **399 passing** (2 Oct). Feature test files — admin auth, admin products, admin operations/CMS/platform, blog, bookings, FX rate + service, inventory reservation (incl. the concurrent-hold cases), newsletter, products, and as of 28 Aug the Paystack webhook (signature, replay, partial payment), the returns policy and the workshop programme |
 
 Against the README's "Implementation Order": **Phase 3a is done** (Feature 1
 core pages, now including every route the chrome links to), Feature 6 (WhatsApp)
@@ -48,7 +48,34 @@ inert at their last step.
 
 ## Recent changes
 
-### 2 October 2026 (latest) — recommendations come from the database
+### 2 October 2026 (latest) — the admin can see product photos
+
+The admin showed no product photos anywhere: no thumbnail in the products
+list, no photo section in the editor. Showing them wasn't a one-liner, because
+`products.images` holds storefront-relative paths (`/products/domfo/1-tan.webp`).
+Loaded from the admin's origin, that path returns the admin's own HTML page.
+
+- **`App\Support\MediaUrl::absolute()`** resolves a stored reference into a URL
+  any app can load:
+  - absolute URLs are kept
+  - `/…` paths resolve against `STOREFRONT_URL`
+  - bare storage paths go through the `public` disk
+
+  When images move to object storage (D3), this class is the only thing that
+  needs to learn the bucket's address.
+- **`AdminProductResource`** adds `image_urls` and `colour_photos`
+  (`[{colour, hex, urls}]`, swatch order). `images` stays raw so a save
+  round-trips what is stored.
+- **Admin:** a thumbnail in the products list, and a **Photos** section in the
+  product editor grouped by colourway, flagging any colour with no photo.
+  **View-only on purpose:** uploads would land on Render's disk, which every
+  deploy wipes. Editing photos arrives with object storage.
+- The **Media** page stays empty. It only lists files uploaded through the
+  admin, and the 63 product photos were committed to the storefront instead.
+- 2 new tests. **399 passing.** Verified in a browser: list thumbnails load,
+  and Nshira shows "Brown · 1 photo, Black · 2 photos".
+
+### 2 October 2026 — recommendations come from the database
 
 "Recommended Products" on the product page and "Before You Go" in the cart
 drawer both read a hardcoded copy of the catalogue (`utils/designCatalogue.ts`).

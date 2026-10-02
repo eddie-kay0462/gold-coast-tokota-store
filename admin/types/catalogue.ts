@@ -21,7 +21,15 @@ export interface Product {
    * here by design, and computed by `usdFrom()` in utils/currency.ts.
    */
   basePriceGhs: Money
+  /** Raw stored references, e.g. `/products/domfo/1-tan.webp`. Round-tripped on save. */
   images: string[]
+  /**
+   * The same photos as absolute URLs the admin can load. `images` holds
+   * storefront-relative paths, which on the admin's origin load its own HTML.
+   */
+  imageUrls?: string[]
+  /** Photos grouped by colourway, in swatch order. */
+  colourPhotos?: { colour: string, hex: string | null, urls: string[] }[]
   isActive: boolean
   isFeatured: boolean
   /** Rolled up across variants, for the list view. */
