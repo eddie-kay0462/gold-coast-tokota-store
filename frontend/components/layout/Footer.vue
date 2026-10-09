@@ -56,15 +56,15 @@ const socials = computed(() =>
 </script>
 
 <template>
-  <!-- The footer moved to the dark chrome ground with the approved Template B
-       mockup. `chrome-dark` switches the focus ring to white, since the base
-       graphite ring is invisible here. -->
+  <!-- White with black type, to sit with the white header (it was on the dark
+       chrome ground under Template B). A hairline on top separates it from
+       white page sections above; the base graphite focus ring works as is. -->
   <!-- Deeper than it needs to be for its content, deliberately: the link
        columns are four items now, and at the old `pt-12` the whole band read as
        a strip stuck to the bottom of the page rather than a footer. The vertical
        rhythm matches `.section-y` (12 / 16 / 90) so it sits on the same ladder
        as every full-width section above it. -->
-  <footer class="chrome-dark flex w-full flex-col items-center bg-chrome px-5 pt-12 text-white md:px-10 md:pt-16 lg:px-[72px] lg:pt-[90px]">
+  <footer class="flex w-full flex-col items-center border-t border-line bg-white px-5 pt-12 text-ink md:px-10 md:pt-16 lg:px-[72px] lg:pt-[90px]">
     <!-- The mockup's four tracks: brand, two link sets, newsletter. -->
     <div class="grid w-full gap-x-10 gap-y-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.4fr] lg:gap-x-14 lg:gap-y-16">
       <div class="flex flex-col items-start gap-5">
@@ -72,7 +72,7 @@ const socials = computed(() =>
              tall, and a link wrapping it alone is under the floor. -->
         <NuxtLink to="/" class="-my-1.5 flex min-h-[44px] items-center py-1.5" aria-label="Gold Coast Tokota — home">
           <img
-            src="/brand/logo-white.png"
+            src="/brand/logo.png"
             alt="Gold Coast Tokota"
             class="h-8 w-auto"
             width="435"
@@ -81,12 +81,12 @@ const socials = computed(() =>
           >
         </NuxtLink>
 
-        <p class="max-w-[300px] text-label text-white/60">
+        <p class="max-w-[300px] text-label leading-6 text-subtle">
           Handcrafted sandals and ahenema, made in Ghana from leather, velvet and
           upcycled materials.
         </p>
 
-        <address class="flex flex-col items-start gap-1 not-italic text-caption text-white/60">
+        <address class="flex flex-col items-start gap-1 not-italic text-caption text-subtle">
           <!-- Haatso, not the mockup's "Osu": Haatso is the address in the brand
                guidelines, and `/stores` deliberately publishes no street address
                because inventing one would be worse than omitting it.
@@ -94,18 +94,18 @@ const socials = computed(() =>
                Linked rather than plain text — the mockup prints the address, and
                `/stores` is the page that explains visiting the workshop. It also
                keeps that page reachable now the Connect column is gone. -->
-          <NuxtLink to="/stores" class="-my-2 flex min-h-[44px] items-center py-2 hover:text-white">
+          <NuxtLink to="/stores" class="-my-2 flex min-h-[44px] items-center py-2 hover:text-ink">
             Haatso, Accra, Ghana
           </NuxtLink>
           <a
             v-if="siteSettings.contactPhone"
             :href="`tel:${siteSettings.contactPhone}`"
-            class="-my-2 flex min-h-[44px] items-center py-2 hover:text-white"
+            class="-my-2 flex min-h-[44px] items-center py-2 hover:text-ink"
           >{{ siteSettings.contactPhone }}</a>
           <a
             v-if="siteSettings.contactEmail"
             :href="`mailto:${siteSettings.contactEmail}`"
-            class="-my-2 flex min-h-[44px] items-center py-2 hover:text-white"
+            class="-my-2 flex min-h-[44px] items-center py-2 hover:text-ink"
           >{{ siteSettings.contactEmail }}</a>
         </address>
       </div>
@@ -115,14 +115,14 @@ const socials = computed(() =>
         :key="column.heading"
         class="flex min-w-0 flex-col items-start gap-4"
       >
-        <h2 class="w-full text-eyebrow uppercase tracking-[0.6px] text-white/50">
+        <h2 class="w-full text-eyebrow font-bold uppercase tracking-[1.4px] text-ink">
           {{ column.heading }}
         </h2>
         <ul class="flex w-full flex-col items-start gap-2">
           <li v-for="link in column.links" :key="link.label" class="w-full">
             <NuxtLink
               :to="link.to"
-              class="-my-2.5 flex min-h-[44px] items-center py-2.5 text-label text-white/70 hover:text-white"
+              class="-my-2.5 flex min-h-[44px] items-center py-2.5 text-label text-graphite hover:text-ink hover:underline"
             >
               {{ link.label }}
             </NuxtLink>
@@ -131,9 +131,9 @@ const socials = computed(() =>
       </div>
 
       <div id="newsletter" class="flex scroll-mt-24 flex-col items-start gap-4">
-        <h2 class="w-full text-eyebrow uppercase tracking-[0.6px] text-white/50">Newsletter</h2>
-        <p class="text-label text-white/60">Stories and new releases.</p>
-        <FormsNewsletterForm source="footer" tone="dark" />
+        <h2 class="w-full text-eyebrow font-bold uppercase tracking-[1.4px] text-ink">Newsletter</h2>
+        <p class="text-label text-subtle">Stories and new releases.</p>
+        <FormsNewsletterForm source="footer" tone="light" placeholder="Email address" />
 
         <ul class="flex flex-wrap items-center gap-5">
           <li>
@@ -142,7 +142,7 @@ const socials = computed(() =>
               variant="quiet"
               icon
               :message="whatsappMessage.general()"
-              class="!text-white/70 decoration-white/30 hover:!text-white"
+              class="!text-graphite decoration-graphite/40 hover:!text-ink"
             >
               WhatsApp
             </CommonWhatsAppLink>
@@ -152,7 +152,7 @@ const socials = computed(() =>
               :href="social.href"
               target="_blank"
               rel="noopener noreferrer"
-              class="-my-2.5 flex min-h-[44px] items-center gap-2 py-2.5 text-caption uppercase tracking-[1px] text-white/70 hover:text-white"
+              class="-my-2.5 flex min-h-[44px] items-center gap-2 py-2.5 text-caption uppercase tracking-[1px] text-graphite hover:text-ink"
             >
               <component :is="social.icon" :size="18" />
               {{ social.label }}
@@ -165,7 +165,7 @@ const socials = computed(() =>
     <!-- Bottom bar behind a hairline, as the mockup draws it. The tall bottom
          padding below `sm` reserves the corner the fixed WhatsApp button sits
          in, so the last row is never underneath it. -->
-    <div class="mt-12 flex w-full flex-col items-center justify-between gap-1 border-t border-white/10 py-8 pb-[calc(2rem+4.5rem)] text-center text-caption text-white/45 sm:flex-row sm:pb-8 lg:mt-16">
+    <div class="mt-12 flex w-full flex-col items-center justify-between gap-1 border-t border-line py-8 pb-[calc(2rem+4.5rem)] text-center text-caption text-subtle sm:flex-row sm:pb-8 lg:mt-16">
       <p>© Gold Coast Tokota {{ new Date().getFullYear() }}. All rights reserved.</p>
       <p>goldcoasttokota.store</p>
     </div>
