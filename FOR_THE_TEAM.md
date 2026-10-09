@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 2 October 2026, evening (images move to S3 — production photos and uploads no longer live on Render's wiped disk)
+- **Last updated:** 9 October 2026 (product details become an accordion, shipping/returns copy brought in line with GOLD_COAST_TOKOTA.md; size guide opens as a modal on the product page; sizes slide to the end and back once as a scroll cue; buy panel no longer cut off on the left; sizes scroll in one row so cards align; Vue 3.5.43 fixes icon hydration warnings; homepage featured row shows real products only; GHS|USD switch fixed; product photo no longer switches on hover)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** clean. Everything through the 2 Oct S3 change is committed on `feat/backend` and pushed. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change is committed (`e343bb7`). The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -48,7 +48,258 @@ inert at their last step.
 
 ## Recent changes
 
-### 2 October 2026 (latest) — images move to S3 (issue D3)
+### 9 October 2026 (latest) — product details as an accordion
+
+Below Add to Cart, the product page's buy panel stacked three service promises
+with icons, the description, Model, Fit and Sustainability, all open. It is now
+one accordion, following two reference screenshots from the client: Description,
+Materials & Care, Fit, Shipping & Returns, Sustainability.
+
+- **New `components/common/AccordionItem.vue`.** It animates in CSS only: the
+  panel is a one-row grid going from `0fr` to `1fr`, which transitions smoothly
+  where `height: auto` can't. No JS measuring, it works in the SSR HTML, and the
+  content stays in the DOM for search engines. A closed panel turns
+  `visibility: hidden` after it collapses, so its links leave the Tab order. The
+  trigger has `aria-expanded` and `aria-controls`, and the panel is a labelled
+  region. Reduced motion turns the animation off. All sections start closed.
+- **Description:** `description_heading` and `description` when set. **No
+  product has a description yet**, so until the admin fills them in it shows
+  the brand line from GOLD_COAST_TOKOTA.md §6.
+- **Materials & Care:** the product's `materials` as chips (every product has
+  them), the §8 handmade-variation note, and a WhatsApp link for care
+  questions. **The doc has no care instructions**, so none were written; see
+  decision 45.
+- **Fit:** `model_note` when set, "Sizes are EU" plus the size guide's
+  between-sizes line, and links to the size guide modal and Contact.
+- **Shipping & Returns:** only what §8, §9 and §21 state (48h processing, Ghana
+  1–2 business days, international 5–21 by region with duties on the customer,
+  7-day returns for defective, damaged or incorrect pairs, size exchange subject
+  to stock, custom and sale items not returnable), plus links to `/help/shipping`
+  and `/help/returns`.
+- **Sustainability:** the §7 brand line plus the certification image.
+- **Removed: the three service promises, and `components/shop/BenefitIcon.vue`
+  (now unused).** They didn't match the business doc, which §22 doesn't allow;
+  see decision 44.
+
+Checked in headless Chrome at 1280px on Agudie. Opening Shipping & Returns grows
+its height over about 300ms (0 → 63 → 160 → 203 → 206px), and closing mirrors it
+and ends `visibility: hidden`. With every section closed, 0 of the 5 links
+inside can take focus; an open section's links can. The whole panel now sits
+beside the photo at desktop height.
+
+### 9 October 2026 — size guide opens as a modal on the product page
+
+Both "Size Guide" links on the product page (beside the sizes, and under Fit)
+used to navigate to `/size-guide`, losing the shopper's colour, size and scroll
+position. They now open the guide in a modal with a close button top right.
+The links keep `href="/size-guide"`, so a modified click (new tab or window)
+and no-JavaScript visits still reach the page.
+
+- **`components/common/Modal.vue` reworked.** Nothing used it before. Changes:
+  close button top right (`PhX`); a `size="lg"` variant (960px); teleported to
+  `<body>` (the buy panel is `sticky`, which creates a stacking context a modal
+  inside it can't escape); Tab kept inside the dialog; only the body scrolls, so
+  the title and × stay put; an optional full-bleed `#footer` slot. It already
+  had scroll lock, Escape and focus return.
+- **New `components/shop/SizeGuideModal.vue`:** chart first, then how to
+  measure, then a black "Still unsure?" strip with WhatsApp and a link to the
+  full page. Layout follows the reference screenshot the client shared.
+- **Size guide content moved to `utils/sizeGuide.ts`** (rows, steps, the
+  between-sizes line), and the table to `components/shop/SizeChart.vue`. The
+  page and the modal both use them, so they can't disagree. The old NOTE moved
+  with the data: **the conversions are the standard ladder, not measured
+  Gold Coast Tokota lasts. Confirm before launch.**
+- **The table no longer has a 420px minimum width.** Cell padding is 10px below
+  `sm` and measurements don't wrap, so all four columns fit a 320px phone. In the
+  modal the minimum had hidden the US column behind a sideways scroll.
+
+Checked in headless Chrome on Agudie's page, driven through DevTools:
+- Clicking the link opens the dialog on `<body>`; the URL stays
+  `/shop/agudie`.
+- The page behind is scroll-locked, and unlocked after closing.
+- The ×, Escape and a backdrop click each close it and return focus to the
+  link.
+- Tab wraps from the last link to × and back.
+- At 1280px it renders as in the reference. At 390px and 320px (device
+  emulation) the dialog fits and the table needs no sideways scroll.
+- `/size-guide` still renders (200) with the shared table and steps.
+
+**Follow-up the same day (client feedback):**
+- **Shorter:** the `lg` modal is capped at 640px tall (it used to fill the
+  screen) and its body scrolls past that. The modal uses a new `dense` option on
+  `ShopSizeChart` (shorter rows, smaller figures). Header padding is tighter.
+- **The footer rendered "See thefull size guide."** Vue drops the whitespace
+  between a `<template v-if>` and the link after it, which happened in the
+  branch shown when no WhatsApp number is configured. It is now a line of text
+  ("Still unsure? We'll help you pick a size.") plus separate, spaced links (ASK
+  ON WHATSAPP, FULL SIZE GUIDE), stacking under the text on a phone. With no
+  number it reads "Still unsure? The full guide has more detail." with just the
+  page link.
+- **No em dashes in the size guide's visible text** (`utils/sizeGuide.ts` and
+  `pages/size-guide.vue` body copy). The browser-tab title "Size guide — Gold
+  Coast Tokota" keeps the dash because every page's title uses that pattern.
+- **How-to-measure steps in the modal are body size (16px)**, as on the page.
+- **Table headings match the figures under them** (14px in the modal, 16px on
+  the page; they used to be 12px). Headings may now wrap: "Foot length" takes
+  two lines on a 320px phone, so the table still needs no sideways scroll.
+  Checked at 320px in the modal and on the page.
+
+Checked at 1280×900 and 390×844: the modal is 640px tall, its visible text has
+no em dashes, and the footer reads correctly.
+
+### 9 October 2026 — sizes hint that they scroll
+
+On the product page, when the size row overflows, it now slides to its end and
+back once, so it's clear there are more sizes off to the side.
+`ShopSizeSelector` gains a `hint` prop. Only `ProductPurchasePanel` sets it:
+a shop grid of cards all sliding at once would be noise, but a card can opt in.
+
+- Plays **once**, the first time the row is at least 60% on screen
+  (IntersectionObserver). On a phone the panel is below the gallery, so playing
+  on mount would happen out of sight.
+- Only if the row actually overflows, and **not under
+  `prefers-reduced-motion`**.
+- **Stops the moment the visitor interacts**: pointerdown, wheel, touchstart,
+  keydown or focus inside the row. It never fights the visitor's own scroll.
+- GSAP (lazy-imported, client-only like the other motion components) animates
+  a plain number copied to `scrollLeft`, so no ScrollTo plugin is needed.
+  Timing: 0.4s delay, 0.9s out, 0.35s pause, 0.9s back, `power2.inOut`.
+
+Checked in headless Chrome at 1280px on Agudie (10 sizes, 92px of overflow),
+sampling `scrollLeft` every 100ms. It goes 0 → 92, holds, and eases back to 0.
+Under reduced motion it stays at 0. A pointerdown midway stops it where it is.
+
+### 9 October 2026 — product page buy panel no longer cut off
+
+On the product page, the buy panel's left edge was clipped: the first letter of
+"Men", "Color" and the product name, and half the selected colour swatch.
+
+**Cause.** From `md` the panel (`ProductPurchasePanel.vue`) is sticky with its
+own vertical scroll, and a scroll container clips on both axes. The colour row
+(`-m-1.5`) and size row (`-m-1`) deliberately stick out a few pixels so their
+44px tap areas line up with the text. On the left that clipped the swatch's
+ring. On the right it gave the panel a few pixels of sideways scroll, so a
+trackpad swipe or tabbing to a size shifted the whole panel left. The size row's
+one-line scroll from earlier today made this easier to trigger, but the overflow
+was already there.
+
+**Fix.** From `md` the panel has 12px of padding each side (`md:px-3`), offset by
+`md:-mx-3`, and widths are 24px wider (364/424/464). So the content is still
+340/400/440px wide and sits exactly where it did. `md:overflow-x-hidden` blocks
+sideways scrolling.
+
+Checked in headless Chrome at 1280px on Agudie's page: the panel's scrollWidth
+equals its clientWidth (464). Setting `scrollLeft` leaves it at 0. Focusing the
+10th, off-screen size scrolls only the size row (92px), not the panel. Name,
+first swatch and first size all start at the same x (724), and the swatch's ring
+is fully visible.
+
+### 9 October 2026 — sizes scroll in one row; shop cards line up
+
+`components/shop/SizeSelector.vue`, shared by the shop-grid card and the
+product page, used to wrap. A product with many sizes (Agudie and Ohene have 10)
+grew a second row, and its card no longer lined up with its neighbours.
+
+- The sizes are now **one row that scrolls sideways** and never wraps.
+- **The scrollbar is hidden**, because it would add height only to the cards
+  that overflow and break the alignment again. Instead, a 24px fade (a CSS mask)
+  appears on whichever edge has more sizes past it. It is measured after mount
+  with a `ResizeObserver`, so the server render has no fade.
+- Scrollable by touch, trackpad, Shift + mouse wheel, and Tab. A mouse with only
+  a vertical wheel and no Shift can't reach the hidden sizes; arrow buttons would
+  be the next step if that matters.
+
+Checked with headless Chrome screenshots at 1440px (shop grid and Ohene's
+product page). Agudie's 10 sizes sit in one faded row, level with the cards
+beside it. Phone width could only be checked at about 500px (headless Chrome
+won't go narrower): there, every card's sizes went from two rows to one.
+
+### 8 October 2026 — browser console errors
+
+**Icon warnings: Vue bumped 3.5.39 → 3.5.43** (`frontend/package-lock.json`
+only; `package.json`'s `^3.5.13` already allowed it). Every Phosphor icon
+logged `Failed setting prop "width" on <svg> … Attempted to assign to readonly
+property` during hydration. Vue 3.5.39 re-applied an element's dynamic props
+while hydrating but passed no namespace, so it treated `<svg width>` as an HTML
+property and tried `svg.width = 20`, which is read-only. Vue 3.5.43 passes the
+namespace and skips attributes that already match. Nothing in our code changed.
+The lockfile also moved Vue's own compiler dependencies (`@babel/parser`,
+`@babel/types`, `postcss`, `nanoid`, `source-map-js`), all patch releases.
+**Restart the dev server after pulling** so Vite re-bundles Vue.
+
+**`fx-rate` "Could not connect to the server":** the backend wasn't running.
+That error disappears when it is. It appeared twice because ofetch retries a
+failed GET once by default. `loadFxRate()` now passes `retry: 0`, since choosing
+USD already retries.
+
+### 8 October 2026 — homepage featured row is real products only
+
+The "Locally Made, Top Quality" row above **Shop Your Favorites**
+(`components/home/FeaturedCollection.vue`) used to fall back to five tiles from
+the Figma design (Adehye, Sikapa, Obrempong, Kentehene, Osagyefo) whenever the
+API returned nothing, e.g. whenever the backend wasn't running locally. **None of
+those is a real product, so each tile linked to a 404.**
+
+- The design fallback is gone, along with its five images
+  (`public/design/cat-*.png`, used nowhere else). If the API fails, the row is
+  left out and the button to `/shop` remains.
+- `pages/index.vue` asks for `GET /products?per_page=5` instead of
+  `?featured=true`. The catalogue's default order is featured first, then
+  newest, so this gives the featured products, topped up with the newest when
+  fewer than five are flagged. Five are flagged today: Abrantie, Domfo, Obaapa,
+  Odeneho, Osram. ⚠️ **The admin can't change that yet:** the product page shows
+  a "Featured" badge but has no control for it, though `PUT
+  /admin/products/{id}` already accepts `is_featured`. Until a control is added,
+  changing the homepage row means a database edit.
+- A product with no photo shows a plain frame instead of borrowing a design
+  image.
+
+Checked: with the API up the homepage renders those five, linking to their pages
+with their own photos. With it down the page renders (200) with the button and
+no tiles.
+
+### 8 October 2026 — the GHS|USD switch changes the prices
+
+The conversion maths was fine: with the API up, a USD visitor gets USD prices.
+The problem was what happened when the rate didn't load:
+
+- `plugins/fx-rate.ts` fetched the rate once, during the server render, through
+  `useAsyncData`. If that fetch failed (API down, slow or 503), the browser
+  reused the failed result and never asked again. The rate stayed 0, and
+  `PriceDisplay` correctly fell back to cedis for the whole visit.
+- The switch still highlighted USD, so clicking it looked like it did nothing.
+
+Fixes:
+- **`stores/currency.ts` gains `loadFxRate()`.** The plugin awaits it during the
+  server render, so a USD visitor still gets USD in the first paint. Pinia passes
+  the rate to the browser. If the server's attempt failed, the browser tries
+  again without blocking the page.
+- **Choosing USD with no rate loaded fetches one** (`setCurrency`).
+- **`CurrencyToggle` highlights the currency prices are actually shown in**
+  (`displayCurrency`), not the last one clicked. It moves to USD when the prices
+  do.
+
+Checked: the server render gives USD prices with a USD cookie (shop and product
+page) and cedis without one; with the API down a page still renders (200), in
+cedis. The browser retry and clicking the switch were **not** tested in a real
+browser.
+
+Still open: the only rate in the local database is the seeded `0.075`
+(`source: seed-placeholder`). `RefreshFxRate` is scheduled hourly
+(`routes/console.php`), so real rates need the scheduler running and an
+exchangerate.host key set.
+
+### 8 October 2026 — product gallery no longer changes photo on hover
+
+On the product detail page, hovering the main image swapped it for the next
+photo in the set and swapped back on mouse-out. It came from the Template B
+mockup but read as a bug — the photo changed under the cursor without the
+customer asking. Removed from `components/shop/ProductGallery.vue`: the main
+frame now shows the thumbnail that is selected, and only a click on the rail
+changes it. The shop grid's card cross-fade (`ProductCard.vue`) is a separate
+feature and is unchanged.
+
+### 2 October 2026 — images move to S3 (issue D3)
 
 Render's disk is wiped on every deploy, so admin media uploads and customers'
 DIY reference photos would have vanished at each release. The product photos
@@ -1745,7 +1996,8 @@ as two separate lines.
 
 **Product detail** (`ProductGallery.vue`, `ProductPurchasePanel.vue`). The
 gallery is the mockup's thumbnail rail — a column of 4:5 thumbs beside one large
-4:5 frame, active thumb outlined, hover previewing the next shot. It replaces a
+4:5 frame, active thumb outlined (the hover preview of the next shot was removed
+8 Oct). It replaces a
 flat 2-up grid that put every photo on screen at half width each. Below `sm` the
 rail is a horizontal row. The panel keeps everything it had (colour swatches,
 service promises, description, fit, the phone-only sticky CTA) and gains the
@@ -2703,6 +2955,8 @@ will light up:
 | # | Issue | Notes |
 |---|---|---|
 | 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
+| 44 | **The product page promised shipping and return terms GOLD_COAST_TOKOTA.md doesn't state** | Removed 9 Oct with the accordion. **"Extended returns through January 31"** contradicted §9/§21's 7-day window, which was wrong and has gone. **"Free shipping on all Ghana orders over ₵1,500"** is not in the doc either (it says shipping is "calculated at checkout based on destination, package weight and courier rates"), **but checkout really does it**: `YangoService::FREE_SHIPPING_THRESHOLD` charges ₵0 above ₵1,500, set to match this page's Figma copy. `utils/policyContent.ts` (`/help/shipping`) states it too, and gives Ghana delivery as "1–2 days in Accra, 2–4 elsewhere" where §8 says 1–2 business days. **"Free personalized note or marking during checkout"** has no source and no checkout field. **Decide:** is free shipping over ₵1,500 real policy? If yes, add it to the doc and put it back on the product page. If no, remove it from `YangoService` and `/help/shipping`. Either way, reconcile `/help/shipping` with §8. |
+| 45 | **No care instructions for the sandals** | The new Materials & Care section lists materials and the handmade-variation note, then points to WhatsApp, because GOLD_COAST_TOKOTA.md has no care guidance (cleaning, water, storage, leather vs. recycled uppers). **The brand should supply it**, ideally per material, so it can become a field or a shared block. |
 | 43 | ~~**The admin "Adjust" stock button does nothing**~~ | **Closed 1 Oct.** Opens `InventoryAdjustModal`, which PATCHes an absolute count and threshold and shows the API's refusal verbatim when checkouts hold more than the new count. **Stock still has to actually be entered in production** — every size there is 0 until somebody does. |
 | 38 | **The real products have no copy** | No descriptions, no was-prices, no cost breakdown were supplied, and none were invented. The "Transparent Pricing" panel and description block are hidden for every product until the brand writes them. |
 | 39 | ~~**Colourways are photos without variants**~~ | **Closed 2 Oct** — stock rows are colour × size; see the 2 Oct entry. Original note: | Each of the 63 photos is a different colour of a style, but `colors` is a swatch list with no link to an image or to stock, and sizes are the only inventory axis. A customer cannot currently say *which colour* they are buying. This is the "colour has become a variant" moment the 27 Aug migration comment anticipated — needs a `colour` on `variant_attributes` and per-colour images. **Build before launch.** |
@@ -2730,7 +2984,7 @@ will light up:
 | 18 | ~~**The footer lists two identical sitemap links**~~ | **Closed 27 Aug 2026.** Both went when the footer was cut back to the approved mockup's link set. A product sitemap is still worth emitting — see the sitemap item under *What is left to do*. |
 | 23 | **Seven routes now have no inbound link** | Cutting the footer back to the mockup orphaned `/gift-cards`, `/international`, `/accessibility`, `/affiliates` and three `/legal/**` drafts. They resolve and stay in the sitemap. Four are placeholder-by-design, but **`/accessibility` and `/international` are real content** — decide whether they earn a link somewhere (a slim utility row in the bottom bar would hold both) or stay unadvertised until launch. |
 | 19 | **Gift cards are announced but don't exist** | `/gift-cards` explains the programme and both forms are inert. Making it real is backend scope: a `GiftCard` model with a code and balance, issuance on purchase, and a redemption step in the checkout session. |
-| 20 | **`/size-guide` conversions are the standard ladder, not measured lasts** | The EU/UK/US table is the generic conversion, not Gold Coast Tokota's own lasts. A chart wrong by half a size causes returns — confirm against production lasts before launch. |
+| 20 | **`/size-guide` conversions are the standard ladder, not measured lasts** | The EU/UK/US table is the generic conversion, not Gold Coast Tokota's own lasts. It now appears in two places, `/size-guide` and the product page's size guide modal, both from `utils/sizeGuide.ts`. A chart wrong by half a size causes returns — confirm against production lasts before launch. |
 | 2 | **About price-breakdown artwork is Everlane's** | The Figma export (`about-price-breakdown.png`) has "Everlane T-shirt vs Traditional Retail" and USD figures baked into the bitmap. Needs real Gold Coast Tokota cost data. Cannot be fixed in code. |
 | 3 | **About "Designed to last" copy was rewritten** | Figma's text names Everlane, cashmere sweaters and Peruvian Pima tees. Adapted to the brand. All other copy is verbatim from the design. |
 | 4 | **"Our Carbon Commitment" is tagged `Style`** | Straight from Figma `10:958`; looks like a design slip. Transcribed faithfully — flag if it should read Sustainability. |
