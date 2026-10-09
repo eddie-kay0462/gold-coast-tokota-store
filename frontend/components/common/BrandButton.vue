@@ -1,7 +1,10 @@
 <script setup lang="ts">
-// The 240px block button used across the landing page. Figma shows three
-// fills: #262626 (default), #000000 (on light sections) and white (reversed,
-// on photography), and two shapes — the square-cornered uppercase `block` and
+// The 240px block button used across the site. Every variant now wears the
+// same `.btn-outline` look (white, thin black outline, black only on hover or
+// focus — see `assets/css/main.css`); the client asked for that in place of
+// Figma's solid #262626 / #000000 / white fills. `graphite` and `ink` are kept
+// as names so the call sites didn't churn; `white` marks a button on a dark
+// ground or photography, which keeps a white edge when filled. Two shapes — the square-cornered uppercase `block` and
 // the soft-cornered mixed-case `soft` used on the Sustainability page
 // (10:963), where the label carries a handle that uppercasing would mangle.
 const props = withDefaults(
@@ -25,9 +28,9 @@ const linkComponent = resolveComponent('NuxtLink')
 const variantClass = computed(
   () =>
     ({
-      graphite: 'bg-graphite text-white',
-      ink: 'bg-ink text-white',
-      white: 'bg-white text-graphite',
+      graphite: 'btn-outline',
+      ink: 'btn-outline',
+      white: 'btn-outline-on-dark',
     })[props.variant],
 )
 
@@ -46,7 +49,7 @@ const shapeClass = computed(
     :to="to"
     :type="to ? undefined : type"
     :disabled="to ? undefined : disabled"
-    class="flex max-w-full items-center justify-center text-center transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+    class="flex max-w-full items-center justify-center text-center disabled:cursor-not-allowed disabled:opacity-40"
     :class="[variantClass, shapeClass, full ? 'w-full' : 'w-[240px]']"
   >
     <slot />
