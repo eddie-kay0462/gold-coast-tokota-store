@@ -28,66 +28,57 @@ const items = computed(() => {
   }))
 })
 
-const { railEl, pageCount, activeIndex, canScrollPrev, canScrollNext, scrollToPage, scrollByPage }
+const { railEl, canScrollPrev, canScrollNext, scrollByPage, activeSlide, slideCount, thumb }
   = useScrollRail()
 </script>
 
 <template>
-  <section class="page-gutter section-y mx-auto flex w-full max-w-[1560px] flex-col items-start gap-[30px]">
-    <div class="flex w-full flex-col items-center gap-3 text-center text-ink">
-      <h2 class="w-full text-display-sm">Stories</h2>
-      <p class="w-full text-body">
-        Learn more about our brand, our sustainability journey and upcoming community events
+  <!-- The same rail as the featured products above — heading, right-bleeding
+       row, control bar — so the two read as one system. -->
+  <section class="section-y flex w-full flex-col gap-6 lg:gap-8">
+    <div class="page-gutter flex w-full flex-col gap-2">
+      <HomeSectionHeading title="Stories" to="/blog" link-label="All stories" />
+      <p class="max-w-[560px] text-label text-subtle">
+        Our brand, our sustainability journey and upcoming community events.
       </p>
     </div>
 
-    <div class="flex w-full items-stretch justify-center gap-3">
-      <CommonCarouselArrow
-        direction="left"
-        class="hidden md:flex"
-        :disabled="!canScrollPrev"
-        @click="scrollByPage(-1)"
-      />
-
-      <ul
-        ref="railEl"
-        class="flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    <ul
+      ref="railEl"
+      class="flex w-full snap-x snap-mandatory gap-1.5 overflow-x-auto scroll-smooth pl-5 scroll-pl-5 md:pl-10 md:scroll-pl-10 lg:pl-[60px] lg:scroll-pl-[60px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      aria-label="Stories"
+    >
+      <li
+        v-for="item in items"
+        :key="item.slug"
+        class="w-[72%] shrink-0 snap-start sm:w-[40%] lg:w-[23%]"
       >
-        <li
-          v-for="item in items"
-          :key="item.slug"
-          class="flex w-[70%] shrink-0 snap-start flex-col items-center gap-1.5 sm:w-[45%] lg:w-[calc(25%-0.5625rem)]"
-        >
-          <NuxtLink :to="`/blog/${item.slug}`" class="group flex w-full flex-col gap-1.5">
-            <img
-              :src="item.image"
-              :alt="item.title"
-              class="aspect-[4/5] w-full object-cover"
-              loading="lazy"
-            >
-            <div class="flex w-full flex-col items-start gap-[3px]">
-              <p class="w-full text-caption text-graphite group-hover:underline">{{ item.title }}</p>
-              <p class="w-full text-caption text-muted">{{ item.excerpt }}</p>
-              <p class="w-full text-right text-caption text-graphite">{{ item.meta }}</p>
-            </div>
-          </NuxtLink>
-        </li>
-      </ul>
+        <NuxtLink :to="`/blog/${item.slug}`" class="group flex w-full flex-col gap-4">
+          <img
+            :src="item.image"
+            :alt="item.title"
+            class="aspect-[4/5] w-full bg-surface object-cover"
+            loading="lazy"
+          >
+          <span class="flex w-full flex-col items-start gap-1 pr-2">
+            <span class="text-label font-bold uppercase tracking-[1.4px] text-ink group-hover:underline">{{ item.title }}</span>
+            <span v-if="item.excerpt" class="text-label tracking-[0.4px] text-subtle">{{ item.excerpt }}</span>
+            <span class="text-caption text-muted">{{ item.meta }}</span>
+          </span>
+        </NuxtLink>
+      </li>
+    </ul>
 
-      <CommonCarouselArrow
-        direction="right"
-        class="hidden md:flex"
-        :disabled="!canScrollNext"
-        @click="scrollByPage(1)"
-      />
-    </div>
-
-    <div class="flex w-full justify-center py-5">
-      <CommonCarouselDots
-        :count="pageCount"
-        :active-index="activeIndex"
-        label="News and events"
-        @select="scrollToPage"
+    <div class="page-gutter mx-auto w-full max-w-[1440px]">
+      <CommonRailControls
+        :can-prev="canScrollPrev"
+        :can-next="canScrollNext"
+        :thumb="thumb"
+        :current="activeSlide"
+        :total="slideCount"
+        label="stories"
+        @prev="scrollByPage(-1)"
+        @next="scrollByPage(1)"
       />
     </div>
   </section>
