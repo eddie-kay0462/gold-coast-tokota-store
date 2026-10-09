@@ -9,6 +9,12 @@ import { CURRENCIES, type Currency } from '~/utils/constants'
  * It replaces the header's older single button that flipped between the two
  * labels — that showed only the *current* currency, so a visitor could not see
  * that the other one existed without clicking.
+ *
+ * The highlighted cell is the currency prices are *actually* in
+ * (`displayCurrency`), not the one last clicked. Until a rate loads, USD can't
+ * be derived and prices stay in cedis. Highlighting USD then made the switch
+ * look broken. Choosing USD fetches the rate (`setCurrency`), and the switch
+ * moves over when the prices do.
  */
 withDefaults(
   defineProps<{
@@ -21,7 +27,7 @@ withDefaults(
 const currency = useCurrencyStore()
 
 function cellClass(code: Currency, tone: 'dark' | 'light') {
-  const active = currency.active === code
+  const active = currency.displayCurrency === code
   if (tone === 'light') {
     return active ? 'bg-graphite text-white' : 'text-graphite hover:bg-surface'
   }
@@ -42,7 +48,7 @@ function cellClass(code: Currency, tone: 'dark' | 'light') {
       type="button"
       class="flex min-h-[44px] items-center justify-center px-2.5 text-caption transition-colors lg:min-h-0 lg:py-1"
       :class="cellClass(code, tone)"
-      :aria-pressed="currency.active === code"
+      :aria-pressed="currency.displayCurrency === code"
       :aria-label="`Show prices in ${code}`"
       @click="currency.setCurrency(code)"
     >

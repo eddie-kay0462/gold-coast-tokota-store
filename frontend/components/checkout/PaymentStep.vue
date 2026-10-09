@@ -1,40 +1,40 @@
 <script setup lang="ts">
+import type { ShippingAddress } from '~/components/checkout/CheckoutForm.vue'
 import { useCartStore } from '~/stores/cart'
 import { formatMoney } from '~/utils/formatters'
 import { whatsappMessage } from '~/utils/whatsapp'
 /**
- * The payment step — THE ONE INERT BOUNDARY IN CHECKOUT.
+ * The payment step.
  *
- * Everything before this point is real: the address validates, the totals are
- * live, the currency routing below is the rule README Feature 4 specifies.
- * What does not exist is `POST /api/v1/checkout/session` — no CheckoutController,
- * no Paystack or Stripe service, no webhook receiver. So `placeOrder()`
- * simulates the loading state and then explains itself, rather than firing a
- * request that would 404.
+ * `placeOrder()` posts the cart to `POST /checkout/session`, which re-prices
+ * every line, quotes delivery, locks the FX rate for USD, reserves stock and
+ * opens a Paystack session — then sends the customer to Paystack's hosted page.
+ * Paystack returns them to `/order-confirmation/{reference}`, which waits for
+ * the webhook to mark the order paid. Paystack handles both currencies (§13 of
+ * GOLD_COAST_TOKOTA.md), so there is no client-side card form here.
  *
- * When the endpoint lands, `placeOrder()` becomes:
- *   POST /checkout/session { items, currency, shipping_address, delivery_method }
- *   → GHS: redirect to the returned Paystack authorization URL
- *   → USD: confirm the returned Stripe PaymentIntent client secret
- *   → gateway redirects back to /order-confirmation/{id}
- * Nothing else in this component changes.
+ * Without a Paystack key, a local API answers with its fake gateway, which
+ * completes the same round trip; a production API refuses with a 503.
  *
- * Note that `/order-confirmation/[id]` is built and waiting, but nothing can
- * reach it until then — it has no other entry point in the app.
+ * Cart lines are sent as `{ slug, size, colour }`, not stock row ids: the cart keys
+ * lines as `slug:size:colour` and never held real ids. The API resolves them.
  */
 const props = defineProps<{
   currency: 'GHS' | 'USD'
   totalGhs: number
   /** Live GHS→USD rate, or 0 when the FX endpoint hasn't responded. */
   fxRate: number
+  address: ShippingAddress
+  deliveryMethod: 'standard' | 'express'
 }>()
 
 const cart = useCartStore()
+const api = useApi()
 
 /**
- * The checkout handoff carries the whole basket, exactly like the cart drawer's
- * — this is the last screen before payment, and payment is inert, so this link
- * is the one that actually completes the order.
+ * The checkout handoff carries the whole basket, exactly like the cart
+ * drawer's — the fallback for anyone who would rather order by message, or
+ * whose payment cannot go through.
  */
 const whatsappOrderMessage = computed(() =>
   whatsappMessage.cart(
@@ -46,20 +46,90 @@ const whatsappOrderMessage = computed(() =>
   ),
 )
 
-const gateway = computed(() => (props.currency === 'GHS' ? 'Paystack' : 'Stripe'))
-
 const submitting = ref(false)
-const notice = ref<string | null>(null)
+const notice = ref<{ title: string, body: string } | null>(null)
+
+interface SessionError {
+  statusCode?: number
+  data?: { message?: string, line?: number | null, errors?: Record<string, string[]> }
+}
+
+/** `slug:size:colour` → the `{ slug, size, colour }` the API resolves to a stock row. */
+function lineFor(item: (typeof cart.items)[number]) {
+  const [slug, size, colour] = item.inventoryItemId.split(':')
+  return { slug: slug || item.slug, size: size || null, colour: colour || null, quantity: item.quantity }
+}
+
+function describeError(err: SessionError): { title: string, body: string } {
+  const data = err.data ?? {}
+  const lineName = (index: number | null | undefined) =>
+    index != null && cart.items[index] ? `${cart.items[index].name}${cart.items[index].variantLabel ? ` (${cart.items[index].variantLabel})` : ''}` : null
+
+  if (err.statusCode === 409) {
+    const name = lineName(data.line)
+    return {
+      title: 'Something in your cart just sold out',
+      body: name
+        ? `${name} is no longer available in that quantity. Update your cart and try again.`
+        : (data.message ?? 'An item in your cart is no longer available. Update your cart and try again.'),
+    }
+  }
+  if (err.statusCode === 422) {
+    const [field, messages] = Object.entries(data.errors ?? {})[0] ?? []
+    const index = field?.match(/^items\.(\d+)\./)?.[1]
+    const name = index !== undefined ? lineName(Number(index)) : null
+    return {
+      title: 'We couldn’t place this order',
+      body: name
+        ? `${name}: ${messages?.[0] ?? 'this item can’t be ordered.'} Remove it from your cart and try again.`
+        : (messages?.[0] ?? data.message ?? 'Check your details and try again.'),
+    }
+  }
+  if (err.statusCode === 503) {
+    return { title: 'Payment is briefly unavailable', body: data.message ?? 'Please try again in a few minutes, or order on WhatsApp below.' }
+  }
+  if (!err.statusCode) {
+    return { title: 'Couldn’t reach our server', body: 'Check your connection and try again. You haven’t been charged.' }
+  }
+  return { title: 'Something went wrong', body: 'Your order wasn’t placed and you haven’t been charged. Please try again, or order on WhatsApp below.' }
+}
 
 async function placeOrder() {
   notice.value = null
   submitting.value = true
-  await new Promise((resolve) => setTimeout(resolve, 600))
-  submitting.value = false
-  notice.value =
-    'Payment isn’t enabled yet. The checkout session endpoint hasn’t been built on the API side ' +
-    '(README Feature 4), so this step is inactive. Everything above it is real — your address ' +
-    'validates and the totals are live. To order today, message us on WhatsApp.'
+  try {
+    const res = await api<{ data: { reference: string }, payment: { authorization_url: string | null } }>(
+      '/checkout/session',
+      {
+        method: 'POST',
+        body: {
+          items: cart.items.map(lineFor),
+          currency: props.currency,
+          delivery_method: props.deliveryMethod,
+          shipping_address: {
+            full_name: props.address.fullName,
+            email: props.address.email,
+            phone: props.address.phone,
+            line1: props.address.line1,
+            city: props.address.city,
+            region: props.address.region || null,
+            postcode: props.address.postcode || null,
+            country: props.address.country,
+          },
+        },
+      },
+    )
+
+    const url = res.payment.authorization_url
+    if (!url) throw { statusCode: 500 } satisfies SessionError
+    // A full navigation, not the router: Paystack's page is another origin.
+    // The cart is kept until the confirmation page sees the order paid, so a
+    // customer who backs out of Paystack still has their basket.
+    window.location.assign(url)
+  } catch (err: unknown) {
+    notice.value = describeError(err as SessionError)
+    submitting.value = false
+  }
 }
 </script>
 
@@ -71,9 +141,8 @@ async function placeOrder() {
         <CommonPriceDisplay :base-price-ghs="totalGhs" compact />
       </p>
       <p class="w-full text-caption text-muted">
-        Processed securely by {{ gateway }}.
-        <template v-if="currency === 'GHS'">Cedi payments are handled by Paystack.</template>
-        <template v-else>Dollar payments are handled by Stripe.</template>
+        Processed securely by Paystack — card or mobile money. You’ll finish paying on
+        Paystack’s page and come straight back here.
       </p>
     </div>
 
@@ -82,15 +151,15 @@ async function placeOrder() {
          accurate; showing a locked figure now would not be. -->
     <CommonInlineNotice v-if="currency === 'USD'" title="About the exchange rate">
       Your dollar total is converted from the cedi price<template v-if="fxRate"> at the current rate</template>.
-      The rate is locked when payment begins, so the amount you’re charged matches the amount shown here.
+      The rate is locked when you place the order, so the amount you’re charged matches the amount shown on Paystack.
     </CommonInlineNotice>
 
-    <CommonInlineNotice v-if="notice" variant="warning" title="Payment isn’t enabled yet">
-      {{ notice }}
+    <CommonInlineNotice v-if="notice" variant="warning" :title="notice.title" role="alert">
+      {{ notice.body }}
     </CommonInlineNotice>
 
     <CommonBrandButton full :disabled="submitting" @click="placeOrder">
-      {{ submitting ? 'Placing order…' : 'Place order' }}
+      {{ submitting ? 'Taking you to payment…' : 'Place order' }}
     </CommonBrandButton>
 
     <div class="flex w-full flex-col items-start gap-2 border-t border-line pt-5">

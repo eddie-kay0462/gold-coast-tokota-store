@@ -5,10 +5,9 @@ import { ROLE_CAPABILITIES, type Capability } from '~/utils/permissions'
 /**
  * Admin session state.
  *
- * AUTHENTICATION IS NOT WIRED UP. The Laravel side has no login endpoint —
- * no AuthController, no route, no Form Request (README Feature 9 is still
- * outstanding). The login page is built but deliberately inactive, and this
- * store is seeded with a demo session so the dashboard is reviewable.
+ * Filled by `useAuth().login()` / `restoreSession()` against the Sanctum
+ * `admin` guard. In `fixtures` data mode — no API to sign in to — it is seeded
+ * with a demo session instead so the dashboard stays reviewable.
  *
  * `viewAsRole` exists for that review: it lets someone step through all four
  * permission tiers without four accounts and a working login. It only ever
@@ -41,10 +40,10 @@ export const useAuthStore = defineStore('auth', {
      */
     viewAsExpiry: null as string | null,
     viewAsExpirySet: false,
-    /** True once a real login flow exists and has succeeded. Always false today. */
+    /** True once `POST /admin/login` or `GET /admin/me` has succeeded. */
     isAuthenticated: false,
-    /** Set when the app is running without a real session. */
-    isDemoSession: true,
+    /** Set only in `fixtures` data mode, where there is no API to sign in to. */
+    isDemoSession: false,
   }),
 
   getters: {
@@ -80,7 +79,7 @@ export const useAuthStore = defineStore('auth', {
       this.isDemoSession = false
     },
 
-    /** Used at boot while there is no login endpoint to call. */
+    /** `fixtures` data mode only — see `plugins/session.client.ts`. */
     setDemoSession(user: AdminSession) {
       this.user = user
       this.isAuthenticated = false
@@ -108,6 +107,7 @@ export const useAuthStore = defineStore('auth', {
       this.viewAsExpiry = null
       this.viewAsExpirySet = false
       this.isAuthenticated = false
+      this.isDemoSession = false
     },
   },
 })

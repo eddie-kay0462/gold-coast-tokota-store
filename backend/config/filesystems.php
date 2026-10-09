@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Image storage
+    |--------------------------------------------------------------------------
+    |
+    | Where product photos, media-library uploads and DIY reference photos
+    | live: `public` (this server's storage/app/public — local development)
+    | or `s3` (production; Render's own disk is wiped on every deploy). Read
+    | only through App\Support\MediaStorage.
+    |
+    */
+
+    'media_disk' => env('MEDIA_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -56,7 +70,9 @@ return [
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            'throw' => false,
+            // A failed upload must be an error, not a silent `false` that
+            // gets saved as an image path.
+            'throw' => true,
             'report' => false,
         ],
 

@@ -1,10 +1,13 @@
 <script setup lang="ts">
+// See MetricCard: a runtime resolveComponent('NuxtLink') renders an inert tag.
+import { NuxtLink } from '#components'
+
 defineProps<{ to?: string; danger?: boolean; disabled?: boolean }>()
 </script>
 
 <template>
   <component
-    :is="to ? resolveComponent('NuxtLink') : 'button'"
+    :is="to ? NuxtLink : 'button'"
     :to="to" :type="to ? undefined : 'button'" :disabled="disabled"
     role="menuitem"
     class="flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-ui transition-colors

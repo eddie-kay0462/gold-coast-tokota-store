@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { PhTrendDown, PhTrendUp } from '@phosphor-icons/vue'
+// Imported, not resolveComponent('NuxtLink') in the template: Nuxt registers
+// it at compile time, so a runtime lookup by name fails and renders an inert
+// <nuxtlink> element — the tiles looked clickable and went nowhere.
+import { NuxtLink } from '#components'
 
 /** KPI tile — Figma 1:24956. Value, optional delta, optional supporting line. */
 defineProps<{
@@ -14,7 +18,7 @@ defineProps<{
 
 <template>
   <component
-    :is="to ? resolveComponent('NuxtLink') : 'div'" :to="to"
+    :is="to ? NuxtLink : 'div'" :to="to"
     class="card card-pad block transition-colors"
     :class="to && 'hover:border-border-strong'"
   >

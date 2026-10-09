@@ -54,9 +54,18 @@ const selectedColorIndex = computed(() => {
 const selectedSize = ref<string | null>(null)
 const sizes = computed(() => props.product.sizes ?? [])
 
+/**
+ * The card buys the pictured colourway (`product.color`), so its sizes are
+ * struck through against that colour's stock, not the all-colours sum.
+ */
+const cardAvailability = computed(
+  () => props.product.variant_availability?.[props.product.color ?? '']
+    ?? props.product.size_availability,
+)
+
 function stockFor(size: string) {
   if (props.product.is_pre_order) return 1
-  const availability = props.product.size_availability
+  const availability = cardAvailability.value
   if (!availability) return 1
   return availability[size] ?? 0
 }
@@ -168,7 +177,7 @@ function add() {
         v-model="selectedSize"
         size="sm"
         :sizes="sizes"
-        :availability="product.size_availability"
+        :availability="cardAvailability"
         :ignore-stock="product.is_pre_order"
       />
 

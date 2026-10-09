@@ -16,7 +16,17 @@ useHead({ title: 'Inventory' })
 
 const { useAdminList } = useAdminApi()
 const { formatRelative, formatNumber } = useFormatters()
-const { items: inventory, pending } = useAdminList<InventoryItem>('admin-inventory', '/admin/inventory')
+// One row per size — the whole run in one request, paged client-side below.
+const { items: inventory, pending, refresh } = useAdminList<InventoryItem>(
+  'admin-inventory', '/admin/inventory', { per_page: 500 },
+)
+
+const adjusting = ref<InventoryItem | null>(null)
+const adjustOpen = ref(false)
+function startAdjust(item: InventoryItem) {
+  adjusting.value = item
+  adjustOpen.value = true
+}
 
 const lowOnly = ref(false)
 const visible = computed(() =>
@@ -106,9 +116,9 @@ const variantLabel = (v: Record<string, string>) =>
       <template #cell-updatedAt="{ row }">
         <span class="text-fg-muted">{{ formatRelative(row.updatedAt) }}</span>
       </template>
-      <template #actions>
+      <template #actions="{ row }">
         <UiPermissionGate capability="inventory.adjust" quiet>
-          <UiButton variant="ghost" size="sm">Adjust</UiButton>
+          <UiButton variant="ghost" size="sm" @click="startAdjust(row)">Adjust</UiButton>
         </UiPermissionGate>
       </template>
       <template #footer>
@@ -119,5 +129,7 @@ const variantLabel = (v: Record<string, string>) =>
         />
       </template>
     </UiDataTable>
+
+    <InventoryAdjustModal v-model:open="adjustOpen" :item="adjusting" @saved="refresh()" />
   </div>
 </template>

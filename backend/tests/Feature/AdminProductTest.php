@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AdminUser;
 use App\Models\Category;
 use App\Models\Collection;
+use App\Models\InventoryItem;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -51,7 +52,7 @@ class AdminProductTest extends TestCase
         ]);
 
         $response->assertCreated();
-        $response->assertJsonPath('data.collection.id', $collection->id);
+        $response->assertJsonPath('data.collection_id', $collection->id);
         $this->assertDatabaseHas('products', ['slug' => 'artisan-sandal', 'merchandising_badge' => 'back_in_stock']);
     }
 
@@ -96,7 +97,10 @@ class AdminProductTest extends TestCase
             ->putJson("/api/v1/admin/products/{$product->id}", ['base_price_ghs' => 12_000]);
 
         $response->assertOk();
-        $response->assertJsonPath('data.base_price_ghs', 12_000);
+        // Admin-shaped money: { amount, currency }, not a bare integer —
+        // the admin app's Money type makes the pair inseparable.
+        $response->assertJsonPath('data.base_price_ghs.amount', 12_000);
+        $response->assertJsonPath('data.base_price_ghs.currency', 'GHS');
         $this->assertDatabaseHas('products', ['id' => $product->id, 'base_price_ghs' => 12_000]);
     }
 
@@ -149,6 +153,136 @@ class AdminProductTest extends TestCase
         $this->assertDatabaseHas('products', ['id' => $product->id]);
     }
 
+    public function test_admin_listing_includes_inactive_products(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        Product::factory()->create(['name' => 'Live Sandal', 'is_active' => true]);
+        Product::factory()->create(['name' => 'Draft Sandal', 'is_active' => false]);
+
+        $response = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/products');
+
+        $response->assertOk();
+        // The whole point of a separate admin listing: the public endpoint is
+        // scoped active(), so a draft would be invisible on the screen whose
+        // job is to manage it.
+        $response->assertJsonCount(2, 'data');
+        $this->assertEqualsCanonicalizing(
+            ['Live Sandal', 'Draft Sandal'],
+            array_column($response->json('data'), 'name'),
+        );
+    }
+
+    public function test_admin_listing_can_filter_by_active_state(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        Product::factory()->create(['name' => 'Live Sandal', 'is_active' => true]);
+        Product::factory()->create(['name' => 'Draft Sandal', 'is_active' => false]);
+
+        $active = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/products?active=1');
+        $active->assertOk()->assertJsonCount(1, 'data');
+        $active->assertJsonPath('data.0.name', 'Live Sandal');
+
+        $inactive = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/products?active=0');
+        $inactive->assertOk()->assertJsonCount(1, 'data');
+        $inactive->assertJsonPath('data.0.name', 'Draft Sandal');
+    }
+
+    public function test_admin_listing_rolls_up_stock_across_variants(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $product = Product::factory()->create();
+        InventoryItem::factory()->for($product)->create([
+            'quantity_available' => 40,
+            'quantity_reserved' => 3,
+            'low_stock_threshold' => 5,
+        ]);
+        // One healthy variant and one starved one. The starved size is what
+        // makes the product low-stock; summed totals (42 available vs a
+        // combined threshold of 10) would say otherwise and hide the restock.
+        InventoryItem::factory()->for($product)->create([
+            'quantity_available' => 2,
+            'quantity_reserved' => 1,
+            'low_stock_threshold' => 5,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/products');
+
+        $response->assertOk();
+        $response->assertJsonPath('data.0.total_available', 42);
+        $response->assertJsonPath('data.0.total_reserved', 4);
+        $response->assertJsonPath('data.0.low_stock', true);
+    }
+
+    public function test_admin_can_search_the_catalogue_by_name_or_sku(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        Product::factory()->create(['name' => 'Kentehene Slide', 'sku' => 'GCT-100']);
+        Product::factory()->create(['name' => 'Odeneho Ahenema', 'sku' => 'GCT-200']);
+
+        // Case-insensitive, and matching on either field.
+        $byName = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/products?q=kentehene');
+        $byName->assertOk()->assertJsonCount(1, 'data');
+        $byName->assertJsonPath('data.0.sku', 'GCT-100');
+
+        $bySku = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/products?q=GCT-200');
+        $bySku->assertOk()->assertJsonCount(1, 'data');
+        $bySku->assertJsonPath('data.0.name', 'Odeneho Ahenema');
+    }
+
+    public function test_admin_can_view_one_product(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $category = Category::factory()->create(['name' => 'Ahenema']);
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'base_price_ghs' => 15_000,
+            'is_active' => false,
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->getJson("/api/v1/admin/products/{$product->id}");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $product->id);
+        $response->assertJsonPath('data.category_name', 'Ahenema');
+        $response->assertJsonPath('data.base_price_ghs.amount', 15_000);
+        $response->assertJsonPath('data.base_price_ghs.currency', 'GHS');
+    }
+
+    public function test_the_admin_product_payload_never_carries_a_stored_usd_price(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $product = Product::factory()->create();
+
+        $response = $this->actingAs($admin, 'admin')->getJson("/api/v1/admin/products/{$product->id}");
+
+        // README Feature 2: USD is always derived, never stored. The admin
+        // screens compute it at render time from the cached rate, so a dollar
+        // figure here would be a second source of truth for a number that must
+        // not have one.
+        $response->assertOk();
+        $response->assertJsonMissingPath('data.price_usd');
+        $response->assertJsonMissingPath('data.base_price_usd');
+    }
+
+    public function test_staff_can_view_products_but_intern_sees_them_too(): void
+    {
+        $product = Product::factory()->create();
+
+        // products.view is held by every tier down to Intern — reading the
+        // catalogue is not the same as repricing it (AdminCapability).
+        foreach (['staff', 'intern'] as $role) {
+            $user = AdminUser::factory()->create(['role' => $role]);
+
+            $this->actingAs($user, 'admin')->getJson('/api/v1/admin/products')->assertOk();
+            $this->actingAs($user, 'admin')->getJson("/api/v1/admin/products/{$product->id}")->assertOk();
+        }
+    }
+
+    public function test_guest_cannot_list_products_through_the_admin_api(): void
+    {
+        $this->getJson('/api/v1/admin/products')->assertUnauthorized();
+    }
+
     public function test_guest_cannot_create_a_product(): void
     {
         $response = $this->postJson('/api/v1/admin/products', [
@@ -159,5 +293,47 @@ class AdminProductTest extends TestCase
         ]);
 
         $response->assertUnauthorized();
+    }
+
+    // --- photos the admin can actually load ------------------------------
+
+    public function test_storefront_relative_photos_are_resolved_against_the_storefront(): void
+    {
+        config(['app.storefront_url' => 'https://goldcoasttokota.store']);
+        $admin = AdminUser::factory()->create(['role' => 'staff']);
+        $product = Product::factory()->create([
+            'images' => ['/products/domfo/1-tan.webp', 'https://cdn.example/x.webp', 'media/2026/10/y.webp'],
+        ]);
+
+        $response = $this->actingAs($admin, 'admin')->getJson("/api/v1/admin/products/{$product->id}");
+
+        $response->assertOk();
+        $urls = $response->json('data.image_urls');
+        $this->assertSame('https://goldcoasttokota.store/products/domfo/1-tan.webp', $urls[0]);
+        $this->assertSame('https://cdn.example/x.webp', $urls[1]);
+        $this->assertStringEndsWith('/storage/media/2026/10/y.webp', $urls[2]);
+        // The raw field is untouched, so a save round-trips what is stored.
+        $response->assertJsonPath('data.images.0', '/products/domfo/1-tan.webp');
+    }
+
+    public function test_photos_are_grouped_by_colourway_in_swatch_order(): void
+    {
+        config(['app.storefront_url' => 'https://goldcoasttokota.store']);
+        $admin = AdminUser::factory()->create(['role' => 'staff']);
+        $product = Product::factory()->create([
+            'colors' => [['name' => 'Brown', 'hex' => '#6B4226'], ['name' => 'Black', 'hex' => '#000000']],
+            'colour_images' => [
+                'Black' => ['/products/nshira/2-black.webp', '/products/nshira/3-black.webp'],
+                'Brown' => ['/products/nshira/1-brown.webp'],
+            ],
+        ]);
+
+        $photos = $this->actingAs($admin, 'admin')
+            ->getJson("/api/v1/admin/products/{$product->id}")
+            ->json('data.colour_photos');
+
+        $this->assertSame(['Brown', 'Black'], array_column($photos, 'colour'));
+        $this->assertCount(2, $photos[1]['urls']);
+        $this->assertSame('https://goldcoasttokota.store/products/nshira/1-brown.webp', $photos[0]['urls'][0]);
     }
 }

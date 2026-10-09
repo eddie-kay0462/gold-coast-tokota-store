@@ -1,16 +1,40 @@
 import type { AdminRole } from '~/types'
-import { sessionFromAdminUser, useAuthStore } from '~/stores/auth'
+import { sessionFromAdminUser, useAuthStore, type AdminSession } from '~/stores/auth'
 import { adminUsers } from '~/fixtures'
 import { denialMessage, ROLE_DESCRIPTIONS, type Capability } from '~/utils/permissions'
 import { daysUntil } from '~/utils/formatters'
+import { apiOrigin, xsrfToken, type DataMode } from '~/composables/useAdminApi'
+
+/** `AdminUserResource`, as `GET /admin/me` and `POST /admin/login` return it. */
+interface ApiAdminUser {
+  id: number
+  name: string
+  email: string
+  job_title: string | null
+  avatar: string | null
+  role: AdminRole
+  access_expires_at: string | null
+}
+
+function sessionFromApi(u: ApiAdminUser): AdminSession {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    jobTitle: u.job_title ?? '',
+    avatar: u.avatar,
+    role: u.role,
+    accessExpiresAt: u.access_expires_at,
+  }
+}
 
 /**
  * Session, permissions and the intern access window.
  *
- * `login()` is present and typed, but throws rather than pretending: the
- * endpoint it would call does not exist. When README Feature 9 lands, the body
- * becomes a `sanctum/csrf-cookie` call followed by a POST, and nothing else in
- * the app changes.
+ * Sanctum SPA cookie auth against the `admin` guard: `GET /sanctum/csrf-cookie`,
+ * then `POST /admin/login`; `GET /admin/me` restores the session on reload.
+ * In `fixtures` data mode there is no API to sign in to, so a demo session is
+ * seeded instead and the app stays reviewable offline.
  */
 export function useAuth() {
   const store = useAuthStore()
@@ -49,16 +73,63 @@ export function useAuth() {
     return 'none'
   })
 
-  async function login(_email: string, _password: string): Promise<never> {
-    throw createError({
-      statusCode: 501,
-      statusMessage:
-        'Sign-in is not enabled yet — the admin login endpoint has not been built. ' +
-        'See README Feature 9.',
+  const config = useRuntimeConfig()
+  const base = config.public.apiBase as string
+  const dataMode = ((config.public.adminData as DataMode) || 'auto')
+  const usesApi = dataMode !== 'fixtures'
+
+  function writeHeaders(): Record<string, string> {
+    const token = xsrfToken()
+    return token
+      ? { Accept: 'application/json', 'X-XSRF-TOKEN': token }
+      : { Accept: 'application/json' }
+  }
+
+  /** Resolves the current session from the API cookie. False if signed out. */
+  async function restoreSession(): Promise<boolean> {
+    try {
+      const res = await $fetch<{ data: ApiAdminUser }>(`${base}/admin/me`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+        retry: 0,
+      })
+      store.setSession(sessionFromApi(res.data))
+      return true
+    } catch {
+      store.clearSession()
+      return false
+    }
+  }
+
+  /**
+   * Throws a FetchError on failure; a 422 carries Laravel's message (bad
+   * credentials or the 5-attempt lockout) under `data.errors.email`.
+   */
+  async function login(email: string, password: string, remember = false): Promise<void> {
+    await $fetch(`${apiOrigin(base)}/sanctum/csrf-cookie`, { credentials: 'include', retry: 0 })
+    const res = await $fetch<{ data: ApiAdminUser }>(`${base}/admin/login`, {
+      method: 'POST',
+      body: { email, password, remember },
+      credentials: 'include',
+      headers: writeHeaders(),
+      retry: 0,
     })
+    store.setSession(sessionFromApi(res.data))
   }
 
   async function logout() {
+    if (usesApi && store.isAuthenticated) {
+      try {
+        await $fetch(`${base}/admin/logout`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: writeHeaders(),
+          retry: 0,
+        })
+      } catch {
+        // Already expired server-side; clearing locally is all that is left.
+      }
+    }
     store.clearSession()
     await navigateTo('/login')
   }
@@ -79,6 +150,8 @@ export function useAuth() {
     whyNot,
     setViewAsRole: (r: AdminRole | null, expiry?: string | null) => store.setViewAsRole(r, expiry),
     ensureDemoSession,
+    restoreSession,
+    usesApi,
     login,
     logout,
   }

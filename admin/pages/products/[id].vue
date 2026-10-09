@@ -95,6 +95,53 @@ const derivedUsd = computed(() => {
           </template>
         </SettingsSection>
 
+        <SettingsSection
+          title="Photos"
+          :description="product.colourPhotos?.length ? 'Each colourway’s photos, as the storefront shows them.' : undefined"
+        >
+          <div v-if="product.colourPhotos?.length" class="flex flex-col gap-5">
+            <div v-for="group in product.colourPhotos" :key="group.colour" class="flex flex-col gap-2">
+              <p class="flex items-center gap-2 text-ui text-fg-strong">
+                <span
+                  class="size-3.5 shrink-0 rounded-full border border-border"
+                  :style="{ backgroundColor: group.hex ?? 'transparent' }"
+                />
+                {{ group.colour }}
+                <span class="text-meta text-fg-faint">
+                  {{ group.urls.length }} photo{{ group.urls.length === 1 ? '' : 's' }}
+                </span>
+              </p>
+              <div v-if="group.urls.length" class="flex flex-wrap gap-2">
+                <a
+                  v-for="url in group.urls" :key="url" :href="url" target="_blank" rel="noopener"
+                  class="block overflow-hidden rounded-lg border border-border hover:border-border-strong"
+                >
+                  <img :src="url" :alt="`${product.name} in ${group.colour}`" loading="lazy" class="h-28 w-[84px] object-cover">
+                </a>
+              </div>
+              <p v-else class="text-meta text-warning">No photo of this colourway yet.</p>
+            </div>
+          </div>
+
+          <div v-else-if="product.imageUrls?.length" class="flex flex-wrap gap-2">
+            <a
+              v-for="url in product.imageUrls" :key="url" :href="url" target="_blank" rel="noopener"
+              class="block overflow-hidden rounded-lg border border-border hover:border-border-strong"
+            >
+              <img :src="url" :alt="product.name" loading="lazy" class="h-28 w-[84px] object-cover">
+            </a>
+          </div>
+
+          <p v-else class="text-ui text-fg-muted">This product has no photos.</p>
+
+          <!-- View-only on purpose: uploads would land on the API server's
+               disk, which Render wipes on every deploy (FOR_THE_TEAM.md D3).
+               Photo uploads arrive with object storage. -->
+          <p class="mt-4 text-meta text-fg-faint">
+            Photos can’t be changed here yet — that arrives once images move to cloud storage.
+          </p>
+        </SettingsSection>
+
         <SettingsSection title="Variants" description="Stock per size and colourway.">
           <ul class="divide-y divide-border">
             <li v-for="v in variants" :key="v.id" class="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">

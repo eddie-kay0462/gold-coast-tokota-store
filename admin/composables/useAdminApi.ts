@@ -1,14 +1,18 @@
 import type { Envelope, ListQuery } from '~/types'
 import { resolveFixture } from '~/fixtures'
+import { useAuthStore } from '~/stores/auth'
 
 /**
  * The one way this app talks to data.
  *
- * The Laravel admin API does not exist yet — `backend/routes/api.php` defines
- * exactly two public routes, and every `/admin/*` path returns 404. Rather than
- * build screens against nothing, `adminFetch` tries the real endpoint and falls
- * back to bundled fixtures when it isn't there. As each endpoint lands the
- * corresponding screen starts showing real data with no code change.
+ * `adminFetch` calls the real Laravel admin API and falls back to bundled
+ * fixtures for any path the API doesn't serve (today: inbox ×3, activity and
+ * audit — FOR_THE_TEAM.md issue 28).
+ *
+ * Auth failures are the exception to the fallback. A 401 or 419 means the
+ * Sanctum session is gone, not that the endpoint is missing, so it sends the
+ * user to /login instead of quietly swapping in invented data — which is what
+ * every screen did before login was wired, while 27 real endpoints sat unused.
  *
  * Modes, via NUXT_PUBLIC_ADMIN_DATA:
  *   auto     — try the API, fall back to fixtures (default)
@@ -48,6 +52,29 @@ function normalizeKeys(input: unknown): unknown {
     out[camelize(k)] = normalizeKeys(v)
   }
   return out
+}
+
+/**
+ * Sanctum's CSRF token, from the `XSRF-TOKEN` cookie the API sets on
+ * `GET /sanctum/csrf-cookie`. Laravel rotates it on login and logout, so it is
+ * read fresh on every write rather than cached. Readable cross-subdomain only
+ * because `SESSION_DOMAIN` is the shared parent (`.goldcoasttokota.store`).
+ */
+export function xsrfToken(): string | null {
+  if (import.meta.server) return null
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/)
+  return match ? decodeURIComponent(match[1]!) : null
+}
+
+/** `http://host/api/v1` → `http://host` — Sanctum's cookie route is unprefixed. */
+export function apiOrigin(apiBase: string): string {
+  return apiBase.replace(/\/api\/v\d+\/?$/, '')
+}
+
+export function isAuthFailure(err: unknown): boolean {
+  const status = (err as { statusCode?: number; status?: number })?.statusCode
+    ?? (err as { status?: number })?.status
+  return status === 401 || status === 419
 }
 
 export type DataMode = 'auto' | 'live' | 'fixtures'
@@ -111,6 +138,10 @@ export function useAdminApi() {
 
     if (mode === 'fixtures') return fromFixture<T>(path, query)
 
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    const token = method === 'GET' ? null : xsrfToken()
+    if (token) headers['X-XSRF-TOKEN'] = token
+
     try {
       const res = await $fetch<Envelope<T> | T>(`${base}${path}`, {
         method,
@@ -118,7 +149,7 @@ export function useAdminApi() {
         body: method === 'GET' ? undefined : (body as Record<string, unknown>),
         // Sanctum SPA cookie auth needs the session cookie on every call.
         credentials: 'include',
-        headers: { Accept: 'application/json' },
+        headers,
         retry: 0,
       })
 
@@ -135,7 +166,16 @@ export function useAdminApi() {
         source: 'live',
       }
     } catch (err: unknown) {
-      if (mode === 'live') throw err
+      if (isAuthFailure(err)) {
+        useAuthStore().clearSession()
+        if (useRoute().path !== '/login') {
+          await navigateTo({ path: '/login', query: { redirect: useRoute().fullPath } })
+        }
+        throw err
+      }
+      // Fixtures stand in for reads only. A failed write falling back would
+      // swallow the API's validation message and look like it had saved.
+      if (mode === 'live' || method !== 'GET') throw err
 
       const status = (err as { statusCode?: number; status?: number })?.statusCode
         ?? (err as { status?: number })?.status

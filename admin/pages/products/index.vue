@@ -146,7 +146,12 @@ const columns: Column<Product>[] = [
     >
       <template #cell-name="{ row }">
         <span class="flex items-center gap-3">
-          <span class="flex size-9 shrink-0 items-center justify-center rounded bg-bg-sunken text-fg-faint">
+          <img
+            v-if="row.imageUrls?.length"
+            :src="row.imageUrls[0]" alt="" loading="lazy"
+            class="size-9 shrink-0 rounded bg-bg-sunken object-cover"
+          >
+          <span v-else class="flex size-9 shrink-0 items-center justify-center rounded bg-bg-sunken text-fg-faint">
             <PhPackage :size="18" />
           </span>
           <span class="min-w-0">
