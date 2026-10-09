@@ -11,7 +11,7 @@
 
       <div class="relative flex w-full flex-col items-center gap-3 text-center text-white">
         <h2 class="w-full text-display-md">We're on a Mission To Build Sustainably</h2>
-        <p class="w-full text-body">Read about our progress in our latest Impact Report.</p>
+        <p class="w-full text-body">See how we make each pair, and what we're changing.</p>
       </div>
 
       <CommonBrandButton to="/about#sustainability" variant="white" class="relative">

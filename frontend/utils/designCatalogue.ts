@@ -15,7 +15,7 @@ import type { ApiProduct } from '~/utils/catalog'
  * sections when the fields are absent. `size_availability` is a placeholder
  * count, not real stock; the API is the source of truth for that.
  *
- * Keep the name `DESIGN_PRODUCTS`: five files import it.
+ * Keep the name `DESIGN_PRODUCTS`: several files import it.
  */
 export const DESIGN_PRODUCTS: ApiProduct[] = [
   {

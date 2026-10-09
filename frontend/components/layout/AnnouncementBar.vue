@@ -75,7 +75,7 @@ watch(messages, (list) => {
       <CommonMarquee :copies="2" :duration="24">
         <template v-for="message in messages" :key="message">
           <span class="whitespace-nowrap pr-2">{{ message }}</span>
-          <span class="pr-2 text-gold" aria-hidden="true">&middot;</span>
+          <span class="pr-2" aria-hidden="true">&middot;</span>
         </template>
       </CommonMarquee>
     </div>
@@ -105,18 +105,18 @@ watch(messages, (list) => {
     <!-- Line 2: when someone can expect a reply, and how to get one. Quieter
          than the line above so the two read as message and footnote rather than
          as two competing announcements. -->
-    <p class="mt-0.5 text-tag uppercase text-white/55">
+    <p class="mt-0.5 text-tag uppercase text-white">
       {{ supportHours }}
       <!-- Hidden below `sm`: the floating WhatsApp button is already on screen
            there, and a second link to the same place is noise on a 320px bar.
            `quiet` styling is overridden for the dark ground. -->
       <span class="hidden sm:inline">
-        <span class="text-gold" aria-hidden="true">&nbsp;&middot;&nbsp;</span>
+        <span aria-hidden="true">&nbsp;&middot;&nbsp;</span>
         <CommonWhatsAppLink
           source="announcement"
           variant="quiet"
           :message="whatsappMessage.general()"
-          class="!text-white/80 decoration-white/40 hover:!text-white"
+          class="!text-white decoration-white/50 hover:decoration-white"
         >
           Message us on WhatsApp
         </CommonWhatsAppLink>

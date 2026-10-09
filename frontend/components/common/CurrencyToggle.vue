@@ -18,7 +18,7 @@ import { CURRENCIES, type Currency } from '~/utils/constants'
  */
 withDefaults(
   defineProps<{
-    /** `dark` sits on the chrome bar; `light` on a white ground. */
+    /** `dark` sits on the black announcement strip; `light` on a white ground. */
     tone?: 'dark' | 'light'
   }>(),
   { tone: 'dark' },
@@ -29,30 +29,39 @@ const currency = useCurrencyStore()
 function cellClass(code: Currency, tone: 'dark' | 'light') {
   const active = currency.displayCurrency === code
   if (tone === 'light') {
-    return active ? 'bg-graphite text-white' : 'text-graphite hover:bg-surface'
+    return active ? 'border-ink bg-ink text-white' : 'border-ink/30 text-ink group-hover:border-ink'
   }
-  return active ? 'bg-white text-chrome' : 'text-white/70 hover:text-white'
+  return active ? 'border-white bg-white text-ink' : 'border-white/40 text-white group-hover:border-white'
 }
 </script>
 
 <template>
-  <div
-    class="flex shrink-0 items-center overflow-hidden rounded-[2px] border"
-    :class="tone === 'light' ? 'border-line' : 'border-white/25'"
-    role="group"
-    aria-label="Display currency"
-  >
+  <!-- The tap target and the drawn control are separate. Each button is a
+       44px-square hit area with nothing painted on it; the visible segmented
+       pill is the small span inside. Before, the 44px box *was* the drawn cell,
+       so on a phone the switch filled the announcement strip edge to edge and
+       outweighed the message beside it.
+
+       The first button pushes its cell right and the second pushes its cell
+       left, so the two cells meet in the middle as one pill however wide the
+       hit areas are. -->
+  <div class="flex shrink-0 items-center" role="group" aria-label="Display currency">
     <button
-      v-for="code in CURRENCIES"
+      v-for="(code, index) in CURRENCIES"
       :key="code"
       type="button"
-      class="flex min-h-[44px] items-center justify-center px-2.5 text-caption transition-colors lg:min-h-0 lg:py-1"
-      :class="cellClass(code, tone)"
+      class="group flex min-h-[44px] min-w-[44px] items-center"
+      :class="index === 0 ? 'justify-end' : 'justify-start'"
       :aria-pressed="currency.displayCurrency === code"
       :aria-label="`Show prices in ${code}`"
       @click="currency.setCurrency(code)"
     >
-      {{ code }}
+      <span
+        class="border px-2 py-[5px] text-[11px] leading-none tracking-[0.6px] transition-colors lg:px-2.5 lg:py-1 lg:text-caption"
+        :class="[cellClass(code, tone), index === 0 ? 'rounded-l-[2px]' : '-ml-px rounded-r-[2px]']"
+      >
+        {{ code }}
+      </span>
     </button>
   </div>
 </template>

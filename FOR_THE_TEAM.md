@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 9 October 2026 (product details become an accordion, shipping/returns copy brought in line with GOLD_COAST_TOKOTA.md; size guide opens as a modal on the product page; sizes slide to the end and back once as a scroll cue; buy panel no longer cut off on the left; sizes scroll in one row so cards align; Vue 3.5.43 fixes icon hydration warnings; homepage featured row shows real products only; GHS|USD switch fixed; product photo no longer switches on hover)
+- **Last updated:** 9 October 2026 (more line spacing in the footer blurb; Shop Now in the first view on laptops; announcement strip stays black, now with solid white text; compact GHS|USD switch on phones; buttons go white-outlined, black on hover; home page trimmed to four sections with a product rail; header and footer go white with black accents; product details become an accordion, shipping/returns copy brought in line with GOLD_COAST_TOKOTA.md; size guide opens as a modal on the product page; sizes slide to the end and back once as a scroll cue; buy panel no longer cut off on the left; sizes scroll in one row so cards align; Vue 3.5.43 fixes icon hydration warnings; homepage featured row shows real products only; GHS|USD switch fixed; product photo no longer switches on hover)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change is committed (`e343bb7`). The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,174 @@ inert at their last step.
 
 ## Recent changes
 
-### 9 October 2026 (latest) — product details as an accordion
+### 9 October 2026 (latest) — footer blurb line spacing
+
+The footer's brand blurb ("Handcrafted sandals and ahenema, made in Ghana…")
+now has 24px line spacing (`leading-6`). It was 16.8px, the `text-label`
+default, which read cramped at the label's wide letter-spacing. The client
+asked for more air.
+
+### 9 October 2026 — hero's Shop Now above the fold
+
+On laptop screens the home hero's Shop Now button was below the fold:
+
+| Screen | How far below |
+|---|---|
+| 1440×900 | 69px |
+| 1366×768 | 176px |
+| 1280×720 | 195px |
+
+The sticky header alone is 174px there. Phones and tablets were already fine.
+`components/home/HeroSection.vue` now:
+
+- **Tighter top padding.** The headline sits closer to the header
+  (`pt-10 lg:pt-12`, was 64/96px).
+- **Image height capped on desktop.** It is limited to the space left in the
+  first view: `lg:max-h-[max(160px,calc(100svh-540px))]`. On tall screens the
+  cap does nothing. On short laptops the image shrinks, with `object-contain`
+  keeping the sandals whole.
+
+Measured with Shop Now visible and room below it at:
+
+- desktop: 1920×1080, 1440×900, 1366×768 and 1280×720;
+- tablet: 768×1024;
+- phones: 414×896, 375×812, 375×667 and 320×568.
+
+`/design/hero.png` has a band of empty white built into its top. Cropping that
+out of the file would let the sandals sit larger on short screens, if the
+brand has a tighter export.
+
+### 9 October 2026 — announcement strip: black, solid white text
+
+The client tried the top strip in white and then gold, and settled on black
+(`ink`) with **solid** white type. The strip is otherwise as it was before
+those trials.
+
+- **Support-hours line.** It is solid white now, where it used to be white at
+  55%.
+- **Separator dots.** These are white, no longer gold.
+- **WhatsApp link.** It is white with a softer underline.
+- **Currency switch (`dark` tone).**
+  - Active cell: white fill with ink text.
+  - Inactive cell: solid white text inside a faint white outline that firms up
+    on hover. It used to be white at 70%.
+- **Focus ring.** The strip carries `chrome-dark` again for a white focus ring.
+  The rest of the header uses the base graphite ring.
+
+### 9 October 2026 — compact currency switch on phones
+
+On a phone the GHS|USD switch filled the black announcement strip top to
+bottom. Each cell was the 44px tap target *and* the drawn box, so it outweighed
+the message beside it.
+
+`components/common/CurrencyToggle.vue` now separates the two:
+
+- Each button is an invisible 44×44 hit area.
+- The visible control is a small segmented pill inside it: 11px type on phones,
+  unchanged from `lg` up.
+- The two cells meet in the middle as one pill.
+
+The flag in the strip is a little smaller below `sm`. Tap targets still measure
+44px; `scripts/check-responsive.mjs` is clean apart from the existing
+`/shop/kentehene-collection` 404.
+
+### 9 October 2026 — home page trimmed and knitted together; outlined buttons
+
+**Home page** (`pages/index.vue`). Eight sections become four: hero, a product
+rail, the sustainability banner and Stories. The client chose all four cuts:
+
+- **Editorial pair** ("Our Holiday Gift Picks" / "Cleaner Footwear"). The copy
+  was seasonal, and the second card repeated the sustainability banner.
+- **Testimonial block.** It held one review crediting a product that doesn't
+  exist. Open issue #16 no longer affects any live page.
+- **Value props row.** "Come Say Hi" printed a street address that `/stores`
+  deliberately leaves out, and the shipping line repeated the announcement bar.
+- **Customer photo gallery.** Its "shop this look" cart buttons all went to
+  `/shop`. **`/community/submit` is now unlinked from the home page.** It still
+  resolves.
+
+Their components and the images only they used are deleted (`ugc-*`,
+`value-*`, `testimonial.png`, `editorial-cleaner-footwear.png`), along with
+`CarouselArrow` and `CarouselDots`, which had no users left.
+`editorial-gift-picks.png` stays because `utils/newsPosts.ts` uses it.
+
+- **Product rail** (`components/home/FeaturedCollection.vue`), after the
+  Crockett & Jones rail the client sent:
+  - ten products in tall 3:4 tiles, running off the right edge;
+  - the name in bold tracked capitals, with the pictured colourway
+    (`product.color`) beneath it;
+  - a "Shop all" link instead of the "Shop Your Favorites" button.
+- **Stories** uses the same rail, so the two read as one system.
+- **New `CommonRailControls`**: arrows, a progress bar that tracks the visible
+  window, and an `n/N` count. It reads N/N once the rail reaches its end, since
+  the last cards can never reach the left edge. `useScrollRail` now also returns
+  `activeSlide`, `slideCount` and `thumb`.
+- **New `HomeSectionHeading`**: title on the left, tracked uppercase link on the
+  right. It is the one heading treatment for both rails.
+- **Sustainability banner** no longer promises "our latest Impact Report", which
+  was removed from the site earlier.
+- With the API down the product rail renders only its heading, by design (no
+  fake products).
+
+**Buttons, site-wide.** At the client's request every call-to-action is white
+with a thin black outline at rest and fills black on hover or keyboard focus.
+The look is one class pair in `assets/css/main.css`:
+
+- `.btn-outline` for buttons on light grounds.
+- `.btn-outline-on-dark`, whose outline turns white when filled so it keeps an
+  edge on photography or black. It is used by the sustainability banner and the
+  About band, whose WhatsApp button was gold.
+
+It is applied in four places:
+
+- `CommonBrandButton`: all variants; the variant names are kept so call sites
+  didn't change.
+- `CommonWhatsAppLink`: `outlined`, `solid` and `gold`.
+- The light newsletter form's submit.
+- The cart drawer's "Add".
+
+Disabled buttons never fill. Selection states (chosen size, active filter,
+currency toggle) are toggles rather than buttons, and stay filled.
+
+Checked against the dev server with the API running:
+
+- screenshots at 1440 and 375;
+- the rail arrows and counter, including disabled arrows at both ends;
+- rest and hover button states;
+- `scripts/check-responsive.mjs`, which found no overflow or tap-target issues
+  (the only finding is the existing `/shop/kentehene-collection` 404).
+
+### 9 October 2026 — white header and footer
+
+The header and footer leave the dark `chrome` ground from Template B. The client
+asked for white with black accents and supplied the Crockett & Jones header as
+the reference.
+
+- **Header** (`components/layout/Header.vue`). Logo row and category row are
+  white, each with a `line` hairline under it. The dark logo (`/brand/logo.png`)
+  replaces the white one and is a little larger. Labels are uppercase and
+  tracked. The current primary tab is marked by a 1px black rule instead of
+  the gold bar. Category items with a mega menu get a caret that flips while
+  the menu is open. The open or current item goes full ink and is underlined.
+  The cart sits in a grey circle, as in the reference, and its count badge is
+  black. The mobile drawer is white too.
+- **Kept black:** the announcement strip at the very top (`ink`), with the
+  flag and the GHS|USD switch. It is the one solid black band. Making it white
+  as well is a one-class change if the client wants that.
+- **Sale** in the category row uses plain `sale` red now, which clears 4.5:1 on
+  white. `sale-on-dark` remains only for the dark newsletter form's error line.
+- **Footer** (`components/layout/Footer.vue`). White, with a hairline on top so
+  it doesn't merge into white sections above it. Headings are bold black, links
+  are graphite and turn ink on hover, and the newsletter uses the light form.
+  `NewsletterForm` takes an optional `placeholder`, because the light default
+  ("Sign up for our Newsletter here!") was cut off in the footer column.
+- `.chrome-dark` (white focus ring) is now only on the announcement strip.
+  Everything else uses the base graphite ring.
+- Checked with `scripts/check-responsive.mjs` against the dev server: no
+  overflow or tap-target findings on any route. The only errors were 404s for
+  `/shop/kentehene-collection`, which isn't in the local database.
+
+### 9 October 2026 — product details as an accordion
 
 Below Add to Cart, the product page's buy panel stacked three service promises
 with icons, the description, Model, Fit and Sustainability, all open. It is now
@@ -2977,7 +3144,7 @@ will light up:
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
 | 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
 | 15 | **DEI has no link anywhere** | Was "`/about#dei` repointed to `/careers#dei`". The footer link that raised this went with the 27 Aug footer trim, so nothing now links to `/careers#dei` at all — the section exists and its copy is still a placeholder. The decision is no longer *where* DEI lives but **whether it needs a home**; if it does, it needs brand-written text and a link. **Awaiting a decision.** |
-| 16 | **The testimonial names a product that doesn't exist** | Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
+| 16 | **The testimonial names a product that doesn't exist** | *(9 Oct: the testimonial block was removed from the home page, so this no longer shows anywhere. Still needed if the review comes back.)* Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
 | 17 | ~~**"Sign Up For Texts" links to an email form**~~ | **Closed 27 Aug 2026.** The announcement bar was rebuilt as the approved mockup's rotating strip and that copy no longer exists. |
 | 21 | **The approved mockup asserts two things the project cannot back up** | Template B's announcement bar reads "Free delivery in Accra" and "Order online, pick up in Osu". Checkout charges GH₵25 for Accra delivery, and the address on file in the brand PDF is Haatso, not Osu. Neither line shipped. The bar renders "Handcrafted in Ghana / Pay with MoMo or card / We ship worldwide" instead, and `SiteSetting.announcements` makes the real copy a settings change rather than a deploy. **Confirm both claims with the brand**, then set them. |
 | 22 | **DIY reference images are not uploaded** | The booking form has the mockup's dropzone, but `StoreBookingRequest` types `details.reference_image` as a string and no endpoint accepts a binary. The form records the file *name* and tells the customer, in place, to send the photo over WhatsApp with a prefilled link. Honest, but it is a stopgap — an upload endpoint (and storage) is the real fix. |
