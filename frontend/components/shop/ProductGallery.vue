@@ -24,19 +24,7 @@ const frames = computed(() => props.images.filter(Boolean))
 
 const activeIndex = ref(0)
 
-/**
- * Hovering the main image previews the next shot and releases back, exactly as
- * the mockup does. Hover only — it is a flourish, and everything it reveals is
- * reachable from the rail below by click and by keyboard.
- */
-const hovering = ref(false)
-
-const previewIndex = computed(() => {
-  if (!hovering.value || frames.value.length < 2) return activeIndex.value
-  return (activeIndex.value + 1) % frames.value.length
-})
-
-const mainImage = computed(() => frames.value[previewIndex.value] ?? frames.value[0] ?? '')
+const mainImage = computed(() => frames.value[activeIndex.value] ?? frames.value[0] ?? '')
 
 // A product whose photo set changes (navigating between products reuses this
 // component) must not keep an index past the end of the new set.
@@ -49,14 +37,12 @@ watch(frames, () => (activeIndex.value = 0))
     <div
       class="relative w-full overflow-hidden bg-surface"
       :class="frames.length > 1 ? 'aspect-[4/5] sm:min-w-0 sm:flex-1' : 'aspect-[4/5]'"
-      @mouseenter="hovering = true"
-      @mouseleave="hovering = false"
     >
       <img
         v-if="mainImage"
         :key="mainImage"
         :src="mainImage"
-        :alt="previewIndex === 0 ? name : `${name} — view ${previewIndex + 1}`"
+        :alt="activeIndex === 0 ? name : `${name} — view ${activeIndex + 1}`"
         class="size-full object-cover"
         loading="eager"
       >
