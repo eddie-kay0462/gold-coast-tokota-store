@@ -9,6 +9,15 @@ import type { Currency } from '~/utils/constants'
 const CURRENCY_COOKIE = 'gct_currency'
 const CURRENCY_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
+type FxRatePayload = { rate: number | string, fetched_at?: string, created_at?: string }
+
+/**
+ * One request at a time, however many callers ask for the rate at once.
+ * Browser only: on the server this module is shared by every concurrent
+ * render, and one request's fetch must not fill another request's store.
+ */
+let pendingFxRequest: Promise<boolean> | null = null
+
 export const useCurrencyStore = defineStore('currency', {
   state: () => ({
     active: 'GHS' as Currency,
@@ -35,6 +44,42 @@ export const useCurrencyStore = defineStore('currency', {
     setCurrency(currency: Currency) {
       this.active = currency
       this.persist()
+      // Picking USD before a rate has loaded would otherwise do nothing visible,
+      // so it fetches the rate itself. GHS needs no rate.
+      if (currency === 'USD' && !this.canConvert) void this.loadFxRate()
+    },
+
+    /**
+     * Fetches the display rate. Resolves `true` once USD can be shown.
+     *
+     * A failure is not an error for the page: the storefront stays in cedis.
+     * That's why this catches instead of throwing, and why a later call (the
+     * client retrying, or the visitor choosing USD again) can still succeed.
+     */
+    loadFxRate(): Promise<boolean> {
+      if (this.canConvert) return Promise.resolve(true)
+      if (import.meta.client && pendingFxRequest) return pendingFxRequest
+
+      const { apiBase } = useRuntimeConfig().public
+
+      // `retry: 0`: ofetch retries a failed GET once by default, which doubled
+      // the console error whenever the API was down. Choosing USD already
+      // retries.
+      const request = $fetch<{ data: FxRatePayload | null }>(`${apiBase}/fx-rate`, { retry: 0 })
+        .then(({ data: payload }) => {
+          const rate = Number(payload?.rate)
+          if (!payload || !Number.isFinite(rate) || rate <= 0) return false
+
+          this.setFxRate(rate, payload.fetched_at ?? payload.created_at ?? new Date().toISOString())
+          return true
+        })
+        .catch(() => false)
+        .finally(() => {
+          if (pendingFxRequest === request) pendingFxRequest = null
+        })
+
+      if (import.meta.client) pendingFxRequest = request
+      return request
     },
 
     setFxRate(rate: number, fetchedAt: string) {
