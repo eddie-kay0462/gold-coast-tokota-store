@@ -134,9 +134,8 @@ const derivedUsd = computed(() => {
 
           <p v-else class="text-ui text-fg-muted">This product has no photos.</p>
 
-          <!-- View-only on purpose: uploads would land on the API server's
-               disk, which Render wipes on every deploy (FOR_THE_TEAM.md D3).
-               Photo uploads arrive with object storage. -->
+          <!-- View-only for now: the API can store uploads in Cloudflare R2
+               (MediaStorage), but the editor has no upload control yet. -->
           <p class="mt-4 text-meta text-fg-faint">
             Photos can’t be changed here yet — that arrives once images move to cloud storage.
           </p>
