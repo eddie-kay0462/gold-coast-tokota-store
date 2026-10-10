@@ -25,7 +25,16 @@ class DatabaseSeeder extends Seeder
         // inventing credentials for real colleagues is not something a seeder
         // should do — see FOR_THE_TEAM.md.
         if (! AdminUser::query()->where('email', 'admin@goldcoasttokota.store')->exists()) {
+            // The factory's password is `password`. Fine locally; in
+            // production it would be a live super_admin anyone could guess.
+            $password = app()->isProduction() ? env('SEED_ADMIN_PASSWORD') : 'password';
+
+            if (! is_string($password) || strlen($password) < 12) {
+                throw new \RuntimeException('Set SEED_ADMIN_PASSWORD (12+ characters) to seed the first admin in production.');
+            }
+
             AdminUser::factory()->create([
+                'password' => $password,
                 'name' => 'Test Super Admin',
                 'job_title' => 'Founder & CEO',
                 'email' => 'admin@goldcoasttokota.store',

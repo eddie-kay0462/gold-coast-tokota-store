@@ -35,15 +35,16 @@ class BookingUploadController extends Controller
         // Laravel generates the stored name — a 40-character random string —
         // so a hostile original filename never reaches the filesystem, and the
         // resulting URL is not guessable from the customer's name or the date.
-        // That unguessability is doing real work here: the `public` disk means
-        // anyone holding the URL can open the photo.
-        $path = $file->store(self::DIRECTORY.'/'.now()->format('Y/m'), MediaStorage::diskName());
+        // In production the photo goes to the private R2 bucket; on the local
+        // `public` disk the unguessable name is what keeps it from being found.
+        $path = $file->store(self::DIRECTORY.'/'.now()->format('Y/m'), MediaStorage::privateDiskName());
 
         return response()->json([
             'data' => [
                 // What the booking payload should carry.
                 'path' => $path,
-                'url' => MediaStorage::url($path),
+                // Short-lived on R2 — enough for the form to preview it.
+                'url' => MediaStorage::privateUrl($path),
                 // Kept only as a display label for the admin screen. It is the
                 // customer's own filename and is never used to address the file.
                 'filename' => $file->getClientOriginalName(),

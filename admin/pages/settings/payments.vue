@@ -10,7 +10,7 @@ import type { PaymentSettings } from '~/types'
  * `settings.payments`, which only super_admin holds.
  *
  * Keys are shown masked and are never editable from this UI. They live as
- * Render environment secrets (README Feature 12), and a dashboard field that
+ * environment variables on the API server (README Feature 12), and a dashboard field that
  * accepts a live secret key is a dashboard field that leaks one.
  */
 useHead({ title: 'Payments' })

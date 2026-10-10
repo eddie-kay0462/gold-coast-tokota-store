@@ -7,8 +7,8 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 10 October 2026 (S3 image storage removed; product photos load from the storefront again)
-- **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
+- **Last updated:** 10 October 2026 (hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last commit on `main`:** `c873cfc` — *Merge pull request #26 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at that commit on 10 Oct
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
@@ -48,7 +48,46 @@ inert at their last step.
 
 ## Recent changes
 
-### 10 October 2026 (latest) — S3 image storage removed
+### 10 October 2026 (latest) — new hosting: Vercel, Contabo, Neon, Cloudflare
+
+**Render is no longer used.** `render.yaml` is deleted. The new split:
+
+| Piece | Where | Who sets it up |
+|---|---|---|
+| Storefront, admin | Vercel | already deployed there |
+| API, queue worker, scheduler, Redis | Contabo VPS | a colleague — `docs/deploy/contabo.md` |
+| Database | Neon, Frankfurt | Edward — `docs/deploy/neon.md` |
+| Uploaded images | Cloudflare R2 | whoever holds the Cloudflare account — `contabo.md` §7 |
+| DNS, TLS for the API | Cloudflare | same |
+
+**Code:**
+- **Images on R2.** `league/flysystem-aws-s3-v3` is back: R2 speaks the S3
+  protocol, so this is the client library only, with no AWS account. Two new
+  disks: **`r2`** (public bucket, media library) and **`r2-private`** (DIY
+  reference photos). An R2 bucket is public or private as a whole, so one
+  bucket can't do both. `MediaStorage` gains `privateDisk()` and
+  `privateUrl()`; DIY photos are shown through **15-minute signed links**.
+  Locally both disks stay `public`. **This closes D3 once the buckets exist.**
+- **Redis** for the queue, cache and sessions in production, via
+  `predis/predis` (no PHP extension needed). Keeps the worker from polling
+  Neon every 3 s, so Neon can sleep when idle. Local development still uses
+  `database`.
+- **Neon:** new `pgsql_direct` connection (`DB_DIRECT_URL`, falling back to
+  `DB_URL`) for migrations: `php artisan migrate --force --database=pgsql_direct`.
+  Checked: a `postgresql://` URL through it migrates a fresh database (37
+  migrations).
+- **The seeder refuses to run in production without `SEED_ADMIN_PASSWORD`**
+  (12+ characters). Its development password is `password`, which would have
+  been a live super_admin on a fresh production database.
+- 407 tests passing (6 new: R2 disk config, private-disk routing, signed
+  links, local fallback, seeder password ×2).
+
+**Not verified yet:** Redis itself, since there's no Redis on the dev Mac.
+The settings are Laravel's stock Redis drivers; the first run on the server
+is the real test. Nothing has been tried against a real R2 bucket or Neon
+project yet.
+
+### 10 October 2026 — S3 image storage removed
 
 The team is not using AWS, so the 2 Oct S3 change is undone.
 
@@ -2991,10 +3030,11 @@ exchangerate.host need a human to request business access. Those requests have
 lead times measured in days, and they gate items 3–6 below — start them now,
 not when you reach the stage that needs them.
 
-**Uploads need durable storage (D3, reopened 10 Oct).** With S3 removed,
-admin media uploads and DIY reference photos sit on Render's disk and vanish
-on every deploy. Decision needed: a Render persistent disk or another
-provider. Only `App\Support\MediaStorage` has to change.
+**Hosting move (10 Oct).** Set up Neon (`docs/deploy/neon.md`), the Contabo
+server (`docs/deploy/contabo.md`) and the two R2 buckets, then point the
+Vercel apps' `NUXT_PUBLIC_API_BASE` and Paystack's webhook at
+`api.goldcoasttokota.store`. Uploads (D3) are durable once R2 is configured.
+The admin product editor can now gain a photo upload control.
 
 In dependency order:
 

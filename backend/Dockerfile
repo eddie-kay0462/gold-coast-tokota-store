@@ -21,8 +21,7 @@ EXPOSE 8000
 # and cheap, so it runs on every boot rather than being a step someone has to
 # remember.
 #
-# Migrations run here rather than in a Render preDeploy step to keep the
-# blueprint simple. Note this means only the *web* service should migrate —
-# the worker and scheduler run the same image with their own dockerCommand,
-# which overrides this CMD, so they never race it.
+# Left over from the Render deploy and not used in production: the API runs
+# on Contabo under nginx + PHP-FPM (docs/deploy/contabo.md). `artisan serve`
+# below is a development server.
 CMD ["sh", "-c", "php artisan migrate --force && php artisan storage:link || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
