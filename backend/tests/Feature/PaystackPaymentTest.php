@@ -327,4 +327,132 @@ class PaystackPaymentTest extends TestCase
             json_encode($payload),
         )->assertOk();
     }
+
+    // --- late payments and partial failures -----------------------------
+
+    private function deliver(array $payload)
+    {
+        return $this->call(
+            'POST', '/api/v1/webhooks/paystack', [], [], [],
+            ['HTTP_X-PAYSTACK-SIGNATURE' => $this->signature($payload), 'CONTENT_TYPE' => 'application/json'],
+            json_encode($payload),
+        );
+    }
+
+    /**
+     * A pending order whose 15-minute hold on one pair has been swept, and the
+     * pair it held then reserved by someone else. `$available` is the shelf
+     * count the late payment finds.
+     */
+    private function lapsedOrder(int $available): array
+    {
+        $product = Product::factory()->create();
+        $inventory = InventoryItem::factory()->create([
+            'product_id' => $product->id,
+            'quantity_available' => $available,
+            'quantity_reserved' => 1,
+            'reservation_expires_at' => now()->addMinutes(10),
+            'reservations_cleared_at' => now()->subMinutes(5),
+        ]);
+
+        $order = Order::factory()->create([
+            'status' => 'pending',
+            'currency' => 'GHS',
+            'total' => 60_000,
+            'shipping_address' => ['email' => 'ama@example.com', 'country' => 'GH'],
+            'reservation_expires_at' => now()->subMinutes(10),
+        ]);
+
+        OrderItem::factory()->create([
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'inventory_item_id' => $inventory->id,
+            'quantity' => 1,
+        ]);
+
+        return [$order->fresh('items'), $inventory];
+    }
+
+    /**
+     * Paid after the hold lapsed, with the last pair now held by another
+     * customer: the other hold stays whole and nothing is sold twice; a human
+     * gets a flagged order instead.
+     */
+    public function test_a_late_payment_for_a_resold_pair_is_flagged_not_oversold(): void
+    {
+        $this->configureGateway();
+        [$order, $inventory] = $this->lapsedOrder(available: 1);
+
+        $this->deliver($this->chargeSuccess($order))->assertOk();
+
+        $this->assertSame('inventory_conflict', $order->fresh()->status);
+        $this->assertSame(1, $inventory->fresh()->quantity_available);
+        $this->assertSame(1, $inventory->fresh()->quantity_reserved);
+    }
+
+    /** Paid late, but a pair is still free: sold from the shelf, other holds untouched. */
+    public function test_a_late_payment_with_stock_left_sells_from_the_shelf(): void
+    {
+        $this->configureGateway();
+        [$order, $inventory] = $this->lapsedOrder(available: 3);
+
+        $this->deliver($this->chargeSuccess($order))->assertOk();
+
+        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(2, $inventory->fresh()->quantity_available);
+        $this->assertSame(1, $inventory->fresh()->quantity_reserved);
+    }
+
+    /**
+     * Paid late before the scheduler swept the row: the sweep happens on the
+     * spot, so the lapsed hold is not mistaken for a live one.
+     */
+    public function test_a_late_payment_before_the_sweep_still_counts_as_lapsed(): void
+    {
+        $this->configureGateway();
+        [$order, $inventory] = $this->lapsedOrder(available: 1);
+        $inventory->update([
+            'quantity_reserved' => 1,
+            'reservation_expires_at' => now()->subMinutes(10),
+            'reservations_cleared_at' => null,
+        ]);
+
+        $this->deliver($this->chargeSuccess($order))->assertOk();
+
+        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(0, $inventory->fresh()->quantity_available);
+        $this->assertSame(0, $inventory->fresh()->quantity_reserved);
+    }
+
+    /**
+     * If recording the payment fails, the event must not be marked processed:
+     * Paystack's retry is the only way the payment is ever recorded.
+     */
+    public function test_a_webhook_that_fails_midway_is_processed_on_retry(): void
+    {
+        $this->configureGateway();
+        $order = $this->pendingOrder();
+        $payload = $this->chargeSuccess($order);
+
+        Order::updating(function () {
+            throw new \RuntimeException('Database went away.');
+        });
+        $this->withoutExceptionHandling();
+
+        try {
+            $this->deliver($payload);
+            $this->fail('The failed delivery should have thrown.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('Database went away.', $e->getMessage());
+        }
+
+        $this->assertSame(0, ProcessedWebhookEvent::query()->count());
+        $this->assertSame('pending', $order->fresh()->status);
+
+        Order::flushEventListeners();
+        $this->deliver($payload)->assertOk();
+
+        $this->assertSame('paid', $order->fresh()->status);
+        $this->assertSame(1, ProcessedWebhookEvent::query()->count());
+    }
 }

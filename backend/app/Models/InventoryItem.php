@@ -16,6 +16,7 @@ class InventoryItem extends Model
         'quantity_available',
         'quantity_reserved',
         'reservation_expires_at',
+        'reservations_cleared_at',
         'low_stock_threshold',
     ];
 
@@ -24,6 +25,7 @@ class InventoryItem extends Model
         'quantity_available' => 'integer',
         'quantity_reserved' => 'integer',
         'reservation_expires_at' => 'datetime',
+        'reservations_cleared_at' => 'datetime',
         'low_stock_threshold' => 'integer',
     ];
 

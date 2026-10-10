@@ -60,11 +60,32 @@ class InventoryReservationService
         });
     }
 
-    /** Payment confirmed — converts a reservation into a real, permanent decrement. */
-    public function finalize(InventoryItem $item, int $quantity): InventoryItem
+    /**
+     * Payment confirmed — converts a reservation into a real, permanent decrement.
+     *
+     * `$heldUntil` is when the paying order's own hold lapsed. Paystack keeps a
+     * payment page open long after that, so a payment can land once the hold
+     * has been swept. Its units are then no longer in `quantity_reserved` —
+     * subtracting them there would cancel someone else's hold — so the sale
+     * comes out of sellable stock instead, if any is left. Returns null when
+     * none is: nothing is decremented, and the caller flags the order.
+     */
+    public function finalize(InventoryItem $item, int $quantity, ?CarbonInterface $heldUntil = null): ?InventoryItem
     {
-        return DB::transaction(function () use ($item, $quantity) {
+        return DB::transaction(function () use ($item, $quantity, $heldUntil) {
             $locked = InventoryItem::query()->lockForUpdate()->findOrFail($item->id);
+
+            if ($heldUntil !== null && $this->holdHasLapsed($locked, $heldUntil)) {
+                if ($locked->sellable_quantity < $quantity) {
+                    return null;
+                }
+
+                $locked->quantity_available -= $quantity;
+                $locked->save();
+
+                return $locked;
+            }
+
             $locked->quantity_available = max(0, $locked->quantity_available - $quantity);
             $locked->quantity_reserved = max(0, $locked->quantity_reserved - $quantity);
 
@@ -107,11 +128,27 @@ class InventoryReservationService
         if ($item->reservation_expires_at && $item->reservation_expires_at->isPast()) {
             $item->quantity_reserved = 0;
             $item->reservation_expires_at = null;
+            $item->reservations_cleared_at = now();
             $item->save();
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Whether a hold that ran until `$heldUntil` has already been swept off this
+     * row. The row's clock only ever extends, so an expiry that wiped the
+     * counter at or after `$heldUntil` took this hold with it; a wipe before
+     * then happened before the hold was taken. A row whose clock has run out
+     * but has not been swept yet is swept here first.
+     */
+    private function holdHasLapsed(InventoryItem $locked, CarbonInterface $heldUntil): bool
+    {
+        $this->expireIfPast($locked);
+
+        return $locked->reservations_cleared_at !== null
+            && $locked->reservations_cleared_at->greaterThanOrEqualTo($heldUntil);
     }
 }

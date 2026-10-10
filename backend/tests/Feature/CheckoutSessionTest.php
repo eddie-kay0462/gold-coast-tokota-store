@@ -7,6 +7,8 @@ use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CheckoutSessionTest extends TestCase
@@ -487,5 +489,57 @@ class CheckoutSessionTest extends TestCase
 
         $response->assertCreated();
         $this->assertArrayNotHasKey('payment_reference', $response->json('data'));
+    }
+
+    // --- the gateway call -------------------------------------------------
+
+    private function configurePaystack(): void
+    {
+        config([
+            'services.paystack.secret' => 'sk_test_pretend_secret',
+            'services.paystack.base_url' => 'https://api.paystack.co',
+            'services.paystack.callback_base_url' => 'https://goldcoasttokota.store',
+        ]);
+    }
+
+    /**
+     * Paystack can take tens of seconds to answer. The holds commit first, so
+     * no stock row stays locked while it does.
+     */
+    public function test_paystack_is_called_after_the_holds_commit(): void
+    {
+        $this->configurePaystack();
+        $item = $this->stockedProduct();
+        // RefreshDatabase wraps the test in a transaction of its own.
+        $baseline = DB::transactionLevel();
+        $levelDuringCall = null;
+
+        Http::fake(['api.paystack.co/*' => function () use (&$levelDuringCall) {
+            $levelDuringCall = DB::transactionLevel();
+
+            return Http::response(['status' => true, 'data' => [
+                'reference' => 'ref', 'authorization_url' => 'https://checkout.paystack.com/abc',
+            ]]);
+        }]);
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item))->assertCreated();
+
+        $this->assertSame($baseline, $levelDuringCall);
+        $this->assertSame(1, $item->fresh()->quantity_reserved);
+        $this->assertNotNull(Order::query()->sole()->reservation_expires_at);
+    }
+
+    /** A refused session leaves no order and no hold, as a rolled-back one did. */
+    public function test_a_paystack_refusal_releases_the_holds_and_removes_the_order(): void
+    {
+        $this->configurePaystack();
+        $item = $this->stockedProduct();
+        Http::fake(['api.paystack.co/*' => Http::response(['status' => false, 'message' => 'Invalid key'], 401)]);
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item))->assertServerError();
+
+        $this->assertSame(0, Order::query()->count());
+        $this->assertSame(0, DB::table('order_items')->count());
+        $this->assertSame(0, $item->fresh()->quantity_reserved);
     }
 }
