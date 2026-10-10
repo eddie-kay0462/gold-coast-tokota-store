@@ -103,7 +103,12 @@ class FeedbackTest extends TestCase
     {
         $admin = AdminUser::factory()->create(['role' => 'admin']);
 
-        Feedback::create([...self::VALID, 'message' => 'older', 'created_at' => now()->subDay()]);
+        // `created_at` isn't fillable, so passing it to create() is dropped
+        // and both rows share a timestamp; the order then falls to the
+        // database, which differs between SQLite and Postgres.
+        $this->travel(-1)->days();
+        Feedback::create([...self::VALID, 'message' => 'older']);
+        $this->travelBack();
         Feedback::create([...self::VALID, 'message' => 'newer']);
 
         $response = $this->actingAs($admin, 'admin')->getJson('/api/v1/admin/feedback');

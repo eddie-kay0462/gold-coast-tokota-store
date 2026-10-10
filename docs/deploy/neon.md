@@ -15,7 +15,7 @@ In the Neon console, **New project**:
 | Setting | Value | Why |
 |---|---|---|
 | Name | `gold-coast-tokota` | |
-| Postgres version | **16** | What local development and the old Render database use. Don't mix majors |
+| Postgres version | **18** | Neon's default, and what the production project runs (18.6). The test suite passes on it, and CI runs it against 18 on every PR. Local Postgres 16 still works for development |
 | Region | **AWS Europe Central 1 (Frankfurt)** | Closest to Contabo's German data centres, so each query is a few ms. A far-away region adds that delay to *every* query |
 | Database name | `gold_coast_tokota` | Matches `.env.example` |
 
@@ -146,7 +146,7 @@ admin accounts)?
 
 ## Checklist
 
-- [ ] Project in Frankfurt, Postgres 16, database `gold_coast_tokota`
+- [ ] Project in Frankfurt, Postgres 18, database `gold_coast_tokota`
 - [ ] Pooled and direct strings saved in the password manager
 - [ ] Migrations run from a laptop via `--database=pgsql_direct`
 - [ ] Data seeded with `SEED_ADMIN_PASSWORD`, or copied from Render
