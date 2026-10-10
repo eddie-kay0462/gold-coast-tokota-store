@@ -73,5 +73,14 @@ bump the "Last updated" line, add a dated entry to "Recent changes", move
 finished items out of "What is left to do", and record anything blocked. Its
 closing section spells out the routine.
 
-## Git commits
-Do not add `Co-Authored-By` trailers (or any other attribution) for Claude, Cursor, or any other AI coding agent/assistant on commits in this repo.
+## Git commits and pull requests
+- **No AI authorship or attribution, anywhere.** Claude, Cursor and every other
+  AI coding agent/assistant stay out of commit authors and committers, out of
+  `Co-Authored-By` (or any other) trailers, and out of PR descriptions: no
+  "Generated with …" footers or session links. Commit as the human you are
+  working for (their own git identity; for eddie-kay0462 that is
+  `Edward Ofosu Mensah <135532748+eddie-kay0462@users.noreply.github.com>`),
+  never as `Claude <noreply@anthropic.com>`. Check `git config user.name` before
+  the first commit.
+- **PRs target `dev`, never `main` directly.** Work merges into `dev` first;
+  `dev` is merged into `main` separately.
