@@ -118,7 +118,10 @@ class ProductSeederTest extends TestCase
 
         foreach (Product::query()->get() as $product) {
             $colours = array_column($product->colors, 'name');
-            $this->assertSame($colours, array_keys($product->colour_images), "{$product->slug} colour_images do not match its colours");
+            // Postgres jsonb doesn't keep key order, and nothing reads it in
+            // order (the storefront looks photos up by colour name), so this
+            // checks the same colours are there, not their order.
+            $this->assertEqualsCanonicalizing($colours, array_keys($product->colour_images), "{$product->slug} colour_images do not match its colours");
 
             foreach ($product->colour_images as $colour => $images) {
                 $this->assertNotEmpty($images, "{$product->slug} has no {$colour} photo");

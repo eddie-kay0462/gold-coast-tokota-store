@@ -1,0 +1,79 @@
+# Runs the Laravel test suite on every push to feat/backend and every pull
+# request into dev or main. Twice: against Postgres 18, the same version as
+# Neon in production, and against SQLite, which is what `php artisan test`
+# uses on a laptop. A test that passes on one and fails on the other is a
+# database difference that would otherwise only show up in production.
+name: Backend tests
+
+on:
+  push:
+    branches: [feat/backend]
+    paths: ['backend/**', '.github/workflows/backend-tests.yml']
+  pull_request:
+    branches: [dev, main]
+    paths: ['backend/**', '.github/workflows/backend-tests.yml']
+
+concurrency:
+  group: backend-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: PHPUnit (${{ matrix.database }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [pgsql, sqlite]
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gct_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 8.3 matches the Contabo server and composer.json's platform pin.
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_pgsql, pdo_sqlite, zip
+          coverage: none
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('backend/composer.lock') }}
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - run: cp .env.example .env && php artisan key:generate
+
+      - name: Run tests
+        env:
+          # phpunit.xml defaults to in-memory SQLite; these override it for
+          # the Postgres run. Real environment variables win over phpunit.xml.
+          DB_CONNECTION: ${{ matrix.database }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: ${{ matrix.database == 'pgsql' && 'gct_test' || ':memory:' }}
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_URL: ''
+        run: php vendor/bin/phpunit --no-progress
