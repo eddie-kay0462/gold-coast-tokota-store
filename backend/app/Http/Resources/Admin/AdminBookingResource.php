@@ -48,8 +48,6 @@ class AdminBookingResource extends JsonResource
             return null;
         }
 
-        // Private in the bucket: a signed link that expires, so a copied URL
-        // stops working rather than exposing a customer's photo for good.
-        return MediaStorage::privateUrl($path);
+        return MediaStorage::url($path);
     }
 }

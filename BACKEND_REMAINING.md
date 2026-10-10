@@ -233,8 +233,8 @@ CI job starts red.
 `MediaController` writes to the `public` disk and the Dockerfile runs
 `storage:link` on every boot. On Render, **container-local disk does not
 survive a redeploy** — every uploaded product image disappears on the next
-deploy. `AWS_*` variables exist in `.env.example` but are empty and unused.
-Fix: switch `FILESYSTEM_DISK` to S3 (or Render persistent disk) before anyone
+deploy. (An S3 fix landed 2 Oct and was removed 10 Oct — AWS is not in use.)
+Fix: move uploads to durable storage (e.g. a Render persistent disk) before anyone
 uploads media they care about. Blocks A5 too.
 
 ### D4. `SiteSetting.announcements` has no admin editor

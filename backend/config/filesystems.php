@@ -17,20 +17,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Image storage
-    |--------------------------------------------------------------------------
-    |
-    | Where product photos, media-library uploads and DIY reference photos
-    | live: `public` (this server's storage/app/public — local development)
-    | or `s3` (production; Render's own disk is wiped on every deploy). Read
-    | only through App\Support\MediaStorage.
-    |
-    */
-
-    'media_disk' => env('MEDIA_DISK', 'public'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -38,7 +24,7 @@ return [
     | may even configure multiple disks for the same driver. Examples for
     | most supported storage drivers are configured here for reference.
     |
-    | Supported drivers: "local", "ftp", "sftp", "s3"
+    | Supported drivers: "local", "ftp", "sftp"
     |
     */
 
@@ -58,21 +44,6 @@ return [
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
-            'report' => false,
-        ],
-
-        's3' => [
-            'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
-            'url' => env('AWS_URL'),
-            'endpoint' => env('AWS_ENDPOINT'),
-            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
-            // A failed upload must be an error, not a silent `false` that
-            // gets saved as an image path.
-            'throw' => true,
             'report' => false,
         ],
 

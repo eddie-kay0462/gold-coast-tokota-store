@@ -7,9 +7,9 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 9 October 2026 (more line spacing in the footer blurb; Shop Now in the first view on laptops; announcement strip stays black, now with solid white text; compact GHS|USD switch on phones; buttons go white-outlined, black on hover; home page trimmed to four sections with a product rail; header and footer go white with black accents; product details become an accordion, shipping/returns copy brought in line with GOLD_COAST_TOKOTA.md; size guide opens as a modal on the product page; sizes slide to the end and back once as a scroll cue; buy panel no longer cut off on the left; sizes scroll in one row so cards align; Vue 3.5.43 fixes icon hydration warnings; homepage featured row shows real products only; GHS|USD switch fixed; product photo no longer switches on hover)
+- **Last updated:** 10 October 2026 (S3 image storage removed; product photos load from the storefront again)
 - **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
-- **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change is committed (`e343bb7`). The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
+- **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
   decision.
@@ -48,7 +48,34 @@ inert at their last step.
 
 ## Recent changes
 
-### 9 October 2026 (latest) — footer blurb line spacing
+### 10 October 2026 (latest) — S3 image storage removed
+
+The team is not using AWS, so the 2 Oct S3 change is undone.
+
+- **Removed:** `league/flysystem-aws-s3-v3` (and the AWS SDK it pulled in),
+  the `s3` disk, `MEDIA_DISK`, the `AWS_*` lines in `.env.example` and
+  `render.yaml`, the `media:import-product-photos` command and its run on
+  boot, and the 15-minute signed links for DIY photos.
+- **Product photos load from the storefront again** (`frontend/public/products`).
+  **Do not delete that folder** — the 2 Oct note saying to is void. Rows the
+  import command rewrote to `products/…` keys need no migration:
+  `MediaUrl` resolves them against `STOREFRONT_URL`, like `/products/…`.
+- `App\Support\MediaStorage` stays as the single seam for uploads, now
+  fixed to the `public` disk.
+- 401 tests passing (7 S3/import tests removed, 2 added).
+
+**⚠️ D3 is open again.** Admin media uploads and DIY reference photos are on
+Render's disk, which every deploy wipes. Needs a decision on durable storage
+(a Render persistent disk, or another provider) before anyone uploads
+something they need to keep.
+
+**For someone with AWS access:** delete the `AWS_ACCESS_KEY_ID` /
+`AWS_SECRET_ACCESS_KEY` / `MEDIA_DISK` / `AWS_BUCKET` / `AWS_DEFAULT_REGION`
+values from the Render dashboard (`tokota-backend` group), and the
+`gold-coast-tokota-media` bucket and `gold-coast-tokota-api` IAM user in AWS,
+so nothing is billed when the free credit ends.
+
+### 9 October 2026 — footer blurb line spacing
 
 The footer's brand blurb ("Handcrafted sandals and ahenema, made in Ghana…")
 now has 24px line spacing (`leading-6`). It was 16.8px, the `text-label`
@@ -466,7 +493,7 @@ frame now shows the thumbnail that is selected, and only a click on the rail
 changes it. The shop grid's card cross-fade (`ProductCard.vue`) is a separate
 feature and is unchanged.
 
-### 2 October 2026 — images move to S3 (issue D3)
+### 2 October 2026 — images move to S3 (issue D3) — *undone 10 Oct*
 
 Render's disk is wiped on every deploy, so admin media uploads and customers'
 DIY reference photos would have vanished at each release. The product photos
@@ -2963,6 +2990,11 @@ Paystack and Stripe test keys are self-serve; Fish Africa, Yango, DHL and
 exchangerate.host need a human to request business access. Those requests have
 lead times measured in days, and they gate items 3–6 below — start them now,
 not when you reach the stage that needs them.
+
+**Uploads need durable storage (D3, reopened 10 Oct).** With S3 removed,
+admin media uploads and DIY reference photos sit on Render's disk and vanish
+on every deploy. Decision needed: a Render persistent disk or another
+provider. Only `App\Support\MediaStorage` has to change.
 
 In dependency order:
 
