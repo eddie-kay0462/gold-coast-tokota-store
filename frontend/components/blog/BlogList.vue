@@ -5,7 +5,9 @@ defineProps<{ posts: ApiPost[] }>()
 </script>
 
 <template>
-  <ul v-if="posts.length" class="grid w-full grid-cols-1 gap-x-[30px] gap-y-10 sm:grid-cols-2 md:grid-cols-3">
+  <!-- The rail's tight 6px gutter between photos, so the grid and the home
+       page's Stories row read as the same tiles. -->
+  <ul v-if="posts.length" class="grid w-full grid-cols-1 gap-x-1.5 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
     <li v-for="post in posts" :key="post.slug" class="min-w-0">
       <BlogCard :post="post" />
     </li>

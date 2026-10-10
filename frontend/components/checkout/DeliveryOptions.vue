@@ -38,18 +38,18 @@ const options = computed(() =>
       v-for="option in options"
       :key="option.id"
       class="flex w-full min-w-0 cursor-pointer items-start gap-3 border p-4"
-      :class="method === option.id ? 'border-graphite' : 'border-line'"
+      :class="method === option.id ? 'border-ink' : 'border-line hover:border-ink'"
     >
       <input
         v-model="method"
         type="radio"
         name="delivery-method"
         :value="option.id"
-        class="mt-1 size-4 shrink-0 accent-graphite"
+        class="mt-1 size-4 shrink-0 accent-ink"
       >
       <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span class="text-body text-black">{{ option.label }}</span>
-        <span class="text-caption text-muted">{{ option.eta }} · {{ option.note }}</span>
+        <span class="caps-title">{{ option.label }}</span>
+        <span class="text-caption text-subtle">{{ option.eta }} · {{ option.note }}</span>
       </span>
     </label>
 

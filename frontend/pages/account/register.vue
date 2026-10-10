@@ -77,61 +77,55 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="w-full bg-white">
-    <section class="page-gutter section-y mx-auto flex w-full max-w-[calc(27.5rem+120px)] flex-col items-start gap-6">
-      <header class="flex w-full flex-col items-start gap-2">
-        <h1 class="w-full text-display-section font-normal text-black">Create an account</h1>
-        <p class="w-full text-body text-graphite">
-          Already have one?
-          <NuxtLink to="/account/login" class="underline hover:no-underline">Sign in</NuxtLink>.
-        </p>
-      </header>
+  <AccountAuthShell heading="Create an account">
+    <template #intro>
+      Save your delivery details and keep every order in one place.
+    </template>
 
-      <CommonInlineNotice v-if="notice" variant="warning" title="Accounts aren’t enabled yet">
-        {{ notice }}
-      </CommonInlineNotice>
+    <CommonInlineNotice v-if="notice" variant="warning" title="Accounts aren’t enabled yet">
+      {{ notice }}
+    </CommonInlineNotice>
 
-      <form class="flex w-full flex-col items-start gap-5" novalidate @submit.prevent="onSubmit">
-        <FormsFormField
-          v-model="form.name"
-          label="Name" name="name" autocomplete="name" required :error="errors.name"
-        />
-        <FormsFormField
-          v-model="form.email"
-          label="Email" name="email" type="email" autocomplete="email" required :error="errors.email"
-        />
-        <FormsFormField
-          v-model="form.phone"
-          label="Phone" name="phone" type="tel" autocomplete="tel"
-          hint="Optional. We use it for delivery updates only."
-          :error="errors.phone"
-        />
-        <FormsFormField
-          v-model="form.currency"
-          label="Preferred currency" name="currency" type="select" :options="currencyOptions"
-        />
-        <FormsFormField
-          v-model="form.password"
-          label="Password" name="password" type="password" autocomplete="new-password"
-          hint="At least 8 characters." required :error="errors.password"
-        />
-        <FormsFormField
-          v-model="form.confirm"
-          label="Confirm password" name="confirm" type="password" autocomplete="new-password"
-          required :error="errors.confirm"
-        />
+    <form class="flex w-full flex-col items-start gap-5" novalidate @submit.prevent="onSubmit">
+      <FormsFormField
+        v-model="form.name"
+        label="Name" name="name" autocomplete="name" required :error="errors.name"
+      />
+      <FormsFormField
+        v-model="form.email"
+        label="Email" name="email" type="email" autocomplete="email" required :error="errors.email"
+      />
+      <FormsFormField
+        v-model="form.phone"
+        label="Phone" name="phone" type="tel" autocomplete="tel"
+        hint="Optional. We use it for delivery updates only."
+        :error="errors.phone"
+      />
+      <FormsFormField
+        v-model="form.currency"
+        label="Preferred currency" name="currency" type="select" :options="currencyOptions"
+      />
+      <FormsFormField
+        v-model="form.password"
+        label="Password" name="password" type="password" autocomplete="new-password"
+        hint="At least 8 characters." required :error="errors.password"
+      />
+      <FormsFormField
+        v-model="form.confirm"
+        label="Confirm password" name="confirm" type="password" autocomplete="new-password"
+        required :error="errors.confirm"
+      />
 
-        <CommonBrandButton full type="submit" :disabled="submitting">
-          {{ submitting ? 'Creating account…' : 'Create account' }}
-        </CommonBrandButton>
-      </form>
+      <CommonBrandButton full type="submit" :disabled="submitting">
+        {{ submitting ? 'Creating account…' : 'Create account' }}
+      </CommonBrandButton>
+    </form>
 
-      <p class="w-full text-caption text-muted">
-        By creating an account you agree to our
-        <NuxtLink to="/legal/terms" class="underline hover:no-underline">Terms of Service</NuxtLink>
-        and
-        <NuxtLink to="/legal/privacy" class="underline hover:no-underline">Privacy Policy</NuxtLink>.
-      </p>
-    </section>
-  </div>
+    <p class="w-full text-caption text-muted">
+      By creating an account you agree to our
+      <NuxtLink to="/legal/terms" class="text-ink underline underline-offset-4 hover:no-underline">Terms of Service</NuxtLink>
+      and
+      <NuxtLink to="/legal/privacy" class="text-ink underline underline-offset-4 hover:no-underline">Privacy Policy</NuxtLink>.
+    </p>
+  </AccountAuthShell>
 </template>

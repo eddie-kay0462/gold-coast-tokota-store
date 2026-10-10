@@ -24,8 +24,8 @@ const APPOINTMENT_EXPERIENCES = [
   <div class="page-gutter section-y mx-auto w-full max-w-[calc(64rem+120px)]">
     <!-- Centred masthead, from the approved Template B mockup. -->
     <div class="mb-10 text-center">
-      <p class="text-eyebrow uppercase tracking-[0.6px] text-muted">Bookings</p>
-      <h1 class="mt-2 text-display-section font-light text-black">Spend time in the workshop</h1>
+      <p class="caps-label text-muted">Bookings</p>
+      <h1 class="mt-2 text-display-section font-light text-ink">Spend time in the workshop</h1>
     </div>
 
     <!-- Tabs had no padding at all, so the tap target was the ~19px text box. -->
@@ -34,8 +34,8 @@ const APPOINTMENT_EXPERIENCES = [
         type="button"
         role="tab"
         :aria-selected="activeTab === 'workshop'"
-        class="flex min-h-[44px] items-center px-6 text-label uppercase"
-        :class="activeTab === 'workshop' ? 'border-b-2 border-graphite font-normal text-black' : 'text-muted'"
+        class="caps-label -mb-px flex min-h-[44px] items-center border-b px-6 transition-colors"
+        :class="activeTab === 'workshop' ? 'border-ink text-ink' : 'border-transparent text-subtle hover:text-ink'"
         @click="activeTab = 'workshop'"
       >
         Workshop
@@ -44,8 +44,8 @@ const APPOINTMENT_EXPERIENCES = [
         type="button"
         role="tab"
         :aria-selected="activeTab === 'diy'"
-        class="flex min-h-[44px] items-center px-6 text-label uppercase"
-        :class="activeTab === 'diy' ? 'border-b-2 border-graphite font-normal text-black' : 'text-muted'"
+        class="caps-label -mb-px flex min-h-[44px] items-center border-b px-6 transition-colors"
+        :class="activeTab === 'diy' ? 'border-ink text-ink' : 'border-transparent text-subtle hover:text-ink'"
         @click="activeTab = 'diy'"
       >
         DIY Sandals
@@ -68,21 +68,21 @@ const APPOINTMENT_EXPERIENCES = [
     <!-- By appointment. Not bookable above by design; these have no fixed
          session, so the brand arranges each one directly. -->
     <section class="mt-14 border-t border-line pt-10">
-      <h2 class="text-display-sm font-normal text-black">By appointment</h2>
-      <p class="mt-2 max-w-[560px] text-body text-graphite">
+      <h2 class="text-display-sm text-ink">By appointment</h2>
+      <p class="mt-2 max-w-[560px] text-label text-subtle">
         These run on request rather than on a schedule, so we arrange them with you
         directly.
       </p>
 
-      <ul class="mt-6 grid gap-4 md:grid-cols-3">
+      <ul class="mt-8 grid gap-x-6 gap-y-8 md:grid-cols-3">
         <li
           v-for="experience in APPOINTMENT_EXPERIENCES"
           :key="experience.name"
-          class="flex flex-col items-start gap-3 border border-line p-5"
+          class="flex flex-col items-start gap-3 border-t border-line pt-5"
         >
           <div class="flex flex-1 flex-col items-start gap-1">
-            <h3 class="text-body font-normal text-black">{{ experience.name }}</h3>
-            <p class="text-caption text-muted">{{ experience.detail }}</p>
+            <h3 class="caps-title">{{ experience.name }}</h3>
+            <p class="text-label tracking-[0.4px] text-subtle">{{ experience.detail }}</p>
           </div>
           <CommonWhatsAppLink
             source="booking-appointment"

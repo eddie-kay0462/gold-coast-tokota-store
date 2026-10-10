@@ -38,7 +38,7 @@ function formatDate(value: string | null) {
 
 <template>
   <div class="flex w-full flex-col gap-3">
-    <h3 class="text-eyebrow uppercase tracking-[0.6px] text-muted">Choose a session</h3>
+    <h3 class="caps-label text-muted">Choose a session</h3>
 
     <ul v-if="pending" class="flex flex-col gap-3" aria-hidden="true">
       <li v-for="n in 3" :key="n" class="h-[74px] w-full animate-pulse bg-surface" />
@@ -48,15 +48,25 @@ function formatDate(value: string | null) {
       <li v-for="session in sessions" :key="session.id">
         <button
           type="button"
-          class="flex w-full items-center justify-between gap-4 border px-4 py-3.5 text-left transition-colors"
+          class="flex w-full items-center gap-4 border px-4 py-3.5 text-left transition-colors"
           :class="String(session.id) === modelValue
-            ? 'border-graphite bg-surface'
-            : 'border-line bg-white hover:border-graphite'"
+            ? 'border-ink bg-white'
+            : 'border-line bg-white hover:border-ink'"
           :aria-pressed="String(session.id) === modelValue"
           @click="emit('update:modelValue', String(session.id))"
         >
-          <span class="min-w-0">
-            <span class="block text-body text-black">{{ formatDate(session.scheduled_date) }}</span>
+          <!-- Radio-style mark: the selection reads at a glance without
+               flooding the row with a fill. -->
+          <span
+            class="flex size-4 shrink-0 items-center justify-center rounded-full border"
+            :class="String(session.id) === modelValue ? 'border-ink' : 'border-line'"
+            aria-hidden="true"
+          >
+            <span v-if="String(session.id) === modelValue" class="size-2 rounded-full bg-ink" />
+          </span>
+
+          <span class="min-w-0 flex-1">
+            <span class="block text-label font-bold uppercase tracking-[1.4px] text-ink">{{ formatDate(session.scheduled_date) }}</span>
             <span class="block text-caption text-muted">{{ session.scheduled_slot }}</span>
             <span v-if="session.location_notes" class="mt-0.5 block text-caption text-muted">
               {{ session.location_notes }}
@@ -64,8 +74,8 @@ function formatDate(value: string | null) {
           </span>
 
           <span
-            class="shrink-0 whitespace-nowrap text-caption"
-            :class="session.remaining_capacity > 0 ? 'text-green-700' : 'text-sale'"
+            class="caps-label shrink-0 whitespace-nowrap"
+            :class="session.remaining_capacity > 0 ? 'text-subtle' : 'text-sale'"
           >
             {{ session.remaining_capacity > 0
               ? `${session.remaining_capacity} ${session.remaining_capacity === 1 ? 'spot' : 'spots'} left`

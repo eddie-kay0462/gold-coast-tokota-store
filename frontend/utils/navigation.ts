@@ -93,7 +93,7 @@ function createShopMenu(baseTo: string, label: string): MegaMenu {
         to: withParams(baseTo, { type: 'ahenema', sort: 'newest' }),
       },
       {
-        label: 'Closed-Toe\nShoes',
+        label: 'Closed-Toe Shoes',
         ...promoArtwork.closedToe,
         to: withParams(baseTo, { type: 'closed-toe' }),
       },

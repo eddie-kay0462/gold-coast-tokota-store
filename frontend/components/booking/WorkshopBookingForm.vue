@@ -82,9 +82,10 @@ async function onSubmit() {
 <template>
   <div class="mt-8">
     <!-- Success replaces the form, as the approved mockup draws it. -->
-    <div v-if="submitted" class="border border-line bg-surface px-6 py-14 text-center">
-      <p class="text-display-sm font-light text-black">Session requested</p>
-      <p class="mt-2 text-label text-muted">We will confirm by email and SMS.</p>
+    <div v-if="submitted" class="flex flex-col items-center gap-2 border-t border-line px-6 py-14 text-center">
+      <p class="caps-label text-muted">Request sent</p>
+      <p class="text-display-sm text-ink">Session requested</p>
+      <p class="text-label text-subtle">We will confirm by email and SMS.</p>
     </div>
 
     <div v-else class="grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-start">
@@ -97,8 +98,8 @@ async function onSubmit() {
         <BookingWaitlistBanner v-if="isWaitlisted" />
       </div>
 
-      <form class="flex flex-col gap-4 border border-line p-6" @submit.prevent="onSubmit">
-        <h3 class="text-eyebrow uppercase tracking-[0.6px] text-muted">Your details</h3>
+      <form class="flex flex-col gap-4 border-t border-line pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0" @submit.prevent="onSubmit">
+        <h3 class="caps-label text-muted">Your details</h3>
 
         <!-- `attendee_count` was in the form state and submitted as a silent
              default of 1, with no control anywhere. The mockup designs it. -->

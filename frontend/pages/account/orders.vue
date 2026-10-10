@@ -28,14 +28,14 @@ useSeoMeta({
         {{ AUTH_DISABLED_NOTICE }}
       </CommonInlineNotice>
 
-      <div class="flex w-full flex-col items-start gap-4 border border-line p-8">
-        <p class="w-full text-body text-graphite">No orders to show yet.</p>
-        <p class="w-full max-w-[560px] text-caption text-muted">
+      <div class="flex w-full flex-col items-center gap-3 border-t border-line px-2 py-14 text-center">
+        <p class="caps-title">No orders to show yet</p>
+        <p class="w-full max-w-[560px] text-label text-subtle">
           Orders you place while signed in will appear here. If you ordered as a guest, use
           <NuxtLink to="/account" class="underline hover:no-underline">order tracking</NuxtLink>
           instead. You’ll need your order number and the email you used.
         </p>
-        <div class="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-start">
+        <div class="flex flex-col items-stretch gap-3 pt-3 sm:flex-row sm:items-start">
           <CommonBrandButton to="/shop">Shop sandals</CommonBrandButton>
           <CommonWhatsAppLink source="order-help" :message="whatsappMessage.orderHelp()">
             Ask about an order

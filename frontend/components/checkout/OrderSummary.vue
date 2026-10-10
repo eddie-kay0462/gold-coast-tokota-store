@@ -5,7 +5,8 @@ import { whatsappMessage } from '~/utils/whatsapp'
 
 /**
  * The order summary, laid out the way a standard Shopify checkout lays it out:
- * square thumbnails carrying a quantity badge on the corner, a discount-code
+ * thumbnails carrying a quantity badge on the corner (portrait 3:4, like the
+ * home page's product tiles), a discount-code
  * row, then subtotal / shipping / total with the currency code set small
  * against the total.
  *
@@ -55,7 +56,7 @@ async function apply() {
         <!-- Thumbnail with the quantity on its corner, the Shopify treatment.
              It reads at a glance and keeps the variant line for the variant. -->
         <div class="relative shrink-0">
-          <div class="size-16 overflow-hidden rounded border border-line bg-white">
+          <div class="aspect-[3/4] w-12 overflow-hidden bg-white">
             <img
               v-if="item.image"
               :src="item.image"
@@ -65,19 +66,19 @@ async function apply() {
             >
           </div>
           <span
-            class="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-muted text-[11px] leading-none text-white"
+            class="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-ink text-[11px] leading-none text-white"
             aria-hidden="true"
           >{{ item.quantity }}</span>
         </div>
 
-        <div class="flex min-w-0 flex-1 flex-col">
-          <span class="text-caption font-normal text-black">{{ item.name }}</span>
-          <span v-if="item.variantLabel" class="text-caption text-muted">{{ item.variantLabel }}</span>
+        <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span class="text-caption font-bold uppercase tracking-[1.4px] text-ink">{{ item.name }}</span>
+          <span v-if="item.variantLabel" class="text-caption text-subtle">{{ item.variantLabel }}</span>
           <span class="sr-only">Quantity {{ item.quantity }}</span>
         </div>
 
         <CommonPriceDisplay
-          class="shrink-0 whitespace-nowrap text-caption text-graphite"
+          class="shrink-0 whitespace-nowrap text-caption text-ink"
           :base-price-ghs="item.unitPriceGhs * item.quantity"
           :compare-at-ghs="item.compareAtGhs ? item.compareAtGhs * item.quantity : null"
           compact
@@ -97,12 +98,12 @@ async function apply() {
             v-model="code"
             name="discount-code"
             placeholder="Discount code"
-            class="min-h-[44px] w-full min-w-0 flex-1 rounded border border-line bg-white px-3 text-caption text-graphite placeholder:text-muted"
+            class="min-h-[44px] w-full min-w-0 flex-1 border border-line bg-white px-3 text-body text-graphite placeholder:text-muted"
           >
           <button
             type="submit"
             :disabled="!code.trim() || applying"
-            class="min-h-[44px] shrink-0 rounded border border-line bg-surface px-4 text-caption text-graphite disabled:cursor-not-allowed disabled:text-muted"
+            class="btn-outline caps-label min-h-[44px] shrink-0 px-5 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {{ applying ? 'Applying…' : 'Apply' }}
           </button>
@@ -142,10 +143,10 @@ async function apply() {
         </div>
 
         <div class="flex items-end justify-between border-t border-line pt-3">
-          <span class="text-body font-normal text-black">Total</span>
+          <span class="caps-label text-ink">Total</span>
           <span class="flex items-baseline gap-2">
             <span class="text-caption text-muted">{{ currency.displayCurrency }}</span>
-            <CommonPriceDisplay class="text-display-sm font-normal text-black" :base-price-ghs="totalGhs" compact />
+            <CommonPriceDisplay class="text-display-sm font-normal text-ink" :base-price-ghs="totalGhs" compact />
           </span>
         </div>
 
