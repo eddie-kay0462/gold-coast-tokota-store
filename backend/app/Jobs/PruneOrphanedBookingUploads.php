@@ -32,7 +32,7 @@ class PruneOrphanedBookingUploads implements ShouldQueue
 
     public function handle(): void
     {
-        $disk = MediaStorage::disk();
+        $disk = MediaStorage::privateDisk();
         $files = $disk->allFiles(BookingUploadController::DIRECTORY);
 
         if ($files === []) {

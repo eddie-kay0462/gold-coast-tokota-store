@@ -48,6 +48,6 @@ class AdminBookingResource extends JsonResource
             return null;
         }
 
-        return MediaStorage::url($path);
+        return MediaStorage::privateUrl($path);
     }
 }

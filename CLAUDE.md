@@ -4,7 +4,7 @@ E-commerce + booking platform for a Ghana sandals brand.
 Full spec: see README.md — read it before starting any feature.
 
 ## Stack
-Nuxt 3 (storefront, hybrid SSR/SPA) · Nuxt 3 (admin dashboard, SPA-only, separate app) · Laravel 12 API · PostgreSQL (Render) · Tailwind · GSAP
+Nuxt 3 (storefront, hybrid SSR/SPA) · Nuxt 3 (admin dashboard, SPA-only, separate app) · Laravel 12 API · PostgreSQL (Neon) · Tailwind · GSAP
 
 > **Deviation from README:** README/original spec says Laravel 11 and puts
 > the admin dashboard at `/admin/**` inside the one storefront Nuxt app. Two
@@ -25,6 +25,19 @@ Nuxt 3 (storefront, hybrid SSR/SPA) · Nuxt 3 (admin dashboard, SPA-only, separa
 >    `ssr: false` config crashes the dev server in this Nuxt/Vite version
 >    combo with "No entry found in rollupOptions.input" — use the routeRules
 >    form instead, not the shorthand.)
+
+## Hosting
+Storefront and admin on **Vercel** · API, queue worker, scheduler and Redis on
+a **Contabo** VPS · database on **Neon** (Frankfurt) · uploaded images in
+**Cloudflare R2** · DNS and TLS in front of the API on **Cloudflare**. Render is
+no longer used. Setup: `docs/deploy/neon.md` and `docs/deploy/contabo.md`.
+- The app connects through Neon's pooler (`DB_URL`); migrations use the direct
+  endpoint: `php artisan migrate --force --database=pgsql_direct`
+- Queue, cache and sessions are on Redis in production, never `database`, so
+  the worker isn't polling Neon and the database can idle
+- R2 is reached with Laravel's `s3` driver. Two buckets: public `r2` (media
+  library) and `r2-private` (DIY photos, signed links only), read only through
+  `App\Support\MediaStorage`
 
 ## Key architectural rules
 - SSR routes (frontend/): /, /about, /shop/**, /blog/** — GSAP must be client-only (`onMounted`/`<ClientOnly>`), never touch `window`/`document` during SSR
