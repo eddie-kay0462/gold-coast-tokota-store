@@ -71,14 +71,15 @@ async function onSubmit() {
 
 <template>
   <div class="mt-8">
-    <div v-if="submitted" class="border border-line bg-surface px-6 py-14 text-center">
-      <p class="text-display-sm font-light text-black">Order received</p>
-      <p class="mt-2 text-label text-muted">We will confirm by email and SMS.</p>
+    <div v-if="submitted" class="flex flex-col items-center gap-2 border-t border-line px-6 py-14 text-center">
+      <p class="caps-label text-muted">Request sent</p>
+      <p class="text-display-sm text-ink">Order received</p>
+      <p class="text-label text-subtle">We will confirm by email and SMS.</p>
     </div>
 
     <form
       v-else
-      class="mx-auto flex w-full max-w-[640px] flex-col gap-4 border border-line p-6"
+      class="mx-auto flex w-full max-w-[640px] flex-col gap-4"
       @submit.prevent="onSubmit"
     >
       <div class="grid gap-4 sm:grid-cols-2">
@@ -138,14 +139,14 @@ async function onSubmit() {
             ]"
             :key="option.value"
             class="flex min-h-[44px] flex-1 cursor-pointer items-center gap-2.5 border px-4 text-label text-graphite"
-            :class="form.fulfilment === option.value ? 'border-graphite bg-surface' : 'border-line bg-white'"
+            :class="form.fulfilment === option.value ? 'border-ink text-ink' : 'border-line bg-white hover:border-ink'"
           >
             <input
               v-model="form.fulfilment"
               type="radio"
               name="fulfilment"
               :value="option.value"
-              class="accent-graphite"
+              class="accent-ink"
             >
             {{ option.label }}
           </label>

@@ -65,25 +65,30 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="page-gutter mx-auto flex w-full max-w-[1440px] flex-col items-center gap-12 py-12 lg:gap-16 lg:pb-[90px] lg:pt-[30px]">
-    <div class="flex w-full flex-col items-center gap-4 text-center font-light text-black">
-      <h1 class="w-full text-display-md">Stories</h1>
-      <p class="w-full text-body">
-        Learn more about our brand, our sustainability journey and upcoming community events
+  <div class="page-gutter mx-auto flex w-full max-w-[1440px] flex-col items-start gap-8 py-12 lg:gap-10 lg:pb-[90px] lg:pt-12">
+    <!-- Left-aligned like the home page's section headings, not centred. -->
+    <div class="flex w-full flex-col items-start gap-2">
+      <h1 class="w-full text-display-md text-ink">Stories</h1>
+      <p class="w-full max-w-[560px] text-label text-subtle">
+        Learn more about our brand, our sustainability journey and upcoming community events.
       </p>
     </div>
 
-    <!-- Chips rather than a select: there are only ever a handful of
-         categories, and a filter you can see is a filter people use. -->
-    <div v-if="categories.length > 1" class="-m-1 flex flex-wrap items-center justify-center">
+    <!-- Text tabs in the header's category-row style rather than filled chips.
+         One row on a hairline, scrolling sideways on a phone rather than
+         wrapping into a block of buttons. -->
+    <div
+      v-if="categories.length > 1"
+      class="flex w-full gap-6 overflow-x-auto border-b border-line [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
       <button
         v-for="option in [{ value: '', label: 'All stories' }, ...categories.map((c) => ({ value: c, label: c }))]"
         :key="option.value"
         type="button"
-        class="m-1 flex min-h-[44px] items-center border px-4 text-caption transition-colors"
+        class="caps-label -mb-px flex min-h-[44px] shrink-0 items-center whitespace-nowrap border-b transition-colors"
         :class="activeCategory === option.value
-          ? 'border-graphite bg-graphite text-white'
-          : 'border-line bg-white text-graphite hover:border-graphite'"
+          ? 'border-ink text-ink'
+          : 'border-transparent text-subtle hover:text-ink'"
         :aria-pressed="activeCategory === option.value"
         @click="setCategory(option.value)"
       >

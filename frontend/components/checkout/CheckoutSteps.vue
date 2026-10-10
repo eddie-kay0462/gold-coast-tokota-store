@@ -8,7 +8,7 @@ const emit = defineEmits<{ go: [step: CheckoutStep], cart: [] }>()
 
 /**
  * The Shopify checkout breadcrumb: `Cart › Information › Shipping › Payment`,
- * small and grey, with the step you are on in solid ink.
+ * in the header's tracked capitals, grey, with the step you are on in solid ink.
  *
  * It replaces a three-segment progress bar with numbered pills. Same rules
  * underneath: a completed step is a link back, a future step is inert text,
@@ -28,16 +28,16 @@ const currentIndex = computed(() => steps.findIndex((s) => s.id === props.curren
 
 <template>
   <nav aria-label="Checkout progress" class="w-full">
-    <ol class="flex flex-wrap items-center gap-x-1 text-caption">
+    <ol class="caps-label flex flex-wrap items-center gap-x-1.5">
       <li class="flex items-center gap-x-1">
         <button
           type="button"
-          class="-my-2.5 flex min-h-[44px] items-center py-2.5 text-muted underline hover:text-graphite"
+          class="-my-2.5 flex min-h-[44px] items-center py-2.5 text-subtle underline underline-offset-4 hover:text-ink"
           @click="emit('cart')"
         >
           Cart
         </button>
-        <PhCaretRight :size="11" class="shrink-0 text-line" aria-hidden="true" />
+        <PhCaretRight :size="10" class="shrink-0 text-muted" aria-hidden="true" />
       </li>
 
       <li v-for="(step, index) in steps" :key="step.id" class="flex items-center gap-x-1">
@@ -46,8 +46,8 @@ const currentIndex = computed(() => steps.findIndex((s) => s.id === props.curren
           :type="index < currentIndex ? 'button' : undefined"
           class="-my-2.5 flex min-h-[44px] items-center py-2.5"
           :class="index < currentIndex
-            ? 'text-muted underline hover:text-graphite'
-            : index === currentIndex ? 'text-black' : 'text-line'"
+            ? 'text-subtle underline underline-offset-4 hover:text-ink'
+            : index === currentIndex ? 'text-ink' : 'text-muted'"
           :aria-current="index === currentIndex ? 'step' : undefined"
           @click="index < currentIndex && emit('go', step.id)"
         >
@@ -55,8 +55,8 @@ const currentIndex = computed(() => steps.findIndex((s) => s.id === props.curren
         </component>
         <PhCaretRight
           v-if="index < steps.length - 1"
-          :size="11"
-          class="shrink-0 text-line"
+          :size="10"
+          class="shrink-0 text-muted"
           aria-hidden="true"
         />
       </li>

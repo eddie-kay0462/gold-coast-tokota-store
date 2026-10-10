@@ -72,10 +72,11 @@ useSeoMeta({
 <template>
   <!-- Nothing to pay for: send people back to the shop rather than showing an
        address form against an empty cart. -->
-  <div v-if="cart.isEmpty" class="mx-auto flex w-full max-w-[560px] flex-col items-start gap-4 px-5 py-20">
-    <h1 class="text-display-sm font-normal text-black">Your cart is empty</h1>
-    <p class="text-body text-graphite">Nothing to check out yet.</p>
-    <CommonBrandButton to="/shop">Shop Sandals</CommonBrandButton>
+  <div v-if="cart.isEmpty" class="mx-auto flex w-full max-w-[560px] flex-col items-center gap-3 px-5 py-20 text-center">
+    <p class="caps-label text-muted">Checkout</p>
+    <h1 class="text-display-sm text-ink">Your cart is empty</h1>
+    <p class="text-label text-subtle">Nothing to check out yet.</p>
+    <CommonBrandButton to="/shop" class="mt-3">Shop Sandals</CommonBrandButton>
   </div>
 
   <div v-else class="flex flex-1 flex-col">
@@ -91,7 +92,7 @@ useSeoMeta({
           aria-controls="mobile-summary"
           @click="summaryOpen = !summaryOpen"
         >
-          <span class="flex items-center gap-1.5 text-caption text-graphite">
+          <span class="caps-label flex items-center gap-1.5 text-ink">
             {{ summaryOpen ? 'Hide' : 'Show' }} order summary
             <PhCaretDown
               :size="12"
@@ -101,7 +102,7 @@ useSeoMeta({
             />
           </span>
           <CommonPriceDisplay
-            class="text-body font-normal text-black"
+            class="text-body font-normal text-ink"
             :base-price-ghs="cart.subtotalGhs"
             compact
           />
@@ -140,34 +141,34 @@ useSeoMeta({
                    as a bordered review block with "Change" links. It is the
                    step's only reassurance that the address it is quoting for is
                    the right one. -->
-              <dl class="w-full divide-y divide-line rounded border border-line text-caption">
+              <dl class="w-full divide-y divide-line border border-line text-caption">
                 <div class="flex items-start gap-4 px-4 py-3">
-                  <dt class="w-16 shrink-0 text-muted">Contact</dt>
+                  <dt class="caps-label w-20 shrink-0 text-muted">Contact</dt>
                   <dd class="min-w-0 flex-1 break-words text-graphite">{{ address.email }}</dd>
-                  <button type="button" class="shrink-0 text-graphite underline" @click="goTo('details')">
+                  <button type="button" class="caps-label shrink-0 text-ink underline underline-offset-4 hover:no-underline" @click="goTo('details')">
                     Change
                   </button>
                 </div>
                 <div class="flex items-start gap-4 px-4 py-3">
-                  <dt class="w-16 shrink-0 text-muted">Ship to</dt>
+                  <dt class="caps-label w-20 shrink-0 text-muted">Ship to</dt>
                   <dd class="min-w-0 flex-1 break-words text-graphite">
                     {{ [address.line1, address.city, address.region, address.postcode].filter(Boolean).join(', ') }}
                   </dd>
-                  <button type="button" class="shrink-0 text-graphite underline" @click="goTo('details')">
+                  <button type="button" class="caps-label shrink-0 text-ink underline underline-offset-4 hover:no-underline" @click="goTo('details')">
                     Change
                   </button>
                 </div>
               </dl>
 
               <div class="flex w-full flex-col items-start gap-4">
-                <h2 class="w-full text-body font-normal text-black">Shipping method</h2>
+                <h2 class="caps-title w-full">Shipping method</h2>
                 <CheckoutDeliveryOptions v-model="deliveryMethod" :country="address.country" />
               </div>
 
               <div class="flex w-full flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  class="-my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-caption text-graphite hover:underline"
+                  class="caps-label -my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-ink hover:underline"
                   @click="goTo('details')"
                 >
                   <PhCaretLeft :size="12" aria-hidden="true" />
@@ -179,7 +180,7 @@ useSeoMeta({
 
             <div v-else class="flex w-full flex-col items-start gap-8">
               <div class="flex w-full flex-col items-start gap-2">
-                <h2 class="w-full text-body font-normal text-black">Payment</h2>
+                <h2 class="caps-title w-full">Payment</h2>
                 <p class="flex items-center gap-1.5 text-caption text-muted">
                   <PhLockSimple :size="12" aria-hidden="true" />
                   All transactions are secure and encrypted.
@@ -196,7 +197,7 @@ useSeoMeta({
 
               <button
                 type="button"
-                class="-my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-caption text-graphite hover:underline"
+                class="caps-label -my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-ink hover:underline"
                 @click="goTo('delivery')"
               >
                 <PhCaretLeft :size="12" aria-hidden="true" />

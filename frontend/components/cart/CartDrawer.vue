@@ -188,39 +188,42 @@ onBeforeUnmount(() => {
           aria-labelledby="cart-drawer-title"
           tabindex="-1"
         >
-          <!-- Scrollable body -->
-          <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 py-2">
+          <!-- Title and close on one hairline-ruled row, the header's own
+               white-and-hairline look. -->
+          <div class="flex w-full shrink-0 items-center justify-between gap-4 border-b border-line py-2 pl-5 pr-3.5">
+            <h2 id="cart-drawer-title" class="caps-title">
+              Your cart<span v-if="!cart.isEmpty" class="font-light text-subtle"> ({{ cart.itemCount }})</span>
+            </h2>
             <button
               ref="closeButton"
               type="button"
-              class="-m-1.5 flex size-11 shrink-0 items-center justify-center self-end text-graphite transition-opacity hover:opacity-60"
+              class="flex size-11 shrink-0 items-center justify-center text-ink transition-opacity hover:opacity-60"
               aria-label="Close cart"
               @click="close"
             >
-              <PhX :size="24" />
+              <PhX :size="20" />
             </button>
+          </div>
 
-            <div class="flex w-full flex-col gap-4">
-              <h2 id="cart-drawer-title" class="w-full text-display-sm font-normal text-black">
-                Your Cart
-              </h2>
+          <!-- Scrollable body -->
+          <div class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-5 py-2">
+            <div class="flex w-full flex-col">
+              <ul v-if="!cart.isEmpty" class="flex w-full flex-col divide-y divide-line">
+                <li v-for="item in cart.items" :key="item.inventoryItemId" class="py-5">
+                  <CartLineItem
+                    :item="item"
+                    @quantity="cart.setQuantity(item.inventoryItemId, $event)"
+                    @remove="cart.removeItem(item.inventoryItemId)"
+                  />
+                </li>
+              </ul>
 
-              <template v-if="!cart.isEmpty">
-                <CartLineItem
-                  v-for="item in cart.items"
-                  :key="item.inventoryItemId"
-                  :item="item"
-                  @quantity="cart.setQuantity(item.inventoryItemId, $event)"
-                  @remove="cart.removeItem(item.inventoryItemId)"
-                />
-              </template>
-
-              <div v-else class="flex w-full flex-col items-start gap-4 py-8">
-                <p class="text-body text-graphite">Your cart is empty.</p>
-                <p class="text-caption text-muted">
+              <div v-else class="flex w-full flex-col items-center gap-3 py-16 text-center">
+                <p class="caps-title">Your cart is empty</p>
+                <p class="max-w-[320px] text-label text-subtle">
                   Every pair is cut and stitched by hand in Accra. Start with the collection.
                 </p>
-                <CommonBrandButton to="/shop" @click="close">Shop Sandals</CommonBrandButton>
+                <CommonBrandButton to="/shop" class="mt-3" @click="close">Shop Sandals</CommonBrandButton>
               </div>
             </div>
 
@@ -234,23 +237,23 @@ onBeforeUnmount(() => {
           <!-- Sticky checkout footer -->
           <div
             v-if="!cart.isEmpty"
-            class="flex w-full shrink-0 flex-col gap-8 bg-white px-5 py-[30px] shadow-[0px_-6px_18px_rgba(0,0,0,0.25)]"
+            class="flex w-full shrink-0 flex-col gap-4 border-t border-line bg-white px-5 py-6"
           >
-            <div class="flex w-full items-center justify-between whitespace-nowrap text-black">
-              <p class="flex items-center gap-1">
-                <span class="text-body font-normal">Subtotal</span>
-                <span class="text-label font-light">
+            <div class="flex w-full items-center justify-between whitespace-nowrap">
+              <p class="flex items-center gap-1.5">
+                <span class="caps-label text-ink">Subtotal</span>
+                <span class="text-caption text-subtle">
                   ({{ cart.itemCount }} {{ cart.itemCount === 1 ? 'item' : 'items' }})
                 </span>
               </p>
               <CommonPriceDisplay
-                class="text-right text-body font-normal"
+                class="text-right text-body font-normal text-ink"
                 :base-price-ghs="cart.subtotalGhs"
                 compact
               />
             </div>
 
-            <p v-if="savingsGhs > 0" class="-mt-6 w-full text-right text-caption text-sale">
+            <p v-if="savingsGhs > 0" class="-mt-3 w-full text-right text-caption text-sale">
               You save <CommonPriceDisplay :base-price-ghs="savingsGhs" compact />
             </p>
 
@@ -262,7 +265,7 @@ onBeforeUnmount(() => {
               Order on WhatsApp instead
             </CommonWhatsAppLink>
 
-            <p class="w-full text-center text-caption font-normal text-black">
+            <p class="w-full text-center text-caption text-muted">
               Psst, get it now before it sells out.
             </p>
           </div>

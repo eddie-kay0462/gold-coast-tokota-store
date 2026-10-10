@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 10 October 2026 (tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 10 October 2026 (Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,69 @@ inert at their last step.
 
 ## Recent changes
 
-### 10 October 2026 (latest): tests run on GitHub against Postgres 18
+### 10 October 2026 (latest): Stories, Bookings, cart, checkout, account, sign-in and the header dropdown match the home page
+
+The pages the home page redesign didn't reach now use its look: white
+backgrounds, hairline rules, square corners, outlined buttons and small
+tracked capitals. Only the markup and classes changed. Data, validation, copy
+and routes are the same.
+
+- **Two new classes in `assets/css/main.css`.** `.caps-title` is the product
+  and story tile name (14px bold, uppercase, tracked, ink). `.caps-label` is
+  the header's category-row style (12px uppercase, tracked) and is used for
+  eyebrows, tabs, breadcrumbs and small labels. Please use these instead of
+  writing the class strings out again. The home components still spell them
+  out and were left alone.
+- **Stories (`/blog`).** The heading is left-aligned. The category chips are
+  now underlined text tabs on one row, which scrolls sideways on phones.
+  `BlogCard` is the home page's Stories tile (4:5 photo, caps title, subtitle,
+  date) in a grid with a 6px gap. The article's "Related stories" is the same
+  rail as on the home page, with `HomeSectionHeading` and `CommonRailControls`.
+  `BlogFeatureCard` is no longer used there, but About's `StoriesGrid` still
+  uses it.
+- **Bookings.** Tabs, eyebrows and "Choose a session" use `caps-label`. The
+  session you pick gets an ink border and a radio dot. The off-palette
+  `text-green-700` capacity text is now `text-subtle`. The form panels and
+  "By appointment" cards lost their boxes and sit under hairlines instead.
+  `WaitlistBanner` used the dark `chrome` and gold treatment and is now
+  outlined in ink on white.
+- **Cart drawer.** The title ("Your cart (n)") and the close button share one
+  row above a hairline. Line items are separated by hairlines and use 3:4
+  thumbnails with caps names. The footer's drop shadow is replaced by a
+  hairline. "Before you go" pages with the home page's arrows, progress bar
+  and count instead of dots.
+- **Checkout.** Every `rounded` corner is gone. The breadcrumb, step headings
+  and "Return to…" links use the caps styles. Steps you can't reach yet are
+  `text-muted`; they used to be `text-line`, which was almost invisible. The
+  summary has portrait thumbnails with an ink quantity badge. The discount
+  "Apply" button is an outlined button, and the input is 16px so iOS doesn't
+  zoom when you tap it. The tinted summary column stays as it was.
+- **Account.** The `AccountShell` nav uses underlined caps tabs on phones and
+  an ink left rule from `md`. On `/account`, the sign-in and create-account
+  panels are two columns split by a hairline instead of two boxes. The help
+  links use the home page's "Shop all" link style. Orders, settings, sign-in
+  and register follow the same headings and colours.
+- **Sign in and register** share a new `AccountAuthShell`
+  (`components/account/AuthShell.vue`). From `lg` a tall product photo
+  (`/design/about-quality.png`) sits beside the form. Above the form, two caps
+  tabs switch between Sign in and Create account; they replace the "Already
+  have one?" lines. Under the form there's a "No account needed" block with a
+  link to shop as a guest. Below `lg` the photo is hidden so the first field
+  stays above the fold. The headings are now "Welcome back" and "Create an
+  account".
+- **Header dropdown** (the mega menu under Best Sellers, Sandals, Ahenema and
+  Sale). The panel's columns now line up with the page's 1440px measure
+  instead of a `140px` inset. Column headings use `caps-label`. The two
+  promos are photo-over-caption tiles like the product rail, where they used
+  to be white text laid over the photo. The phone menu's accordion does the
+  same on white rather than `bg-surface`. The `Closed-Toe\nShoes` line break
+  in `utils/navigation.ts` was only there for the old overlaid text, so it's
+  gone. `Header.vue` no longer imports `ArrowRight`.
+
+Not checked in a browser yet. Every page renders (HTTP 200 from the dev
+server), but nobody has looked at them at 375 / 768 / 1440px.
+
+### 10 October 2026: tests run on GitHub against Postgres 18
 
 **What changed.** A GitHub Actions workflow,
 `.github/workflows/backend-tests.yml`, runs the whole backend suite twice:
