@@ -25,7 +25,4 @@ EXPOSE 8000
 # blueprint simple. Note this means only the *web* service should migrate —
 # the worker and scheduler run the same image with their own dockerCommand,
 # which overrides this CMD, so they never race it.
-# media:import-product-photos only repoints products at photos already in the
-# S3 bucket (there is no frontend/ in this image to upload from); it is
-# idempotent and never fails the boot.
-CMD ["sh", "-c", "php artisan migrate --force && php artisan storage:link || true; php artisan media:import-product-photos || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["sh", "-c", "php artisan migrate --force && php artisan storage:link || true; php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

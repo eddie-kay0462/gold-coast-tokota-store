@@ -13,10 +13,10 @@ namespace App\Support;
  *    storefront", where the photos are committed. Fine on the storefront;
  *    in the admin (another origin) the same path loads the admin's own HTML.
  *    Resolved against `app.storefront_url`.
- *  - `products/domfo/1-tan.webp`, `media/2026/10/x.webp` — a key on the
- *    image disk (MediaStorage: local storage in development, the S3 bucket
- *    in production). This is how product photos are stored once
- *    `media:import-product-photos` has run.
+ *  - `products/domfo/1-tan.webp` — the same storefront photo without its
+ *    leading slash. Rows were rewritten to this form on 2 Oct, when photos
+ *    briefly moved to S3; it resolves to the storefront like the `/` form.
+ *  - `media/2026/10/x.webp` — a key on the image disk (MediaStorage).
  */
 final class MediaUrl
 {
@@ -28,6 +28,10 @@ final class MediaUrl
 
         if (preg_match('#^https?://#i', $reference)) {
             return $reference;
+        }
+
+        if (str_starts_with($reference, 'products/')) {
+            $reference = '/'.$reference;
         }
 
         if (str_starts_with($reference, '/')) {

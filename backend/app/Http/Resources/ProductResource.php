@@ -36,9 +36,8 @@ class ProductResource extends JsonResource
                 ? (int) round($this->compare_at_ghs * (float) $fxRate->rate)
                 : null,
             'sku' => $this->sku,
-            // Absolute URLs: stored as keys on the image disk (local storage
-            // in development, the S3 bucket in production) or, before
-            // `media:import-product-photos` runs, storefront paths.
+            // Absolute URLs: stored as storefront paths (`/products/…`) or
+            // media-library keys, resolved by MediaUrl.
             'images' => array_values(array_filter(array_map(MediaUrl::absolute(...), $this->images ?? []))),
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
