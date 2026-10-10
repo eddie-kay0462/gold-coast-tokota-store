@@ -10,6 +10,7 @@ use App\Services\Payment\PaystackService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -57,41 +58,58 @@ class PaystackWebhookController extends Controller
         // Paystack sends no per-delivery id, so the event name plus the
         // transaction reference stands in: unique per state change, which is
         // the property idempotency actually needs.
+        //
+        // The marker and the order change commit together. Written first and
+        // on its own, a failure in between left the event marked processed
+        // with the order still pending — and Paystack's retry, which is the
+        // whole recovery mechanism, was then answered "already processed".
         try {
-            ProcessedWebhookEvent::create([
-                'gateway' => 'paystack',
-                'event_id' => "{$event}:{$reference}",
-                'event_type' => $event,
-                'processed_at' => now(),
-            ]);
+            $paid = DB::transaction(function () use ($request, $event, $reference) {
+                ProcessedWebhookEvent::create([
+                    'gateway' => 'paystack',
+                    'event_id' => "{$event}:{$reference}",
+                    'event_type' => $event,
+                    'processed_at' => now(),
+                ]);
+
+                return match ($event) {
+                    'charge.success' => $this->recordPayment($request, $reference),
+                    'charge.failed' => $this->recordFailure($reference),
+                    default => null,
+                };
+            });
         } catch (UniqueConstraintViolationException) {
-            // Already handled. Acknowledge so Paystack stops retrying.
+            // Already handled. Acknowledge so Paystack stops retrying. Caught
+            // outside the transaction, which has rolled back by now — Postgres
+            // refuses every further statement in a transaction that has hit a
+            // constraint violation.
             return response('Already processed', 200);
         }
 
-        match ($event) {
-            'charge.success' => $this->recordPayment($request, $reference),
-            'charge.failed' => $this->recordFailure($reference),
-            default => null,
-        };
+        // After the commit, so a queued listener never reads an order that
+        // is not yet paid in the database.
+        if ($paid) {
+            OrderPaid::dispatch($paid);
+        }
 
         return response('OK', 200);
     }
 
-    private function recordPayment(Request $request, string $reference): void
+    /** Returns the order it marked paid, or null when it marked nothing. */
+    private function recordPayment(Request $request, string $reference): ?Order
     {
         $order = Order::query()->with('items')->where('reference', $reference)->first();
 
         if (! $order) {
             Log::warning('Paystack reported a payment for an unknown order.', ['reference' => $reference]);
 
-            return;
+            return null;
         }
 
         // Already paid — a duplicate that slipped past the event key because
         // Paystack sent it under a different event name.
         if ($order->status !== 'pending') {
-            return;
+            return null;
         }
 
         // What was charged has to be what we asked for. A mismatch is either a
@@ -108,7 +126,7 @@ class PaystackWebhookController extends Controller
                 'expected' => "{$order->total} {$order->currency}",
             ]);
 
-            return;
+            return null;
         }
 
         $order->update([
@@ -117,7 +135,7 @@ class PaystackWebhookController extends Controller
             'payment_reference' => $reference,
         ]);
 
-        OrderPaid::dispatch($order);
+        return $order;
     }
 
     private function recordFailure(string $reference): void
