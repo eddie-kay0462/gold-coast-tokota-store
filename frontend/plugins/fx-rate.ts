@@ -4,7 +4,7 @@ import { useCurrencyStore } from '~/stores/currency'
  * Loads the display currency the visitor last chose, and the GHS->USD rate
  * used to derive every USD price on the storefront.
  *
- * USD is never a stored field (README Feature 2) — it is always
+ * USD is never a stored field (README Feature 2); it is always
  * `base_price_ghs × rate`, computed at display time. Until a rate loads it is
  * 0, which is why `PriceDisplay` falls back to GHS rather than rendering a
  * price of $0. The rate here is for *display only*; checkout locks its own

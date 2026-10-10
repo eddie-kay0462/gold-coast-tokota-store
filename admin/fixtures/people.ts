@@ -3,7 +3,7 @@ import { avatarFor, chance, daysAgo, daysAhead, ghs, hoursAgo, int, pick, rand }
 
 /**
  * The real team, from the brand PDF's "Admin and Staff User Roles" table.
- * Two interns are added to exercise the time-boxed access model — one active,
+ * Two interns are added to exercise the time-boxed access model: one active,
  * one already lapsed, because the lapsed state is the one that usually ships
  * broken.
  */
@@ -95,7 +95,7 @@ export const adminUsers: AdminUser[] = [
     role: 'intern',
     jobTitle: 'Marketing Intern',
     avatar: avatarFor('Kwesi Appiah'),
-    // Already lapsed — the read-only state has to be visible somewhere.
+    // Already lapsed; the read-only state has to be visible somewhere.
     accessExpiresAt: daysAgo(4),
     accessExtensions: [],
     lastActiveAt: daysAgo(5),
@@ -153,7 +153,7 @@ const feedbackMessages = [
   'The Kente-strap sandals are beautiful. Sizing ran a little large but the finish is superb.',
   'Sip & Paint workshop was the highlight of our trip to Accra. Please run more weekend slots.',
   'Delivery to London took eleven days, a bit longer than quoted, but the packaging was lovely.',
-  'Would love to see wider fittings — I am a size 45 and the standard last is narrow.',
+  'Would love to see wider fittings. I am a size 45 and the standard last is narrow.',
   'Bought three pairs as gifts. Everyone asked where they came from. The story card is a nice touch.',
   'The recycled tyre sole is genuinely comfortable. Sceptical at first, converted now.',
   'Customer service on WhatsApp was quick and warm. Sorted my exchange in a day.',

@@ -4,7 +4,7 @@ import type { Timestamp } from './common'
  * WhatsApp inbox.
  *
  * SCOPE NOTE, and it matters: README Feature 6 specifies WhatsApp as a
- * *deep link only* — `https://wa.me/<number>`, no API integration. A two-way
+ * *deep link only*: `https://wa.me/<number>`, no API integration. A two-way
  * inbox implies the WhatsApp Business Cloud API plus a webhook receiver, which
  * is new backend scope that does not exist and has not been costed.
  *

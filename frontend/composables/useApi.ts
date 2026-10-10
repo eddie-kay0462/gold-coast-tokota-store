@@ -4,7 +4,7 @@
  *
  * Writes need Sanctum's CSRF handshake. The storefront's origin is a Sanctum
  * *stateful* domain (`SANCTUM_STATEFUL_DOMAINS`), so any request a browser
- * sends from it runs through session + CSRF middleware — and without the
+ * sends from it runs through session + CSRF middleware, and without the
  * `X-XSRF-TOKEN` header every POST is a 419. Plain `$fetch` calls did exactly
  * that: newsletter, feedback, both booking forms and checkout all failed from
  * a real browser while passing every API test (test requests carry no Origin).

@@ -2,7 +2,7 @@
  * Shared primitives.
  *
  * Money is ALWAYS an integer in minor units (pesewas / cents) paired with an
- * explicit currency — README Data Models is emphatic about this, and it is the
+ * explicit currency; README Data Models is emphatic about this, and it is the
  * one convention most likely to be broken by accident. `Money` makes the pair
  * inseparable so a bare number can never be mistaken for a price.
  */

@@ -10,7 +10,7 @@ import { LEGAL_SLUGS, HELP_SLUGS } from '~/utils/policyContent'
  * and cannot import from `~/utils`.
  *
  * Blog posts and products are absent from the sitemap for the same reason and
- * still need the same treatment — see FOR_THE_TEAM.md.
+ * still need the same treatment. See FOR_THE_TEAM.md.
  */
 export default defineSitemapEventHandler(() => [
   ...LEGAL_SLUGS.map((slug) => ({ loc: `/legal/${slug}`, _sitemap: 'pages' as const })),

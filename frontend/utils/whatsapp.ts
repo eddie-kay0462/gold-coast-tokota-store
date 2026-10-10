@@ -3,7 +3,7 @@
  *
  * README Feature 6 says the number and default message come from `SiteSetting`
  * "not hardcoded in multiple places". That was true of the *number* and false
- * of the *messages* — eleven of sixteen CTAs sent the same generic line, and
+ * of the *messages*: eleven of sixteen CTAs sent the same generic line, and
  * the ones that didn't each wrote their own string inline. The business opened
  * a chat from the cart, the stores page and an order enquiry and could not tell
  * them apart.
@@ -12,7 +12,7 @@
  * auto-reply enumerates (brand guidelines, "Default Greeting Message"):
  * shop sandals · book a Sandal Sip & Paint · school or group tour ·
  * partnerships or bulk orders · sustainability. Arriving already in one of
- * those lanes is the whole point — it saves the first two messages of every
+ * those lanes is the whole point; it saves the first two messages of every
  * conversation.
  *
  * Keep the voice consistent: address the brand by name, say what you want, one
@@ -96,7 +96,7 @@ export const whatsappMessage = {
     `${opening} I'd like to discuss a bulk or corporate order.`,
 
   /**
-   * The workshop lane. Named when we know which one — three of the six
+   * The workshop lane. Named when we know which one; three of the six
    * experiences in the brand guidelines are "by appointment" and have no
    * bookable session, so the name is all the business has to go on.
    */
@@ -120,7 +120,7 @@ export const whatsappMessage = {
   stockEnquiry: (product?: string | null) =>
     product
       ? `${opening} do you have the ${product} coming back in stock?`
-      : `${opening} I couldn't find what I was looking for — can you help?`,
+      : `${opening} I couldn't find what I was looking for. Can you help?`,
 
   /** The label on the stores page already promises directions. */
   visit: () => `${opening} could you send me directions to the workshop?`,
@@ -129,5 +129,5 @@ export const whatsappMessage = {
 
   /** No discounts endpoint exists, so codes are applied by hand. */
   discountCode: (code?: string) =>
-    `${opening} I have a discount code${code ? ` (${code})` : ''} — could you apply it to my order?`,
+    `${opening} I have a discount code${code ? ` (${code})` : ''}. Could you apply it to my order?`,
 } as const

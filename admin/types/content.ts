@@ -6,7 +6,7 @@ export interface BlogPost {
   slug: string
   excerpt: string
   /** Sanitised HTML from the editor. Server-side sanitisation is mandatory
-   *  (README Feature 9 edge cases — stored XSS). */
+   *  (README Feature 9 edge cases: stored XSS). */
   body: string
   coverImage: string | null
   coverImageAlt: string

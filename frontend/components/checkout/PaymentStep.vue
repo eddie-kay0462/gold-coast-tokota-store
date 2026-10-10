@@ -8,7 +8,7 @@ import { whatsappMessage } from '~/utils/whatsapp'
  *
  * `placeOrder()` posts the cart to `POST /checkout/session`, which re-prices
  * every line, quotes delivery, locks the FX rate for USD, reserves stock and
- * opens a Paystack session — then sends the customer to Paystack's hosted page.
+ * opens a Paystack session, then sends the customer to Paystack's hosted page.
  * Paystack returns them to `/order-confirmation/{reference}`, which waits for
  * the webhook to mark the order paid. Paystack handles both currencies (§13 of
  * GOLD_COAST_TOKOTA.md), so there is no client-side card form here.
@@ -33,13 +33,13 @@ const api = useApi()
 
 /**
  * The checkout handoff carries the whole basket, exactly like the cart
- * drawer's — the fallback for anyone who would rather order by message, or
+ * drawer's, the fallback for anyone who would rather order by message, or
  * whose payment cannot go through.
  */
 const whatsappOrderMessage = computed(() =>
   whatsappMessage.cart(
     cart.items.map((item) => {
-      const variant = item.variantLabel ? ` — ${item.variantLabel}` : ''
+      const variant = item.variantLabel ? ` (${item.variantLabel})` : ''
       return `• ${item.name}${variant} × ${item.quantity}`
     }),
     formatMoney(cart.subtotalGhs, 'GHS', { compact: true }),
@@ -141,12 +141,12 @@ async function placeOrder() {
         <CommonPriceDisplay :base-price-ghs="totalGhs" compact />
       </p>
       <p class="w-full text-caption text-muted">
-        Processed securely by Paystack — card or mobile money. You’ll finish paying on
+        Paid securely through Paystack, by card or mobile money. You’ll finish paying on
         Paystack’s page and come straight back here.
       </p>
     </div>
 
-    <!-- Do not present a locked rate here — the lock happens server-side at
+    <!-- Do not present a locked rate here; the lock happens server-side at
          session creation (README Feature 2/4). Saying it *will* be locked is
          accurate; showing a locked figure now would not be. -->
     <CommonInlineNotice v-if="currency === 'USD'" title="About the exchange rate">

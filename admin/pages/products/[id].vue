@@ -8,7 +8,7 @@ import { formatMoney, usdFrom } from '~/utils/currency'
  *
  * The price section makes README Feature 2's rule visible: cedis are editable,
  * dollars are computed from the current rate and shown read-only. There is
- * deliberately no USD input — a field there would imply a stored value that
+ * deliberately no USD input; a field there would imply a stored value that
  * does not and must not exist.
  */
 const route = useRoute()
@@ -81,7 +81,7 @@ const derivedUsd = computed(() => {
             <div>
               <p class="field-label">Derived price (USD)</p>
               <p class="flex min-h-[44px] items-center rounded-lg bg-bg-sunken px-3 text-ui text-fg-muted">
-                {{ derivedUsd ? formatMoney(derivedUsd) : '—' }}
+                {{ derivedUsd ? formatMoney(derivedUsd) : '-' }}
               </p>
               <p class="mt-1 text-meta text-fg-faint">
                 Read-only. Moves with the rate; locked onto each order at checkout.
@@ -137,7 +137,7 @@ const derivedUsd = computed(() => {
           <!-- View-only for now: the API can store uploads in Cloudflare R2
                (MediaStorage), but the editor has no upload control yet. -->
           <p class="mt-4 text-meta text-fg-faint">
-            Photos can’t be changed here yet — that arrives once images move to cloud storage.
+            Photos can’t be changed here yet. That comes once images move to cloud storage.
           </p>
         </SettingsSection>
 

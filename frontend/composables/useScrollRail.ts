@@ -108,7 +108,7 @@ export function useScrollRail() {
     measure()
     el.addEventListener('scroll', measure, { passive: true })
     // Observes the rail's box (breakpoint changes) *and* its children, since a
-    // ResizeObserver does not fire when only `scrollWidth` changes — which is
+    // ResizeObserver does not fire when only `scrollWidth` changes, which is
     // what happens when an async list of posts resolves and the slide count
     // changes underneath a stale dot row.
     resizeObserver = new ResizeObserver(measure)

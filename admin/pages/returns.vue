@@ -12,7 +12,7 @@ import { humanise } from '~/utils/formatters'
  *   · refunds process in 7–14 business days to the original method
  *
  * The ineligible rows are shown rather than filtered out, with the reason
- * spelled out — someone has to reply to that customer, and they need the
+ * spelled out; someone has to reply to that customer, and they need the
  * policy line in front of them to do it.
  */
 useHead({ title: 'Returns' })
@@ -44,7 +44,7 @@ const columns: Column<ReturnRequest>[] = [
 
 const windowLabel = (iso: string) => {
   const d = daysUntil(iso)
-  if (d === null) return '—'
+  if (d === null) return '-'
   return d < 0 ? `Closed ${formatRelative(iso)}` : `${d} day${d === 1 ? '' : 's'} left`
 }
 </script>

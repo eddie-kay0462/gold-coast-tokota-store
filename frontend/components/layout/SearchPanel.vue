@@ -34,7 +34,7 @@ function submit() {
   close()
 }
 
-// Focus the field as soon as the panel opens — a search box you have to click
+// Focus the field as soon as the panel opens; a search box you have to click
 // into defeats the point of the shortcut.
 watch(
   () => props.open,

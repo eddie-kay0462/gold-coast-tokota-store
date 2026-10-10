@@ -2,7 +2,7 @@
   <!--
     The opening of the sustainability programme, folded into About when the two
     pages merged (27 Aug). It carries the mission copy from the old
-    `/sustainability` masthead (Figma 10:915) — the heavy rule and the "clean up
+    `/sustainability` masthead (Figma 10:915): the heavy rule and the "clean up
     a dirty industry" statement.
 
     What did not come across is that masthead's `Gold Coast Tokota` wordmark set

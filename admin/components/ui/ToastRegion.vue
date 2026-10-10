@@ -3,7 +3,7 @@ import { PhCheckCircle, PhInfo, PhWarningCircle, PhX } from '@phosphor-icons/vue
 
 /**
  * The single toast region, mounted once in the layout. Bottom-right, stacking
- * upward — see the rationale in `composables/useToast.ts`.
+ * upward. See the rationale in `composables/useToast.ts`.
  *
  * `aria-live="polite"` so a screen reader announces confirmations without
  * interrupting, and the region is always in the DOM (an element that appears

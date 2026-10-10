@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-// Customer-only — admin/staff auth lives in the separate ../admin app.
+// Customer-only: admin/staff auth lives in the separate ../admin app.
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as { id: string; name: string; email: string } | null,

@@ -12,17 +12,17 @@ export const categories: Category[] = [
 /**
  * Products reflect what the brand actually makes: handcrafted henema sandals
  * from recycled tyre and textile waste, per the PDF's mission statement.
- * Prices are GHS minor units (pesewas) — USD is derived, never stored.
+ * Prices are GHS minor units (pesewas); USD is derived, never stored.
  */
 const catalogue: [string, number, number, boolean][] = [
   // name, category id, price in pesewas, featured
-  ['Ahenema Classic — Tan', 1, 38000, true],
-  ['Ahenema Classic — Black', 1, 38000, false],
+  ['Ahenema Classic, Tan', 1, 38000, true],
+  ['Ahenema Classic, Black', 1, 38000, false],
   ['Ahenema Slim Strap', 1, 34500, false],
   ['Adinkra Embossed Slide', 1, 42000, true],
   ['Coastal Two-Strap', 1, 36000, false],
   ['Heritage Wedge', 1, 52000, false],
-  ['Elder Ahenema — Wide Fit', 1, 45000, false],
+  ['Elder Ahenema, Wide Fit', 1, 45000, false],
   ['Market Day Flat', 1, 29500, false],
   ['Sunday Best Ahenema', 1, 58000, true],
   ['Kente Panel Slide', 2, 49500, true],
@@ -37,9 +37,9 @@ const catalogue: [string, number, number, boolean][] = [
   ['Woven Card Holder', 4, 14000, false],
   ['Leather Offcut Keyring', 4, 6500, false],
   ['Sandal Care Kit', 4, 9500, false],
-  ['Canvas Tote — Offcut Panel', 4, 22000, false],
-  ['DIY Sandal Kit — Adult', 5, 32000, true],
-  ['DIY Sandal Kit — Youth', 5, 27000, false],
+  ['Canvas Tote, Offcut Panel', 4, 22000, false],
+  ['DIY Sandal Kit, Adult', 5, 32000, true],
+  ['DIY Sandal Kit, Youth', 5, 27000, false],
 ]
 
 export const products: Product[] = catalogue.map(([name, categoryId, price, featured], i) => {
@@ -99,6 +99,6 @@ export const fxRate: FxRate = {
   quoteCurrency: 'USD',
   rate: 0.0643,
   fetchedAt: hoursAgo(2),
-  source: 'exchangerate.host (proposed — provider not yet selected)',
+  source: 'exchangerate.host (proposed, provider not yet selected)',
   isStale: false,
 }

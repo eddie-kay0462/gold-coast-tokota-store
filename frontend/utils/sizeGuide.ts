@@ -3,7 +3,7 @@
  * modal on the product page, so the two can never disagree.
  *
  * NOTE: the conversions below are the standard EU/UK/US ladder, not measured
- * Gold Coast Tokota lasts. Confirm against real production lasts before launch —
+ * Gold Coast Tokota lasts. Confirm against real production lasts before launch:
  * a size chart that is wrong by half a size causes returns.
  */
 export const SIZE_GUIDE_ROWS = [

@@ -37,7 +37,7 @@ const isGhana = computed(() => model.value.country === 'GH')
 
 function validate(): boolean {
   errors.email = !model.value.email.trim()
-    ? 'Enter your email address — we send your receipt there.'
+    ? 'Enter your email address so we can send your receipt.'
     : !isValidEmail(model.value.email)
       ? 'That doesn’t look like a valid email address.'
       : undefined
@@ -52,7 +52,7 @@ function validate(): boolean {
   // form had while it validated nothing at all.
   const phone = model.value.phone.trim()
   errors.phone = !phone
-    ? 'Enter a phone number — the courier needs it.'
+    ? 'Enter a phone number so the courier can reach you.'
     : isGhana.value
       ? isValidGhanaPhone(phone)
         ? undefined

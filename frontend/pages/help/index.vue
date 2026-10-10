@@ -4,19 +4,19 @@ import { HELP_TOPICS } from '~/utils/policyContent'
 
 /**
  * The help hub. Bespoke rather than a `[slug]` page because it is a directory
- * of topics, not an article — the prose-vs-structured-UI split rule.
+ * of topics, not an article: the prose-vs-structured-UI split rule.
  *
  * Topics come from `HELP_TOPICS`, which is derived from the same drafts the
  * articles render, so the hub and its pages cannot drift apart.
  */
-// `href` is null when the admin hasn't set a number — the CTA hides rather
+// `href` is null when the admin hasn't set a number; the CTA hides rather
 // than linking to an invalid wa.me URL.
 
 useSeoMeta({
-  title: 'Help Centre — Gold Coast Tokota',
+  title: 'Help Centre | Gold Coast Tokota',
   description:
-    'Returns, shipping and bulk orders — everything you need to know about ordering from Gold Coast Tokota.',
-  ogTitle: 'Help Centre — Gold Coast Tokota',
+    'Returns, shipping and bulk orders: everything you need to know about ordering from Gold Coast Tokota.',
+  ogTitle: 'Help Centre | Gold Coast Tokota',
   ogDescription: 'Returns, shipping, bulk orders and how to reach us.',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
@@ -29,8 +29,8 @@ useSeoMeta({
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">Help Centre</h1>
         <p class="w-full max-w-[720px] text-body text-graphite">
-          Answers to the questions we’re asked most. If yours isn’t here, message us —
-          we reply fastest on WhatsApp.
+          Answers to the questions we’re asked most. If yours isn’t here, message us.
+          We reply fastest on WhatsApp.
         </p>
       </header>
 

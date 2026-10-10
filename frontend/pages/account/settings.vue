@@ -10,11 +10,11 @@ import { CURRENCIES } from '~/utils/constants'
  * to. Rendering them disabled rather than hiding them means the design can be
  * reviewed now without faking a signed-in user.
  *
- * Gets `definePageMeta({ middleware: 'auth' })` when auth lands — see
+ * Gets `definePageMeta({ middleware: 'auth' })` when auth lands. See
  * `pages/account/orders.vue` for why it has none today.
  */
 
-// Empty, and stays empty — there is nothing to hydrate these from.
+// Empty, and stays empty; there is nothing to hydrate these from.
 const profile = reactive({ name: '', email: '', phone: '', currency: 'GHS' })
 const address = reactive({ line1: '', city: '', region: '', country: '' })
 const password = reactive({ current: '', next: '', confirm: '' })
@@ -25,7 +25,7 @@ const currencyOptions = CURRENCIES.map((value) => ({
 }))
 
 useSeoMeta({
-  title: 'Account settings — Gold Coast Tokota',
+  title: 'Account settings | Gold Coast Tokota',
   description: 'Manage your Gold Coast Tokota profile, address and preferences.',
   robots: 'noindex, nofollow',
 })

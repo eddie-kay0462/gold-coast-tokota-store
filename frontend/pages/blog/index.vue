@@ -5,7 +5,7 @@ import { DESIGN_POSTS } from '~/utils/newsPosts'
 const config = useRuntimeConfig()
 
 // Feature 9 owns the blog CMS. A missing or failing endpoint resolves to an
-// empty list rather than throwing, and the design's own posts stand in — the
+// empty list rather than throwing, and the design's own posts stand in; the
 // same fallback pattern the home and shop pages use.
 const { data: posts } = await useAsyncData('blog-posts', () =>
   $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/blog-posts`)
@@ -26,7 +26,7 @@ const allPosts = computed(() => {
  * The categories are derived from the posts themselves rather than from a fixed
  * allowlist: the CMS owns them, and a hardcoded list would silently hide any
  * category the brand adds later. About's programme strand does use an allowlist,
- * but it is doing something different — selecting a subset of the feed for one
+ * but it is doing something different: selecting a subset of the feed for one
  * section.
  *
  * State lives in the URL so a filtered view is shareable and survives a
@@ -55,10 +55,10 @@ const items = computed(() =>
 )
 
 useSeoMeta({
-  title: 'Stories — Gold Coast Tokota',
+  title: 'Stories | Gold Coast Tokota',
   description:
     'Learn more about our brand, our sustainability journey and upcoming community events.',
-  ogTitle: 'Stories — Gold Coast Tokota',
+  ogTitle: 'Stories | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })

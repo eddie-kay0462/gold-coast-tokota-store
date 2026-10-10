@@ -33,7 +33,7 @@ if (!post.value) {
 /**
  * Genuinely related stories: same category first, then the newest of everything
  * else to fill the row. It used to be "all posts minus this one, newest first"
- * under a "More Stories" heading — which is a feed, not a relationship.
+ * under a "More Stories" heading, which is a feed, not a relationship.
  */
 const related = computed(() => {
   const others = [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS]
@@ -49,7 +49,7 @@ const related = computed(() => {
 })
 
 useSeoMeta({
-  title: () => `${post.value?.title ?? 'Story'} — Gold Coast Tokota`,
+  title: () => `${post.value?.title ?? 'Story'} | Gold Coast Tokota`,
   description: () => post.value?.lede ?? post.value?.subtitle ?? undefined,
   ogTitle: () => post.value?.title,
   ogDescription: () => post.value?.lede ?? post.value?.subtitle ?? undefined,

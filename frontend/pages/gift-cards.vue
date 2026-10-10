@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { whatsappMessage } from '~/utils/whatsapp'
 /**
- * Gift cards — BUILT BUT DELIBERATELY INACTIVE.
+ * Gift cards: BUILT BUT DELIBERATELY INACTIVE.
  *
  * There is no gift-card model, no balance ledger and no redemption at checkout;
  * the footer links here ("Redeem a Gift Card") and 404ing was worse than saying
@@ -26,14 +26,14 @@ async function onRedeem() {
   await new Promise((resolve) => setTimeout(resolve, 600))
   checking.value = false
   notice.value =
-    'Gift cards aren’t live yet — there’s no redemption system on the API side. If you were ' +
-    'given one, message us with the code and we’ll honour it against your order by hand.'
+    'Gift cards can’t be redeemed online yet. If you were given one, message us with the ' +
+    'code and we’ll take it off your order by hand.'
 }
 
 useSeoMeta({
-  title: 'Gift cards — Gold Coast Tokota',
-  description: 'Give a pair of handmade Ghanaian sandals — Gold Coast Tokota gift cards.',
-  ogTitle: 'Gift cards — Gold Coast Tokota',
+  title: 'Gift cards | Gold Coast Tokota',
+  description: 'Give a pair of handmade Ghanaian sandals with a Gold Coast Tokota gift card.',
+  ogTitle: 'Gift cards | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -45,13 +45,13 @@ useSeoMeta({
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">Gift cards</h1>
         <p class="w-full max-w-[720px] text-body text-graphite">
-          Let them choose their own pair — and their own size, which is the part that usually
+          Let them choose their own pair, and their own size, which is the part that usually
           goes wrong.
         </p>
       </header>
 
       <CommonInlineNotice variant="warning" title="Gift cards aren’t live yet">
-        We’re still building this. In the meantime we can arrange a gift by hand — message us and
+        We’re still building this. In the meantime we can arrange a gift by hand. Message us and
         we’ll sort it out.
       </CommonInlineNotice>
 

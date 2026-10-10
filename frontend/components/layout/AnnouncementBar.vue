@@ -7,14 +7,14 @@ import { whatsappMessage } from '~/utils/whatsapp'
  * mockup: a short list of messages cross-fading in place on a slow loop.
  *
  * Copy comes from the admin-editable `SiteSetting.announcements` because these
- * are commercial claims — delivery terms, accepted payment methods — that the
+ * are commercial claims (delivery terms, accepted payment methods) that the
  * brand has to be able to correct without a deploy. The fallback below is the
  * design fallback pattern used everywhere else in this app: what renders before
  * the API answers, and it is deliberately limited to claims the rest of the
  * project can stand behind.
  *
  * The mockup's own copy included "Free delivery in Accra" and "Order online,
- * pick up in Osu". Neither ships until the brand confirms them — checkout
+ * pick up in Osu". Neither ships until the brand confirms them; checkout
  * charges for Accra delivery, and the brand address on file is Haatso.
  */
 const FALLBACK_ANNOUNCEMENTS = [
@@ -30,7 +30,7 @@ const ROTATE_SECONDS = 4
  * The second line: when someone can expect an answer.
  *
  * Admin-editable via `SiteSetting.business_hours`, with the brand guidelines'
- * published hours (Monday–Saturday, 9:00–17:00 GMT) as the design fallback —
+ * published hours (Monday–Saturday, 9:00–17:00 GMT) as the design fallback,
  * the same pattern the rotating line above uses. It moved out of a constant
  * once the admin app turned out to have had a field for it all along.
  */
@@ -69,7 +69,7 @@ watch(messages, (list) => {
   <div class="min-w-0 flex-1 py-1.5 text-center">
     <!-- Line 1. Below `sm` the messages scroll instead of rotating: the flag and
          currency cluster leave roughly 180px on a 320px phone, which is not
-         enough for a centred line to hold still in — that was a measured overlap
+         enough for a centred line to hold still in; that was a measured overlap
          bug, and the marquee is the treatment that fixed it. -->
     <div class="flex items-center text-caption text-white sm:hidden">
       <CommonMarquee :copies="2" :duration="24">

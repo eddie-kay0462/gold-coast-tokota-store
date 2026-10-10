@@ -2,7 +2,7 @@
 import { isValidEmail } from '~/utils/validators'
 
 /**
- * UGC submission — linked from the home page gallery's "Add Your Photo".
+ * UGC submission, linked from the home page gallery's "Add Your Photo".
  *
  * BUILT BUT DELIBERATELY INACTIVE: there is no media-upload endpoint for
  * customer photos (the only upload path in the API is the DIY booking reference
@@ -10,7 +10,7 @@ import { isValidEmail } from '~/utils/validators'
  * rather than posting into nothing.
  *
  * When a `POST /community/submissions` endpoint exists this becomes a FormData
- * post — see `components/booking/DiyOrderForm.vue` for the upload idiom.
+ * post. See `components/booking/DiyOrderForm.vue` for the upload idiom.
  */
 const form = reactive({ name: '', email: '', handle: '', note: '' })
 const photo = ref<File | null>(null)
@@ -28,7 +28,7 @@ function onFileChange(event: Event) {
     : !file.type.startsWith('image/')
       ? 'Choose an image file.'
       : file.size > MAX_BYTES
-        ? 'That image is over 5MB — please choose a smaller one.'
+        ? 'That image is over 5MB. Please choose a smaller one.'
         : undefined
 }
 
@@ -51,14 +51,14 @@ async function onSubmit() {
   await new Promise((resolve) => setTimeout(resolve, 600))
   submitting.value = false
   notice.value =
-    'Photo submissions aren’t enabled yet — there’s no upload endpoint on the API side. ' +
+    'You can’t upload photos here yet. ' +
     'Tag us with #GoldCoastTokota on Instagram instead and we’ll find it.'
 }
 
 useSeoMeta({
-  title: 'Share your photo — Gold Coast Tokota',
+  title: 'Share your photo | Gold Coast Tokota',
   description: 'Send us a photo of your Gold Coast Tokota sandals for a chance to be featured.',
-  ogTitle: 'Share your photo — Gold Coast Tokota',
+  ogTitle: 'Share your photo | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -71,7 +71,7 @@ useSeoMeta({
         <h1 class="w-full text-display-section font-normal text-black">Share your photo</h1>
         <p class="w-full max-w-[720px] text-body text-graphite">
           We love seeing where our sandals end up. Send us a photo and we may feature it on the
-          site — we’ll always ask you first.
+          site. We’ll always ask you first.
         </p>
       </header>
 
@@ -87,7 +87,7 @@ useSeoMeta({
         />
         <FormsFormField
           v-model="form.handle" label="Instagram handle" name="handle"
-          hint="Optional — so we can credit you."
+          hint="Optional, so we can credit you."
         />
 
         <div class="flex w-full min-w-0 flex-col gap-1.5">

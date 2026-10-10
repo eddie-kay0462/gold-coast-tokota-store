@@ -5,8 +5,8 @@ import type { Currency, Money, Timestamp } from './common'
  *
  * README and the `admin_users` table enum both say two (`admin` | `staff`).
  * The brand PDF's "Admin and Staff User Roles" table names three (Super Admin /
- * Admin / Staff) against a real roster, and the business asked for a fourth —
- * `intern` — whose access is time-boxed and extendable.
+ * Admin / Staff) against a real roster, and the business asked for a fourth:
+ * `intern`, whose access is time-boxed and extendable.
  *
  * The backend enum therefore has to widen and gain an `access_expires_at`
  * column before this can be enforced server-side. Recorded in FOR_THE_TEAM.md.

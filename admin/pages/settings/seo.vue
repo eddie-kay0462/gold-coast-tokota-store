@@ -9,7 +9,7 @@ import type { BlogPost, CmsPage, Product, SiteSettings } from '~/types'
  * defaults; the audit half lists content that will ship with a missing or
  * generated tag, because README Feature 10 requires every product, post and
  * core page to carry a unique descriptive title and description in the
- * server-rendered HTML — and the only way anyone notices a gap is if something
+ * server-rendered HTML, and the only way anyone notices a gap is if something
  * counts them.
  */
 useHead({ title: 'SEO' })
@@ -74,7 +74,7 @@ const indexable = computed(() => [
             <UiField
               v-model="form.defaultDescription" label="Fallback description" type="textarea"
               class="md:col-span-2"
-              hint="Used when a page has no description of its own — better than shipping an empty tag."
+              hint="Used when a page has no description of its own. Better than shipping an empty tag."
             />
           </div>
           <template #footer>
@@ -98,7 +98,7 @@ const indexable = computed(() => [
             <PhCheckCircle :size="15" class="mt-px shrink-0 text-success" />
             <span>
               <code class="font-mono">/checkout</code> is disallowed in robots.txt, and the admin
-              dashboard sits on its own domain — it is never linked from the storefront or included
+              dashboard sits on its own domain. It is never linked from the storefront or included
               in the sitemap, so there is nothing to exclude.
             </span>
           </p>

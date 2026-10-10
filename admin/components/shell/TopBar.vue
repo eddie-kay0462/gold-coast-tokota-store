@@ -5,7 +5,7 @@ import {
 import { breadcrumbFor } from '~/utils/navigation'
 
 /**
- * Header — 68px, per every Figma frame. Left: sidebar toggle, favourite star,
+ * Header: 68px, per every Figma frame. Left: sidebar toggle, favourite star,
  * breadcrumb. Centre: search with a ⌘/ hint. Right: theme toggle, notification
  * bell, right-rail toggle.
  *

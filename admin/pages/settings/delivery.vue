@@ -13,7 +13,7 @@ const { item: delivery } = useAdminItem<DeliverySettings>('delivery-settings', '
       <div v-if="delivery" class="admin-stack">
         <SettingsSection
           title="Routing"
-          description="Chosen from the shipping country — there is no manual override at checkout."
+          description="Chosen from the shipping country. There is no manual override at checkout."
         >
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="rounded-lg border border-border p-4">

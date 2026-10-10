@@ -26,12 +26,12 @@ function onFileChange(event: Event) {
 /**
  * Reference photos travel over WhatsApp, not through this form.
  * `StoreBookingRequest` types `details.reference_image` as a string, and there
- * is no upload endpoint behind it — so the filename is recorded here to tie the
+ * is no upload endpoint behind it, so the filename is recorded here to tie the
  * two together, and the customer is told plainly where to send the photo.
  */
 const referencePhotoMessage = computed(() => whatsappMessage.diyReference(form.name))
 
-/** The way out when the submit fails — same request, different channel. */
+/** The way out when the submit fails: same request, different channel. */
 const whatsappFallbackMessage = computed(() => whatsappMessage.diyOrder())
 
 async function onSubmit() {
@@ -41,7 +41,7 @@ async function onSubmit() {
 
   try {
     // Every field lives under `details`, which is what StoreBookingRequest
-    // validates — including the contact fields, which used to be sent at the
+    // validates, including the contact fields, which used to be sent at the
     // top level where the request never looked.
     await api('/bookings', {
       method: 'POST',
@@ -117,7 +117,7 @@ async function onSubmit() {
         </div>
         <p class="text-caption text-muted">
           We record the file name with your order and collect the photo itself over
-          WhatsApp — there is no image upload on this form yet.
+          WhatsApp, since this form can’t take image uploads yet.
           <CommonWhatsAppLink
             source="diy-reference"
             variant="quiet"

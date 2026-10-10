@@ -9,7 +9,7 @@ import type { Capability } from '~/utils/permissions'
  * Fulfilment / Returns / Shipments".
  *
  * Every entry carries the capability it needs. An item the viewer cannot use
- * is not rendered at all — showing a Staff account a Payments link that will
+ * is not rendered at all; showing a Staff account a Payments link that will
  * 403 is worse than not showing it.
  */
 export interface NavItem {
@@ -136,7 +136,7 @@ export function breadcrumbFor(path: string): { label: string; to?: string }[] {
     }
   }
 
-  // Detail routes (/orders/3007, /blog/8001) — walk up to the closest parent.
+  // Detail routes (/orders/3007, /blog/8001): walk up to the closest parent.
   const parent = path.slice(0, path.lastIndexOf('/')) || '/'
   if (parent !== path) {
     const trail = breadcrumbFor(parent)

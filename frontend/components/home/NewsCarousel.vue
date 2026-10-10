@@ -33,8 +33,8 @@ const { railEl, canScrollPrev, canScrollNext, scrollByPage, activeSlide, slideCo
 </script>
 
 <template>
-  <!-- The same rail as the featured products above — heading, right-bleeding
-       row, control bar — so the two read as one system. -->
+  <!-- The same rail as the featured products above: heading, right-bleeding
+       row, control bar, so the two read as one system. -->
   <section class="section-y flex w-full flex-col gap-6 lg:gap-8">
     <div class="page-gutter flex w-full flex-col gap-2">
       <HomeSectionHeading title="Stories" to="/blog" link-label="All stories" />

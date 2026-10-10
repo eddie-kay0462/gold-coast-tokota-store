@@ -3,12 +3,12 @@ import { PhArrowLeft, PhImage, PhLink, PhUser } from '@phosphor-icons/vue'
 import type { BlogPost } from '~/types'
 
 /**
- * Post editor — Figma node 26:1297, followed closely: the writing surface on
+ * Post editor, Figma node 26:1297, followed closely: the writing surface on
  * the left with its character counter and Publish action, and a right column
  * of URL & Author, Cover Image with alt text, and a 200-character meta
  * description.
  *
- * One component serves both `/blog/new` and `/blog/[id]` — they are the same
+ * One component serves both `/blog/new` and `/blog/[id]`; they are the same
  * screen, one with an empty document.
  */
 const route = useRoute()
@@ -85,7 +85,7 @@ watch(() => draft.title, (t) => {
                 <UiButton size="sm">{{ draft.isPublished ? 'Update' : 'Publish' }}</UiButton>
                 <template #denied>
                   <span class="text-meta text-fg-faint">
-                    Saving a draft is fine — publishing needs an Admin.
+                    You can save a draft, but publishing needs an Admin.
                   </span>
                 </template>
               </UiPermissionGate>

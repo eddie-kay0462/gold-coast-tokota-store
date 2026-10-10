@@ -3,17 +3,17 @@ import { PhArrowLeft, PhGear, PhPlugs } from '@phosphor-icons/vue'
 import type { ChatMessage, ChatThread, MessageTemplate } from '~/types'
 
 /**
- * WhatsApp inbox — Figma node 29:8158.
+ * WhatsApp inbox, Figma node 29:8158.
  *
  * SIMULATED. Nothing here sends or receives a real message.
  *
- * README Feature 6 scopes WhatsApp as a deep link only — `wa.me/<number>`,
+ * README Feature 6 scopes WhatsApp as a deep link only: `wa.me/<number>`,
  * no API integration. A two-way inbox needs the Business Cloud API, a verified
  * WABA, approved templates and a webhook receiver on the Laravel side, none of
  * which exist. So this is built against the real Cloud API's shape (message
  * direction, delivery receipts, the 24-hour session window, template approval
  * states) and served from fixtures, and says so on every screen. The
- * alternative — a convincing inbox with no disclosure — is how someone ends up
+ * alternative (a convincing inbox with no disclosure) is how someone ends up
  * believing a customer was replied to when they were not.
  *
  * The conversations themselves are real scenarios this business handles: a
@@ -64,7 +64,7 @@ function send(body: string) {
   })
 }
 
-/** Below lg the two panes become one — list, then thread. */
+/** Below lg the two panes become one: list, then thread. */
 const showThreadOnMobile = ref(false)
 function selectThread(id: string) {
   activeId.value = id
@@ -91,11 +91,11 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
     <div class="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3">
       <PhPlugs :size="20" class="mt-px shrink-0 text-warning" />
       <div class="min-w-0">
-        <p class="text-ui font-medium text-warning">Simulated — the WhatsApp Business Cloud API is not connected</p>
+        <p class="text-ui font-medium text-warning">Simulated: the WhatsApp Business Cloud API is not connected</p>
         <p class="mt-1 text-meta text-warning/90">
           These conversations are sample data. Messages sent from here go nowhere. Wiring this up
           needs a verified Business account, Cloud API credentials and a webhook receiver on the
-          API — the original scope covered the <code class="font-mono">wa.me</code> deep link
+          API. The original scope covered the <code class="font-mono">wa.me</code> deep link
           only, so this is additional work.
         </p>
       </div>

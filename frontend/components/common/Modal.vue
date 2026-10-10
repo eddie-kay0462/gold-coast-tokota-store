@@ -6,7 +6,7 @@ import { PhX } from '@phosphor-icons/vue'
  *
  * Previously this was a bare `fixed inset-0 flex items-center` with no
  * max-height and no scroll container: anything taller than the viewport was
- * centred and unreachable in both directions — guaranteed on a 320×568 screen
+ * centred and unreachable in both directions, guaranteed on a 320×568 screen
  * with a form inside. It also had no backdrop gutter, so the panel ran
  * edge-to-edge on a phone, and no scroll lock or focus handling, unlike the
  * cart drawer.

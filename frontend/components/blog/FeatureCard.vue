@@ -5,7 +5,7 @@ defineProps<{ post: ApiPost }>()
 </script>
 
 <template>
-  <!-- The large editorial card drawn in Figma (10:918) — used both under an
+  <!-- The large editorial card drawn in Figma (10:918), used both under an
        article ("More stories") and as the Sustainability listing tile. -->
   <NuxtLink :to="`/blog/${post.slug}`" class="group flex w-full flex-col gap-5">
     <img

@@ -22,7 +22,7 @@ it, but anything touching real content/products/bookings does.
 **Prerequisites:**
 - Node.js 20+ and npm
 - PHP 8.3+ and Composer
-- PostgreSQL 16 (running locally, or point at a remote instance)
+- PostgreSQL 16 or newer (running locally, or point at a remote instance); production runs 18 on Neon
 
 **1. Backend (Laravel API) — do this first:**
 ```bash

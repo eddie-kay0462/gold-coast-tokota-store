@@ -8,7 +8,7 @@
  *   2. no element's box extends past the right edge of the viewport;
  *   3. at touch widths, interactive controls meet the 44px tap-target floor.
  *
- * It is a diagnostic, not a snapshot suite — "no overflow" is not the same as
+ * It is a diagnostic, not a snapshot suite; "no overflow" is not the same as
  * "reads well", so the tablet and desktop widths still need looking at.
  *
  * Usage:
@@ -54,7 +54,7 @@ const ALL_ROUTES = [
   '/help',
   '/help/returns',
   '/accessibility',
-  // Bespoke marketing and commerce. `/size-guide` is the one to watch — it
+  // Bespoke marketing and commerce. `/size-guide` is the one to watch; it
   // carries a wide table, which is the classic 320px overflow.
   '/careers',
   '/international',
@@ -69,7 +69,7 @@ const ALL_ROUTES = [
 /**
  * `ROUTES=/size-guide,/help npm run check:responsive` narrows the sweep while
  * iterating on one page. The full list is the default, and is what CI should
- * run — at 28 routes x 10 widths this takes a few minutes.
+ * run. At 28 routes x 10 widths this takes a few minutes.
  */
 const ROUTES = process.env.ROUTES
   ? process.env.ROUTES.split(',').map((route) => route.trim()).filter(Boolean)
@@ -101,7 +101,7 @@ const inPageAudit = ({ tapMin, isTouch, ignoreSelector }) => {
 
   /**
    * True when some ancestor clips or scrolls the x-axis. Such an element is
-   * contained by that ancestor and cannot push the document sideways — a
+   * contained by that ancestor and cannot push the document sideways; a
    * marquee track inside `overflow-hidden`, or a snap rail inside
    * `overflow-x-auto`, is doing exactly what it was built to do.
    */
@@ -138,10 +138,10 @@ const inPageAudit = ({ tapMin, isTouch, ignoreSelector }) => {
     }
 
     if (isTouch && el.matches('a[href], button, input:not([type="hidden"]), select, [role="tab"], [role="button"]')) {
-      // Skip controls inside a closed disclosure — they are not reachable yet.
+      // Skip controls inside a closed disclosure; they are not reachable yet.
       if (rect.width === 0 || rect.height === 0) continue
       // WCAG 2.5.5 exempts a target that sits inline in a sentence or block of
-      // text — padding prose links to 44px would wreck the line rhythm.
+      // text; padding prose links to 44px would wreck the line rhythm.
       if (style.display === 'inline') continue
       // An input wrapped in a label is activated by the whole label, so the
       // label's box is the real target.
@@ -165,7 +165,7 @@ const inPageAudit = ({ tapMin, isTouch, ignoreSelector }) => {
     document.documentElement.scrollWidth - viewportWidth,
   )
 
-  // Report each distinct selector once — a grid of 20 identical cards is one bug.
+  // Report each distinct selector once: a grid of 20 identical cards is one bug.
   const dedupe = (list) => {
     const seen = new Map()
     for (const item of list) {
@@ -299,7 +299,7 @@ async function main() {
 
   for (const kind of ['http', 'document', 'element', 'tap']) {
     if (!byKind[kind].length) continue
-    console.log(`\n${heading[kind]} — ${byKind[kind].length}`)
+    console.log(`\n${heading[kind]} (${byKind[kind].length})`)
     for (const { route, width, detail } of byKind[kind]) {
       console.log(`  ${route} @ ${width}px → ${detail}`)
     }

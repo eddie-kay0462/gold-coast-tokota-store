@@ -5,13 +5,13 @@ import type { Column } from '~/components/ui/DataTable.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
 
 /**
- * Products — Figma node 10:3761, followed closely: Active / All tabs, the
+ * Products, Figma node 10:3761, followed closely: Active / All tabs, the
  * sort-filter-history toolbar cluster, the dismissible info banner, a
  * checkbox table with a per-row action cluster, and the black primary action.
  *
  * The one substantive departure is the price column, which shows GHS with the
  * derived USD beneath. README Feature 2 forbids storing a USD price, so the
- * dollar figure here is computed from the cached rate at render time — showing
+ * dollar figure here is computed from the cached rate at render time; showing
  * it read-only next to the editable cedi price makes that relationship
  * visible rather than something you have to know.
  */
@@ -95,7 +95,7 @@ const columns: Column<Product>[] = [
       <PhInfo :size="18" class="mt-px shrink-0 text-fg-faint" />
       <p class="min-w-0 flex-1 text-ui text-fg-muted">
         Prices are set in cedis. The dollar figure is derived from the live FX rate at display
-        time and is never stored, so it moves with the rate — except on placed orders, where
+        time and is never stored, so it moves with the rate, except on placed orders, where
         the rate is locked.
       </p>
       <button type="button" class="toolbar-btn -mr-1.5 -mt-1 shrink-0" aria-label="Dismiss" @click="bannerDismissed = true">

@@ -18,9 +18,9 @@ const slug = computed(() => route.params.slug as LegalSlug)
 const draft = computed(() => POLICY_DRAFTS[slug.value]!)
 
 useSeoMeta({
-  title: () => `${draft.value.title} — Gold Coast Tokota`,
+  title: () => `${draft.value.title} | Gold Coast Tokota`,
   description: () => draft.value.summary,
-  ogTitle: () => `${draft.value.title} — Gold Coast Tokota`,
+  ogTitle: () => `${draft.value.title} | Gold Coast Tokota`,
   ogDescription: () => draft.value.summary,
   ogImage: '/brand/og-image.png',
   ogType: 'website',

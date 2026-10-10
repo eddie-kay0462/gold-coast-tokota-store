@@ -10,7 +10,7 @@ import {
 } from '~/utils/catalog'
 
 const props = defineProps<{
-  /** Count shown above the facets — the filtered result count, not the catalogue total. */
+  /** Count shown above the facets: the filtered result count, not the catalogue total. */
   productCount: number
   selected: {
     type: string[]

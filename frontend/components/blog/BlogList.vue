@@ -12,6 +12,6 @@ defineProps<{ posts: ApiPost[] }>()
   </ul>
 
   <p v-else class="w-full py-12 text-center text-body text-muted">
-    No stories published yet — check back soon.
+    No stories yet. Check back soon.
   </p>
 </template>

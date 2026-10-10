@@ -3,7 +3,7 @@ import type { Config } from 'tailwindcss'
 /**
  * Admin design tokens.
  *
- * Colour is NOT defined here — it lives once in `assets/css/main.css` as CSS
+ * Colour is NOT defined here; it lives once in `assets/css/main.css` as CSS
  * custom properties, and this file only exposes those properties to Tailwind.
  * That is what makes `darkMode: 'class'` cost nothing: `.dark` redefines the
  * variables, and every `bg-bg` / `text-fg` / `border-border` utility in the app
@@ -18,7 +18,7 @@ import type { Config } from 'tailwindcss'
 
 // `rgb(var(--x) / <alpha-value>)` is what lets `bg-accent/10` work against a
 // custom property. Without the alpha placeholder, opacity utilities silently
-// no-op — a trap worth naming, since the failure is invisible.
+// no-op, a trap worth naming, since the failure is invisible.
 const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`
 
 export default <Partial<Config>>{
@@ -85,7 +85,7 @@ export default <Partial<Config>>{
         },
 
         // ---- Brand constants (theme-independent) ----
-        // Reach for these only when a value must NOT flip with the theme —
+        // Reach for these only when a value must NOT flip with the theme:
         // a logo lockup, a chart legend swatch printed on paper. Everything
         // else uses the semantic tokens above.
         gold: '#D4AF37',      // PDF: Gold Coast Gold
@@ -109,7 +109,7 @@ export default <Partial<Config>>{
       },
 
       fontSize: {
-        // A DENSE, FIXED scale — deliberately not the storefront's fluid
+        // A DENSE, FIXED scale, deliberately not the storefront's fluid
         // display tier. Dashboard text should not grow with the viewport;
         // a 1440px-wide table and a 2560px-wide table want the same 14px row.
         // Sizes measured off the Figma frames at their 1280px width.
@@ -137,7 +137,7 @@ export default <Partial<Config>>{
         'rail-panel': 'var(--rail-panel-w)',
       },
 
-      // The kit is flat — hairline borders, no drop shadows. The only
+      // The kit is flat: hairline borders, no drop shadows. The only
       // exception is content that floats above the page and needs to read as
       // detached: dropdowns, the command palette, toasts.
       boxShadow: {

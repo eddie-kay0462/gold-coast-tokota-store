@@ -11,7 +11,7 @@ export type WorkshopSession = {
 
 /**
  * The workshop session list from the approved Template B mockup: selectable
- * cards, each with a capacity chip on the right — green "N spots left", red
+ * cards, each with a capacity chip on the right: green "N spots left", red
  * "Full".
  *
  * Replaces `BookingCalendar.vue`, which was named for a calendar it never had
@@ -27,7 +27,7 @@ defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 
-/** "Sat 8 Aug" — the short form the mockup uses on each card. */
+/** "Sat 8 Aug": the short form the mockup uses on each card. */
 function formatDate(value: string | null) {
   if (!value) return 'Date to be confirmed'
   const date = new Date(value)

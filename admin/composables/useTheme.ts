@@ -2,7 +2,7 @@
  * Dark / light / system theme.
  *
  * Three states, not two. "system" is the default and genuinely follows the OS
- * live — a user who flips their Mac to dark at sunset sees the dashboard
+ * live: a user who flips their Mac to dark at sunset sees the dashboard
  * follow without touching anything.
  *
  * Persistence is a cookie rather than localStorage. The app is SPA-only today,

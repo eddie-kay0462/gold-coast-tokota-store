@@ -1,7 +1,7 @@
 /**
  * Reference-counted body scroll lock.
  *
- * Ported from `frontend/composables/useBodyScrollLock.ts` — same approach, same
+ * Ported from `frontend/composables/useBodyScrollLock.ts`, same approach, same
  * reason: `body { overflow: hidden }` does not hold on iOS Safari, so the
  * position-fixed technique is required. Reference counting matters because a
  * modal can open on top of a drawer, and the inner one closing must not

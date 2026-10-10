@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /** Ordering from outside Ghana. Complements /help/shipping rather than repeating it. */
 useSeoMeta({
-  title: 'International orders — Gold Coast Tokota',
+  title: 'International orders | Gold Coast Tokota',
   description:
     'We ship Ghanaian-made sandals worldwide with DHL. How currency, duties and delivery work when you order from outside Ghana.',
-  ogTitle: 'International orders — Gold Coast Tokota',
+  ogTitle: 'International orders | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -16,7 +16,7 @@ useSeoMeta({
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">Ordering from outside Ghana</h1>
         <p class="w-full max-w-[720px] text-body text-graphite">
-          We ship worldwide. Everything is still made by hand in Accra — it just takes a little
+          We ship worldwide. Everything is still made by hand in Accra, so it just takes a little
           longer to reach you.
         </p>
       </header>

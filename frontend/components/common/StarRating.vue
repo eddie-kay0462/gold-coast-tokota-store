@@ -6,7 +6,7 @@ const props = withDefaults(
   defineProps<{
     /** Score out of 5. */
     value: number
-    /** Star size in px — the design uses 12, 18, 20 and 22. */
+    /** Star size in px. The design uses 12, 18, 20 and 22. */
     size?: number
     /** Omit the accessible label when an adjacent element already states it. */
     labelled?: boolean

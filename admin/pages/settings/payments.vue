@@ -5,8 +5,8 @@ import type { PaymentSettings } from '~/types'
 /**
  * Payments. Super Admin only.
  *
- * The brand PDF draws this line explicitly — Admin "cannot modify system-level
- * settings or payment credentials" — so the whole page sits behind
+ * The brand PDF draws this line explicitly: Admin "cannot modify system-level
+ * settings or payment credentials", so the whole page sits behind
  * `settings.payments`, which only super_admin holds.
  *
  * Keys are shown masked and are never editable from this UI. They live as
@@ -60,7 +60,7 @@ const { item: payments } = useAdminItem<PaymentSettings>('payment-settings', '/a
               </li>
             </ul>
             <p class="mt-2 text-meta text-fg-muted">
-              Mobile money is the dominant channel domestically — MTN MoMo alone carries most
+              Mobile money is how most people pay in Ghana. MTN MoMo alone carries most
               cedi orders.
             </p>
           </div>
@@ -96,7 +96,7 @@ const { item: payments } = useAdminItem<PaymentSettings>('payment-settings', '/a
             or a browser session. Rotating one is a deployment change, not a settings change.
           </p>
           <p class="mt-3 text-ui text-fg-muted">
-            Card details never touch our servers either — both gateways collect them on their own
+            Card details never touch our servers either. Both gateways collect them on their own
             hosted fields, which is what keeps the PCI scope small.
           </p>
         </SettingsSection>

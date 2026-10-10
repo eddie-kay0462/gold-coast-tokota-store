@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Client-only GSAP wrapper — never referenced during SSR. Content is fully
+// Client-only GSAP wrapper: never referenced during SSR. Content is fully
 // visible/readable by default; GSAP only progressively enhances on mount.
 const rootEl = ref<HTMLElement | null>(null)
 

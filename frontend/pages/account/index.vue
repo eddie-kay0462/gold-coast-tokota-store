@@ -3,7 +3,7 @@ import { whatsappMessage } from '~/utils/whatsapp'
 import { isValidEmail } from '~/utils/validators'
 
 /**
- * The account hub — the destination of the header's person icon.
+ * The account hub: the destination of the header's person icon.
  *
  * Nobody can be signed in yet (see `composables/useAuth.ts`), so this renders
  * the signed-out state permanently rather than a dashboard of invented data.
@@ -38,12 +38,12 @@ async function onLookup() {
   await new Promise((resolve) => setTimeout(resolve, 600))
   looking.value = false
   lookupNotice.value =
-    'Order lookup isn’t available yet — the orders endpoint hasn’t been built on the API side. ' +
-    'Message us with your order number and we’ll check it for you.'
+    'You can’t look up orders here yet. Message us with your order number and we’ll ' +
+    'check it for you.'
 }
 
 useSeoMeta({
-  title: 'Your account — Gold Coast Tokota',
+  title: 'Your account | Gold Coast Tokota',
   description: 'Sign in, create an account, or track an order you placed as a guest.',
   robots: 'noindex, nofollow',
 })
@@ -85,7 +85,7 @@ useSeoMeta({
         <div class="flex min-w-0 flex-col items-start gap-3 border border-line p-6">
           <h2 class="w-full text-display-sm font-normal text-black">Create an account</h2>
           <p class="w-full flex-1 text-caption text-muted">
-            It takes a minute, and you never have to use it — ordering as a guest works exactly the same.
+            It takes a minute, and you never have to use it. Ordering as a guest works exactly the same.
           </p>
           <CommonBrandButton to="/account/register" variant="white" full>Create account</CommonBrandButton>
         </div>

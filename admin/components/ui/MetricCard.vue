@@ -2,10 +2,10 @@
 import { PhTrendDown, PhTrendUp } from '@phosphor-icons/vue'
 // Imported, not resolveComponent('NuxtLink') in the template: Nuxt registers
 // it at compile time, so a runtime lookup by name fails and renders an inert
-// <nuxtlink> element — the tiles looked clickable and went nowhere.
+// <nuxtlink> element; the tiles looked clickable and went nowhere.
 import { NuxtLink } from '#components'
 
-/** KPI tile — Figma 1:24956. Value, optional delta, optional supporting line. */
+/** KPI tile, Figma 1:24956. Value, optional delta, optional supporting line. */
 defineProps<{
   label: string
   value: string

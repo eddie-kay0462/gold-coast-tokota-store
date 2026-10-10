@@ -6,16 +6,16 @@ import { useSiteSettingsStore } from '~/stores/siteSettings'
  * Linked from the product purchase panel ("Questions about fit? Contact Us"),
  * so this sits on a live path, not just in the footer.
  *
- * Reuses `FormsFeedbackForm` rather than growing a second contact form — it
+ * Reuses `FormsFeedbackForm` rather than growing a second contact form; it
  * already posts to `/feedback` and collects exactly name, email and message.
  */
 const siteSettings = useSiteSettingsStore()
 
 useSeoMeta({
-  title: 'Contact us — Gold Coast Tokota',
+  title: 'Contact us | Gold Coast Tokota',
   description:
     'Questions about sizing, an order, or a custom pair? Message us on WhatsApp or send us a note.',
-  ogTitle: 'Contact us — Gold Coast Tokota',
+  ogTitle: 'Contact us | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -46,7 +46,7 @@ useSeoMeta({
           </CommonWhatsAppLink>
 
           <!-- Contact details are admin-editable (SiteSetting), so they render
-               only once the store has been populated — same rule as the footer. -->
+               only once the store has been populated, same rule as the footer. -->
           <ul class="flex w-full flex-col items-start gap-2 text-label">
             <li v-if="siteSettings.contactEmail" class="w-full">
               <a :href="`mailto:${siteSettings.contactEmail}`" class="-my-3 flex min-h-[44px] items-center py-3 text-graphite underline hover:no-underline">

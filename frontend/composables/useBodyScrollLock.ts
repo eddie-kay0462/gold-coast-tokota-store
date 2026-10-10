@@ -2,7 +2,7 @@
  * Locks background scrolling while an overlay is open.
  *
  * `document.body.style.overflow = 'hidden'` alone does not stop iOS Safari
- * scrolling the page behind an overlay — exactly the small screens where a
+ * scrolling the page behind an overlay, exactly the small screens where a
  * drawer or sheet is full-bleed. The reliable treatment is to take the body out
  * of flow at its current offset and put it back afterwards, which this does.
  *

@@ -5,7 +5,7 @@ import type { Column } from '~/components/ui/DataTable.vue'
 
 /**
  * Newsletter subscribers. Read-only with export, per README Feature 9.
- * Single opt-in means a row here is already active — there is no pending
+ * Single opt-in means a row here is already active; there is no pending
  * state to manage, which is why there is no status column.
  */
 useHead({ title: 'Newsletter' })
@@ -37,7 +37,7 @@ const columns: Column<NewsletterSubscriber>[] = [
   <div class="admin-stack">
     <UiPageHeader
       title="Newsletter"
-      :description="`${subs.length} subscribers. Single opt-in — a subscription is active the moment it is submitted.`"
+      :description="`${subs.length} subscribers. Single opt-in, so a subscription is active as soon as it’s submitted.`"
     >
       <template #actions>
         <UiPermissionGate capability="customers.export" quiet>

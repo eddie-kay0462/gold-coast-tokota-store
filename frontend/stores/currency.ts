@@ -30,7 +30,7 @@ export const useCurrencyStore = defineStore('currency', {
     /**
      * Whether USD prices can actually be shown. The rate is fetched at runtime
      * (`plugins/fx-rate.ts`) and starts at 0, so anything that formats money
-     * has to ask this rather than assume — multiplying by a zero rate prints
+     * has to ask this rather than assume; multiplying by a zero rate prints
      * a confident, wrong "$0".
      */
     canConvert: (state) => state.fxRate > 0,
@@ -97,7 +97,7 @@ export const useCurrencyStore = defineStore('currency', {
 
     /**
      * Called once from a plugin on both server and client. An explicit choice
-     * the visitor made before always wins — nothing here infers a currency
+     * the visitor made before always wins; nothing here infers a currency
      * from their country, which is a commercial decision, not a technical one.
      */
     hydrate() {

@@ -2,7 +2,7 @@
 import { dashboardMetrics } from '~/fixtures'
 
 /**
- * Admin shell — sidebar · header · content · right rail, per the Figma frames.
+ * Admin shell: sidebar · header · content · right rail, per the Figma frames.
  *
  * Layout strategy by breakpoint:
  *   < lg   sidebar is an off-canvas drawer; rail is a sheet

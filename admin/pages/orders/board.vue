@@ -6,7 +6,7 @@ import { formatMoney } from '~/utils/currency'
 import { humanise } from '~/utils/formatters'
 
 /**
- * Fulfilment board — Figma node 19:945 (the "Deals" frame): a column per
+ * Fulfilment board, Figma node 19:945 (the "Deals" frame): a column per
  * pipeline stage, each headed by its own total and count, with cards beneath.
  *
  * The kit's pipeline is a sales funnel; ours is the order lifecycle from
@@ -14,7 +14,7 @@ import { humanise } from '~/utils/formatters'
  * inventory_conflict) which are exceptions to handle, not stages to move
  * through. Those stay on the Orders table.
  *
- * Columns scroll horizontally below xl rather than reflowing — a kanban that
+ * Columns scroll horizontally below xl rather than reflowing; a kanban that
  * stacks vertically stops being a kanban.
  */
 useHead({ title: 'Fulfilment' })
@@ -44,7 +44,7 @@ const drawerOpen = ref(false)
   <div class="admin-stack">
     <UiPageHeader
       title="Fulfilment"
-      description="Orders by stage. Terminal states — cancelled, refunded, stock conflicts — stay on the Orders list."
+      description="Orders by stage. Terminal states (cancelled, refunded, stock conflicts) stay on the Orders list."
     >
       <template #actions>
         <UiButton variant="secondary" size="sm" to="/orders">

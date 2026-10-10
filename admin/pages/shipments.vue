@@ -44,7 +44,7 @@ const columns: Column<Shipment>[] = [
   <div class="admin-stack">
     <UiPageHeader
       title="Shipments"
-      description="Ghana addresses go via Yango, everywhere else via DHL — routed automatically from the shipping country."
+      description="Ghana addresses go via Yango and everywhere else via DHL, picked automatically from the shipping country."
     />
 
     <UiToolbar

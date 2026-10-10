@@ -6,7 +6,7 @@ import { chance, daysAgo, daysAhead, int, NOW, pick, ymd } from './_seed'
 
 /**
  * The six workshops the business actually runs, transcribed from the brand
- * PDF's "Workshop Schedule" table — days, slot, duration and capacity are all
+ * PDF's "Workshop Schedule" table; days, slot, duration and capacity are all
  * theirs, not invented.
  */
 export const workshopTypes: WorkshopType[] = [
@@ -100,7 +100,7 @@ function sessionsFor(type: WorkshopType, weekday: number | null, count: number, 
 
     // Skew the fill so roughly a quarter of sessions sell out. A capacity
     // model whose waitlist never triggers is a capacity model nobody has
-    // tested — and README Feature 7 makes waitlist behaviour load-bearing.
+    // tested, and README Feature 7 makes waitlist behaviour load-bearing.
     const confirmed = chance(0.26)
       ? type.capacity
       : int(Math.floor(type.capacity * 0.2), type.capacity - 1)
@@ -177,7 +177,7 @@ const workshopBookings: Booking[] = workshopSessions
 
 /**
  * DIY orders are queue-based and never capacity-limited or rejected
- * (README Feature 7), so these are all accepted — only their stage varies.
+ * (README Feature 7), so these are all accepted; only their stage varies.
  */
 const diyBookings: Booking[] = Array.from({ length: 22 }, () => {
   const c = pick(customers)

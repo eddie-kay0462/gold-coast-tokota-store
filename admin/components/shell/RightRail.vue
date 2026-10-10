@@ -4,11 +4,11 @@ import { activityFeed, customers, NOW } from '~/fixtures'
 import { formatRelative } from '~/utils/formatters'
 
 /**
- * Right rail — Figma 1:24956 (Dashboard frame): a 72px icon rail that opens a
+ * Right rail, Figma 1:24956 (Dashboard frame): a 72px icon rail that opens a
  * 280px panel carrying Notifications, Activity and New Customers.
  *
  * Below `xl` there isn't room for both content and a rail, so it becomes a
- * sheet opened from the header bell instead of being dropped entirely — the
+ * sheet opened from the header bell instead of being dropped entirely; the
  * information is the same either way.
  */
 const props = defineProps<{ open: boolean }>()

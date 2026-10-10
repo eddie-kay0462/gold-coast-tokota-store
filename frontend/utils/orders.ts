@@ -1,7 +1,7 @@
 /**
  * Order shapes returned by `GET /api/v1/orders/{id}`.
  *
- * That endpoint does not exist yet (README Feature 4 — no CheckoutController,
+ * That endpoint does not exist yet (README Feature 4; no CheckoutController,
  * no webhook receiver), but the fields below are the `Order` / `OrderItem` data
  * models from the README, so the confirmation page is typed against the real
  * contract rather than `any`.

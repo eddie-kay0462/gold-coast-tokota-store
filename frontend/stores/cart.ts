@@ -39,7 +39,7 @@ export const useCartStore = defineStore('cart', {
         0,
       ),
 
-    /** Total units, not line count — the drawer's "(2 items)" and header badge. */
+    /** Total units, not line count: the drawer's "(2 items)" and header badge. */
     itemCount: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
 
     isEmpty: (state) => state.items.length === 0,
@@ -82,7 +82,7 @@ export const useCartStore = defineStore('cart', {
     /**
      * Mirrors the cart into a first-party cookie rather than localStorage, so
      * it is readable during SSR and present on the very first rendered
-     * response — a localStorage cart would flash empty until hydration.
+     * response: a localStorage cart would flash empty until hydration.
      */
     persist() {
       useCookie<CartItem[]>(CART_COOKIE, {

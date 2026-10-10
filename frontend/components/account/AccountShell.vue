@@ -10,7 +10,7 @@ import { accountNav } from '~/utils/navigation'
  * neither, and `AboutSectionNav` already sets the precedent for a section nav
  * that lives inside the page.
  *
- * `/account/login` and `/account/register` deliberately do not use this — they
+ * `/account/login` and `/account/register` deliberately do not use this; they
  * are pre-session pages with no nav to show.
  */
 defineProps<{

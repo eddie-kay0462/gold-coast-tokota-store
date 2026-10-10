@@ -25,9 +25,9 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/main.css'],
 
-  // No SEO requirement for the admin dashboard — the whole app is
+  // No SEO requirement for the admin dashboard; the whole app is
   // client-only, gated behind Sanctum-authenticated Admin/Staff login.
-  // Using routeRules instead of the top-level `ssr: false` — the latter
+  // Using routeRules instead of the top-level `ssr: false`; the latter
   // triggers a "No entry found in rollupOptions.input" dev-server crash in
   // this Nuxt/Vite version combo; routeRules achieves the same SPA-only
   // behavior without that bug.
@@ -59,10 +59,10 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api/v1',
       // How the admin app sources data while the Laravel admin API is still
-      // being built (README Feature 9 — none of /api/v1/admin/* exists yet):
-      //   auto     — try the real endpoint, fall back to fixtures (default)
-      //   live     — real API only; failures surface as errors
-      //   fixtures — never call the API
+      // being built (README Feature 9; none of /api/v1/admin/* exists yet):
+      //   auto:     try the real endpoint, fall back to fixtures (default)
+      //   live:     real API only; failures surface as errors
+      //   fixtures: never call the API
       // See composables/useAdminApi.ts.
       adminData: process.env.NUXT_PUBLIC_ADMIN_DATA || 'auto',
     },

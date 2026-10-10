@@ -2,7 +2,7 @@
 import type { SeriesPoint } from '~/types'
 
 /**
- * Horizontal ranked bars — Figma 1:24956 "Traffic by Source" and 23:1972
+ * Horizontal ranked bars, Figma 1:24956 "Traffic by Source" and 23:1972
  * "Onboarding Progress". The frames draw these as a segmented track rather
  * than a solid fill, which reads as a rank rather than a precise quantity.
  */

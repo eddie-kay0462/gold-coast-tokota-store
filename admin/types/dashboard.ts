@@ -29,7 +29,7 @@ export interface DashboardCharts {
   ordersLastYear: SeriesPoint[]
   /**
    * Null from the live API until analytics (README Feature 11) collects
-   * anything — "not measured", which an empty array would misstate as "no
+   * anything: "not measured", which an empty array would misstate as "no
    * traffic". See `DashboardController::charts`.
    */
   trafficBySource: SeriesPoint[] | null

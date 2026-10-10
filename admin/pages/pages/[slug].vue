@@ -3,7 +3,7 @@ import { PhArrowLeft, PhWarningCircle } from '@phosphor-icons/vue'
 import type { CmsPage } from '~/types'
 
 /**
- * Page editor. Same editor as the blog, per README Components — `PageEditor`
+ * Page editor. Same editor as the blog, per README Components: `PageEditor`
  * is explicitly one component reused across both CMS resources.
  */
 const route = useRoute()

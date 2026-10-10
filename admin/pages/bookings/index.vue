@@ -69,7 +69,7 @@ const counts = computed(() => ({
     </div>
 
     <p v-if="tab === 'diy_order'" class="text-ui text-fg-muted">
-      DIY orders are queue-based — they are never capacity-limited or turned away. Customers see
+      DIY orders are queue-based. They are never capacity-limited or turned away. Customers see
       the turnaround estimate for their order type at submission.
     </p>
 
