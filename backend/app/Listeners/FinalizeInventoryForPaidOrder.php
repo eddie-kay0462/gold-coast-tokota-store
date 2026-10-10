@@ -26,6 +26,8 @@ class FinalizeInventoryForPaidOrder implements ShouldQueue
 
     public function handle(OrderPaid $event): void
     {
+        $shortfall = [];
+
         foreach ($event->order->items as $item) {
             if (! $item->inventoryItem) {
                 // The variant was deleted between checkout and payment. The
@@ -39,7 +41,27 @@ class FinalizeInventoryForPaidOrder implements ShouldQueue
                 continue;
             }
 
-            $this->reservations->finalize($item->inventoryItem, $item->quantity);
+            $finalized = $this->reservations->finalize(
+                $item->inventoryItem,
+                $item->quantity,
+                $event->order->reservation_expires_at,
+            );
+
+            if ($finalized === null) {
+                $shortfall[] = $item->id;
+            }
+        }
+
+        if ($shortfall !== []) {
+            // Paid after the hold lapsed, and the pairs went to someone else
+            // meanwhile. The money arrived, so this is a human call — make
+            // more, swap the size, or refund — not something to settle here.
+            $event->order->update(['status' => 'inventory_conflict']);
+
+            Log::warning('Paid order has no stock left behind its lapsed hold.', [
+                'order_reference' => $event->order->reference,
+                'order_item_ids' => $shortfall,
+            ]);
         }
     }
 }

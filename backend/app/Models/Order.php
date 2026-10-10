@@ -27,6 +27,7 @@ class Order extends Model
         'delivery_provider',
         'delivery_reference',
         'shipping_address',
+        'reservation_expires_at',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class Order extends Model
         'total' => 'integer',
         'shipping_address' => 'array',
         'delivered_at' => 'datetime',
+        'reservation_expires_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo

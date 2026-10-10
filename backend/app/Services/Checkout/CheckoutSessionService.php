@@ -14,6 +14,7 @@ use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\PaymentGatewayFactory;
 use App\Services\Payment\PaymentSession;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Turns a validated cart into a priced, FX-locked, stock-reserved Order plus an
@@ -30,11 +31,15 @@ use Illuminate\Support\Facades\DB;
  *      one rate.
  *   4. Reserve stock, inside a transaction, with the row locks
  *      InventoryReservationService already provides.
- *   5. Only then open a gateway session.
+ *   5. Only then, once that transaction has committed, open a gateway session.
  *
- * If any step throws, the transaction rolls the Order away and the reservations
- * with it — an abandoned checkout must not leave stock held or an orphan order
- * behind, which is a stated Feature 4 acceptance criterion.
+ * Steps 1–4 are one transaction: if any throws, the Order and its
+ * reservations roll away together. Step 5 is a network call to Paystack that
+ * can take tens of seconds, so it runs after the commit — inside, it held the
+ * stock rows locked, and every other checkout for the same size waited on it.
+ * If it fails, the holds are released and the Order deleted by hand. Either
+ * way an abandoned checkout leaves no stock held and no orphan order behind,
+ * which is a stated Feature 4 acceptance criterion.
  */
 class CheckoutSessionService
 {
@@ -61,7 +66,11 @@ class CheckoutSessionService
     {
         $expiresAt = now()->addMinutes(self::RESERVATION_TTL_MINUTES);
 
-        return DB::transaction(function () use ($data, $expiresAt) {
+        // Resolved before anything is reserved: a production API with no
+        // Paystack key refuses here, holding nothing.
+        $gateway = $this->gateways->for($data['currency']);
+
+        $order = DB::transaction(function () use ($data, $expiresAt) {
             $lines = $this->priceLines($data['items']);
             $subtotal = array_sum(array_map(
                 fn (array $line) => $line['unit_price'] * $line['quantity'],
@@ -101,6 +110,7 @@ class CheckoutSessionService
                 'payment_gateway' => null,
                 'delivery_provider' => $provider->name(),
                 'shipping_address' => $data['shipping_address'],
+                'reservation_expires_at' => $expiresAt,
             ]);
 
             foreach ($lines as $line) {
@@ -121,14 +131,37 @@ class CheckoutSessionService
                 ]);
             }
 
-            $session = $this->gateways->for($data['currency'])->createSession($order);
+            return $order;
+        });
 
-            $order->update([
-                'payment_gateway' => $session->gateway,
-                'payment_reference' => $session->reference,
-            ]);
+        try {
+            $session = $gateway->createSession($order);
+        } catch (Throwable $e) {
+            $this->abandon($order);
 
-            return ['order' => $order->fresh('items'), 'session' => $session];
+            throw $e;
+        }
+
+        $order->update([
+            'payment_gateway' => $session->gateway,
+            'payment_reference' => $session->reference,
+        ]);
+
+        return ['order' => $order->fresh('items'), 'session' => $session];
+    }
+
+    /** Undoes a committed checkout whose payment session never opened. */
+    private function abandon(Order $order): void
+    {
+        DB::transaction(function () use ($order) {
+            foreach ($order->items()->with('inventoryItem')->get() as $item) {
+                if ($item->inventoryItem) {
+                    $this->reservations->release($item->inventoryItem, $item->quantity);
+                }
+            }
+
+            // order_items cascade.
+            $order->delete();
         });
     }
 

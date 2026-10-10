@@ -7,8 +7,8 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 10 October 2026 (S3 image storage removed; product photos load from the storefront again)
-- **Last commit on `main`:** `e8ab4f1` — *Merge pull request #17 from eddie-kay0462/dev*
+- **Last updated:** 10 October 2026 (API image moves to PHP 8.4 so it builds again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; S3 image storage removed)
+- **Last commit on `main`:** `c873cfc` — *Merge pull request #26 from eddie-kay0462/dev*
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
   everything on `main`. Merging `feat/backend` into `main` is a separate
@@ -48,7 +48,45 @@ inert at their last step.
 
 ## Recent changes
 
-### 10 October 2026 (latest) — S3 image storage removed
+### 10 October 2026 (latest) — four checkout and deploy fixes from the codebase review
+
+Found in a read-through of the whole repo. The first one stops deploys.
+
+- **The API image builds again.** Since the S3 change on 2 Oct, `composer.lock`
+  has pinned Symfony 8.x components that need **PHP 8.4.1 or later**. The
+  Dockerfile was on `php:8.3-cli-alpine`, where `composer install` refuses that
+  lock, so every Render deploy of the API, worker and scheduler would have
+  failed at that step. Removing S3 did not undo it. The image is now
+  `php:8.4-cli-alpine` and `composer.json` says `"php": "^8.4"`. **Local
+  backend development now needs PHP 8.4 too.**
+- **A late payment no longer oversells.** Holds are one counter per stock row,
+  and an expired counter is wiped whole, but Paystack's payment page stays open
+  past the 15 minutes. Before this fix, a customer who paid late was finalised as
+  if their hold were still there. The decrement came out of whoever had reserved
+  since, and a pair already resold was sold twice. Each order now records when
+  its hold lapses (`orders.reservation_expires_at`), and each stock row records
+  when its counter was last wiped (`inventory_items.reservations_cleared_at`).
+  A late payment is sold from the shelf if a pair is still free. If none is, the
+  order is marked **`inventory_conflict`**, with nothing decremented, for a
+  person to resolve (make another pair, swap the size, or refund). Watch for that
+  status in the admin orders list.
+- **Checkout no longer holds stock locked while Paystack answers.** The call to
+  `/transaction/initialize` (up to 15s, retried twice) ran inside the
+  transaction that row-locks the reserved stock, so every other checkout for the
+  same size waited on it. Paystack is now called after the order and holds
+  commit. If it fails, the holds are released and the order deleted, so an
+  abandoned checkout still leaves nothing behind.
+- **A webhook that fails partway is retried.** The "processed" marker used to be
+  written before the order was updated, in a separate statement, so a failure in
+  between was answered "already processed" on Paystack's retry and the payment
+  was never recorded. The marker and the order change now commit together, and
+  `OrderPaid` fires after the commit. This also closes half of issue 36: the
+  replay test now passes on Postgres.
+
+Tests: **407 passing** on SQLite (6 new). On a scratch Postgres 16, 405 of 407
+pass; the two failures exist on `main` too (issue 36).
+
+### 10 October 2026 — S3 image storage removed
 
 The team is not using AWS, so the 2 Oct S3 change is undone.
 
@@ -3165,7 +3203,7 @@ will light up:
 | 33 | **The brand document and the README disagree about Stripe** | README Feature 4 pairs Stripe with USD; `GOLD_COAST_TOKOTA.md` §13 names Paystack alone as the payment gateway, settles in GHS, and lists Visa/Mastercard/Verve under it. §22 says the document is the source of truth and not to change what it states, so **both currencies now route to Paystack** and `client_secret` is always null. The Stripe config binding is retained but unrouted, so restoring it is a factory change. **Needs a sentence from the business owner**: is dollar settlement through Stripe actually wanted, or was the README's split an assumption? |
 | 34 | **Nobody has supplied email addresses for the five people §17 names** | The document gives Samuel Kumi-Gyau, Mary Seade, Isaac, Isaaka and Peter with their roles, job titles and tiers — everything a seeder needs except the one field an account is keyed on. Inventing addresses for real colleagues is not something a seeder should do, so the roster is unseeded and the only account on a fresh database is the test super admin. **Five email addresses closes it.** |
 | 35 | **Three of the six workshop experiences cannot actually be booked** | §15 runs Corporate Team Building, Cultural Craft and International Visitor "By Appointment" — no standing schedule, so no `workshop_session` for a booking to attach to. `GET /workshop-types` advertises them and `requires_appointment` flags them, but a customer who picks one has nowhere to go except the WhatsApp link. An enquiry path (a booking with no session, or a routed form) is the fix; **whether it is a booking or an enquiry is a business question**, so it is not guessed. |
-| 36 | **Two tests fail on Postgres but pass on SQLite — neither is a production bug** | Found by running the whole suite against a scratch Postgres database on 8 Sep, which is what issue 29 recommends. (a) `PaystackPaymentTest > a replayed webhook…` fails with `SQLSTATE[25P02] current transaction is aborted`. The webhook's idempotency catches a unique-constraint violation from `ProcessedWebhookEvent::create()`; on Postgres a failed statement poisons the surrounding transaction, and under `RefreshDatabase` **the test itself is that transaction**. In production there is no wrapping transaction, so the catch works and the endpoint is correct. It is still worth hardening — if anyone ever wraps that handler in a transaction, idempotency breaks on Postgres and only on Postgres; `insertOrIgnore` or a savepoint would remove the trap. (b) `FeedbackTest > feedback is listed newest first` passes `created_at` to `Feedback::create()`, but `created_at` is not in the model's `$fillable`, so it is silently dropped and both rows get the same timestamp — the ordering is then a coin flip that SQLite happens to win. A test bug, not an API bug. **Neither was touched on 8 Sep**: both are outside the catalogue-filter change, and quietly editing the payment path while doing something else is how a money bug gets in. |
+| 36 | **Two tests fail on Postgres but pass on SQLite — neither is a production bug** | **(a) closed 10 Oct:** the webhook's marker and order update are one transaction now, with the duplicate caught outside it, and the replay test passes on Postgres. **Still open on Postgres:** (b) below, and `ProductSeederTest > each colourway has its own photographs`, which compares `colour_images` key order. `jsonb` does not keep key order, so this is a test bug too. Original note: Found by running the whole suite against a scratch Postgres database on 8 Sep, which is what issue 29 recommends. (a) `PaystackPaymentTest > a replayed webhook…` fails with `SQLSTATE[25P02] current transaction is aborted`. The webhook's idempotency catches a unique-constraint violation from `ProcessedWebhookEvent::create()`; on Postgres a failed statement poisons the surrounding transaction, and under `RefreshDatabase` **the test itself is that transaction**. In production there is no wrapping transaction, so the catch works and the endpoint is correct. It is still worth hardening — if anyone ever wraps that handler in a transaction, idempotency breaks on Postgres and only on Postgres; `insertOrIgnore` or a savepoint would remove the trap. (b) `FeedbackTest > feedback is listed newest first` passes `created_at` to `Feedback::create()`, but `created_at` is not in the model's `$fillable`, so it is silently dropped and both rows get the same timestamp — the ordering is then a coin flip that SQLite happens to win. A test bug, not an API bug. **Neither was touched on 8 Sep**: both are outside the catalogue-filter change, and quietly editing the payment path while doing something else is how a money bug gets in. |
 | 30 | **Production serves the API with `php artisan serve`** | The Dockerfile's CMD is Laravel's built-in dev server: single-threaded, explicitly not for production in Laravel's own docs. It will work for a demo and fall over under real traffic. The fix is a proper process manager — FrankenPHP is the smallest change (one base-image swap plus a Caddyfile), php-fpm + nginx the conventional one. **Not done in the hardening pass deliberately:** it is a container change that cannot be verified without an actual deploy, and shipping an unverified web server swap is worse than a documented known issue. Needs one deploy to test. |
 | 28 | **Five admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **27 now exist** (the two product reads landed 8 Sep). What is left is inbox (×3), activity and audit. **Returns and workshop-types came off this list on 28 Aug**: they were unguessable only because the README covers neither, and §9/§21 and §15 of the brand document write both out in full — which made them transcription rather than invention. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. What is left — a 3-endpoint inbox, an activity feed and an audit log — **is in neither the README nor the brand document, and has no model.** Same pattern as the reviews UI: the inbox could be WhatsApp thread history, a ticketing system or email, and each produces a different schema; the audit log's retention and scope are policy questions with compliance weight. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
 | 29 | **The test suite runs on SQLite; production is Postgres** | `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
@@ -3284,8 +3322,9 @@ will light up:
 - **`placeholder: true`** in `utils/navigation.ts` marks a link whose
   destination is a stand-in, not a real page. Grep it before assuming a route
   exists.
-- **Commits carry no AI attribution** — no `Co-Authored-By` trailers for Claude,
-  Cursor or any other assistant. See `CLAUDE.md`.
+- **Commits and PRs carry no AI attribution** — no AI as commit author, no
+  `Co-Authored-By` trailers, no "Generated with …" lines in PR descriptions.
+  PRs go to `dev`, not `main`. See `CLAUDE.md`.
 
 ---
 
