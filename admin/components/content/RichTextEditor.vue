@@ -9,14 +9,14 @@ import {
 } from '@phosphor-icons/vue'
 
 /**
- * WYSIWYG editor — Figma node 26:1297 (Blog frame): a formatting toolbar over
+ * WYSIWYG editor, Figma node 26:1297 (Blog frame): a formatting toolbar over
  * a writing surface with a character counter and Publish in the corner.
  *
  * The scaffold's `PageEditor.vue` was a bare `<textarea>` labelled "Rich text
  * editor", which the CMS acceptance criteria cannot be met with. Tiptap gives
  * a real document model; the toolbar is the kit's, mapped onto it.
  *
- * Output is HTML. It MUST still be sanitised server-side on save — README
+ * Output is HTML. It MUST still be sanitised server-side on save. README
  * Feature 9 names stored XSS explicitly, and no amount of client-side
  * escaping substitutes for that.
  */

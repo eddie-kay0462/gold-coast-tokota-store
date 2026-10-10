@@ -5,7 +5,7 @@
  * Two identical runs sit side by side in a `w-max` track; the animation
  * translates by exactly 50%, which lands on the start of the second run, so the
  * loop has no visible seam. The track must therefore be at least twice the
- * viewport wide or blank space appears before the loop restarts — that is what
+ * viewport wide or blank space appears before the loop restarts; that is what
  * `copies` is for: it repeats the slot content within each run until the run
  * alone exceeds the widest viewport the page supports.
  *

@@ -8,7 +8,7 @@ const config = useRuntimeConfig()
 
 // The About page is CMS-backed (Feature 9): the admin owns the opening
 // manifesto, everything else is the designed brand story. A missing or failing
-// endpoint falls back to the design's own copy rather than throwing — the same
+// endpoint falls back to the design's own copy rather than throwing, the same
 // pattern the home, shop and blog pages use.
 const { data: page } = await useAsyncData('about-page', () =>
   $fetch<{ data: ApiPage }>(`${config.public.apiBase}/pages/about`)
@@ -18,7 +18,7 @@ const { data: page } = await useAsyncData('about-page', () =>
 const statementBody = computed(() => page.value?.data?.body ?? null)
 
 /**
- * "The people, stories, and ideas that will help us get there" — the programme
+ * "The people, stories, and ideas that will help us get there", the programme
  * strand of the feed, not the whole thing. Moved here from `/sustainability`
  * when the two pages merged.
  */
@@ -49,10 +49,10 @@ const programmePosts = computed(() => {
 })
 
 useSeoMeta({
-  title: 'About — Gold Coast Tokota',
+  title: 'About | Gold Coast Tokota',
   description:
-    'Exceptional quality, ethical factories, radical transparency — the story behind Gold Coast Tokota, and our mission to clean up a dirty industry.',
-  ogTitle: 'About — Gold Coast Tokota',
+    'Exceptional quality, ethical factories and radical transparency. The story behind Gold Coast Tokota, and our mission to clean up a dirty industry.',
+  ogTitle: 'About | Gold Coast Tokota',
   ogDescription: 'Exceptional quality. Ethical factories. Radical Transparency.',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
@@ -63,7 +63,7 @@ useSeoMeta({
   <!--
     About and Sustainability were two routes telling one story; they merged on
     27 Aug. `/sustainability` is a 301 to this page (see `nuxt.config.ts`), and
-    the section nav at the top is now what moves between the parts of it —
+    the section nav at the top is now what moves between the parts of it,
     which is what that tab row was always for.
   -->
   <div class="w-full bg-white">
@@ -79,7 +79,7 @@ useSeoMeta({
       id="factories"
       eyebrow="OUR FACTORIES"
       heading="Our ethical approach."
-      body="We spend months finding the best factories around the world—the same ones that produce your favorite designer labels. We visit them often and build strong personal relationships with the owners. Each factory is given a compliance audit to evaluate factors like fair wages, reasonable hours, and environment. Our goal? A score of 90 or above for every factory."
+      body="We spend months finding the best factories around the world, the same ones that produce your favorite designer labels. We visit them often and build strong personal relationships with the owners. Each factory is given a compliance audit to evaluate factors like fair wages, reasonable hours, and environment. Our goal? A score of 90 or above for every factory."
       image="/design/about-factories.png"
       alt="An artisan hand-cutting leather at the workbench"
       :height="733"
@@ -99,7 +99,7 @@ useSeoMeta({
       id="quality"
       eyebrow="OUR QUALITY"
       :heading="'Designed\nto last.'"
-      body="We're not big on trends. We want you to wear our pieces for years, even decades, to come. That's why we source the finest materials and the most skilled hands for our timeless products—like our full-grain leather ahenema, hand-stitched soles, and locally woven kente trims."
+      body="We're not big on trends. We want you to wear our pieces for years, even decades, to come. That's why we source the finest materials and the most skilled hands for our timeless products, like our full-grain leather ahenema, hand-stitched soles, and locally woven kente trims."
       image="/design/about-quality.png"
       alt="A pair of blue and black leather sandals photographed from above"
       :reverse="true"
@@ -117,7 +117,7 @@ useSeoMeta({
       id="prices"
       eyebrow="OUR PRICES"
       heading="Radically Transparent."
-      body="We believe our customers have a right to know how much their shoes cost to make. We reveal the true costs behind all of our products—from materials to labor to transportation—then offer them to you, minus the traditional retail markup."
+      body="We believe our customers have a right to know how much their shoes cost to make. We reveal the true costs behind all of our products, from materials to labor to transportation, then offer them to you, minus the traditional retail markup."
       image="/design/about-price-breakdown.png"
       alt="A cost breakdown comparing the Gold Coast Tokota price with traditional retail"
       :tinted="false"

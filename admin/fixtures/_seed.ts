@@ -11,7 +11,7 @@ export function reseed(n = 0x2f6f4f) {
   state = n
 }
 
-/** xorshift32 — small, fast, and repeatable. */
+/** xorshift32: small, fast, and repeatable. */
 export function rand(): number {
   state ^= state << 13
   state ^= state >>> 17
@@ -39,7 +39,7 @@ export const hoursAgo = (n: number) => iso(new Date(NOW.getTime() - n * 36e5))
 export const minsAgo = (n: number) => iso(new Date(NOW.getTime() - n * 6e4))
 export const ymd = (isoStr: string) => isoStr.slice(0, 10)
 
-/** Avatars are generated, not fetched — the CSP-free, offline-safe option. */
+/** Avatars are generated, not fetched; the CSP-free, offline-safe option. */
 export function avatarFor(name: string): string {
   const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
   const hues = ['#D4AF37', '#7A5A3A', '#2F6F4F', '#262626', '#8C6E4A', '#4C6B5A']

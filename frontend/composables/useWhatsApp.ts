@@ -9,14 +9,14 @@ import { useSiteSettingsStore } from '~/stores/siteSettings'
  * Message text comes from `~/utils/whatsapp`; this only builds the URL.
  */
 
-/** `wa.me` accepts digits only — no `+`, no spaces, no punctuation. */
+/** `wa.me` accepts digits only: no `+`, no spaces, no punctuation. */
 const MIN_DIGITS = 8
 
 /**
  * Normalise whatever the admin typed into something `wa.me` accepts.
  *
  * The settings field asks for "international format, including the country
- * code", and the admin app's own fixture stores `+233257534297` — so the stored
+ * code", and the admin app's own fixture stores `+233257534297`, so the stored
  * value routinely contains characters the URL cannot carry. This used to be
  * interpolated raw, which produced a link with a literal `+` and spaces in it
  * *that still rendered as a working button*. That is the exact edge case
@@ -37,7 +37,7 @@ export function useWhatsApp(customMessage?: MaybeRefOrGetter<string | undefined>
   /**
    * Site settings win; the env var is a fallback for when `GET /site-settings`
    * is unreachable. Without it a single failed request removes the only working
-   * ordering channel from every page at once — and payment is still inert, so
+   * ordering channel from every page at once, and payment is still inert, so
    * that is the whole shop closing rather than one button vanishing.
    */
   const number = computed(
@@ -50,7 +50,7 @@ export function useWhatsApp(customMessage?: MaybeRefOrGetter<string | undefined>
     if (!number.value) return null
 
     // An empty custom message falls through to the configured default rather
-    // than suppressing it — `??` alone would let `''` win.
+    // than suppressing it; `??` alone would let `''` win.
     const custom = toValue(customMessage)
     const message = (custom || siteSettings.whatsappDefaultMessage || '').trim()
 

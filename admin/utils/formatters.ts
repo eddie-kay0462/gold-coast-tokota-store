@@ -6,21 +6,21 @@
 const DAY = 864e5
 
 export function formatDate(iso: string | null, opts?: Intl.DateTimeFormatOptions): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleDateString('en-GB', opts ?? {
     day: 'numeric', month: 'short', year: 'numeric',
   })
 }
 
 export function formatDateTime(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleString('en-GB', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   })
 }
 
 export function formatTime(iso: string | null): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
@@ -29,7 +29,7 @@ export function formatTime(iso: string | null): string {
  * correctly against the fixture clock rather than the wall clock.
  */
 export function formatRelative(iso: string | null, now: Date = new Date()): string {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const diff = now.getTime() - new Date(iso).getTime()
   const abs = Math.abs(diff)
   const future = diff < 0

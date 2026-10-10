@@ -48,7 +48,7 @@ const theirOrders = computed(() =>
           <dl class="mt-4 space-y-2.5 border-t border-border pt-4 text-ui">
             <div class="flex justify-between gap-3">
               <dt class="text-fg-muted">Phone</dt>
-              <dd class="text-fg-strong">{{ customer.phone ?? '—' }}</dd>
+              <dd class="text-fg-strong">{{ customer.phone ?? '-' }}</dd>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-fg-muted">Location</dt>

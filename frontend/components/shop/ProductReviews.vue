@@ -60,7 +60,7 @@ const fitLabel = computed(() => {
   return 'Runs large'
 })
 
-/** "14 days ago" — the design's relative stamp. */
+/** "14 days ago": the design's relative stamp. */
 function relativeAge(iso: string) {
   const days = Math.round((Date.now() - new Date(iso).getTime()) / 86_400_000)
   if (days < 1) return 'Today'

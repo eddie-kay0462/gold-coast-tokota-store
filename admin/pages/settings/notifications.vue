@@ -49,7 +49,7 @@ const { item: notifications } = useAdminItem<NotificationSettings>('notification
 
         <SettingsSection
           title="Triggers"
-          description="A failed send is logged and retried — it never blocks the order or booking behind it."
+          description="A failed send is logged and retried. It never blocks the order or booking behind it."
         >
           <table class="w-full">
             <thead class="text-left text-meta font-medium text-fg-muted">

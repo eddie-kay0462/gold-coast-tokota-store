@@ -31,8 +31,8 @@ const lines = computed(() =>
       <h2 class="w-full text-display-sm font-normal">Transparent Pricing</h2>
       <p class="w-full text-label font-light">
         We publish what it costs us to make every one of our products. There are a lot of costs we
-        can't neatly account for — like design, fittings, wear testing, rent on office and retail
-        space — but we believe you deserve to know what goes into making the products you love.
+        can't neatly account for, like design, fittings, wear testing, rent on office and retail
+        space, but we believe you deserve to know what goes into making the products you love.
       </p>
     </div>
 

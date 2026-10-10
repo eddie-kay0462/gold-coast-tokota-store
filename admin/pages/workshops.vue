@@ -7,7 +7,7 @@ import type { DiyTurnaroundTier, WorkshopSession, WorkshopType } from '~/types'
  *
  * README models only a flat `WorkshopSession`. The business runs six named
  * experiences, each with its own recurrence, duration and capacity (brand PDF,
- * "Workshop Schedule"), and a session is an instance of one — which is what
+ * "Workshop Schedule"), and a session is an instance of one, which is what
  * lets the owner schedule another Sip & Paint without re-entering that it
  * seats 20.
  *
@@ -95,7 +95,7 @@ const upcoming = (typeId: number) =>
           </p>
         </div>
         <p v-else class="mt-3.5 rounded-lg bg-bg-sunken px-3 py-2.5 text-meta text-fg-faint">
-          Nothing scheduled — this one runs by appointment.
+          Nothing scheduled. This one runs by appointment.
         </p>
       </article>
     </div>

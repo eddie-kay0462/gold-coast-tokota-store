@@ -2,7 +2,7 @@
 import type { SiteSettings } from '~/types'
 
 /**
- * General site settings — the owner-editable values README Feature 9 requires
+ * General site settings: the owner-editable values README Feature 9 requires
  * be changeable without a developer: contact details, hero copy, socials.
  */
 useHead({ title: 'Settings' })
@@ -58,7 +58,7 @@ watchEffect(() => {
         <SettingsSection title="Home hero" description="The headline over the storefront hero.">
           <UiField
             v-model="form.heroHeadline" label="Headline"
-            hint="Kept short — it renders at display size on a phone as well as a desktop."
+            hint="Keep it short. It shows at display size on phones as well as desktops."
           />
           <template #footer>
             <UiPermissionGate capability="settings.write" quiet>

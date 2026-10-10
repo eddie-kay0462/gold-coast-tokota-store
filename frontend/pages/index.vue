@@ -21,10 +21,10 @@ const { data: latestPosts } = await useAsyncData('home-latest-posts', () =>
 )
 
 useSeoMeta({
-  title: 'Gold Coast Tokota — Handmade Sandals from Ghana',
+  title: 'Gold Coast Tokota | Handmade Sandals from Ghana',
   description:
     'Your step into heritage. Get your pair of authentic locally-made Ghanaian footwear, handcrafted by Gold Coast Tokota.',
-  ogTitle: 'Gold Coast Tokota — Handmade Sandals from Ghana',
+  ogTitle: 'Gold Coast Tokota | Handmade Sandals from Ghana',
   ogDescription: 'Authentic locally-made Ghanaian footwear, handcrafted in Accra.',
   ogImage: '/brand/og-image.png',
   ogType: 'website',

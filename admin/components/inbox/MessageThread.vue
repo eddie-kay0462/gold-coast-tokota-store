@@ -7,7 +7,7 @@ import {
 import type { ChatMessage, ChatThread } from '~/types'
 import { orders as orderFixtures } from '~/fixtures'
 
-/** Thread view and composer — Figma node 29:8158 right pane. */
+/** Thread view and composer, Figma node 29:8158 right pane. */
 const props = defineProps<{ thread: ChatThread | null; messages: ChatMessage[] }>()
 const emit = defineEmits<{ (e: 'send', body: string): void }>()
 
@@ -15,7 +15,7 @@ const { formatDate, formatTime, formatRelative, now } = useFormatters()
 const toast = useToast()
 
 /**
- * A conversation is rarely just a conversation — it is usually about an order,
+ * A conversation is rarely just a conversation; it is usually about an order,
  * a booking, or a custom job that needs creating. These actions carry the
  * thread's context into the matching admin screen instead of leaving the
  * operator to retype it, which is the difference between an inbox and a
@@ -55,7 +55,7 @@ function convertToDiy() {
 }
 
 function archive() {
-  toast.success('Conversation archived', 'Not persisted — the admin API is still to be built.')
+  toast.success('Conversation archived', 'Not saved yet. The admin API is still being built.')
 }
 
 const draft = ref('')
@@ -63,7 +63,7 @@ const scroller = ref<HTMLElement | null>(null)
 
 /**
  * Group by day, then by consecutive run of the same direction. The frame shows
- * one avatar per run beside the first bubble, not one per message — repeating
+ * one avatar per run beside the first bubble, not one per message; repeating
  * it turns a three-line reply into a column of identical circles.
  */
 interface Run { direction: ChatMessage['direction']; items: ChatMessage[] }
@@ -108,11 +108,11 @@ function send() {
   draft.value = ''
   scrollToEnd()
   // Never let a send look successful when nothing left the building.
-  toast.info('Message added locally', 'Not delivered — the WhatsApp Cloud API is not connected.')
+  toast.info('Message added locally', 'Not delivered. The WhatsApp Cloud API isn’t connected.')
 }
 
 const quickReplies = [
-  'Thanks for reaching out — checking that now.',
+  'Thanks for getting in touch. Let me check that now.',
   'Yes, that size is in stock. Shall I reserve it?',
   'Processing takes 48 hours, then 1–2 business days within Ghana.',
   'Custom orders run 3–5 business days.',
@@ -252,7 +252,7 @@ const quickReplies = [
       <PhWarningCircle :size="15" class="mt-px shrink-0" />
       <p>
         The 24-hour reply window has closed. WhatsApp only permits an approved template message
-        outside it — a free-form reply would be rejected by the API.
+        outside it. A free-form reply would be rejected by the API.
       </p>
     </div>
 

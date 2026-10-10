@@ -6,7 +6,7 @@ export function formatMoney(
     /**
      * Product-card style: the narrow symbol (`₵700` rather than `GH₵700.00`),
      * as drawn on the listing page. Minor units are still shown whenever the
-     * amount isn't a whole major unit — an FX-derived USD price is almost never
+     * amount isn't a whole major unit; an FX-derived USD price is almost never
      * round, and truncating it there would misstate the price.
      */
     compact?: boolean

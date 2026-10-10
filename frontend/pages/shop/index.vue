@@ -13,7 +13,7 @@ const router = useRouter()
 // "Category" group filters product type. Sharing one key would make a link from
 // elsewhere filter every product out.
 //
-// The header no longer emits `?category=` — its nav moved to `?type=` with the
+// The header no longer emits `?category=`; its nav moved to `?type=` with the
 // Template B labels on 27 Aug, because departments only exist on the design
 // catalogue and the API has never returned them. The search panel still links
 // two department views, and the key still works.
@@ -48,7 +48,7 @@ function toggleFacet(facet: FacetKey, value: string) {
 
 // The catalogue endpoint arrives with Feature 2. Until then a failed/absent
 // endpoint resolves to an empty list rather than throwing, and the design's own
-// six products stand in — the same fallback pattern the home page uses.
+// six products stand in, the same fallback pattern the home page uses.
 const { data: apiProducts, pending } = await useAsyncData(
   'shop-products',
   () =>
@@ -169,7 +169,7 @@ onMounted(() => {
 useSeoMeta({
   title: `${heading.value} - Gold Coast Tokota`,
   description:
-    'Browse handmade Ghanaian sandals, slippers and shoes — filter by category, colour, size and width.',
+    'Browse handmade Ghanaian sandals, slippers and shoes. Filter by category, colour, size and width.',
   ogTitle: `${heading.value} - Gold Coast Tokota`,
   ogImage: '/brand/og-image.png',
 })

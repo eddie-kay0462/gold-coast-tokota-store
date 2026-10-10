@@ -7,7 +7,7 @@ import { CURRENCIES, type Currency } from '~/utils/constants'
  * adjoining cells in a hairline box, the active one filled.
  *
  * It replaces the header's older single button that flipped between the two
- * labels — that showed only the *current* currency, so a visitor could not see
+ * labels; that showed only the *current* currency, so a visitor could not see
  * that the other one existed without clicking.
  *
  * The highlighted cell is the currency prices are *actually* in

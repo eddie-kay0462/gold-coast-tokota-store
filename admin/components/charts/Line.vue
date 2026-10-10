@@ -2,12 +2,12 @@
 import type { SeriesPoint } from '~/types'
 
 /**
- * Two-series line chart with a filled area under the primary — Figma 1:24956
+ * Two-series line chart with a filled area under the primary, Figma 1:24956
  * (Dashboard "Revenue" panel) and 23:1972 (Team "Overall Performance").
  *
  * Hand-rolled SVG rather than a chart library: the kit's charts are flat,
  * hairline and unlabelled, so a library would cost ~150KB to draw what a
- * catmull-rom path draws in fifty lines — and this way stroke colours are
+ * catmull-rom path draws in fifty lines, and this way stroke colours are
  * theme tokens, so dark mode needs no configuration.
  */
 const props = withDefaults(defineProps<{

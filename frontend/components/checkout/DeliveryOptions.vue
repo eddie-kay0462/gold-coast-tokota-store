@@ -3,7 +3,7 @@
  * Delivery method selection.
  *
  * The provider is derived from the shipping country exactly as README Feature 5
- * routes it — Ghana to Yango, everywhere else to DHL. Costs shown here are
+ * routes it: Ghana to Yango, everywhere else to DHL. Costs shown here are
  * ESTIMATES and labelled as such: the real figure comes from the provider quote
  * at checkout-session creation, which is not built yet, and quietly presenting
  * a guess as a price is how people end up surprised at the payment screen.

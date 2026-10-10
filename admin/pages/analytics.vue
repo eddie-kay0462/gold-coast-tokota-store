@@ -9,7 +9,7 @@ import { formatMoney, formatMoneyCompact } from '~/utils/currency'
  *
  * Deliberately built on the server-side order data rather than GA4. README
  * Feature 11 is explicit that dashboard figures must stay accurate when a
- * customer blocks the tracking script — so revenue, order counts and the
+ * customer blocks the tracking script, so revenue, order counts and the
  * currency split are computed from orders, and only the traffic panels come
  * from the analytics feed. The distinction is labelled on the page, because an
  * operator needs to know which numbers survive an ad-blocker.
@@ -53,7 +53,7 @@ const stats = computed(() => {
     revenueGhs: { amount: ghs, currency: 'GHS' as const },
     revenueUsd: { amount: usd, currency: 'USD' as const },
     orders: count,
-    // Averaged within GHS only — mixing currencies would produce a number
+    // Averaged within GHS only; mixing currencies would produce a number
     // that does not mean anything.
     aov: {
       amount: count ? Math.round(ghs / Math.max(1, paid.value.filter((o) => o.currency === 'GHS').length)) : 0,
@@ -187,11 +187,11 @@ const byMethod = computed(() => {
               <UiBadge tone="outline" size="sm">GA4</UiBadge>
             </div>
             <p class="mt-1 text-meta text-fg-faint">
-              Client-side tracking — undercounts anyone using an ad-blocker.
+              Client-side tracking, so it undercounts anyone using an ad-blocker.
             </p>
             <div class="mt-4">
               <ChartsRankedBars v-if="charts?.trafficBySource" :data="charts.trafficBySource" />
-              <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
+              <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet. Analytics isn’t connected.</p>
             </div>
           </section>
         </div>

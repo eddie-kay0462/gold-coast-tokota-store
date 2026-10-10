@@ -2,7 +2,7 @@ import { INVENTORY_POLL_INTERVAL_MS } from '~/utils/constants'
 
 /**
  * Polls stock status for a single product while its detail page is mounted.
- * Correctness is always enforced server-side at checkout — this only keeps
+ * Correctness is always enforced server-side at checkout; this only keeps
  * the displayed Add-to-Cart state fresh. Pauses when the tab is backgrounded
  * (Page Visibility API) per Feature 3 edge cases.
  */

@@ -7,7 +7,7 @@ import type { Capability } from '~/utils/permissions'
  * explanation. README Feature 9: staff hitting a restricted action must get
  * "a clear, non-technical error message (not a raw 403 JSON blob)".
  *
- * `quiet` renders nothing at all — for cases where the absence is not worth
+ * `quiet` renders nothing at all, for cases where the absence is not worth
  * remarking on, like a single toolbar button.
  */
 const props = defineProps<{ capability: Capability; quiet?: boolean }>()

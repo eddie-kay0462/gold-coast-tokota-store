@@ -52,7 +52,7 @@ const discountLabel = computed(() => {
   return `${Math.round((1 - entry.base_price_ghs / entry.compare_at_ghs) * 100)}% off`
 })
 
-/** "Men / Sandals - New Arrivals" — department, then product type. */
+/** "Men / Sandals - New Arrivals": department, then product type. */
 const DEPARTMENT_LABELS: Record<string, string> = {
   mens: 'Men',
   womens: 'Women',
@@ -109,7 +109,7 @@ function addToCart({ size, color }: { size: string, color: string }) {
 }
 
 useSeoMeta({
-  title: () => `${product.value?.name ?? 'Product'} — Gold Coast Tokota`,
+  title: () => `${product.value?.name ?? 'Product'} | Gold Coast Tokota`,
   description: () =>
     product.value?.description ?? 'Handmade Ghanaian footwear from Gold Coast Tokota.',
   ogTitle: () => product.value?.name,
@@ -120,7 +120,7 @@ useSeoMeta({
 
 <template>
   <div v-if="product" class="flex w-full flex-col items-start">
-    <!-- Section 01 — gallery + buy panel -->
+    <!-- Section 01: gallery + buy panel -->
     <div class="page-gutter mx-auto flex w-full max-w-[1168px] flex-col items-start gap-6 py-[30px] md:flex-row">
       <ShopProductGallery
         :images="gallery"
@@ -136,7 +136,7 @@ useSeoMeta({
       />
     </div>
 
-    <!-- Section 02 — recommendations -->
+    <!-- Section 02: recommendations -->
     <section class="page-gutter section-y mx-auto flex w-full max-w-[1168px] flex-col items-start gap-2">
       <h2 class="w-full text-body font-normal text-graphite">Recommended Products</h2>
       <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
@@ -146,14 +146,14 @@ useSeoMeta({
       </ul>
     </section>
 
-    <!-- Section 03 — reviews -->
+    <!-- Section 03: reviews -->
     <ShopProductReviews
       v-if="product.rating && product.reviews?.length"
       :rating="product.rating"
       :reviews="product.reviews"
     />
 
-    <!-- Section 04 — transparent pricing -->
+    <!-- Section 04: transparent pricing -->
     <ShopTransparentPricing
       v-if="product.cost_breakdown?.length"
       :breakdown="product.cost_breakdown"

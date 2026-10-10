@@ -1,6 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  /** Anchor target — Footer and Header deep-link into these sections. */
+  /** Anchor target. Footer and Header deep-link into these sections. */
   id?: string
   eyebrow: string
   /** Newlines are preserved, matching the designed line breaks. */
@@ -23,7 +23,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <!-- Figma 6:645 / 6:648 / 6:656 — the same two-up story block, mirrored. -->
+  <!-- Figma 6:645 / 6:648 / 6:656, the same two-up story block, mirrored. -->
   <section
     :id="id"
     class="flex w-full flex-col items-stretch md:flex-row"

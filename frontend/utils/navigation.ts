@@ -14,7 +14,7 @@ export type MegaMenu = {
 
 export type NavItem = NavLink & { accent?: boolean, menu?: MegaMenu }
 
-// Row 2 of the header — the non-shopping destinations.
+// Row 2 of the header: the non-shopping destinations.
 //
 // `Bookings` and `Stories` are the approved Template B mockup's own labels.
 // `Shop` stays even though the mockup has no plain "Shop" item: row 3 only
@@ -25,7 +25,7 @@ export const primaryNav: NavLink[] = [
   { label: 'Bookings', to: '/booking' },
   { label: 'Stories', to: '/blog' },
   // `Sustainability` used to sit beside this. It is a section of About now
-  // (27 Aug) — the two routes were telling one story — and `/sustainability`
+  // (27 Aug), the two routes were telling one story, and `/sustainability`
   // 301s here.
   { label: 'About', to: '/about' },
 ]
@@ -50,12 +50,12 @@ const promoArtwork = {
  * Builds the two-column + two-promo panel drawn in Figma, rebased onto a given
  * shop route.
  *
- * Every link here resolves to a filter `/shop` actually implements — `type`,
+ * Every link here resolves to a filter `/shop` actually implements: `type`,
  * `sort` and `sale`, the keys `pages/shop/index.vue` reads. The previous
  * version pointed at `?collection=gift-guide`, `?collection=new-ahenema` and
  * friends, which nothing filters on: the panel looked complete and every link
  * in it silently returned the unfiltered catalogue. That is why these menus
- * were all flagged `placeholder` — they no longer need to be.
+ * were all flagged `placeholder`; they no longer need to be.
  *
  * Rebasing is what makes one template serve every item: opened from Sandals,
  * "New Arrivals" means new sandals; opened from Sale, it means new sale items.
@@ -102,13 +102,13 @@ function createShopMenu(baseTo: string, label: string): MegaMenu {
 }
 
 /**
- * Row 3 — the catalogue entry points, taken from the approved Template B
+ * Row 3: the catalogue entry points, taken from the approved Template B
  * mockup's nav: Best Sellers, Sandals, Ahenema.
  *
  * This replaces the seven department placeholders that used to live here
  * (Mens, Womens, Kids, New Arrivals, Best-Sellers, Merchandise, Custom Shoes).
  * They were flagged `placeholder: true` because `?category=mens` and friends
- * filter on a `departments` field only the design catalogue carries — the API's
+ * filter on a `departments` field only the design catalogue carries; the API's
  * `ProductResource` has never returned it, so those tabs would have shown the
  * whole catalogue on real data. `?type=` is a facet the shop genuinely filters.
  *
@@ -145,23 +145,23 @@ export const categoryNav: NavItem[] = [
  *
  * Since Sustainability was merged into About (27 Aug) this is what moves a
  * reader between the parts of one long page, which is what a section nav is
- * for — before the merge, four of its seven tabs left the page entirely.
+ * for. Before the merge, four of its seven tabs left the page entirely.
  *
- * Trimmed to six on 27 Aug at the customer's request — Radical Transparency,
+ * Trimmed to six on 27 Aug at the customer's request: Radical Transparency,
  * Our Progress, Our Carbon Commitment and Annual Impact Report came out. The
  * sections those first two named are still on the page and still have their
  * anchors (`#prices`, `#progress`); a section nav is a shortcut list, not a
  * table of contents.
  *
  * Every tab now resolves to something real, so nothing here is flagged
- * `placeholder` any more — the last user of that flag was the Annual Impact
+ * `placeholder` any more; the last user of that flag was the Annual Impact
  * Report, which was pointing at the nearest existing section because the report
  * itself has never been designed.
  */
 export const aboutSectionNav: NavLink[] = [
   { label: 'About', to: '/about' },
   // "Cleaner Manufacturing" and "Workshop" were separate tabs pointing at the
-  // same subject from two directions — the factories section on this page, and
+  // same subject from two directions: the factories section on this page, and
   // the booking page. One tab now, on the section that explains the work.
   // Booking is a top-level header item (`Bookings`), so nothing is lost.
   { label: 'Our Workshop', to: '/about#factories' },
@@ -175,7 +175,7 @@ export const aboutSectionNav: NavLink[] = [
  * The account section's own tab row, consumed by `AccountShell` the same way
  * `aboutSectionNav` is consumed by `AboutSectionNav`.
  *
- * Sign-out is not a link and so is not here — it is an action, and it lives in
+ * Sign-out is not a link and so is not here; it is an action, and it lives in
  * the shell's footer.
  */
 export const accountNav: NavLink[] = [

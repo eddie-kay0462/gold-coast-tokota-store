@@ -3,7 +3,7 @@
  * Menu anchored to a trigger. Closes on Escape, on outside click, and after a
  * selection; arrow keys walk the items.
  *
- * Positioned with plain CSS rather than a floating-ui dependency — every menu
+ * Positioned with plain CSS rather than a floating-ui dependency; every menu
  * in this app hangs off a right-aligned toolbar button, so `right-0 top-full`
  * is correct and a positioning engine would be 12KB to solve a case we do not
  * have.

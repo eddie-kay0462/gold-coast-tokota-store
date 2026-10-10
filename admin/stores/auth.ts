@@ -6,12 +6,12 @@ import { ROLE_CAPABILITIES, type Capability } from '~/utils/permissions'
  * Admin session state.
  *
  * Filled by `useAuth().login()` / `restoreSession()` against the Sanctum
- * `admin` guard. In `fixtures` data mode — no API to sign in to — it is seeded
+ * `admin` guard. In `fixtures` data mode (no API to sign in to) it is seeded
  * with a demo session instead so the dashboard stays reviewable.
  *
  * `viewAsRole` exists for that review: it lets someone step through all four
  * permission tiers without four accounts and a working login. It only ever
- * narrows what the UI offers — it cannot widen server access, because the
+ * narrows what the UI offers; it cannot widen server access, because the
  * server is the actual boundary.
  */
 export interface AdminSession {
@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', {
 
     /**
      * Intern access is time-boxed. Once past the expiry the account keeps its
-     * role label but loses every write capability — see `capabilities` below.
+     * role label but loses every write capability. See `capabilities` below.
      */
     accessExpiresAt: (state): string | null =>
       state.viewAsExpirySet ? state.viewAsExpiry : (state.user?.accessExpiresAt ?? null),
@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', {
       this.isDemoSession = false
     },
 
-    /** `fixtures` data mode only — see `plugins/session.client.ts`. */
+    /** `fixtures` data mode only. See `plugins/session.client.ts`. */
     setDemoSession(user: AdminSession) {
       this.user = user
       this.isAuthenticated = false

@@ -1,6 +1,6 @@
 import type { Currency, Money, Timestamp } from './common'
 
-/** README Data Models — Order.status, verbatim. */
+/** README Data Models: Order.status, verbatim. */
 export type OrderStatus =
   | 'pending'
   | 'paid'

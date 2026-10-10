@@ -14,7 +14,7 @@ const visible = computed(() => {
   return q ? assets.value.filter((a) => a.filename.toLowerCase().includes(q)) : assets.value
 })
 
-/** Flag anything without alt text — it is the accessibility gap that scales. */
+/** Flag anything without alt text; it is the accessibility gap that scales. */
 const missingAlt = computed(() => assets.value.filter((a) => !a.altText.trim()).length)
 
 const toast = useToast()

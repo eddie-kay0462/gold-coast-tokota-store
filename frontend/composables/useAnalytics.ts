@@ -1,6 +1,6 @@
 // Mirrors GA4 e-commerce events client-side. Purchase events are additionally
 // mirrored server-side (Laravel) so the admin dashboard never depends on GA4
-// availability or ad-blockers — see Feature 11.
+// availability or ad-blockers. See Feature 11.
 export function useAnalytics() {
   function trackEvent(name: string, params: Record<string, unknown> = {}) {
     if (typeof window === 'undefined') return
@@ -18,7 +18,7 @@ export function useAnalytics() {
      * added: WhatsApp is the only route that can actually complete an order
      * while payment is inert, and it was the one conversion path with no
      * measurement at all. The admin dashboard already renders a "WhatsApp"
-     * traffic-channel tile — this is what can eventually feed it.
+     * traffic-channel tile. This is what can eventually feed it.
      *
      * `source` says which affordance was tapped (see `WhatsAppSource`), so the
      * brand can tell an order enquiry from a returns question.

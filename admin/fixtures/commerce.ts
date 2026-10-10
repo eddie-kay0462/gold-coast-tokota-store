@@ -60,7 +60,7 @@ export const orders: Order[] = Array.from({ length: 72 }, (_, i) => {
       variantLabel: `Size ${int(38, 45)} · ${pick(['Tan', 'Black', 'Ochre', 'Indigo'])}`,
       quantity: qty,
       // Unit price is held in the order's currency, converted at the locked
-      // rate for USD orders — never re-derived from today's rate.
+      // rate for USD orders, never re-derived from today's rate.
       unitPrice: isGh
         ? ghs(p.basePriceGhs.amount)
         : usd(Math.round(p.basePriceGhs.amount * fxRate.rate)),
@@ -111,7 +111,7 @@ const returnNotes: Record<string, string> = {
   defective: 'Strap stitching came apart at the toe post after light wear.',
   wrong_item: 'Ordered the Kente Panel Slide, received the Kente Weave Thong.',
   damaged_in_transit: 'Box crushed on arrival; one sole is creased through.',
-  size_exchange: 'Runs large — customer requests one size down.',
+  size_exchange: 'Runs large. Customer requests one size down.',
 }
 
 export const returnRequests: ReturnRequest[] = Array.from({ length: 14 }, (_, i) => {

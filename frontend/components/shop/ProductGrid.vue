@@ -30,10 +30,10 @@ defineProps<{
   <div v-else class="flex flex-col items-start gap-3 py-16">
     <p class="text-body text-graphite">No products match these filters.</p>
     <p class="text-caption text-muted">
-      Try clearing a filter or two — or ask us what's coming back in.
+      Try clearing a filter or two, or ask us what's coming back in.
     </p>
     <!-- Much of the catalogue is made to order, so "we don't have it" is often
-         really "not right now" — a question the brand can answer directly. -->
+         really "not right now": a question the brand can answer directly. -->
     <CommonWhatsAppLink source="shop-empty" :message="whatsappMessage.stockEnquiry()">
       Ask us on WhatsApp
     </CommonWhatsAppLink>

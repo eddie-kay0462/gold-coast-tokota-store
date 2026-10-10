@@ -6,8 +6,8 @@ import { useCartStore } from '~/stores/cart'
  * logo, and nothing else to click away with.
  *
  * The storefront header and footer are deliberately absent. Shopify strips its
- * checkout for the reason every checkout is stripped — a nav bar at the payment
- * step is a row of exits — and the mega menu, search panel and eight footer
+ * checkout for the reason every checkout is stripped: a nav bar at the payment
+ * step is a row of exits, and the mega menu, search panel and eight footer
  * columns are all exits.
  *
  * Two things are kept that Shopify has no equivalent for:
@@ -32,7 +32,7 @@ const legalLinks = [
   <div class="flex min-h-dvh flex-col bg-white">
     <header class="w-full border-b border-line">
       <div class="mx-auto flex w-full max-w-[1200px] items-center justify-center px-5 py-6 lg:px-10">
-        <NuxtLink to="/" class="-my-2 flex min-h-[44px] items-center py-2" aria-label="Gold Coast Tokota — home">
+        <NuxtLink to="/" class="-my-2 flex min-h-[44px] items-center py-2" aria-label="Gold Coast Tokota home">
           <img
             src="/brand/logo.png"
             alt="Gold Coast Tokota"

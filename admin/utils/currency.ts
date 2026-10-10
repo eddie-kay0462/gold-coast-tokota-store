@@ -6,7 +6,7 @@ import type { Currency, FxRate, Money } from '~/types'
  * README Feature 2 is explicit: products carry `base_price_ghs` only, and the
  * dollar figure is computed at read time from the cached FX rate. The one
  * exception is an order, which snapshots `fx_rate_applied` at checkout so a
- * historic total never moves when the rate does — hence `usdFromOrder` takes
+ * historic total never moves when the rate does, hence `usdFromOrder` takes
  * the locked rate rather than reaching for the live one.
  */
 export function usdFrom(ghs: Money, rate: FxRate | number): Money {

@@ -1,14 +1,14 @@
 import { useAuthStore } from '~/stores/auth'
 
 /**
- * Customer session — BUILT BUT DELIBERATELY INACTIVE.
+ * Customer session: BUILT BUT DELIBERATELY INACTIVE.
  *
  * The account pages are complete and validate, but submitting does not
- * authenticate. The Laravel side is most of the way there already — `Customer`
+ * authenticate. The Laravel side is most of the way there already: `Customer`
  * extends Authenticatable with hashed-password casting, the `web` guard is
  * configured against a `customers` provider, `passwords.customers` is wired to
  * `password_reset_tokens`, Sanctum's `guard` array lists `web`, and
- * `statefulApi()` is on globally — but there is no CustomerAuthController and
+ * `statefulApi()` is on globally, but there is no CustomerAuthController and
  * no routes in `backend/routes/api.php`, so calling one would just produce a
  * confusing 404.
  *
@@ -33,9 +33,8 @@ import { useAuthStore } from '~/stores/auth'
 export const AUTH_ENABLED = false
 
 export const AUTH_DISABLED_NOTICE =
-  'Accounts aren’t enabled yet. The customer sign-in endpoints haven’t been built on the API ' +
-  'side, so this form is inactive for now — you can still order as a guest, and we’ll email ' +
-  'your confirmation.'
+  'Accounts aren’t available yet, so this form doesn’t work for now. You can still order as a ' +
+  'guest and we’ll email your confirmation.'
 
 export type AuthResult = { ok: false, notice: string }
 

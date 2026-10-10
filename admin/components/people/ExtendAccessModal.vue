@@ -6,7 +6,7 @@ import type { AdminUser } from '~/types'
  *
  * The current expiry is shown alongside the resulting new one, because "+30
  * days" from an *already lapsed* date is not the same as thirty days from
- * today — and getting that wrong silently is how someone ends up still locked
+ * today, and getting that wrong silently is how someone ends up still locked
  * out after being told they were extended. Extending a lapsed account runs
  * from today; extending a live one runs from its existing expiry.
  */

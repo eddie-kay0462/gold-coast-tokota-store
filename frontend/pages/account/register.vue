@@ -3,7 +3,7 @@ import { isValidEmail, isValidGhanaPhone } from '~/utils/validators'
 import { CURRENCIES } from '~/utils/constants'
 
 /**
- * Customer sign-up — BUILT BUT DELIBERATELY INACTIVE.
+ * Customer sign-up: BUILT BUT DELIBERATELY INACTIVE.
  *
  * The fields deliberately mirror the `customers` table (name, email, phone,
  * preferred_currency, password) so that wiring this to a real
@@ -37,7 +37,7 @@ function validate(): boolean {
       ? 'That doesn’t look like a valid email address.'
       : undefined
 
-  // Phone is optional here — `customers.phone` is nullable — but validated
+  // Phone is optional here (`customers.phone` is nullable) but validated
   // when given. The Ghana pattern only applies to a Ghana number; an
   // international customer must not be rejected by it.
   errors.phone = !form.phone.trim()
@@ -70,7 +70,7 @@ async function onSubmit() {
 }
 
 useSeoMeta({
-  title: 'Create an account — Gold Coast Tokota',
+  title: 'Create an account | Gold Coast Tokota',
   description: 'Create a Gold Coast Tokota account to track orders and check out faster.',
   robots: 'noindex, nofollow',
 })

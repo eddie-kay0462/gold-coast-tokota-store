@@ -8,7 +8,7 @@ const props = defineProps<{
   breadcrumb: string
   /**
    * Live stock from `useInventoryPolling`, keyed by size. Null while the first
-   * poll is in flight — the panel then falls back to the product payload.
+   * poll is in flight; the panel then falls back to the product payload.
    */
   liveStock?: Record<string, number> | null
 }>()
@@ -35,7 +35,7 @@ const availability = computed(
     ?? props.product.size_availability,
 )
 
-/** A colourway with nothing left in any size — its swatch is marked. */
+/** A colourway with nothing left in any size. Its swatch is marked. */
 function colourSoldOut(name: string) {
   if (props.product.is_pre_order) return false
   const sizes = props.product.variant_availability?.[name]
@@ -45,7 +45,7 @@ function colourSoldOut(name: string) {
 /**
  * With a stock map present, a size missing from it is out of stock. With no map
  * at all the API simply isn't reporting per-size stock yet, so listed sizes stay
- * selectable — the server still rejects an unavailable size at checkout.
+ * selectable; the server still rejects an unavailable size at checkout.
  *
  * Pre-order products are exempt: they have no stock on hand by definition, and
  * gating them on it would make every size unselectable.
@@ -71,7 +71,7 @@ function submit() {
 
 const rating = computed(() => props.product.rating)
 
-/** "Obrempong Collection" — the eyebrow the approved mockup sets above the name. */
+/** "Obrempong Collection": the eyebrow the approved mockup sets above the name. */
 const collectionLabel = computed(() => {
   const collection = props.product.collection?.name
   return collection ? `${collection} Collection` : null
@@ -221,7 +221,7 @@ const { whatsappClick } = useAnalytics()
         Size {{ selectedSize }} is out of stock<template v-if="product.variant_availability"> in {{ selectedColor }}</template>.
       </p>
       <p v-else-if="product.is_pre_order" class="text-caption text-muted">
-        Made to order — pre-order pairs ship within three weeks.
+        Made to order. Pre-order pairs ship within three weeks.
       </p>
     </div>
 
@@ -234,7 +234,7 @@ const { whatsappClick } = useAnalytics()
 
       <!-- The handoff to WhatsApp, from the approved mockup. Prefilled with the
            product and the chosen size so the shop can answer in one message.
-           Hidden entirely when no number is configured — `useWhatsApp` returns
+           Hidden entirely when no number is configured; `useWhatsApp` returns
            null rather than an invalid wa.me link (README Feature 6). -->
       <CommonWhatsAppLink
         source="product-detail"

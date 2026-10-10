@@ -5,7 +5,7 @@ import { CAPABILITIES, ROLE_CAPABILITIES, ROLE_DESCRIPTIONS, ROLE_ORDER, type Ca
 import { humanise } from '~/utils/formatters'
 
 /**
- * Roles & access — the permission matrix, rendered from the same table the app
+ * Roles & access: the permission matrix, rendered from the same table the app
  * enforces rather than a hand-maintained copy. If someone changes a capability
  * in `utils/permissions.ts`, this page cannot silently disagree with reality.
  */
@@ -77,7 +77,7 @@ const has = (role: typeof ROLE_ORDER[number], cap: Capability) =>
                     The allowed/denied state rides on the cell's aria-label
                     rather than a visually-hidden <span>. Tailwind's `.sr-only`
                     is `position: absolute`, and inside a horizontally-scrolled
-                    table that text extended the *document's* scroll region —
+                    table that text extended the *document's* scroll region;
                     the page gained 139px of sideways scroll at 390px, which
                     the responsive sweep caught. Labelling the cell conveys the
                     same thing to a screen reader with nothing in the layout.

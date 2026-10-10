@@ -4,7 +4,7 @@ const props = defineProps<{
   name: string
   /** Sale badge pinned to the main frame, as in the design. */
   discountLabel?: string | null
-  /** Stock badge from the approved mockup — bottom-left of the main frame. */
+  /** Stock badge from the approved mockup, bottom-left of the main frame. */
   stockBadge?: { label: string, class: string } | null
 }>()
 
@@ -14,7 +14,7 @@ const props = defineProps<{
  *
  * It replaces the earlier flat 2-up grid of every photo. That grid put the
  * whole set on screen at once, which sounds generous but shrank each shot to
- * roughly half width on a product page that is itself half the viewport — and
+ * roughly half width on a product page that is itself half the viewport, and
  * the catalogue's photography is detail work, stitching and crowns.
  *
  * Frames are sized by aspect ratio, never a pixel height: with a fluid width,
@@ -42,7 +42,7 @@ watch(frames, () => (activeIndex.value = 0))
         v-if="mainImage"
         :key="mainImage"
         :src="mainImage"
-        :alt="activeIndex === 0 ? name : `${name} — view ${activeIndex + 1}`"
+        :alt="activeIndex === 0 ? name : `${name}, view ${activeIndex + 1}`"
         class="size-full object-cover"
         loading="eager"
       >
@@ -64,7 +64,7 @@ watch(frames, () => (activeIndex.value = 0))
     </div>
 
     <!-- Thumbnail rail. A row under the image on a phone, a column beside it
-         from `sm` — a vertical rail on a 375px screen would either shrink the
+         from `sm`; a vertical rail on a 375px screen would either shrink the
          main frame or run off the bottom. -->
     <ul
       v-if="frames.length > 1"

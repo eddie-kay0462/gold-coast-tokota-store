@@ -7,10 +7,10 @@
  * sign-up flow exists.
  */
 useSeoMeta({
-  title: 'Affiliates — Gold Coast Tokota',
+  title: 'Affiliates | Gold Coast Tokota',
   description:
-    'Partner with Gold Coast Tokota — commission for creators and writers who share Ghanaian craft.',
-  ogTitle: 'Affiliates — Gold Coast Tokota',
+    'Partner with Gold Coast Tokota and earn commission sharing Ghanaian craft with your audience.',
+  ogTitle: 'Affiliates | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -45,7 +45,7 @@ useSeoMeta({
         <ul class="flex w-full list-disc flex-col gap-2 pl-5 text-body text-graphite">
           <li>Say plainly that a link is an affiliate link. Your readers deserve that.</li>
           <li>Don’t bid on our brand name in paid search.</li>
-          <li>Show the sandals as they are — we won’t ask you to overstate them.</li>
+          <li>Show the sandals as they are. We won’t ask you to overstate them.</li>
         </ul>
       </section>
 

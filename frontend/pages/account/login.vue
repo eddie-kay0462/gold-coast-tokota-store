@@ -3,7 +3,7 @@ import { PhEye, PhEyeSlash } from '@phosphor-icons/vue'
 import { isValidEmail } from '~/utils/validators'
 
 /**
- * Customer sign-in — BUILT BUT DELIBERATELY INACTIVE.
+ * Customer sign-in: BUILT BUT DELIBERATELY INACTIVE.
  * See `composables/useAuth.ts` for what turning it on involves.
  */
 const { signIn } = useAuth()
@@ -35,7 +35,7 @@ async function onSubmit() {
 }
 
 useSeoMeta({
-  title: 'Sign in — Gold Coast Tokota',
+  title: 'Sign in | Gold Coast Tokota',
   description: 'Sign in to your Gold Coast Tokota account.',
   robots: 'noindex, nofollow',
 })
@@ -107,8 +107,8 @@ useSeoMeta({
       </form>
 
       <p class="w-full text-caption text-muted">
-        You don’t need an account to order —
-        <NuxtLink to="/shop" class="underline hover:no-underline">shop as a guest</NuxtLink>
+        You don’t need an account to order.
+        <NuxtLink to="/shop" class="underline hover:no-underline">Shop as a guest</NuxtLink>
         and we’ll email your confirmation.
       </p>
     </section>

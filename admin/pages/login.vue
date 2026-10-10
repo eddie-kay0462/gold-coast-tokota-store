@@ -2,7 +2,7 @@
 import { PhEye, PhEyeSlash, PhWarningCircle } from '@phosphor-icons/vue'
 
 /**
- * Admin sign-in — Sanctum SPA cookie auth against the `admin` guard (see
+ * Admin sign-in: Sanctum SPA cookie auth against the `admin` guard (see
  * `useAuth().login()`). `middleware/auth.global.ts` sends every signed-out
  * visit here and returns to `?redirect=` afterwards.
  *
@@ -46,7 +46,7 @@ async function submit() {
   } catch (err: unknown) {
     const e = err as { statusCode?: number; data?: { errors?: { email?: string[] }; message?: string } }
     if (e.statusCode === 422) {
-      // Bad credentials, or the five-attempt lockout — Laravel words both.
+      // Bad credentials, or the five-attempt lockout. Laravel words both.
       notice.value = e.data?.errors?.email?.[0] ?? e.data?.message ?? 'Those details didn’t match an account.'
     } else if (!e.statusCode) {
       notice.value = 'Couldn’t reach the server. Check your connection and try again.'

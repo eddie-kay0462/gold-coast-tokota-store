@@ -2,7 +2,7 @@
 import { PhCaretDown, PhCaretUp, PhCaretUpDown } from '@phosphor-icons/vue'
 
 /**
- * The one table in this app — Figma node 10:3761 (Products frame).
+ * The one table in this app, Figma node 10:3761 (Products frame).
  *
  * Two renderings of the same data, chosen by breakpoint. A table below `md`
  * either overflows horizontally or squeezes columns to unreadable, so under
@@ -13,7 +13,7 @@ export interface Column<Row> {
   key: string
   label: string
   sortable?: boolean
-  /** Hidden in the mobile card view — use for redundant or decorative columns. */
+  /** Hidden in the mobile card view. Use for redundant or decorative columns. */
   hideOnCard?: boolean
   align?: 'left' | 'right'
   width?: string

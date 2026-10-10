@@ -5,7 +5,7 @@ import { PAYMENT_METHOD_LABELS } from '~/types'
 import { formatMoney } from '~/utils/currency'
 
 /**
- * Order detail drawer — README Feature 9 specifies a drawer rather than a
+ * Order detail drawer: README Feature 9 specifies a drawer rather than a
  * page, so working through a queue keeps your place in the list.
  */
 const props = defineProps<{ order: Order | null }>()

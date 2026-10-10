@@ -81,7 +81,7 @@ const blocks = computed(() => {
 <style scoped>
 /* The article body arrives as CMS rich text, so its elements are styled here
    rather than with utility classes. Sizes follow the Figma editorial scale and
-   use the same clamp() form as the display tokens in `tailwind.config.ts` —
+   use the same clamp() form as the display tokens in `tailwind.config.ts`;
    each reaches its exact Figma pixel value at the 1440px frame and scales
    smoothly below it, replacing the hard @media step this block used to carry. */
 .post-body :deep(h2) {
@@ -101,7 +101,7 @@ const blocks = computed(() => {
 .post-body :deep(p) {
   /* Body copy grows from 16px to 20px at 1440. It used to reach the editorial
      24px, which was set for a 984px measure; this column is 680px, and 24px
-     across 680px runs to about 45 characters a line — too short to read
+     across 680px runs to about 45 characters a line, too short to read
      comfortably. */
   font-size: clamp(16px, 14.857px + 0.357vw, 20px);
   line-height: 1.6;

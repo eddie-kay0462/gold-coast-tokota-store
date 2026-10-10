@@ -7,7 +7,7 @@ import { formatMoney } from '~/utils/currency'
 import { humanise } from '~/utils/formatters'
 
 /**
- * Orders — status filter plus search by customer name, email or reference,
+ * Orders: status filter plus search by customer name, email or reference,
  * per README Feature 9's acceptance criteria. Row click opens the detail
  * drawer rather than navigating away, so working a queue keeps your place.
  */

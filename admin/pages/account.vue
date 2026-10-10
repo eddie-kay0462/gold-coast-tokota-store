@@ -5,7 +5,7 @@ import { ROLE_CAPABILITIES, type Capability } from '~/utils/permissions'
 import { humanise } from '~/utils/formatters'
 
 /**
- * Account settings — the person's own profile, preferences and session.
+ * Account settings: the person's own profile, preferences and session.
  *
  * Separate from the profile modal, which is a quick glance and a role switch.
  * This is where you change things about yourself.
@@ -114,7 +114,7 @@ const grantedByArea = computed(() => {
           <template v-if="hasLapsed">Access ended on {{ formatDate(accessExpiresAt) }}.</template>
           <template v-else>
             Access runs until {{ formatDate(accessExpiresAt) }}
-            — {{ accessDaysRemaining }} day{{ accessDaysRemaining === 1 ? '' : 's' }} left.
+            ({{ accessDaysRemaining }} day{{ accessDaysRemaining === 1 ? '' : 's' }} left).
           </template>
         </p>
       </div>
@@ -132,7 +132,7 @@ const grantedByArea = computed(() => {
           </div>
         </div>
         <p class="mt-3 text-meta text-fg-muted">
-          Need something that isn't here? Ask an Admin — see
+          Need something that isn't here? Ask an Admin, or see
           <NuxtLink to="/settings/roles" class="text-accent-text underline underline-offset-4">
             Roles &amp; access
           </NuxtLink>
@@ -143,7 +143,7 @@ const grantedByArea = computed(() => {
 
     <SettingsSection title="Session">
       <p class="text-ui text-fg-muted">
-        You are not actually authenticated — sign-in has not been built yet, so the dashboard is
+        You aren’t actually signed in. Sign-in hasn’t been built yet, so the dashboard is
         open and this is a demo session.
       </p>
       <template #footer>

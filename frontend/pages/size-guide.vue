@@ -11,10 +11,10 @@ import { SIZE_GUIDE_BETWEEN_SIZES, SIZE_GUIDE_STEPS } from '~/utils/sizeGuide'
  */
 
 useSeoMeta({
-  title: 'Size guide — Gold Coast Tokota',
+  title: 'Size guide | Gold Coast Tokota',
   description:
     'How to measure your foot and find your size in Gold Coast Tokota sandals, with EU, UK and US conversions.',
-  ogTitle: 'Size guide — Gold Coast Tokota',
+  ogTitle: 'Size guide | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })

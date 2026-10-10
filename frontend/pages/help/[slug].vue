@@ -2,7 +2,7 @@
 import { HELP_SLUGS, HELP_TOPICS, POLICY_DRAFTS, type HelpSlug } from '~/utils/policyContent'
 import { whatsappMessage, type WhatsAppSource } from '~/utils/whatsapp'
 
-/** Help articles. `/returns` and `/shipping` 301 here — see nuxt.config.ts. */
+/** Help articles. `/returns` and `/shipping` 301 here. See nuxt.config.ts. */
 definePageMeta({
   validate: (route) => HELP_SLUGS.includes(route.params.slug as HelpSlug),
 })
@@ -13,7 +13,7 @@ const draft = computed(() => POLICY_DRAFTS[slug.value]!)
 
 /**
  * Every one of these articles tells the reader to message on WhatsApp and, until
- * now, gave them nothing to tap — the returns article most pointedly, since the
+ * now, gave them nothing to tap, the returns article most pointedly, since the
  * brand guidelines say a return or exchange is *initiated* on WhatsApp, with the
  * number printed underneath.
  *
@@ -41,9 +41,9 @@ const WHATSAPP_CTA: Partial<Record<HelpSlug, { source: WhatsAppSource, label: st
 const cta = computed(() => WHATSAPP_CTA[slug.value] ?? null)
 
 useSeoMeta({
-  title: () => `${draft.value.title} — Gold Coast Tokota`,
+  title: () => `${draft.value.title} | Gold Coast Tokota`,
   description: () => draft.value.summary,
-  ogTitle: () => `${draft.value.title} — Gold Coast Tokota`,
+  ogTitle: () => `${draft.value.title} | Gold Coast Tokota`,
   ogDescription: () => draft.value.summary,
   ogImage: '/brand/og-image.png',
   ogType: 'website',
@@ -63,7 +63,7 @@ useSeoMeta({
       <template #footer>
         <div v-if="cta" class="mb-6 flex w-full flex-col items-start gap-2 border border-line bg-surface p-4">
           <p class="text-caption text-muted">
-            Fastest way to sort this out — we reply during business hours.
+            The fastest way to sort this out. We reply during business hours.
           </p>
           <CommonWhatsAppLink :source="cta.source" :message="cta.message">
             {{ cta.label }}

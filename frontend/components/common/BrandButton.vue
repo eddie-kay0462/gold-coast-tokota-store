@@ -1,10 +1,10 @@
 <script setup lang="ts">
 // The 240px block button used across the site. Every variant now wears the
 // same `.btn-outline` look (white, thin black outline, black only on hover or
-// focus — see `assets/css/main.css`); the client asked for that in place of
+// focus, see `assets/css/main.css`); the client asked for that in place of
 // Figma's solid #262626 / #000000 / white fills. `graphite` and `ink` are kept
 // as names so the call sites didn't churn; `white` marks a button on a dark
-// ground or photography, which keeps a white edge when filled. Two shapes — the square-cornered uppercase `block` and
+// ground or photography, which keeps a white edge when filled. Two shapes: the square-cornered uppercase `block` and
 // the soft-cornered mixed-case `soft` used on the Sustainability page
 // (10:963), where the label carries a handle that uppercasing would mangle.
 const props = withDefaults(
@@ -21,7 +21,7 @@ const props = withDefaults(
   { variant: 'graphite', shape: 'block', type: 'button' },
 )
 
-// resolveComponent() must run in setup — it is not in scope inside template
+// resolveComponent() must run in setup; it is not in scope inside template
 // expressions, where it silently renders a literal <NuxtLink> element instead.
 const linkComponent = resolveComponent('NuxtLink')
 

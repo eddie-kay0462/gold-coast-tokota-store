@@ -68,15 +68,15 @@ export const dashboardCharts: DashboardCharts = {
 }
 
 const activity: [ActivityItem['kind'], string, string | null, string][] = [
-  ['order', 'New order GCT-8100959 — GH₵1,240.00 via MTN MoMo', 'Kofi Owusu', minsAgo(6)],
+  ['order', 'New order GCT-8100959: GH₵1,240.00 via MTN MoMo', 'Kofi Owusu', minsAgo(6)],
   ['message', 'Adwoa Mensah asked about a size exchange', 'Adwoa Mensah', minsAgo(18)],
-  ['stock', 'Ahenema Classic — Tan, size 42 is below threshold (3 left)', null, minsAgo(44)],
-  ['booking', 'Sandal Sip & Paint is at capacity — 2 now waitlisted', null, hoursAgo(2)],
+  ['stock', 'Ahenema Classic, Tan, size 42 is below threshold (3 left)', null, minsAgo(44)],
+  ['booking', 'Sandal Sip & Paint is full, 2 now waitlisted', null, hoursAgo(2)],
   ['order', 'Order GCT-8100685 marked delivered', 'Peter Nyarko', hoursAgo(3)],
   ['content', 'Blog post “Sip & Paint: Inside Our Saturday Workshop” published', 'Mary Seade', hoursAgo(5)],
   ['customer', 'New newsletter subscriber from the checkout opt-in', null, hoursAgo(7)],
-  ['booking', 'DIY-5117 custom order submitted — size 44 wide fitting', 'Yaw Boadu', hoursAgo(9)],
-  ['order', 'Refund issued on GCT-8100411 — GH₵420.00', 'Isaac Boateng', hoursAgo(20)],
+  ['booking', 'DIY-5117 custom order submitted: size 44, wide fitting', 'Yaw Boadu', hoursAgo(9)],
+  ['order', 'Refund issued on GCT-8100411: GH₵420.00', 'Isaac Boateng', hoursAgo(20)],
   ['stock', 'Restock received: Kente Panel Slide +24 across four sizes', 'Isaaka Mahama', hoursAgo(26)],
 ]
 

@@ -15,7 +15,7 @@ const route = useRoute()
 const mobileNavOpen = ref(false)
 
 // The drawer is taller than a phone viewport once an accordion is expanded, so
-// the page behind it must not scroll — same treatment as the cart drawer.
+// the page behind it must not scroll, same treatment as the cart drawer.
 useBodyScrollLock(mobileNavOpen)
 /** Search band under the nav rows (Figma 6:552). */
 const searchOpen = ref(false)
@@ -63,7 +63,7 @@ watch(() => route.fullPath, () => {
 
 /**
  * The category row collapses upward once the page starts moving, and drops back
- * down at the top — the header keeps its identity and its controls while
+ * down at the top: the header keeps its identity and its controls while
  * scrolling, without holding 159px of viewport the whole way down a page.
  *
  * The two thresholds are deliberately different. With one value the row
@@ -74,7 +74,7 @@ const COLLAPSE_AT = 16
 const EXPAND_AT = 4
 
 const rowCollapsed = ref(false)
-/** Keeps the row open while a keyboard user is inside it — see `rowOpen`. */
+/** Keeps the row open while a keyboard user is inside it. See `rowOpen`. */
 const rowFocused = ref(false)
 
 /**
@@ -117,7 +117,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
 })
 
-/** Labels like "New Arrivals" must not become ids with spaces — aria-controls
+/** Labels like "New Arrivals" must not become ids with spaces; aria-controls
  *  parses on whitespace, so a space would silently break the reference. */
 function menuId(label: string) {
   return `mega-menu-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
@@ -126,7 +126,7 @@ function menuId(label: string) {
 // The anchor is part of a tab's identity: two tabs can share a path and differ
 // only by hash, and matching on path alone would light up both.
 // The hash is never sent to the server, so until we're mounted only the
-// anchorless tab can claim the underline — otherwise the client would disagree
+// anchorless tab can claim the underline; otherwise the client would disagree
 // with the SSR markup it's hydrating.
 const hashReady = ref(false)
 onMounted(() => (hashReady.value = true))
@@ -205,8 +205,8 @@ function isCategoryActive(to: string) {
 
     <!-- Primary nav. Three columns with equal 1fr flanks so the logo sits
          optically centred in the row regardless of how wide the nav or the
-         icon cluster get. Taller than the old dark row — the reference gives
-         the logo room — with a hairline under it. -->
+         icon cluster get. Taller than the old dark row (the reference gives
+         the logo room) with a hairline under it. -->
     <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 text-ink md:px-10 md:py-3 lg:px-[68px]">
       <div class="flex items-center justify-start">
         <button
@@ -235,7 +235,7 @@ function isCategoryActive(to: string) {
         </nav>
       </div>
 
-      <NuxtLink to="/" class="flex min-h-[44px] items-center justify-self-center px-4" aria-label="Gold Coast Tokota — home">
+      <NuxtLink to="/" class="flex min-h-[44px] items-center justify-self-center px-4" aria-label="Gold Coast Tokota home">
         <img
           src="/brand/logo.png"
           alt="Gold Coast Tokota"

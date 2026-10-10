@@ -4,7 +4,7 @@
  *
  * Feature 9 owns the real blog CMS (`GET /api/v1/blog-posts`); until it exists
  * these stand in so both pages render their designed state. Copy, dates and
- * photography are transcribed from the Figma frames — only the Tyred of Waste
+ * photography are transcribed from the Figma frames; only the Tyred of Waste
  * article is drawn in full, so it is the only entry with body blocks. The
  * others carry listing metadata only, and their detail pages say so rather
  * than inventing an article.
@@ -37,7 +37,7 @@ export type ApiPost = {
 
 export const DESIGN_POSTS: ApiPost[] = [
   /**
-   * Listing metadata only — no `body` or `blocks`, so the article page renders
+   * Listing metadata only: no `body` or `blocks`, so the article page renders
    * its "hasn't been published in full yet" state rather than faking a story.
    *
    * It exists because the home page's `EditorialPair` tile has always linked to
@@ -73,7 +73,7 @@ export const DESIGN_POSTS: ApiPost[] = [
         type: 'html',
         html: `
           <h2>Orange Corners Ghana</h2>
-          <p>Both companies, alumni of Cohort 9’s <a href="https://www.orangecorners.com/country/ghana/" target="_blank" rel="noopener noreferrer">Orange Corners Ghana</a> acceleration programme — an initiative of the Kingdom of the Netherlands, implemented by <a href="https://growthafrica.com/" target="_blank" rel="noopener noreferrer">GrowthAfrica</a> — have joined forces to tackle both environmental and social challenges through a simple yet powerful idea: turning used tyres into eco-friendly footwear and accessories.</p>
+          <p>Both companies, alumni of Cohort 9’s <a href="https://www.orangecorners.com/country/ghana/" target="_blank" rel="noopener noreferrer">Orange Corners Ghana</a> acceleration programme (an initiative of the Kingdom of the Netherlands, implemented by <a href="https://growthafrica.com/" target="_blank" rel="noopener noreferrer">GrowthAfrica</a>), have joined forces to tackle both environmental and social challenges through a simple yet powerful idea: turning used tyres into eco-friendly footwear and accessories.</p>
 
           <h2>Why This Matters</h2>
 
@@ -87,7 +87,7 @@ export const DESIGN_POSTS: ApiPost[] = [
           <p>This partnership proves that businesses can be both profitable and purpose-driven, making a tangible impact on communities.</p>
 
           <h3>Championing Innovation</h3>
-          <p>Turning discarded materials into valuable products is the future of sustainability — and these two brands are leading the way.</p>
+          <p>Turning discarded materials into valuable products is the future of sustainability, and these two brands are leading the way.</p>
         `,
       },
       { type: 'image', src: '/design/post-tyred-hero.png', alt: 'Artisans and the FITA Autotech team outside the workshop' },
@@ -95,7 +95,7 @@ export const DESIGN_POSTS: ApiPost[] = [
         type: 'html',
         html: `
           <h2>The Process</h2>
-          <p><a href="https://www.linkedin.com/company/fitaautotech/" target="_blank" rel="noopener noreferrer">FITA Autotech</a>, a leader in sustainable mobility solutions, collects used tyres from its auto service stations — tyres that would otherwise be discarded as waste.</p>
+          <p><a href="https://www.linkedin.com/company/fitaautotech/" target="_blank" rel="noopener noreferrer">FITA Autotech</a>, a leader in sustainable mobility solutions, collects used tyres from its auto service stations, tyres that would otherwise be discarded as waste.</p>
           <p>Gold Coast Tokota, a brand dedicated to inclusive artisan craftsmanship, repurposes these tyres into stylish, durable, eco-friendly footwear and accessories.</p>
 
           <h2>More than just Recycling</h2>
@@ -206,7 +206,7 @@ export const SUSTAINABILITY_POSTS: ApiPost[] = [
   },
 ]
 
-/** "21st March 2025" — the date format used throughout the news designs. */
+/** "21st March 2025": the date format used throughout the news designs. */
 export function formatPostDate(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''

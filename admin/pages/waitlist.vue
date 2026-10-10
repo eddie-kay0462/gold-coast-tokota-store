@@ -8,7 +8,7 @@ import type { Booking, WorkshopSession } from '~/types'
  * Grouped by session rather than shown as a flat table, because the decision
  * being made is per session: a place opened on *this* Saturday, who gets it.
  * README Feature 7 promotes the next entry automatically on cancellation and
- * lets an admin skip someone who no longer wants the slot — both actions live
+ * lets an admin skip someone who no longer wants the slot; both actions live
  * on the row.
  */
 useHead({ title: 'Waitlist' })
