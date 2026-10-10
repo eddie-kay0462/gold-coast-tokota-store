@@ -3366,8 +3366,9 @@ will light up:
 - **`placeholder: true`** in `utils/navigation.ts` marks a link whose
   destination is a stand-in, not a real page. Grep it before assuming a route
   exists.
-- **Commits carry no AI attribution** — no `Co-Authored-By` trailers for Claude,
-  Cursor or any other assistant. See `CLAUDE.md`.
+- **Commits and PRs carry no AI attribution** — no AI as commit author, no
+  `Co-Authored-By` trailers, no "Generated with …" lines in PR descriptions.
+  Backend work goes `feat/backend` → `dev` → `main`. See `CLAUDE.md`.
 
 ---
 
