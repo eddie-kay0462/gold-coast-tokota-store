@@ -39,7 +39,7 @@ const { formatDate } = useFormatters()
           {{ role === 'intern' ? 'Intern' : 'Temporary' }} access ends in
           {{ accessDaysRemaining }} {{ accessDaysRemaining === 1 ? 'day' : 'days' }}
         </strong>
-        — on {{ formatDate(accessExpiresAt) }}. Ask an Admin to extend it if you need longer.
+        ({{ formatDate(accessExpiresAt) }}). Ask an Admin to extend it if you need longer.
       </template>
       <span v-if="isImpersonating" class="ml-1 opacity-70">(previewing a role)</span>
     </p>

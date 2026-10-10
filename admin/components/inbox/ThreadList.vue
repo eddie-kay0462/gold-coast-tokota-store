@@ -2,7 +2,7 @@
 import { PhMagnifyingGlass } from '@phosphor-icons/vue'
 import type { ChatThread } from '~/types'
 
-/** Conversation list — Figma node 29:8553. */
+/** Conversation list, Figma node 29:8553. */
 const props = defineProps<{ threads: ChatThread[]; activeId: string | null }>()
 const emit = defineEmits<{ (e: 'select', id: string): void }>()
 

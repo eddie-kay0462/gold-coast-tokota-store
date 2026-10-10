@@ -5,7 +5,7 @@ import { WHATSAPP_GREETING } from './settings'
 /**
  * Simulated WhatsApp inbox.
  *
- * Every thread is a scenario the business actually handles — a size exchange
+ * Every thread is a scenario the business actually handles: a size exchange
  * inside the 7-day returns window, a Sip & Paint capacity question, a bulk
  * corporate enquiry, a DIY order with measurements, an international shipping
  * timeline, a MoMo payment confirmation. Generic "sample message" filler would
@@ -36,7 +36,7 @@ const drafts: ThreadDraft[] = [
       [true, 'Hi! I received my Ahenema Classic in tan yesterday and they’re gorgeous, but they run a little large.', 190],
       [true, 'Can I exchange for a 41?', 188],
       [false, WHATSAPP_GREETING, 187, 'system'],
-      [false, 'Hello Adwoa, thank you for reaching out. Yes — exchanges for sizing are available within 7 days of delivery, subject to stock. May I have your order number?', 172],
+      [false, 'Hello Adwoa, thank you for reaching out. Yes, exchanges for sizing are available within 7 days of delivery, subject to stock. May I have your order number?', 172],
       [true, 'GCT-8100685', 165],
       [false, 'Thank you. I can see a size 41 in tan is in stock. For a size exchange the return postage is the customer’s, but we’ll cover sending the new pair out. Shall I raise it?', 150],
       [true, 'Yes please, that works.', 22],
@@ -48,9 +48,9 @@ const drafts: ThreadDraft[] = [
     online: true, unread: 1,
     messages: [
       [true, 'Good morning. Is the Sandal Sip & Paint fully booked for this Saturday?', 320],
-      [false, 'Good morning Kwame. Saturday is at capacity — 20 of 20 confirmed. I can add you to the waitlist, and we’ll message you the moment a place opens.', 300],
+      [false, 'Good morning Kwame. Saturday is full (20 of 20 confirmed). I can add you to the waitlist, and we’ll message you the moment a place opens.', 300],
       [true, 'Please do. There are two of us.', 290],
-      [false, 'Added — you’re second on the list. The following Saturday has 6 places if you’d rather lock something in now.', 275],
+      [false, 'Done, you’re second on the list. The following Saturday has 6 places if you’d rather lock something in now.', 275],
       [true, 'Let’s hold the waitlist for this week and see.', 41],
     ],
   },
@@ -58,7 +58,7 @@ const drafts: ThreadDraft[] = [
     id: 'wa-3', name: 'Nadia Bello', phone: '+234 803 552 1180', topic: 'wholesale',
     online: false, unread: 0,
     messages: [
-      [true, 'Hello — I run a concept store in Lagos. Interested in stocking 40 pairs of the Kente Panel Slide.', 2600],
+      [true, 'Hello, I run a concept store in Lagos and I’m interested in stocking 40 pairs of the Kente Panel Slide.', 2600],
       [false, 'Hello Nadia, thank you for getting in touch. Bulk orders of 20+ pairs run on a 1–3 week production window depending on quantity. For 40 pairs we’d quote 3 weeks.', 2580],
       [true, 'That works. Can you send a wholesale price list?', 2560],
       [false, 'Wholesale terms.pdf', 2540, 'document'],
@@ -70,7 +70,7 @@ const drafts: ThreadDraft[] = [
     online: false, unread: 0, linkedOrderId: 3007,
     messages: [
       [true, 'Hi, I ordered last Tuesday to London. Any idea when it will arrive?', 1500],
-      [false, 'Hello Sarah — processing takes 48 hours and Europe delivery runs 7–14 business days. Yours dispatched Thursday via DHL.', 1480],
+      [false, 'Hello Sarah, processing takes 48 hours and Europe delivery runs 7–14 business days. Yours dispatched Thursday via DHL.', 1480],
       [false, 'Your tracking reference is DHL483920117.', 1478],
       [true, 'Perfect, thank you! It says it cleared customs this morning.', 900],
       [false, 'That’s the long part done. Should be with you in the next day or two.', 880],
@@ -92,7 +92,7 @@ const drafts: ThreadDraft[] = [
     online: false, unread: 0, linkedOrderId: 3012,
     messages: [
       [true, 'Just paid with MTN MoMo. Did it come through?', 640],
-      [false, 'Yes — payment confirmed on order GCT-8100959. You’ll get an SMS and email receipt shortly, and we dispatch within 48 hours.', 630],
+      [false, 'Yes, payment confirmed on order GCT-8100959. You’ll get an SMS and email receipt shortly, and we dispatch within 48 hours.', 630],
       [true, 'Great, thanks 👍', 620],
     ],
   },
@@ -101,7 +101,7 @@ const drafts: ThreadDraft[] = [
     online: false, unread: 0,
     messages: [
       [true, 'Hello, I teach at a school in East Legon. Could we bring a class of 35 for the sustainability tour?', 4200],
-      [false, 'Hello Grace — school tours run Monday to Friday and take up to 40 students, so 35 is fine. Morning slot is 9:00 AM – 12:00 PM.', 4180],
+      [false, 'Hello Grace, school tours run Monday to Friday and take up to 40 students, so 35 is fine. Morning slot is 9:00 AM – 12:00 PM.', 4180],
       [true, 'Could we do the second Tuesday of next month?', 4150],
       [false, 'Booked provisionally. I’ll confirm once we’ve allocated a guide.', 4100],
     ],
@@ -111,7 +111,7 @@ const drafts: ThreadDraft[] = [
     online: false, unread: 0,
     messages: [
       [true, 'Do you ship to the US? And are the soles really made from tyres?', 5400],
-      [false, 'We do — North America runs 7–14 business days. And yes: the soles are cut from reclaimed tyre rubber, which is why they wear so well.', 5380],
+      [false, 'We do. North America runs 7–14 business days. And yes: the soles are cut from reclaimed tyre rubber, which is why they wear so well.', 5380],
       [true, 'Amazing. Ordering a pair now.', 5300],
     ],
   },
@@ -120,7 +120,7 @@ const drafts: ThreadDraft[] = [
     online: false, unread: 0,
     messages: [
       [true, 'The stitching on the toe post has come loose after two weeks.', 8800],
-      [false, 'I’m sorry to hear that — that’s a defect and covered. Send a photo and we’ll arrange a repair or replacement at no cost.', 8780],
+      [false, 'I’m sorry to hear that. That’s a defect and it’s covered. Send a photo and we’ll arrange a repair or replacement at no cost.', 8780],
       [true, 'defect-photo.jpg', 8700, 'image'],
       [false, 'Thank you. Replacement pair is going out today.', 8600],
       [true, 'Received and they’re perfect. Thank you for sorting it so quickly.', 7000],
@@ -130,7 +130,7 @@ const drafts: ThreadDraft[] = [
     id: 'wa-10', name: 'Thomas Andersson', phone: '+31 6 2044 8813', topic: 'general',
     online: false, unread: 0,
     messages: [
-      [true, 'Visiting Accra in October — can I book the international visitor experience?', 12000],
+      [true, 'I’m visiting Accra in October. Can I book the international visitor experience?', 12000],
       [false, 'Absolutely. It runs by appointment, 2–4 hours, up to 20 people. Let us know your dates when you have them.', 11900],
     ],
   },
@@ -190,7 +190,7 @@ export const messageTemplates: MessageTemplate[] = [
   {
     id: 'tpl-dispatch', name: 'order_dispatched', category: 'utility',
     language: 'en', status: 'approved',
-    body: 'Good news {{1}} — order {{2}} has been dispatched via {{3}}. Tracking: {{4}}.',
+    body: 'Good news {{1}}, order {{2}} has been dispatched via {{3}}. Tracking: {{4}}.',
     variables: ['customer_name', 'order_reference', 'courier', 'tracking_reference'],
     rejectionReason: null, updatedAt: daysAgo(60),
   },

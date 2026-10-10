@@ -4,14 +4,14 @@ import type { ActivityItem, DashboardCharts, DashboardMetrics } from '~/types'
 import { formatMoneyCompact } from '~/utils/currency'
 
 /**
- * Overview — Figma node 1:24956.
+ * Overview, Figma node 1:24956.
  *
  * Metric tiles, a two-series revenue chart, and the three traffic panels,
  * re-pointed at what this business actually watches: orders and revenue split
  * by currency (README Feature 9), low stock, pending bookings and the
  * waitlist.
  *
- * Revenue is gated on `analytics.revenue` rather than the page as a whole —
+ * Revenue is gated on `analytics.revenue` rather than the page as a whole;
  * Staff run fulfilment from this screen and need it, they just should not see
  * the money.
  */
@@ -156,7 +156,7 @@ const alerts = computed(() => {
         <h2 class="card-title">Traffic by source</h2>
         <div class="mt-4">
           <ChartsRankedBars v-if="charts?.trafficBySource" :data="charts.trafficBySource" />
-          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
+          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet. Analytics isn’t connected.</p>
         </div>
       </div>
     </div>
@@ -167,19 +167,19 @@ const alerts = computed(() => {
         <h2 class="card-title">Traffic by device</h2>
         <div class="mt-4">
           <ChartsBar v-if="charts?.trafficByDevice" :data="charts.trafficByDevice" />
-          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
+          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet. Analytics isn’t connected.</p>
         </div>
       </div>
       <div class="card card-pad">
         <h2 class="card-title">Traffic by location</h2>
         <div class="mt-4">
           <ChartsDonut v-if="charts?.trafficByLocation" :data="charts.trafficByLocation" />
-          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
+          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet. Analytics isn’t connected.</p>
         </div>
       </div>
     </div>
 
-    <!-- Activity: duplicated from the right rail on purpose — the rail is
+    <!-- Activity: duplicated from the right rail on purpose; the rail is
          hidden below xl, and this is the screen people leave open. -->
     <div class="card xl:hidden">
       <div class="flex items-center justify-between border-b border-border px-4 py-3 md:px-5">
@@ -200,7 +200,7 @@ const alerts = computed(() => {
     </div>
 
     <p v-if="metrics" class="text-meta text-fg-faint">
-      Metrics read live from the database on every load — last read {{ formatDateTime(metrics.generatedAt) }}.
+      Metrics are read live from the database on every load. Last read {{ formatDateTime(metrics.generatedAt) }}.
     </p>
   </div>
 </template>

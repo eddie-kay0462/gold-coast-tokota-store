@@ -11,7 +11,7 @@ const siteSettings = useSiteSettingsStore()
  * This replaces four columns of eighteen links. What went, and why:
  *
  * - **Facebook and Twitter** pointed at `/`. They were placeholders for social
- *   accounts that are not modelled anywhere — only Instagram is, and it moved
+ *   accounts that are not modelled anywhere; only Instagram is, and it moved
  *   to the social row beside the newsletter, where the mockup puts it.
  * - **Two identical "Sitemap" links** both resolved to `/sitemap.xml`. That was
  *   open issue #18; removing both closes it.
@@ -20,7 +20,7 @@ const siteSettings = useSiteSettingsStore()
  * - The **Company** column duplicated the About page's own section nav (About,
  *   Environmental Initiatives, Factories), which is now one merged page.
  *
- * Some pages lose their only link as a result — see FOR_THE_TEAM.md, which
+ * Some pages lose their only link as a result. See FOR_THE_TEAM.md, which
  * lists them. They still resolve and still appear in the sitemap; they are just
  * no longer advertised from every page on the site.
  */
@@ -47,7 +47,7 @@ const columns = computed(() => [
   },
 ])
 
-/** Instagram only — WhatsApp renders through `CommonWhatsAppLink` beside it. */
+/** Instagram only; WhatsApp renders through `CommonWhatsAppLink` beside it. */
 const socials = computed(() =>
   siteSettings.instagramUrl
     ? [{ label: 'Instagram', href: siteSettings.instagramUrl, icon: InstagramLogo }]
@@ -70,7 +70,7 @@ const socials = computed(() =>
       <div class="flex flex-col items-start gap-5">
         <!-- `min-h-[44px]` keeps the tap target legal: the logo itself is 32px
              tall, and a link wrapping it alone is under the floor. -->
-        <NuxtLink to="/" class="-my-1.5 flex min-h-[44px] items-center py-1.5" aria-label="Gold Coast Tokota — home">
+        <NuxtLink to="/" class="-my-1.5 flex min-h-[44px] items-center py-1.5" aria-label="Gold Coast Tokota home">
           <img
             src="/brand/logo.png"
             alt="Gold Coast Tokota"
@@ -91,7 +91,7 @@ const socials = computed(() =>
                guidelines, and `/stores` deliberately publishes no street address
                because inventing one would be worse than omitting it.
 
-               Linked rather than plain text — the mockup prints the address, and
+               Linked rather than plain text: the mockup prints the address, and
                `/stores` is the page that explains visiting the workshop. It also
                keeps that page reachable now the Connect column is gone. -->
           <NuxtLink to="/stores" class="-my-2 flex min-h-[44px] items-center py-2 hover:text-ink">

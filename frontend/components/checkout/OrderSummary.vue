@@ -41,8 +41,8 @@ async function apply() {
   await new Promise((resolve) => setTimeout(resolve, 600))
   applying.value = false
   codeNotice.value =
-    'Discount codes aren’t enabled yet — there’s no discounts endpoint on the API. '
-    + 'If you were given a code, send it to us and we’ll apply it by hand.'
+    'Discount codes can’t be applied online yet. '
+    + 'If you have a code, send it to us and we’ll apply it by hand.'
 }
 </script>
 
@@ -52,7 +52,7 @@ async function apply() {
 
     <ul v-if="!cart.isEmpty" class="flex flex-col gap-4">
       <li v-for="item in cart.items" :key="item.inventoryItemId" class="flex items-center gap-4">
-        <!-- Thumbnail with the quantity on its corner — the Shopify treatment.
+        <!-- Thumbnail with the quantity on its corner, the Shopify treatment.
              It reads at a glance and keeps the variant line for the variant. -->
         <div class="relative shrink-0">
           <div class="size-16 overflow-hidden rounded border border-line bg-white">

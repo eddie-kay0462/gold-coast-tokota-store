@@ -4,7 +4,7 @@ import type { InventoryItem } from '~/types'
 import type { Column } from '~/components/ui/DataTable.vue'
 
 /**
- * Inventory — stock by variant.
+ * Inventory: stock by variant.
  *
  * Available and reserved are shown side by side rather than netted together.
  * README Feature 3 keeps them separate on purpose: reserved units are held by
@@ -16,7 +16,7 @@ useHead({ title: 'Inventory' })
 
 const { useAdminList } = useAdminApi()
 const { formatRelative, formatNumber } = useFormatters()
-// One row per size — the whole run in one request, paged client-side below.
+// One row per size, the whole run in one request, paged client-side below.
 const { items: inventory, pending, refresh } = useAdminList<InventoryItem>(
   'admin-inventory', '/admin/inventory', { per_page: 500 },
 )
@@ -69,7 +69,7 @@ const variantLabel = (v: Record<string, string>) =>
       @click.prevent="lowOnly = true"
     >
       <PhWarningCircle :size="18" class="shrink-0" />
-      {{ lowCount }} variants are at or below their low-stock threshold — show only those
+      {{ lowCount }} variants are at or below their low-stock threshold. Show only those
     </NuxtLink>
 
     <UiToolbar
@@ -106,7 +106,7 @@ const variantLabel = (v: Record<string, string>) =>
       </template>
       <template #cell-quantityReserved="{ row }">
         <span :class="row.quantityReserved ? 'text-info' : 'text-fg-faint'">
-          {{ row.quantityReserved || '—' }}
+          {{ row.quantityReserved || '-' }}
         </span>
         <span v-if="row.reservationExpiresAt" class="block text-meta text-fg-faint">expires soon</span>
       </template>

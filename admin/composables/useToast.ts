@@ -10,7 +10,7 @@
  * lands on the breadcrumb and search. Bottom-right keeps the confirmation near
  * where the eye already is after clicking a footer Save, and clear of the
  * sidebar. Admin has no fixed WhatsApp button to collide with, unlike the
- * storefront — which is why this decision does not automatically transfer.
+ * storefront, which is why this decision does not automatically transfer.
  */
 export type ToastTone = 'success' | 'error' | 'info'
 

@@ -3,14 +3,14 @@
  *
  * The same design-fallback pattern as `designCatalogue.ts` and `newsPosts.ts`:
  * each page fetches `GET /pages/{slug}` and falls back to the draft here when
- * the CMS has nothing approved. Feature 9 owns the real content — when the
+ * the CMS has nothing approved. Feature 9 owns the real content; when the
  * owner publishes a page from admin, `is_draft` flips to false and the entry
  * below stops rendering. Delete an entry once its page is live.
  *
  * IMPORTANT: none of this text has been reviewed by Gold Coast Tokota or by a
  * lawyer. It exists to give each page its shape and structure, and every page
  * that renders it also renders `<ContentDraftNotice />` saying exactly that.
- * Do not remove that banner to "tidy up" a page — see `usePageContent`, which
+ * Do not remove that banner to "tidy up" a page; see `usePageContent`, which
  * is the single place the draft decision is made.
  */
 
@@ -69,7 +69,7 @@ export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
       {
         heading: 'Who we share it with',
         body: [
-          'Our delivery partners — Yango within Ghana, DHL internationally — receive the address and phone number needed to deliver your order, and nothing more.',
+          'Our delivery partners (Yango within Ghana, DHL internationally) receive the address and phone number needed to deliver your order, and nothing more.',
           'Our SMS provider receives your phone number in order to send order and booking confirmations.',
         ],
       },
@@ -98,7 +98,7 @@ export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
       {
         heading: 'Orders',
         body: [
-          'An order is confirmed when payment has cleared and you have received a confirmation email. Until then we may cancel an order — for example if an item turns out to be out of stock — and refund you in full.',
+          'An order is confirmed when payment has cleared and you have received a confirmation email. Until then we may cancel an order, for example if an item turns out to be out of stock, and refund you in full.',
           'Every pair is handmade, so slight variation in grain, colour and finish between pairs is expected and is not a defect.',
         ],
       },
@@ -112,7 +112,7 @@ export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
       {
         heading: 'Custom and DIY orders',
         body: [
-          'Custom pairs are made to the measurements you supply. Please check them carefully — a custom pair made correctly to the measurements given cannot be returned for fit.',
+          'Custom pairs are made to the measurements you supply. Please check them carefully. A custom pair made correctly to the measurements given cannot be returned for fit.',
           'Turnaround times shown at the time of booking are estimates, not guarantees.',
         ],
       },
@@ -319,7 +319,7 @@ export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
       {
         heading: 'Lead times',
         body: [
-          'Bulk orders are made to order, so please come to us early — larger runs need more notice than a single pair. We will confirm a date in writing before you commit.',
+          'Bulk orders are made to order, so please come to us early. Larger runs need more notice than a single pair. We will confirm a date in writing before you commit.',
         ],
       },
       {
@@ -353,7 +353,7 @@ export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
       {
         heading: 'Telling us about a problem',
         body: [
-          'If something on this site is hard to use, please tell us — it is the fastest way for us to find and fix it. Contact us or message us on WhatsApp.',
+          'If something on this site is hard to use, please tell us. It is the fastest way for us to find and fix it. Contact us or message us on WhatsApp.',
         ],
       },
     ],

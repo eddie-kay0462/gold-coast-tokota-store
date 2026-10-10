@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SeriesPoint } from '~/types'
 
-/** Vertical bars — Figma 1:24956, "Traffic by Device". */
+/** Vertical bars, Figma 1:24956, "Traffic by Device". */
 const props = withDefaults(defineProps<{ data: SeriesPoint[]; height?: number }>(), { height: 200 })
 
 const max = computed(() => Math.max(1, ...props.data.map((d) => d.value)))

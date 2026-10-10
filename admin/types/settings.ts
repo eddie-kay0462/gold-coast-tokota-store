@@ -1,7 +1,7 @@
 import type { Timestamp } from './common'
 import type { DiyTurnaroundTier } from './bookings'
 
-/** README Data Models — SiteSetting, extended with what the PDF documents. */
+/** README Data Models: SiteSetting, extended with what the PDF documents. */
 export interface SiteSettings {
   whatsappNumber: string
   whatsappDefaultMessage: string
@@ -39,7 +39,7 @@ export interface PaymentSettings {
   paystackMethods: string[]
   stripeEnabled: boolean
   stripeSettlementCurrency: 'USD'
-  /** Never a real secret — fixtures show masked placeholders only. */
+  /** Never a real secret; fixtures show masked placeholders only. */
   paystackPublicKeyMasked: string
   stripePublishableKeyMasked: string
 }

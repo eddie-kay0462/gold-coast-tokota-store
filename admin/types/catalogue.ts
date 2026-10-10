@@ -17,7 +17,7 @@ export interface Product {
   categoryName: string
   /**
    * GHS base price only. USD is derived at read time from the cached FX rate
-   * and is NEVER stored (README Feature 2) — hence `basePriceUsd` is absent
+   * and is NEVER stored (README Feature 2), hence `basePriceUsd` is absent
    * here by design, and computed by `usdFrom()` in utils/currency.ts.
    */
   basePriceGhs: Money

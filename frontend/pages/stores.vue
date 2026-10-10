@@ -14,9 +14,9 @@ import { useSiteSettingsStore } from '~/stores/siteSettings'
 const siteSettings = useSiteSettingsStore()
 
 useSeoMeta({
-  title: 'Our stores — Gold Coast Tokota',
+  title: 'Our stores | Gold Coast Tokota',
   description: 'Visit the Gold Coast Tokota workshop in Accra, or find us at a market or event.',
-  ogTitle: 'Our stores — Gold Coast Tokota',
+  ogTitle: 'Our stores | Gold Coast Tokota',
   ogImage: '/brand/og-image.png',
   ogType: 'website',
 })
@@ -28,7 +28,7 @@ useSeoMeta({
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">Find us</h1>
         <p class="w-full max-w-[720px] text-body text-graphite">
-          Everything we sell is made in our workshop in Accra. You’re welcome to visit — it’s
+          Everything we sell is made in our workshop in Accra. You’re welcome to visit. It’s
           worth seeing a pair being made.
         </p>
       </header>

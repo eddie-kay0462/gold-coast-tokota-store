@@ -3,7 +3,7 @@
  * Hover/focus label, used mainly by the collapsed sidebar rail where an icon
  * is the only affordance.
  *
- * Shown on focus as well as hover — a keyboard user reaching an icon-only
+ * Shown on focus as well as hover; a keyboard user reaching an icon-only
  * button needs the label just as much as a mouse user, and `title` alone is
  * not announced consistently. The trigger still carries `aria-label`, so the
  * tooltip is purely visual and marked `aria-hidden`.

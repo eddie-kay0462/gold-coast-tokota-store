@@ -3,7 +3,7 @@ import { PhCaretLeft, PhCaretRight, PhPlus } from '@phosphor-icons/vue'
 import type { WorkshopSession, WorkshopType } from '~/types'
 
 /**
- * Session calendar — Figma node 14:6138.
+ * Session calendar, Figma node 14:6138.
  *
  * Month grid with a mini-calendar and a "Today's Top 3" rail, as drawn. Below
  * `lg` it becomes an agenda list: a seven-column month grid on a phone gives
@@ -11,7 +11,7 @@ import type { WorkshopSession, WorkshopType } from '~/types'
  * calendar and becomes a smear. The agenda carries the same information in a
  * form that survives the width.
  *
- * Sessions are coloured by workshop type, not by status — you scan this to see
+ * Sessions are coloured by workshop type, not by status; you scan this to see
  * "which Saturday is the Sip & Paint", and fill state rides along as a count.
  */
 useHead({ title: 'Calendar' })
@@ -35,7 +35,7 @@ function shiftMonth(delta: number) {
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10)
 
-/** Six weeks from the Monday on or before the 1st — a stable grid height. */
+/** Six weeks from the Monday on or before the 1st: a stable grid height. */
 const days = computed(() => {
   const first = cursor.value
   const offset = (first.getUTCDay() + 6) % 7

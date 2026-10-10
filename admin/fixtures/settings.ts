@@ -23,11 +23,11 @@ Our team typically responds during business hours, Monday – Saturday, 9:00 AM 
 
 Please let us know how we can assist you today.
 
-Gold Coast Tokota — Crafted with Purpose. Inspired by Culture.`
+Gold Coast Tokota. Crafted with Purpose. Inspired by Culture.`
 
 export const siteSettings: SiteSettings = {
   // From the PDF's Contact Us section. Note it is annotated there as
-  // "(update with official number)" — surfaced as a warning in the UI.
+  // "(update with official number)", surfaced as a warning in the UI.
   whatsappNumber: '+233257534297',
   whatsappDefaultMessage: 'Hi! I have a question about your sandals.',
   whatsappGreeting: WHATSAPP_GREETING,
@@ -45,7 +45,7 @@ export const siteSettings: SiteSettings = {
 export const commerceSettings: CommerceSettings = {
   baseCurrency: 'GHS',
   foreignCurrency: 'USD',
-  // Still open — README Clarifications Needed item 2. The UI says so.
+  // Still open: README Clarifications Needed item 2. The UI says so.
   fxProvider: 'Not yet selected',
   fxRefreshMinutes: 60,
   reservationTtlMinutes: 15,
@@ -96,7 +96,7 @@ export const notificationSettings: NotificationSettings = {
 }
 
 /**
- * All blank/false. README Feature 6 specifies WhatsApp as a deep link only —
+ * All blank/false. README Feature 6 specifies WhatsApp as a deep link only;
  * the Cloud API is not integrated, and this page exists to hold the shape it
  * would take, not to imply a connection that isn't there.
  */

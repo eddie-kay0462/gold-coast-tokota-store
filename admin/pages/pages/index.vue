@@ -5,8 +5,8 @@ import type { CmsPage } from '~/types'
 /**
  * CMS pages.
  *
- * README names only `about`. The brand PDF specifies four more — Shipping &
- * Delivery, Returns & Exchanges, Privacy, Terms of Service — which the
+ * README names only `about`. The brand PDF specifies four more (Shipping &
+ * Delivery, Returns & Exchanges, Privacy, Terms of Service) which the
  * storefront needs and which the owner must be able to change without a
  * deploy. They are all the same `Page` resource, so they live together, with
  * the legally load-bearing ones marked.

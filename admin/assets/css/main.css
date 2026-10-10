@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* ===========================================================================
-   Gold Coast Tokota — admin design tokens.
+   Gold Coast Tokota: admin design tokens.
 
    This file is the single source of truth for colour in the admin app.
    Every colour is declared once here as a space-separated RGB triple so
@@ -15,13 +15,13 @@
    sprayed across seventy files.
 
    Sources:
-   - Brand palette — "gold coast tokota store front details.pdf", Brand
+   - Brand palette: "gold coast tokota store front details.pdf", Brand
      Colour Palette. Heritage Black, Pure White, Gold Coast Gold, Craft
      Brown, Sustainability Green, Warm Sand.
-   - Neutral ramp — frontend/tailwind.config.ts, transcribed from the
+   - Neutral ramp: frontend/tailwind.config.ts, transcribed from the
      storefront Figma system (file 4Fw0WGaqVs9iqbLoAAbmpO) so the two apps
      stay one design language.
-   - Chrome metrics — the Dashboard UI Kit frames (Figma c11bIgiFJmUEcpOR2J9FYL):
+   - Chrome metrics: the Dashboard UI Kit frames (Figma c11bIgiFJmUEcpOR2J9FYL):
      212px sidebar, 68px header, 72px right rail.
    =========================================================================== */
 
@@ -41,15 +41,15 @@
 
   /* --- Foreground --- */
   /* The ramp is contrast-led, not swatch-led. Measured against `--bg`:
-     13.6 : 8.6 : 6.4 : 4.8 — four distinguishable steps that all clear WCAG AA
+     13.6 : 8.6 : 6.4 : 4.8, four distinguishable steps that all clear WCAG AA
      for body text (4.5:1).
 
      The Figma kit renders secondary copy as rgba(28,28,28,0.4), which is about
      2.5:1 on white. That is below AA, and in this app that tier carries
-     timestamps, stock counts and form hints — not decoration. So `--fg-muted`
+     timestamps, stock counts and form hints, not decoration. So `--fg-muted`
      and `--fg-faint` are darker than the kit's, deliberately. Caught by
      measurement, not by eye. */
-  --fg: 38 38 38;                   /* #262626 graphite — body   13.6:1 */
+  --fg: 38 38 38;                   /* #262626 graphite, body   13.6:1 */
   --fg-strong: 0 0 0;               /* headings, metric values   21.0:1 */
   --fg-subtle: 76 76 75;            /* #4C4C4B sub-labels         8.6:1 */
   --fg-muted: 95 95 95;             /* #5F5F5F meta copy          6.4:1 */
@@ -65,7 +65,7 @@
   --primary-hover: 38 38 38;
 
   /* --- Accent: Gold. Fills, active nav, focus rings, indicators.
-         Never used for small text on light — see --accent-text. --- */
+         Never used for small text on light. See --accent-text. --- */
   --accent: 212 175 55;
   --accent-fg: 0 0 0;               /* text *on* a gold fill    */
   --accent-soft: 234 223 200;       /* #EADFC8 tinted backing   */
@@ -89,13 +89,13 @@
      1. SEPARATION. Gold, sand and brown are all warm yellows; as adjacent
         donut slices they read as one smear. So the ramp keeps the brand hues
         that carry meaning (gold, green, brown) and fills the rest with hues
-        placed as far apart as possible while still feeling earthy —
+        placed as far apart as possible while still feeling earthy:
         terracotta, slate, stone. Verified: the closest pair is ΔE 21 in
         CIELAB, comfortably above the ~10 where two fills start to merge.
 
      2. CONTRAST ON BOTH GROUNDS. WCAG 1.4.11 wants 3:1 for graphical objects.
-        Brand gold #D4AF37 is only 2.1:1 on white — a donut slice in it is
-        barely there — so the light ramp uses a darkened gold and the dark
+        Brand gold #D4AF37 is only 2.1:1 on white (a donut slice in it is
+        barely there) so the light ramp uses a darkened gold and the dark
         ramp a lifted one. Same hue, different luminance per theme, which is
         what makes one chart legible in both.
 
@@ -105,7 +105,7 @@
   --chart-1: 168 131 34;            /* #A88322 gold, darkened for white   */
   --chart-2: 47 111 79;             /* #2F6F4F sustainability green       */
   --chart-3: 180 85 47;             /* #B4552F terracotta                 */
-  --chart-4: 63 99 144;             /* #3F6390 slate — the cool anchor    */
+  --chart-4: 63 99 144;             /* #3F6390 slate, the cool anchor    */
   --chart-5: 122 90 58;             /* #7A5A3A craft brown                */
   --chart-6: 110 106 99;            /* #6E6A63 stone                      */
   --chart-grid: 233 232 232;
@@ -135,7 +135,7 @@
   --bg-inset: 32 32 32;
 
   /* Same four-step logic against the dark ground. #737373 was 4.0:1 on
-     #0B0B0B — under AA — so the faint tier is lifted here too. */
+     #0B0B0B (under AA) so the faint tier is lifted here too. */
   --fg: 237 237 237;                /* 15.7:1 */
   --fg-strong: 255 255 255;         /* 18.5:1 */
   --fg-subtle: 196 196 196;         /* 10.5:1 */
@@ -180,7 +180,7 @@
 }
 
 @layer base {
-  /* The brand face is Helvetica Neue Light (300) — same stack as the
+  /* The brand face is Helvetica Neue Light (300), same stack as the
      storefront (frontend/assets/css/main.css). Admin runs at 400 rather
      than 300: dashboard copy is small and dense, and Light at 12–14px goes
      thin to the point of illegibility on a low-DPI monitor. */
@@ -248,7 +248,7 @@
   }
 
   /* The kit's one container primitive: hairline border, no shadow. The
-     design language is flat — the storefront defines no shadow tokens at
+     design language is flat; the storefront defines no shadow tokens at
      all, and admin does not introduce any. */
   .card {
     @apply rounded-lg border border-border bg-bg-elevated;
@@ -258,7 +258,7 @@
     @apply p-4 md:p-5;
   }
 
-  /* Section heading inside a card — "Traffic by Source", "Onboarding
+  /* Section heading inside a card: "Traffic by Source", "Onboarding
      Progress" in the Dashboard/Team frames. */
   .card-title {
     @apply text-section font-medium text-fg-strong;
@@ -281,7 +281,7 @@
     @apply absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-pill bg-accent;
   }
 
-  /* Group label above a nav section — "Dashboard", "Relationships",
+  /* Group label above a nav section: "Dashboard", "Relationships",
      "Configuration" in the frames. */
   .rail-group-label {
     @apply px-3 pb-1 pt-4 text-meta font-medium text-fg-faint;
@@ -304,7 +304,7 @@
     @apply mt-1 block text-meta text-danger;
   }
 
-  /* Small square icon button — the toolbar cluster in the Products frame
+  /* Small square icon button: the toolbar cluster in the Products frame
      (sort / filter / history) and the row action cluster. */
   .toolbar-btn {
     @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border
@@ -323,7 +323,7 @@
 
      One trap worth naming: do NOT put Tailwind's `.sr-only` inside a
      horizontally-scrolling table. It is `position: absolute`, so its text
-     escapes the scroll container and extends the *document's* scroll region —
+     escapes the scroll container and extends the *document's* scroll region;
      a permission matrix picked up 139px of page-wide sideways scroll at 390px
      that way. Put the semantics on the cell's `aria-label` instead. */
   .table-head {

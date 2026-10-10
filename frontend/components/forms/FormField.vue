@@ -4,12 +4,12 @@
  *
  * It previously used raw Tailwind (`border` with no colour, `text-sm`,
  * `font-medium`, `rounded`) rather than the design tokens, and stood 40px tall
- * — under the 44px tap floor. It now sits on `border-line` and the `label` /
+ * under the 44px tap floor. It now sits on `border-line` and the `label` /
  * `caption` type scale like the rest of the storefront.
  *
  * `type="textarea"` renders a `<textarea>`: `DiyOrderForm` collects sandal
  * measurements, which do not belong in a single-line input. `type="select"`
- * renders a `<select>` over `options` — the checkout country field needs one,
+ * renders a `<select>` over `options`; the checkout country field needs one,
  * and README's component notes always described this field as
  * "text/select/date/file". The 16px font size is deliberate throughout:
  * anything smaller makes iOS Safari zoom on focus.

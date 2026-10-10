@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     offsetMinutes: Number.isFinite(offset) ? offset : null,
   })
 
-  // Per-visitor answer — must never be shared by a CDN cache.
+  // Per-visitor answer: must never be shared by a CDN cache.
   setHeader(event, 'cache-control', 'private, no-store')
   return geo
 })

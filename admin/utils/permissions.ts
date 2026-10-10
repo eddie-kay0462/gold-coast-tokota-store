@@ -4,7 +4,7 @@ import type { AdminRole } from '~/types'
  * Capability-based access, not role checks scattered through templates.
  *
  * A template that asks `role === 'admin'` has to be found and edited every
- * time the role model moves — and the role model has already moved once here
+ * time the role model moves, and the role model has already moved once here
  * (README says two tiers, the brand PDF names three, the business asked for a
  * fourth). Asking `can('pricing.write')` instead means adding `intern` was a
  * one-line change to the table below rather than a sweep of the codebase.
@@ -58,7 +58,7 @@ export const CAPABILITIES = [
   'analytics.view',
   /**
    * Split from `analytics.view` deliberately. Everyone needs the operational
-   * dashboard — gating the whole landing page left Staff with a page they
+   * dashboard; gating the whole landing page left Staff with a page they
    * could load but not navigate to. What Staff must not see is the money, so
    * the revenue tiles carry their own capability.
    */
@@ -79,7 +79,7 @@ const ALL: Capability[] = [...CAPABILITIES]
 
 /**
  * Staff: operational access only. No pricing, no refunds, no deletion, no
- * site settings — README Feature 9 is explicit about this boundary.
+ * site settings; README Feature 9 is explicit about this boundary.
  */
 const STAFF: Capability[] = [
   'orders.view', 'orders.update_status',
@@ -100,7 +100,7 @@ const STAFF: Capability[] = [
 
 /**
  * Intern: read-only everywhere, plus the ability to draft an inbox reply for
- * someone else to send. Time-boxed via `accessExpiresAt` — see `useAuth`.
+ * someone else to send. Time-boxed via `accessExpiresAt`. See `useAuth`.
  */
 const INTERN: Capability[] = [
   'orders.view',
@@ -118,8 +118,8 @@ const INTERN: Capability[] = [
 
 /**
  * Admin: everything except system-level configuration. The brand PDF draws
- * this line — "Admin ... cannot modify system-level settings or payment
- * credentials" — which is why payment keys, FX provider config and team
+ * this line: "Admin ... cannot modify system-level settings or payment
+ * credentials", which is why payment keys, FX provider config and team
  * management are Super Admin only.
  */
 const ADMIN: Capability[] = ALL.filter(
@@ -142,7 +142,7 @@ export const ROLE_DESCRIPTIONS: Record<AdminRole, string> = {
   admin:
     'Manages products, orders, bookings, customers and content, but not system-level settings or payment credentials.',
   staff:
-    'Operational access — production updates, inventory, order fulfilment and bookings. No pricing, refunds or deletions.',
+    'Operational access: production updates, inventory, order fulfilment and bookings. No pricing, refunds or deletions.',
   intern:
     'Read-only access for a fixed period. Can draft replies but not send them. Access lapses on the expiry date unless extended.',
 }
@@ -164,7 +164,7 @@ export function denialMessage(capability: Capability, role: AdminRole): string {
     'settings.fx': 'Currency and exchange-rate configuration is restricted to the Super Admin.',
     'team.manage': 'Only the Super Admin can add or change team members.',
     'team.extend_access': 'Only an Admin can extend intern access.',
-    'content.publish': 'Publishing is restricted — you can save a draft and ask an Admin to publish it.',
+    'content.publish': 'Publishing is restricted. You can save a draft and ask an Admin to publish it.',
     'inbox.reply': 'You can draft a reply, but sending it needs a Staff or Admin account.',
     'analytics.revenue': 'Revenue figures are visible to Admins only.',
   }

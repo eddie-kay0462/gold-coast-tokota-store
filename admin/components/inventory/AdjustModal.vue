@@ -2,10 +2,10 @@
 import type { InventoryItem } from '~/types'
 
 /**
- * Set a variant's stock count — `PATCH /admin/inventory/{id}`.
+ * Set a variant's stock count, `PATCH /admin/inventory/{id}`.
  *
  * An absolute count, not a delta: whoever is restocking has just counted the
- * shelf. Reserved units are shown but never editable — they belong to
+ * shelf. Reserved units are shown but never editable; they belong to
  * checkouts in progress, and the API refuses a count below them (the 422
  * message is shown as-is, since it names the number held).
  */

@@ -24,7 +24,7 @@ const props = defineProps<{
 defineEmits<{ prev: [], next: [] }>()
 
 /**
- * The last few slides can never reach the left edge — the rail runs out first —
+ * The last few slides can never reach the left edge (the rail runs out first)
  * so the leading-slide index stalls short of the total (7/10 on a wide screen).
  * At the end of the rail the count says so.
  */

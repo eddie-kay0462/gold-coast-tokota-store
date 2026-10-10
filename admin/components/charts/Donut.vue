@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SeriesPoint } from '~/types'
 
-/** Donut with a legend — Figma 1:24956, "Traffic by Location". */
+/** Donut with a legend, Figma 1:24956, "Traffic by Location". */
 const props = withDefaults(defineProps<{ data: SeriesPoint[]; size?: number; unit?: string }>(), {
   size: 150, unit: '%',
 })
@@ -13,7 +13,7 @@ const R = 42
 const C = 2 * Math.PI * R
 /**
  * A hairline gap between slices. Colour alone should not have to carry the
- * boundary — with a gap, two neighbouring segments stay readable even for a
+ * boundary; with a gap, two neighbouring segments stay readable even for a
  * viewer who cannot distinguish their hues.
  */
 const GAP = 1.5

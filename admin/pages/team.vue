@@ -5,13 +5,13 @@ import { ADMIN_ROLE_LABELS } from '~/types'
 import { ROLE_CAPABILITIES, ROLE_ORDER } from '~/utils/permissions'
 
 /**
- * Team — Figma node 23:1972, adapted.
+ * Team, Figma node 23:1972, adapted.
  *
  * The kit's Team frame is a sales leaderboard (deals closed, revenue per head).
  * That framing does not transfer: this is a five-person workshop, not a sales
  * floor, and ranking Isaaka against Peter by revenue would be meaningless.
  * What the frame's structure is good for is the roster tile grid and the
- * summary row, so those carry over and the metrics become access-related —
+ * summary row, so those carry over and the metrics become access-related:
  * who holds what, and whose access is about to lapse.
  */
 useHead({ title: 'Team' })

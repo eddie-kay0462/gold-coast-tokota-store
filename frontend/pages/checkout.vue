@@ -15,7 +15,7 @@ import { useCurrencyStore } from '~/stores/currency'
  * into the "Show order summary" bar Shopify puts above everything.
  *
  * It stays a three-step flow rather than Shopify's newer one-page checkout,
- * because the step machinery here is real — the information step validates
+ * because the step machinery here is real: the information step validates
  * before it will advance, and collapsing it would mean either throwing that
  * away or validating a whole page at once.
  */
@@ -47,7 +47,7 @@ const provider = computed(() => (isGhana.value ? 'Yango' : 'DHL'))
  * What the summary's Shipping row says.
  *
  * Never a number. The real figure comes from the courier quote at
- * checkout-session creation, which is not built — and putting a guess in the
+ * checkout-session creation, which is not built, and putting a guess in the
  * Total is how someone ends up surprised at the payment screen. Shopify shows
  * "Calculated at next step" for the same reason before an address is entered.
  */
@@ -64,13 +64,13 @@ function goTo(next: CheckoutStep) {
 }
 
 useSeoMeta({
-  title: 'Checkout — Gold Coast Tokota',
+  title: 'Checkout | Gold Coast Tokota',
   robots: 'noindex, nofollow',
 })
 </script>
 
 <template>
-  <!-- Nothing to pay for — send people back to the shop rather than showing an
+  <!-- Nothing to pay for: send people back to the shop rather than showing an
        address form against an empty cart. -->
   <div v-if="cart.isEmpty" class="mx-auto flex w-full max-w-[560px] flex-col items-start gap-4 px-5 py-20">
     <h1 class="text-display-sm font-normal text-black">Your cart is empty</h1>
@@ -115,7 +115,7 @@ useSeoMeta({
 
     <!-- Two columns from `lg`. The summary column carries its own ground and
          bleeds to the right edge of the viewport, which is the single most
-         recognisable thing about a Shopify checkout — so the tint sits on the
+         recognisable thing about a Shopify checkout, so the tint sits on the
          grid cell and the content inside it is what gets measured. -->
     <!-- `lg:flex-1` so the summary's tint reaches the footer even on the payment
          step, where the left column is short. Stretched with flex rather than

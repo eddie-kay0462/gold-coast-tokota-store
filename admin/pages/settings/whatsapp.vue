@@ -8,7 +8,7 @@ import type { SiteSettings, WhatsappSettings } from '~/types'
  * Two different things live here, and the distinction matters:
  *
  *  1. The deep link. Real, working, and all README Feature 6 actually
- *     specifies — a `wa.me` link driven by an owner-editable number and
+ *     specifies: a `wa.me` link driven by an owner-editable number and
  *     prefilled message.
  *  2. The Business Cloud API. Not connected. The Inbox needs it to send or
  *     receive anything, and it is new backend scope (a webhook receiver, a
@@ -67,7 +67,7 @@ const deepLink = computed(
           <p class="mt-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft px-3.5 py-3 text-meta text-warning">
             <PhWarningCircle :size="16" class="mt-px shrink-0" />
             The number on file came from the brand document annotated
-            “update with official number”. Worth confirming with the business before launch —
+            “update with official number”. Worth confirming with the business before launch, because
             a wrong number here silently breaks the main ordering channel.
           </p>
 
@@ -104,7 +104,7 @@ const deepLink = computed(
               <p class="mt-1 text-meta text-fg-muted">
                 The Inbox currently shows a simulation. Sending or receiving real messages needs
                 a verified WhatsApp Business account, the Cloud API credentials below, and a
-                webhook receiver on the API side — none of which exist yet. The original scope
+                webhook receiver on the API side. None of these exist yet. The original scope
                 specified a deep link only, so this is additional work rather than a
                 configuration step.
               </p>

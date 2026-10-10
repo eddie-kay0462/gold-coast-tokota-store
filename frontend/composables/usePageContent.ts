@@ -12,7 +12,7 @@ export type ApiPage = {
 }
 
 /**
- * Resolves one CMS page, and decides — in exactly one place — whether what came
+ * Resolves one CMS page, and decides (in exactly one place) whether what came
  * back is approved copy or a draft that must be labelled as such.
  *
  * Ten routes go through here. If each one re-implemented "fetch, catch, pick a
@@ -46,7 +46,7 @@ export async function usePageContent(slug: string) {
   const draft = computed<PolicyDraft | null>(() => POLICY_DRAFTS[slug] ?? null)
 
   const title = computed(() => {
-    // Prefer the CMS title even on a draft row — an owner who has renamed the
+    // Prefer the CMS title even on a draft row; an owner who has renamed the
     // page in admin means it, whether or not the body is finished.
     const fromApi = apiPage.value?.title?.trim()
     return fromApi || draft.value?.title || ''

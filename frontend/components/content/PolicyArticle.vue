@@ -4,14 +4,14 @@ import { formatPolicyDate } from '~/utils/policyContent'
 /**
  * The shared body for every prose page: legal, help and accessibility.
  *
- * The split rule is in FOR_THE_TEAM.md — prose owned by a lawyer or a support
+ * The split rule is in FOR_THE_TEAM.md: prose owned by a lawyer or a support
  * lead comes through here; anything with structured UI (a table, a grid, a
  * form, a directory) gets its own page file. That is why `/help` itself is not
  * one of these: it is a directory of topics, not an article.
  */
 const props = defineProps<{
   slug: string
-  /** Rendered under the body — help pages use it for the topic list. */
+  /** Rendered under the body. Help pages use it for the topic list. */
   footerHeading?: string
 }>()
 
@@ -41,7 +41,7 @@ const anchors = computed(() =>
 
     <div class="flex w-full flex-col items-start gap-10 md:flex-row md:gap-12">
       <!-- Anchor rail. `md:sticky` needs the flex parent to be `items-start`,
-           which it is — a stretched child has no room to stick within. -->
+           which it is; a stretched child has no room to stick within. -->
       <nav
         v-if="anchors.length > 2"
         class="hidden w-[200px] shrink-0 md:sticky md:top-8 md:block"
@@ -93,7 +93,7 @@ const anchors = computed(() =>
 
 <style scoped>
 /* Approved copy comes out of the CMS as rich text, so its elements are styled
-   here rather than with utility classes — the same approach `BlogPost.vue`
+   here rather than with utility classes, the same approach `BlogPost.vue`
    takes for article bodies. Policy prose sits on the fixed `body` scale rather
    than the editorial clamp() used there: a privacy policy read at 24px is
    harder to scan, not easier. */

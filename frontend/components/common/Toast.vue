@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * NOTE: this renders in normal flow — it has no placement of its own, and there
+ * NOTE: this renders in normal flow; it has no placement of its own, and there
  * is no shared toast region in `layouts/default.vue`. Nothing mounts it yet, so
  * where toasts appear (and how they stack, and whether they clear the fixed
  * WhatsApp button at `bottom-5 right-5`) is still an open decision; see

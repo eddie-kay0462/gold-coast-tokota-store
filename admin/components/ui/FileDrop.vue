@@ -6,7 +6,7 @@ import { PhUploadSimple, PhWarningCircle } from '@phosphor-icons/vue'
  *
  * Validates type and size on the client for immediate feedback, but the
  * comment matters more than the code: this is a convenience, not a control.
- * The server must reject the same things independently — README Feature 7 says
+ * The server must reject the same things independently; README Feature 7 says
  * so for booking reference images, and it holds for every upload path.
  */
 const props = withDefaults(defineProps<{

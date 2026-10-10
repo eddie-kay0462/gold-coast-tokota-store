@@ -11,7 +11,7 @@ defineProps<{ posts: ApiPost[] }>()
     programme feed.
 
     On the merged page that made it a second, filtered copy of `/blog` sitting
-    two thirds of the way down About — and `/blog` gained its own category
+    two thirds of the way down About, and `/blog` gained its own category
     filter on 27 Aug, so the full list has a proper home. One row of three and a
     link into that filtered view says the same thing without the duplication.
   -->

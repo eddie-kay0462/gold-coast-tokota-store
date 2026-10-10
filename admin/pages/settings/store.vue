@@ -74,7 +74,7 @@ const { item: fx } = useAdminItem<FxRate>('settings-fx', '/fx-rate')
             v-if="commerce.fxProvider === 'Not yet selected'"
             class="mt-4 rounded-lg border border-warning/30 bg-warning-soft px-3.5 py-3 text-meta text-warning"
           >
-            No FX data provider has been chosen yet. The rate above is a placeholder — dollar
+            No FX data provider has been chosen yet. The rate above is a placeholder, so dollar
             prices will not be trustworthy until a provider is selected and wired into
             <code class="font-mono">FxRateService</code>.
           </p>

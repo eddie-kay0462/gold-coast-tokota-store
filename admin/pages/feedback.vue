@@ -3,7 +3,7 @@ import { PhStar } from '@phosphor-icons/vue'
 import type { FeedbackEntry } from '~/types'
 
 /**
- * Customer feedback. Presented as cards rather than a table — these are
+ * Customer feedback. Presented as cards rather than a table; these are
  * paragraphs of prose, and a table row truncates the only thing worth reading.
  */
 useHead({ title: 'Feedback' })
@@ -24,7 +24,7 @@ const rated = computed(() => entries.value.filter((e) => e.rating !== null))
 const average = computed(() =>
   rated.value.length
     ? (rated.value.reduce((s, e) => s + (e.rating ?? 0), 0) / rated.value.length).toFixed(1)
-    : '—',
+    : '-',
 )
 </script>
 

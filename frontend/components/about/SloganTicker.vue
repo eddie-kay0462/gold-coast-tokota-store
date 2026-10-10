@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PhRecycle as Recycle } from '@phosphor-icons/vue'
 
-// Figma 13:1762 exports this band as a bitmap, clipped at both edges — the
+// Figma 13:1762 exports this band as a bitmap, clipped at both edges; the
 // giveaway that it's a marquee. Built from live text instead so it stays
 // crisp, readable to a screen reader, and actually moves.
 const slogans = ['Keep it Clean', 'Do right by people', 'Keep It Local']

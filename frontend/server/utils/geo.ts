@@ -61,7 +61,7 @@ function normaliseCountry(value: unknown): string | null {
   return code
 }
 
-/** RFC1918 / loopback / link-local / CGNAT — nothing to look up. */
+/** RFC1918 / loopback / link-local / CGNAT, nothing to look up. */
 function isPrivateIp(ip: string): boolean {
   if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('fe80:') || ip.startsWith('fc') || ip.startsWith('fd')) return true
   const parts = ip.split('.').map(Number)
@@ -149,7 +149,7 @@ function timezoneMatchesOffset(timezone: string, offsetMinutes: number | null | 
     return zoneOffset === -offsetMinutes
   }
   catch {
-    return false // Unparseable zone id — treat the hint as untrustworthy.
+    return false // Unparseable zone id, so treat the hint as untrustworthy.
   }
 }
 
@@ -166,7 +166,7 @@ function countryForHints(hints: GeoHints): string | null {
 // once a request. Caching facts rather than the verdict matters: the first
 // (SSR) request has no browser timezone hint and the follow-up one does, so
 // the verdict has to stay re-derivable. The cookie is signed because an
-// unsigned one would be a free country override — exactly the bypass we are
+// unsigned one would be a free country override, exactly the bypass we are
 // trying to close.
 
 interface GeoFacts {
@@ -222,7 +222,7 @@ function writeCookie(event: H3Event, facts: GeoFacts, secret: string) {
  * Order of trust:
  *   1. Edge geo header (CDN-set, not forgeable by the browser).
  *   2. IP geolocation of the connecting address.
- *   3. Browser timezone — used only to *correct* 1/2 when the IP looks like a
+ *   3. Browser timezone: used only to *correct* 1/2 when the IP looks like a
  *      hosting/VPN exit, never as a free-standing override, and only when it
  *      resolves to a real country through the IANA table.
  *

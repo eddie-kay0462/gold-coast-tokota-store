@@ -10,7 +10,7 @@ import type { ListQuery } from '~/types'
  *
  * Filtering happens client-side against the loaded page. That is correct for
  * fixture-scale data; when the real API lands and datasets grow, pass the
- * reactive `query` into `useAdminList` instead and the server does the work —
+ * reactive `query` into `useAdminList` instead and the server does the work;
  * the component API does not change.
  */
 export interface ResourceOptions<T> {
@@ -35,7 +35,7 @@ export function useResource<T extends Record<string, unknown>>(
   const perPage = ref(initialPerPage)
   const selected = ref<Set<string>>(new Set())
 
-  // Any change to what's being looked at resets to the first page — otherwise
+  // Any change to what's being looked at resets to the first page; otherwise
   // filtering on page 4 silently shows an empty table.
   watch([search, filters, perPage], () => { page.value = 1 }, { deep: true })
 

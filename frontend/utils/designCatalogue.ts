@@ -1,7 +1,7 @@
 import type { ApiProduct } from '~/utils/catalog'
 
 /**
- * The brand's real catalogue — 26 slipper styles and 2 shoes — mirrored from
+ * The brand's real catalogue (26 slipper styles and 2 shoes) mirrored from
  * `backend/database/data/products.json`, which is what the API seeds.
  *
  * The listing and the product detail page fall back to this when the API
@@ -11,7 +11,7 @@ import type { ApiProduct } from '~/utils/catalog'
  *
  * Names, prices, size ranges, materials and departments are the client's own
  * (30 Sep 2026). There is deliberately no description, rating, review or cost
- * breakdown — the client supplied none, and the detail page hides those
+ * breakdown: the client supplied none, and the detail page hides those
  * sections when the fields are absent. `size_availability` is a placeholder
  * count, not real stock; the API is the source of truth for that.
  *

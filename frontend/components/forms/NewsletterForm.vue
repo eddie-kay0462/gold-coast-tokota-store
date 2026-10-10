@@ -10,7 +10,7 @@ const props = withDefaults(
      * Used by nothing since the footer went white; kept for dark grounds.
      */
     tone?: 'light' | 'dark'
-    /** Overrides the tone's default — the light one is too long for a narrow
+    /** Overrides the tone's default; the light one is too long for a narrow
      *  column like the footer's. */
     placeholder?: string
   }>(),

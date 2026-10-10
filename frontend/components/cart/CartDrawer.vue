@@ -54,7 +54,7 @@ const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
  * The whole-basket handoff to WhatsApp.
  *
  * The approved mockup puts a WhatsApp order button on the product card and the
- * product page, but has nothing here — which leaves a customer with three pairs
+ * product page, but has nothing here, which leaves a customer with three pairs
  * in the basket re-typing all three into a chat. This composes the basket into
  * one message instead.
  *
@@ -65,7 +65,7 @@ const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
 const whatsappOrderMessage = computed(() =>
   whatsappMessage.cart(
     cart.items.map((item) => {
-      const variant = item.variantLabel ? ` — ${item.variantLabel}` : ''
+      const variant = item.variantLabel ? ` (${item.variantLabel})` : ''
       return `• ${item.name}${variant} × ${item.quantity}`
     }),
     formatMoney(cart.subtotalGhs, 'GHS', { compact: true }),
@@ -121,7 +121,7 @@ function goToCheckout() {
 }
 
 // Escape closes, and the page behind must not scroll while the drawer is open.
-// The lock lives in `useBodyScrollLock` — setting `body { overflow: hidden }`
+// The lock lives in `useBodyScrollLock`; setting `body { overflow: hidden }`
 // alone does not hold on iOS Safari, which is where a full-bleed drawer matters
 // most.
 useBodyScrollLock(() => cart.isDrawerOpen)
@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
               <div v-else class="flex w-full flex-col items-start gap-4 py-8">
                 <p class="text-body text-graphite">Your cart is empty.</p>
                 <p class="text-caption text-muted">
-                  Every pair is cut and stitched by hand in Accra — start with the collection.
+                  Every pair is cut and stitched by hand in Accra. Start with the collection.
                 </p>
                 <CommonBrandButton to="/shop" @click="close">Shop Sandals</CommonBrandButton>
               </div>

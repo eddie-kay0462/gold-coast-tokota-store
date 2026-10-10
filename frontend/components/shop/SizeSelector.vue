@@ -4,7 +4,7 @@
  * the product card (`sm`) and the product detail panel (`lg`).
  *
  * The three states are the point of it: available, selected, and *made but not
- * currently sellable*. That third one is drawn rather than hidden — the mockup
+ * currently sellable*. That third one is drawn rather than hidden; the mockup
  * strikes it through with a diagonal rule and leaves it in place, so a customer
  * can see the product runs in their size and ask about a restock, instead of
  * concluding it was never made for them.
@@ -27,13 +27,13 @@ const props = withDefaults(
     sizes: string[]
     /**
      * Per-size sellable stock. `undefined` means the source isn't reporting
-     * per-size stock at all, in which case every listed size stays selectable
-     * — the server is still the authority at checkout. An empty-but-present
+     * per-size stock at all, in which case every listed size stays selectable;
+     * the server is still the authority at checkout. An empty-but-present
      * map means the opposite: nothing is sellable.
      */
     availability?: Record<string, number> | null
     modelValue?: string | null
-    /** Bypasses the stock check — a made-to-order product has none by definition. */
+    /** Bypasses the stock check; a made-to-order product has none by definition. */
     ignoreStock?: boolean
     size?: 'sm' | 'lg'
     /**
@@ -174,7 +174,7 @@ function stateClass(size: string) {
       class="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center p-1 disabled:cursor-not-allowed"
       :disabled="!isAvailable(size)"
       :aria-pressed="size === modelValue"
-      :aria-label="isAvailable(size) ? `Size ${size}` : `Size ${size} — unavailable`"
+      :aria-label="isAvailable(size) ? `Size ${size}` : `Size ${size}, unavailable`"
       @click="emit('update:modelValue', size)"
     >
       <span

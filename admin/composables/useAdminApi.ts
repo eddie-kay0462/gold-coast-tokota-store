@@ -7,17 +7,17 @@ import { useAuthStore } from '~/stores/auth'
  *
  * `adminFetch` calls the real Laravel admin API and falls back to bundled
  * fixtures for any path the API doesn't serve (today: inbox ×3, activity and
- * audit — FOR_THE_TEAM.md issue 28).
+ * audit, FOR_THE_TEAM.md issue 28).
  *
  * Auth failures are the exception to the fallback. A 401 or 419 means the
  * Sanctum session is gone, not that the endpoint is missing, so it sends the
- * user to /login instead of quietly swapping in invented data — which is what
+ * user to /login instead of quietly swapping in invented data, which is what
  * every screen did before login was wired, while 27 real endpoints sat unused.
  *
  * Modes, via NUXT_PUBLIC_ADMIN_DATA:
- *   auto     — try the API, fall back to fixtures (default)
- *   live     — API only; a failure is an error the caller must handle
- *   fixtures — never call the API
+ *   auto:     try the API, fall back to fixtures (default)
+ *   live:     API only; a failure is an error the caller must handle
+ *   fixtures: never call the API
  *
  * The fallback is never silent: `isDemoData` drives a persistent chip in the
  * header, and per-path status is inspectable on /settings. Invented numbers
@@ -25,7 +25,7 @@ import { useAuthStore } from '~/stores/auth'
  */
 
 /**
- * Laravel API Resources emit snake_case — see `PageResource` and
+ * Laravel API Resources emit snake_case. See `PageResource` and
  * `SiteSettingResource`, the two that exist today. The TypeScript models are
  * camelCase, as Vue code should be. Rather than make every model ugly or every
  * call site remember, responses are normalised here, once.
@@ -66,7 +66,7 @@ export function xsrfToken(): string | null {
   return match ? decodeURIComponent(match[1]!) : null
 }
 
-/** `http://host/api/v1` → `http://host` — Sanctum's cookie route is unprefixed. */
+/** `http://host/api/v1` → `http://host`. Sanctum's cookie route is unprefixed. */
 export function apiOrigin(apiBase: string): string {
   return apiBase.replace(/\/api\/v\d+\/?$/, '')
 }

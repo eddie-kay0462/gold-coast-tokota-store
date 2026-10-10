@@ -9,7 +9,7 @@ const bookingStore = useBookingStore()
 
 /**
  * `GET /workshop-sessions` has existed on the API since the catalogue endpoints
- * landed, and nothing had ever called it — this form passed a hardcoded empty
+ * landed, and nothing had ever called it; this form passed a hardcoded empty
  * array, so the session list was always empty no matter what was seeded.
  */
 const { data: sessions, pending } = await useAsyncData('workshop-sessions', () =>
@@ -30,7 +30,7 @@ const selectedSession = computed(() =>
   (sessions.value ?? []).find((entry) => String(entry.id) === selectedSessionId.value) ?? null,
 )
 
-/** A full session still takes bookings — the API files them as `waitlisted`. */
+/** A full session still takes bookings; the API files them as `waitlisted`. */
 const isWaitlisted = computed(
   () => !!selectedSession.value && selectedSession.value.remaining_capacity <= 0,
 )
@@ -40,7 +40,7 @@ const submitted = ref(false)
 const pendingSubmit = ref(false)
 const error = ref('')
 
-/** The way out when the submit fails — same request, different channel. */
+/** The way out when the submit fails: same request, different channel. */
 const whatsappFallbackMessage = computed(() => whatsappMessage.workshop())
 
 const canSubmit = computed(() => !!selectedSessionId.value && !pendingSubmit.value)
@@ -53,7 +53,7 @@ async function onSubmit() {
   try {
     // Contact details go inside `details`, which is where StoreBookingRequest
     // validates them. They used to be sent at the top level, where the request
-    // never looked — every submission would have failed validation.
+    // never looked; every submission would have failed validation.
     await api('/bookings', {
       method: 'POST',
       body: {

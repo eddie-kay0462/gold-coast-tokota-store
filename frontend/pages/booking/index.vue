@@ -3,12 +3,12 @@ import { whatsappMessage } from '~/utils/whatsapp'
 const activeTab = ref<'workshop' | 'diy'>('workshop')
 
 useSeoMeta({
-  title: 'Book a Workshop or DIY Order — Gold Coast Tokota',
+  title: 'Book a Workshop or DIY Order | Gold Coast Tokota',
   description: 'Book an in-person sandal-making workshop or submit a custom DIY sandal order.',
 })
 
 /**
- * Three of the six experiences in the brand guidelines are "by appointment" —
+ * Three of the six experiences in the brand guidelines are "by appointment";
  * they have no fixed day or slot, so they will never appear as a
  * `WorkshopSession` and cannot be booked from the list above. WhatsApp is their
  * only route, and without this they had no route at all.
@@ -65,7 +65,7 @@ const APPOINTMENT_EXPERIENCES = [
       </CommonWhatsAppLink>
     </p>
 
-    <!-- By appointment. Not bookable above by design — these have no fixed
+    <!-- By appointment. Not bookable above by design; these have no fixed
          session, so the brand arranges each one directly. -->
     <section class="mt-14 border-t border-line pt-10">
       <h2 class="text-display-sm font-normal text-black">By appointment</h2>

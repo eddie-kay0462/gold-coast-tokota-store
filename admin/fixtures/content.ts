@@ -5,12 +5,12 @@ const posts: [string, string, boolean][] = [
   ['From Tyre to Tread: How a Discarded Wheel Becomes a Sole', 'The sorting yard in Accra where our soles begin, and why reclaimed rubber outlasts the alternative.', true],
   ['Meet the Makers: A Day at the Bench with Isaaka', 'Our production lead on lasting, hand-stitching, and the twelve years it took to get fast.', true],
   ['Why Every Pair Is Slightly Different (And Why That Matters)', 'Handmade is not a defect. A short guide to reading the marks of the hand in your sandals.', true],
-  ['The Ahenema: A Short History of Ghana’s Royal Sandal', 'From Asante courts to the modern last — the form we build on and the heritage it carries.', true],
+  ['The Ahenema: A Short History of Ghana’s Royal Sandal', 'From Asante courts to the modern last: the form we build on and the heritage it carries.', true],
   ['Sip & Paint: Inside Our Saturday Workshop', 'Three hours, twenty people, and a room that smells of leather and acrylic.', true],
   ['Sizing Guide: Measuring Your Feet at Home in Two Minutes', 'A paper, a pencil, a ruler. How to get your DIY order right the first time.', true],
   ['What Circular Manufacturing Actually Means', 'Less jargon, more specifics: what we divert, what we still cannot use, and what we are working on.', true],
   ['Shipping Sandals to Fourteen Countries', 'What we have learned about customs, courier timelines and packing for a long journey.', false],
-  ['Our 2027 Sustainability Targets', 'Draft — numbers still being verified with the production team.', false],
+  ['Our 2027 Sustainability Targets', 'Draft: numbers still being verified with the production team.', false],
 ]
 
 export const blogPosts: BlogPost[] = posts.map(([title, excerpt, published], i) => ({
@@ -70,10 +70,10 @@ export const cmsPages: CmsPage[] = [
       '<li>Standard delivery takes 1–2 business days, depending on the destination.</li>' +
       '<li>Delivery is available nationwide through trusted courier partners.</li></ul>' +
       '<h2>International shipping</h2><ul>' +
-      '<li>West Africa — 5–10 business days</li>' +
-      '<li>Europe — 7–14 business days</li>' +
-      '<li>North America — 7–14 business days</li>' +
-      '<li>Other destinations — 10–21 business days</li></ul>' +
+      '<li>West Africa: 5–10 business days</li>' +
+      '<li>Europe: 7–14 business days</li>' +
+      '<li>North America: 7–14 business days</li>' +
+      '<li>Other destinations: 10–21 business days</li></ul>' +
       '<p>Any customs duties, taxes or import fees imposed by the destination country are the ' +
       'responsibility of the customer.</p>',
     updatedByAdminName: 'Mary Seade',

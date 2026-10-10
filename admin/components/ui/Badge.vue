@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Small count / label pill. Tones map to the semantic tokens, so dark mode
- * needs no variant here — see assets/css/main.css.
+ * needs no variant here. See assets/css/main.css.
  */
 type Tone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'outline'
 

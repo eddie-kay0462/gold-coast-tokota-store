@@ -23,7 +23,7 @@ export type ApiProduct = {
   images?: string[]
   /** Name of the colourway pictured. */
   color?: string | null
-  /** Every colourway the product ships in — rendered as swatches on the card. */
+  /** Every colourway the product ships in, rendered as swatches on the card. */
   colors?: ProductColor[]
   /** Sustainability/fulfilment badges, e.g. "CUSTOM MADE". */
   tags?: string[]
@@ -39,7 +39,7 @@ export type ApiProduct = {
    */
   merchandising_badge?: string | null
   /**
-   * Product type — what the sidebar's "Category" facet filters on
+   * Product type: what the sidebar's "Category" facet filters on
    * (`ahenema`, `slippers`, …). Distinct from `departments` below.
    */
   product_type?: string | null
@@ -56,7 +56,7 @@ export type ApiProduct = {
    * catalogue: the brand has not grouped its styles into collections.
    */
   collection?: { id?: number, name: string, slug: string } | null
-  /** Top-level catalogue split from the API (`CategoryResource`) — Slippers, Shoes. */
+  /** Top-level catalogue split from the API (`CategoryResource`): Slippers, Shoes. */
   category?: { id?: number, name: string, slug: string } | null
 
   // --- Detail-page fields (absent from listing responses) ---
@@ -67,7 +67,7 @@ export type ApiProduct = {
   model_note?: string | null
   /**
    * Per-size stock, keyed by size. A size missing from the map, or at zero,
-   * renders disabled — server-side checks remain the source of truth.
+   * renders disabled; server-side checks remain the source of truth.
    */
   size_availability?: Record<string, number>
   /**
@@ -81,7 +81,7 @@ export type ApiProduct = {
   rating?: ProductRating | null
   reviews?: ProductReview[]
   /**
-   * "Transparent Pricing" breakdown — GHS minor units per cost line, in the
+   * "Transparent Pricing" breakdown: GHS minor units per cost line, in the
    * order they should display.
    */
   cost_breakdown?: { label: string, amount_ghs: number, icon: string }[]

@@ -79,7 +79,7 @@ watch(previewLapsed, () => {
         </div>
         <div>
           <dt class="text-meta text-fg-faint">Session</dt>
-          <dd class="mt-0.5 text-fg-strong">Demo — not authenticated</dd>
+          <dd class="mt-0.5 text-fg-strong">Demo (not signed in)</dd>
         </div>
       </dl>
 
@@ -87,8 +87,8 @@ watch(previewLapsed, () => {
       <div class="border-t border-border pt-4">
         <p class="text-ui font-medium text-fg-strong">View as</p>
         <p class="mt-1 text-meta text-fg-muted">
-          Preview the dashboard as another role. This only changes what this browser shows —
-          access is enforced by the API, not here.
+          Preview the dashboard as another role. This only changes what this browser shows.
+          Access is enforced by the API, not here.
         </p>
 
         <div class="mt-3 flex flex-col gap-1.5">

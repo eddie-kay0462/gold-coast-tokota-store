@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-// Backs WhatsAppButton and footer contact info — sourced from the admin-editable
+// Backs WhatsAppButton and footer contact info, sourced from the admin-editable
 // SiteSetting API resource so these never need hardcoding in multiple components.
 export const useSiteSettingsStore = defineStore('siteSettings', {
   state: () => ({
@@ -9,7 +9,7 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
     /**
      * The auto-reply the business sends when a chat opens (brand guidelines,
      * "Default Greeting Message"). Owner-managed in admin; the storefront holds
-     * it so there is one copy of it, but never renders it — it is WhatsApp
+     * it so there is one copy of it, but never renders it; it is WhatsApp
      * Business profile copy, not page content.
      */
     whatsappGreeting: '',

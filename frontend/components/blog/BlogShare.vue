@@ -2,7 +2,7 @@
 const props = defineProps<{ title: string }>()
 
 // Share targets need the absolute canonical URL, which differs between SSR and
-// client navigation — useRequestURL resolves both.
+// client navigation; useRequestURL resolves both.
 const url = useRequestURL()
 const shareUrl = computed(() => url.href)
 

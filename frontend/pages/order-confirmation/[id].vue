@@ -9,11 +9,11 @@ import { useCartStore } from '~/stores/cart'
 /**
  * Order confirmation.
  *
- * SPA-only (nuxt.config.ts routeRules) — nothing here is crawlable, and it is
+ * SPA-only (nuxt.config.ts routeRules); nothing here is crawlable, and it is
  * per-customer.
  *
- * Paystack's `callback_url` lands here as `/order-confirmation/{reference}`
- * — the order *reference*, not its numeric id (`GET /orders/{reference}`).
+ * Paystack's `callback_url` lands here as `/order-confirmation/{reference}`,
+ * the order *reference*, not its numeric id (`GET /orders/{reference}`).
  * The fetch resolves to null rather than throwing: this app has no
  * `error.vue`, so an unhandled rejection on an SPA route is a blank page.
  *
@@ -41,7 +41,7 @@ const money = (minorUnits: number) =>
 /**
  * README Feature 4 edge case: the gateway webhook can arrive after the customer
  * is redirected here, so a freshly-placed order may still read `pending`. Poll
- * until it settles, then stop — bounded, because a webhook two minutes late is
+ * until it settles, then stop. Bounded, because a webhook two minutes late is
  * an incident to investigate, not something to keep hammering the API over.
  */
 const attempts = ref(0)
@@ -69,11 +69,11 @@ watch(order, (o) => {
   if (o && !isAwaitingPayment(o.status) && o.status !== 'cancelled') cart.clear()
 }, { immediate: true })
 
-/** Polling gave up and the order is still unpaid — the payment did not go through. */
+/** Polling gave up and the order is still unpaid; the payment did not go through. */
 const notPaid = computed(() => !!order.value && isAwaitingPayment(order.value.status) && !stillConfirming.value)
 
 useSeoMeta({
-  title: 'Order confirmation — Gold Coast Tokota',
+  title: 'Order confirmation | Gold Coast Tokota',
   robots: 'noindex, nofollow',
 })
 </script>
@@ -92,7 +92,7 @@ useSeoMeta({
       <h1 class="w-full text-display-section font-normal text-black">We can’t show this order</h1>
       <CommonInlineNotice variant="warning" title="We couldn’t load this order">
         We couldn’t find order <strong>{{ route.params.id }}</strong>, or couldn’t reach our
-        server just now. If you’ve paid, your order isn’t lost — message us and we’ll confirm
+        server just now. If you’ve paid, your order isn’t lost. Message us and we’ll confirm
         it by hand.
       </CommonInlineNotice>
       <div class="flex w-full flex-col items-stretch gap-3 sm:flex-row sm:items-start">
@@ -111,7 +111,7 @@ useSeoMeta({
     <div v-else-if="order" class="flex w-full flex-col items-start gap-8">
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">
-          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : 'Thank you — your order is in' }}
+          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : 'Thank you! Your order is in' }}
         </h1>
         <p class="w-full text-body text-graphite">
           Order <strong class="font-normal">{{ order.reference || `#${order.id}` }}</strong>.
@@ -134,13 +134,13 @@ useSeoMeta({
 
       <CommonInlineNotice v-if="notPaid" variant="warning" title="No payment received">
         We haven’t received payment for this order, so it hasn’t been placed and nothing has been
-        charged. Your cart is still saved — you can
+        charged. Your cart is still saved, so you can
         <NuxtLink to="/checkout" class="underline">try checking out again</NuxtLink>, or message us
         on WhatsApp and we’ll help.
       </CommonInlineNotice>
 
       <CommonInlineNotice v-if="stillConfirming" title="Still confirming your payment">
-        Your payment is going through. This page updates on its own — there’s no need to refresh
+        Your payment is going through. This page updates on its own, so there’s no need to refresh
         or pay again.
       </CommonInlineNotice>
 

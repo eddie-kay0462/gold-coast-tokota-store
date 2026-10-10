@@ -13,11 +13,11 @@ import type { WhatsAppSource } from '~/utils/whatsapp'
  *
  * The variants mirror `CommonBrandButton`'s vocabulary rather than inventing a
  * parallel one:
- *   outlined — `.btn-outline`: white, thin black outline, black on hover
- *   solid    — now the same `.btn-outline`; every button on the site is white
+ *   outlined: `.btn-outline`: white, thin black outline, black on hover
+ *   solid:    now the same `.btn-outline`; every button on the site is white
  *              at rest and black only when engaged, at the client's request
- *   gold     — `.btn-outline-on-dark`, for the black About band (it was gold)
- *   quiet    — an inline text link, for prose and helper text
+ *   gold:     `.btn-outline-on-dark`, for the black About band (it was gold)
+ *   quiet:    an inline text link, for prose and helper text
  */
 const props = withDefaults(
   defineProps<{

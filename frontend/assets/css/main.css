@@ -11,7 +11,7 @@
 
   /* The header is sticky, so every in-page anchor would otherwise land its
      target underneath it. `scroll-padding-top` on the scroll container fixes
-     that once for every anchor on the site — `scroll-mt` on individual targets
+     that once for every anchor on the site; `scroll-mt` on individual targets
      would mean remembering it on each new one, and getting it wrong is silent.
 
      The two values are the header's own height at each breakpoint: two rows on
@@ -39,8 +39,8 @@
      focus ring above is effectively invisible. Mark a dark region with
      `chrome-dark` and the ring goes white inside it.
 
-     Light panels *nested* in a dark region — the mega menu, the search band,
-     the mobile menu's expanded sections — carry `on-light` to put the ring
+     Light panels *nested* in a dark region (the mega menu, the search band,
+     the mobile menu's expanded sections) carry `on-light` to put the ring
      back, since a white outline on a white panel is the same bug in reverse. */
   .chrome-dark :focus-visible {
     @apply outline-white;
@@ -52,8 +52,8 @@
 
   /* The one horizontal page gutter. Before this existed every section invented
      its own value (fourteen different desktop paddings across the app), which
-     left neighbouring sections visibly out of alignment and some content — the
-     blog post's related-stories grid — flush against the viewport edge. 20px on
+     left neighbouring sections visibly out of alignment and some content (the
+     blog post's related-stories grid) flush against the viewport edge. 20px on
      mobile, 40px on tablet, 60px from `lg` is the gutter the Figma frames use for a standard
      full-width section, so it is the value everything else moves to.
 

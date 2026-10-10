@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 10 October 2026 (backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 10 October 2026 (em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,32 @@ inert at their last step.
 
 ## Recent changes
 
-### 10 October 2026 (latest) — four checkout and install fixes from the codebase review
+### 10 October 2026 (latest): no em dashes in the storefront or admin
+
+Every em dash (`—`, plus `&mdash;`-style entities) is gone from `frontend/`
+and `admin/`: about 590 in roughly 200 files. The copy that customers and staff
+read was reworded by hand instead of just swapping in another symbol.
+
+- **Page titles** use a pipe now: `Shop | Gold Coast Tokota`. The logo links'
+  aria-label is "Gold Coast Tokota home".
+- **Customer notices no longer mention the API.** The gift card, discount code,
+  order lookup, photo upload and sign-in notices used to say things like
+  "there's no discounts endpoint on the API". They now just say the feature
+  isn't available online yet and offer the WhatsApp fallback.
+- **WhatsApp order messages** from the cart and checkout put the variant in
+  brackets after the product name, instead of after a dash.
+- **Admin empty cells** show `-` instead of `—`. This covers the date
+  formatters, reserved stock, customer phone, derived USD and blog publish
+  dates.
+- **Code comments** were repunctuated with commas, colons, semicolons or
+  brackets. Nothing else changed in them.
+
+Brand copy that comes from Figma or the brand PDF was left alone apart from
+the punctuation: the About page, the news articles and the "Crafted with
+Purpose" tagline. There are no behaviour changes. When you write new copy,
+please don't add em dashes.
+
+### 10 October 2026 — four checkout and install fixes from the codebase review
 
 Found in a read-through of the whole repo. The first one blocks deploys.
 

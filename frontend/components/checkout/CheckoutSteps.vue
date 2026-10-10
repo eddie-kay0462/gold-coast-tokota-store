@@ -14,7 +14,7 @@ const emit = defineEmits<{ go: [step: CheckoutStep], cart: [] }>()
  * underneath: a completed step is a link back, a future step is inert text,
  * because the data it needs has not been entered yet.
  *
- * "Cart" opens the cart drawer rather than navigating — this app has no cart
+ * "Cart" opens the cart drawer rather than navigating; this app has no cart
  * page, the cart is a drawer.
  */
 const steps: { id: CheckoutStep, label: string }[] = [

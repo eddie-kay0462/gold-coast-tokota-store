@@ -74,7 +74,7 @@ const columns: Column<BlogPost>[] = [
         </UiBadge>
       </template>
       <template #cell-publishedAt="{ row }">
-        <span class="text-fg-muted">{{ row.publishedAt ? formatDate(row.publishedAt) : '—' }}</span>
+        <span class="text-fg-muted">{{ row.publishedAt ? formatDate(row.publishedAt) : '-' }}</span>
       </template>
       <template #cell-updatedAt="{ row }">
         <span class="text-fg-muted">{{ formatRelative(row.updatedAt) }}</span>

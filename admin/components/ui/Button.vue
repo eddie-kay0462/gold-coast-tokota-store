@@ -27,7 +27,7 @@ const variants: Record<Variant, string> = {
   accent: 'bg-accent text-accent-fg hover:opacity-90',
 }
 
-// 44px at `md` and `lg` — the tap-target floor the storefront works to.
+// 44px at `md` and `lg`, the tap-target floor the storefront works to.
 const sizes: Record<Size, string> = {
   sm: 'h-9 px-3 text-meta gap-1.5',
   md: 'min-h-[44px] px-4 text-ui gap-2',

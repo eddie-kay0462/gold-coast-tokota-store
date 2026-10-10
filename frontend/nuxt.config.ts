@@ -10,12 +10,12 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   // SSR is the project default (Home, About, Shop, Blog must be crawlable).
-  // Cart/Checkout is the one SPA-only carve-out here — the admin dashboard
+  // Cart/Checkout is the one SPA-only carve-out here; the admin dashboard
   // now lives in its own app (../admin), not in this one.
   ssr: true,
   routeRules: {
     // SPA-only: per-visitor, never SSR-cached, never indexed. The pages also
-    // carry `robots: 'noindex, nofollow'` — `ssr: false` stops the server
+    // carry `robots: 'noindex, nofollow'`. `ssr: false` stops the server
     // rendering content, it does not stop the URL being indexed.
     //
     // The meta tag alone is not enough here: on an `ssr: false` route it is only
@@ -25,7 +25,7 @@ export default defineNuxtConfig({
     '/order-confirmation/**': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/account/**': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
 
-    // `/help/returns` and `/help/shipping` are canonical — they sit inside the
+    // `/help/returns` and `/help/shipping` are canonical; they sit inside the
     // help hub's structure and the footer already used those URLs. The short
     // forms stay alive as permanent redirects so printed cards and packaging
     // inserts keep working. A Nuxt `alias` would instead publish two indexable
@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   app: {
     head: {
       // `viewport-fit=cover` is what makes `env(safe-area-inset-*)` resolve to
-      // real values — the fixed WhatsApp button and the cart drawer's checkout
+      // real values: the fixed WhatsApp button and the cart drawer's checkout
       // footer both sit in the iOS home-indicator band without it.
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
@@ -59,7 +59,7 @@ export default defineNuxtConfig({
   },
 
   // Country flags are served straight out of the flag-icons package rather
-  // than copied into public/ — one SVG is fetched per visitor, and the repo
+  // than copied into public/: one SVG is fetched per visitor, and the repo
   // stays free of ~270 vendored assets.
   nitro: {
     publicAssets: [
@@ -80,13 +80,13 @@ export default defineNuxtConfig({
     // this the module auto-discovers every `pages/` file, /account included.
     exclude: ['/account/**', '/checkout', '/order-confirmation/**'],
     // `[slug]` params can't be discovered from the filesystem, so the legal and
-    // help articles are supplied by `server/api/__sitemap__/urls.ts` — that
+    // help articles are supplied by `server/api/__sitemap__/urls.ts`; that
     // handler can import from `~/utils`, which this config file cannot.
     sources: ['/api/__sitemap__/urls'],
   },
 
   runtimeConfig: {
-    // Server-only geo settings. `secret` signs the geo cache cookie — set a
+    // Server-only geo settings. `secret` signs the geo cache cookie. Set a
     // real value in production or a restart invalidates every cached lookup.
     geo: {
       secret: process.env.NUXT_GEO_SECRET || 'gct-dev-geo-secret',
@@ -94,7 +94,7 @@ export default defineNuxtConfig({
       // JSON carries a country code works; ipwho.is is keyless and also
       // returns the IP's timezone and org, both of which we use.
       lookupEndpoint: process.env.NUXT_GEO_LOOKUP_ENDPOINT || 'https://ipwho.is/{ip}',
-      // Only enable behind a proxy/CDN we control — otherwise a visitor can
+      // Only enable behind a proxy/CDN we control; otherwise a visitor can
       // set X-Forwarded-For themselves and pick their own country.
       trustProxyHeaders: process.env.NUXT_GEO_TRUST_PROXY !== 'false',
     },

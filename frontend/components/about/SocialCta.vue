@@ -5,7 +5,7 @@ import { whatsappMessage } from '~/utils/whatsapp'
 const siteSettings = useSiteSettingsStore()
 
 // The Instagram destination is admin-editable (SiteSetting), the same source
-// the footer's Connect column uses — never hardcoded per component.
+// the footer's Connect column uses, never hardcoded per component.
 const instagramUrl = computed(() => siteSettings.instagramUrl || '/')
 const supportHours = computed(() => siteSettings.businessHours || 'Mon–Sat, 9am–5pm GMT')
 const isExternal = computed(() => !!siteSettings.instagramUrl)

@@ -6,7 +6,7 @@ defineProps<{ posts: ApiPost[] }>()
 
 <template>
   <!-- Owns its own section chrome (gutter, rhythm, heading) so it can be dropped
-       straight into a page without a wrapper re-stating the padding — the wrapper
+       straight into a page without a wrapper re-stating the padding; the wrapper
        is what previously zeroed the desktop gutter and left the grid flush to the
        viewport edge. -->
   <section v-if="posts.length" class="page-gutter section-y mx-auto flex w-full max-w-[1440px] flex-col items-center gap-10">

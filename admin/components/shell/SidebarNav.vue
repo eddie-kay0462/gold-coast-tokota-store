@@ -5,7 +5,7 @@ import { NAVIGATION, type NavGroup, type NavItem } from '~/utils/navigation'
 import type { Capability } from '~/utils/permissions'
 
 /**
- * Left sidebar — Figma node 10:2521.
+ * Left sidebar, Figma node 10:2521.
  *
  * Metrics transcribed from the frame: 212px wide, 16px padding, 8px item
  * padding at 12px radius, 20px icons, 16px chevrons, 50px sub-item indent,
@@ -107,12 +107,12 @@ const roleLabel = computed(
     aria-label="Main navigation"
   >
     <div class="flex min-h-0 flex-1 flex-col gap-4">
-      <!-- User badge (Figma 10:3108) — opens the profile modal -->
+      <!-- User badge (Figma 10:3108), opens the profile modal -->
       <button
         type="button"
         class="flex items-center gap-2 rounded p-2 text-left transition-colors hover:bg-bg-sunken"
         :class="collapsed && 'justify-center px-0'"
-        :aria-label="`Open your account — ${user?.name ?? ''}`"
+        :aria-label="`Open account for ${user?.name ?? ''}`"
         @click="profileOpen = true"
       >
         <UiAvatar :name="user?.name ?? ''" :src="user?.avatar" :size="32" />
@@ -167,7 +167,7 @@ const roleLabel = computed(
                     type="button"
                     class="rail-item w-full justify-center px-0"
                     :class="itemActive(item) && 'rail-item-active'"
-                    :aria-label="`${item.label} — expand sidebar to open`"
+                    :aria-label="`${item.label} (expand sidebar to open)`"
                     @click="emit('update:collapsed', false)"
                   >
                     <component :is="icon(item.icon)" :size="20" weight="regular" class="shrink-0" />
