@@ -7,9 +7,12 @@ const props = withDefaults(
     /**
      * `light` is the original white-ground form. `dark` is the inline
      * bordered field with a gold "Join" from the approved Template B mockup,
-     * used in the footer now that the footer sits on the chrome ground.
+     * Used by nothing since the footer went white; kept for dark grounds.
      */
     tone?: 'light' | 'dark'
+    /** Overrides the tone's default — the light one is too long for a narrow
+     *  column like the footer's. */
+    placeholder?: string
   }>(),
   { source: 'footer', tone: 'light' },
 )
@@ -21,12 +24,13 @@ const pending = ref(false)
 
 const isDark = computed(() => props.tone === 'dark')
 
+const api = useApi()
+
 async function onSubmit() {
-  const config = useRuntimeConfig()
   pending.value = true
   error.value = ''
   try {
-    await $fetch(`${config.public.apiBase}/newsletter`, {
+    await api('/newsletter', {
       method: 'POST',
       body: { email: email.value, source: props.source },
     })
@@ -53,7 +57,7 @@ async function onSubmit() {
         v-model="email"
         type="email"
         required
-        :placeholder="isDark ? 'Email address' : 'Sign up for our Newsletter here!'"
+        :placeholder="placeholder ?? (isDark ? 'Email address' : 'Sign up for our Newsletter here!')"
         class="w-full min-w-0 max-w-[388px] flex-1 border text-label"
         :class="isDark
           ? 'border-white/25 bg-transparent px-[15px] py-3 text-white placeholder:text-white/50'
@@ -71,7 +75,7 @@ async function onSubmit() {
         v-else
         type="submit"
         :disabled="pending"
-        class="flex shrink-0 items-start border border-graphite bg-graphite px-[14px] py-[14.5px] text-white disabled:opacity-60"
+        class="btn-outline flex shrink-0 items-start border-l-0 px-[14px] py-[14.5px] disabled:opacity-60"
         aria-label="Sign up for the newsletter"
       >
         <ArrowRight :size="24" />

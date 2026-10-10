@@ -19,18 +19,42 @@ class Product extends Model
         'category_id',
         'collection_id',
         'base_price_ghs',
+        'compare_at_ghs',
         'sku',
         'images',
         'is_active',
         'is_featured',
+        'is_pre_order',
+        'is_returnable',
         'merchandising_badge',
+        'product_type',
+        'departments',
+        'widths',
+        'tags',
+        'materials',
+        'color',
+        'colors',
+        'colour_images',
+        'description_heading',
+        'model_note',
+        'cost_breakdown',
     ];
 
     protected $casts = [
         'images' => 'array',
+        'departments' => 'array',
+        'widths' => 'array',
+        'tags' => 'array',
+        'materials' => 'array',
+        'colors' => 'array',
+        'colour_images' => 'array',
+        'cost_breakdown' => 'array',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'is_pre_order' => 'boolean',
+        'is_returnable' => 'boolean',
         'base_price_ghs' => 'integer',
+        'compare_at_ghs' => 'integer',
     ];
 
     public function category(): BelongsTo
@@ -46,6 +70,16 @@ class Product extends Model
     public function inventoryItems(): HasMany
     {
         return $this->hasMany(InventoryItem::class);
+    }
+
+    /**
+     * Only used to count sales for the `best-selling` sort — see ProductFilter.
+     * Items carry a snapshot of the product at purchase time, so this is a
+     * historical record and not a way to read a product's current details.
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
     }
 
     public function scopeActive(Builder $query): Builder
@@ -112,11 +146,49 @@ class Product extends Model
      * are currently out of stock, which still render (struck through) so the
      * customer can see the range and ask about a restock.
      *
+     * Cast back to strings: PHP silently converts numeric array keys to ints,
+     * and the storefront's size facet compares these against string values
+     * (frontend/pages/shop/index.vue) — an int list matches nothing, silently.
+     *
      * @return array<int, string>
      */
+    /**
+     * Sellable stock by colour, then size — `['Tan' => ['40' => 3, '41' => 0]]`.
+     *
+     * `size_availability` sums across colours, which answers "is size 42 made
+     * at all" but not "is it in Tan"; the purchase panel needs the second once
+     * a colour is chosen. Variants with no `colour` are left out: they belong
+     * to a product with no colour axis, for which `size_availability` alone
+     * is the whole story.
+     *
+     * @return array<string, array<string, int>>
+     */
+    public function getVariantAvailabilityAttribute(): array
+    {
+        $map = [];
+
+        foreach ($this->inventoryItems as $item) {
+            $colour = $item->variant_attributes['colour'] ?? null;
+            $size = $item->variant_attributes['size'] ?? null;
+
+            if (! $colour || $size === null || $size === '') {
+                continue;
+            }
+
+            $size = (string) $size;
+            $map[$colour][$size] = ($map[$colour][$size] ?? 0) + $item->sellable_quantity;
+        }
+
+        foreach ($map as &$sizes) {
+            uksort($sizes, static fn ($a, $b) => strnatcmp($a, $b));
+        }
+
+        return $map;
+    }
+
     public function getSizesAttribute(): array
     {
-        return array_keys($this->size_availability);
+        return array_map(strval(...), array_keys($this->size_availability));
     }
 
     /**

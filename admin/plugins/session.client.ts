@@ -1,10 +1,13 @@
 /**
- * Seeds the demo session at boot.
+ * Resolves the admin session before the first route renders.
  *
- * Temporary by design: it exists only because there is no login endpoint to
- * authenticate against yet. When Feature 9 lands this plugin is replaced by a
- * `GET /admin/me` call, and `pages/login.vue` stops being inert.
+ * Against a real API this asks `GET /admin/me` whether the Sanctum cookie is
+ * still good; `middleware/auth.global.ts` then sends a signed-out user to
+ * /login. In `fixtures` data mode there is nothing to authenticate against, so
+ * a demo session is seeded to keep the dashboard reviewable offline.
  */
-export default defineNuxtPlugin(() => {
-  useAuth().ensureDemoSession()
+export default defineNuxtPlugin(async () => {
+  const auth = useAuth()
+  if (auth.usesApi) await auth.restoreSession()
+  else auth.ensureDemoSession()
 })

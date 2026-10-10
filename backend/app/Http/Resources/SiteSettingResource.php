@@ -18,10 +18,19 @@ class SiteSettingResource extends JsonResource
             'business_hours' => $this->business_hours,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
+            // §12, §14 and §24 — the brand facts the storefront was
+            // hard-coding. Editable from admin so the provisional phone
+            // number can be corrected without a deploy.
+            'address' => $this->address,
+            'tagline' => $this->tagline,
             'instagram_url' => $this->instagram_url,
             'hero_headline' => $this->hero_headline,
             'hero_image' => $this->hero_image,
             'diy_turnaround_estimate' => $this->diy_turnaround_estimate,
+            // Per-order-type estimates. The DIY form still shows the single
+            // estimate above; these are here so it can switch to per-type
+            // without another API change once it has a type selector.
+            'diy_turnaround_tiers' => $this->diy_turnaround_tiers ?? [],
             // Rotating announcement-bar messages, in display order.
             'announcements' => $this->announcements ?? [],
             'updated_at' => $this->updated_at,

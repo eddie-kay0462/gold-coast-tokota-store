@@ -1,10 +1,10 @@
 <script setup lang="ts">
 const form = reactive({ name: '', email: '', message: '' })
 const submitted = ref(false)
+const api = useApi()
 
 async function onSubmit() {
-  const config = useRuntimeConfig()
-  await $fetch(`${config.public.apiBase}/feedback`, { method: 'POST', body: form })
+  await api('/feedback', { method: 'POST', body: form })
   submitted.value = true
 }
 </script>

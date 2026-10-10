@@ -190,7 +190,8 @@ const byMethod = computed(() => {
               Client-side tracking — undercounts anyone using an ad-blocker.
             </p>
             <div class="mt-4">
-              <ChartsRankedBars v-if="charts" :data="charts.trafficBySource" />
+              <ChartsRankedBars v-if="charts?.trafficBySource" :data="charts.trafficBySource" />
+              <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
             </div>
           </section>
         </div>

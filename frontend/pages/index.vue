@@ -1,19 +1,22 @@
 <script setup lang="ts">
-type ApiProduct = { slug: string, name: string, base_price_ghs: number, images?: string[] }
+type ApiProduct = { slug: string, name: string, base_price_ghs: number, color?: string | null, images?: string[] }
 type ApiPost = { slug: string, title: string, excerpt?: string, published_at?: string, cover_image?: string }
 
 const config = useRuntimeConfig()
 
-// Both fetches run during SSR so the rendered HTML is crawlable. A failing or
-// not-yet-built endpoint resolves to an empty list rather than throwing, so each
-// section falls back to the design's own content while Features 2/9 land.
+// Both fetches run during SSR so the rendered HTML is crawlable. A failing
+// endpoint resolves to an empty list rather than throwing.
+//
+// No `featured=true`: the catalogue's default order is already featured first,
+// then newest. Ten from the top are the featured products, topped up with the
+// newest ones when fewer than ten are flagged, so the rail is never short.
 const { data: featuredProducts } = await useAsyncData('home-featured-products', () =>
-  $fetch<{ data: ApiProduct[] }>(`${config.public.apiBase}/products?featured=true`)
+  $fetch<{ data: ApiProduct[] }>(`${config.public.apiBase}/products`, { query: { per_page: 10 } })
     .catch(() => ({ data: [] as ApiProduct[] })),
 )
 
 const { data: latestPosts } = await useAsyncData('home-latest-posts', () =>
-  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/posts?limit=5`)
+  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/blog-posts?limit=5`)
     .catch(() => ({ data: [] as ApiPost[] })),
 )
 
@@ -43,19 +46,5 @@ useSeoMeta({
     </MotionGsapScrollReveal>
 
     <HomeNewsCarousel :posts="latestPosts?.data ?? null" />
-
-    <MotionGsapScrollReveal>
-      <HomeTestimonialCarousel />
-    </MotionGsapScrollReveal>
-
-    <MotionGsapScrollReveal>
-      <HomeEditorialPair />
-    </MotionGsapScrollReveal>
-
-    <HomeUgcGallery />
-
-    <MotionGsapScrollReveal>
-      <HomeValueProps />
-    </MotionGsapScrollReveal>
   </div>
 </template>

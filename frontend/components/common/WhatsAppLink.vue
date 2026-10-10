@@ -13,9 +13,10 @@ import type { WhatsAppSource } from '~/utils/whatsapp'
  *
  * The variants mirror `CommonBrandButton`'s vocabulary rather than inventing a
  * parallel one:
- *   outlined — the shop/cart treatment: hairline box that inverts on hover
- *   solid    — ink fill, for a primary action
- *   gold     — the approved mockup's gold-on-dark About CTA
+ *   outlined — `.btn-outline`: white, thin black outline, black on hover
+ *   solid    — now the same `.btn-outline`; every button on the site is white
+ *              at rest and black only when engaged, at the client's request
+ *   gold     — `.btn-outline-on-dark`, for the black About band (it was gold)
  *   quiet    — an inline text link, for prose and helper text
  */
 const props = withDefaults(
@@ -42,11 +43,11 @@ const variantClass = computed(
   () =>
     ({
       outlined:
-        'min-h-[44px] justify-center border border-graphite bg-white px-4 text-label uppercase text-graphite transition-colors hover:bg-graphite hover:text-white',
+        'btn-outline min-h-[44px] justify-center px-4 text-label uppercase',
       solid:
-        'min-h-[44px] justify-center border border-ink bg-ink px-4 text-label uppercase text-white transition-opacity hover:opacity-80',
+        'btn-outline min-h-[44px] justify-center px-4 text-label uppercase',
       gold:
-        'min-h-[44px] justify-center bg-gold px-6 text-label font-normal uppercase text-chrome transition-opacity hover:opacity-90',
+        'btn-outline-on-dark min-h-[44px] justify-center px-6 text-label font-normal uppercase',
       // `-my-2` keeps an inline link from adding height to the sentence it sits
       // in while its hit area still clears 44px.
       quiet:

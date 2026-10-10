@@ -29,10 +29,10 @@ export default <Partial<Config>>{
         surface: '#F5F4F4',
         // Figma: Red — reserved for the Sale nav item and sale pricing.
         sale: '#D0021B',
-        // The same red lifted for use on the dark chrome. `sale` measures
-        // about 2.2:1 against `chrome`, well under the 4.5:1 floor, so the
-        // header's Sale item needs its own value rather than a lower-contrast
-        // exception. Same hue; only the lightness moves.
+        // The same red lifted for use on dark grounds. `sale` measures about
+        // 2.2:1 against `chrome`, well under the 4.5:1 floor. The header went
+        // white (and uses plain `sale`); this remains for the dark newsletter
+        // form's error line. Same hue; only the lightness moves.
         'sale-on-dark': '#FF6B7A',
         // Figma: Timberwolf — the warm stone ground behind the About page's
         // alternating story sections (10:645, 10:648).
@@ -53,7 +53,8 @@ export default <Partial<Config>>{
         'gold-deep': '#8A6A1C',
         // Gold as *text on dark* or over photography. The mockup's value.
         'gold-soft': '#E8D9AD',
-        // The chrome ground: header, footer and the announcement strip. Not
+        // Dark ground for badges and banners (the header and footer were on it
+        // until they went white; the announcement strip is `ink`). Not
         // `ink` — `ink` is pure #000 and the whole app already leans on it, so
         // this is a second, softer near-black rather than a redefinition.
         chrome: '#111111',

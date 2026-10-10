@@ -17,6 +17,10 @@ class OrderItemFactory extends Factory
             'order_id' => Order::factory(),
             'product_id' => Product::factory(),
             'inventory_item_id' => null,
+            // Snapshotted on the real write path too — a receipt keeps saying
+            // what was bought after the product is renamed or deleted.
+            'product_name' => fake()->words(3, true),
+            'variant_label' => (string) fake()->numberBetween(38, 46),
             'quantity' => fake()->numberBetween(1, 3),
             'unit_price' => fake()->numberBetween(5_000, 20_000),
             'currency' => 'GHS',

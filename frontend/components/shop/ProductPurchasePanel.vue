@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ApiProduct } from '~/utils/catalog'
 import { whatsappMessage } from '~/utils/whatsapp'
+import { SIZE_GUIDE_BETWEEN_SIZES } from '~/utils/sizeGuide'
 
 const props = defineProps<{
   product: ApiProduct
@@ -14,14 +15,32 @@ const props = defineProps<{
 
 const emit = defineEmits<{ add: [{ size: string, color: string }] }>()
 
-const selectedColor = ref(props.product.color ?? props.product.colors?.[0]?.name ?? '')
+/** Shared with the page, which swaps the gallery to the chosen colourway. */
+const selectedColor = defineModel<string>('color', { default: '' })
+if (!selectedColor.value) selectedColor.value = props.product.color ?? props.product.colors?.[0]?.name ?? ''
 const selectedSize = ref<string | null>(null)
 
 const isOnSale = computed(
   () => !!props.product.compare_at_ghs && props.product.compare_at_ghs > props.product.base_price_ghs,
 )
 
-const availability = computed(() => props.liveStock ?? props.product.size_availability)
+/**
+ * Stock for the chosen colour when the API reports per-colour stock, otherwise
+ * the all-colours sum. Without the per-colour map, picking Tan would show
+ * size 42 as available just because Black has a pair.
+ */
+const availability = computed(
+  () => props.liveStock
+    ?? props.product.variant_availability?.[selectedColor.value]
+    ?? props.product.size_availability,
+)
+
+/** A colourway with nothing left in any size — its swatch is marked. */
+function colourSoldOut(name: string) {
+  if (props.product.is_pre_order) return false
+  const sizes = props.product.variant_availability?.[name]
+  return !!sizes && Object.values(sizes).every((count) => count <= 0)
+}
 
 /**
  * With a stock map present, a size missing from it is out of stock. With no map
@@ -79,11 +98,42 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => ctaObserver?.disconnect())
+
+// --- Size guide --------------------------------------------------------------
+// Opens over the page instead of navigating, so the shopper keeps their colour,
+// size and scroll position. The links keep their real `href`, so a modified
+// click (new tab or window) still goes to `/size-guide` as usual, and so does
+// a visit without JavaScript.
+const sizeGuideOpen = ref(false)
+
+function openSizeGuide(event: MouseEvent) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+  event.preventDefault()
+  sizeGuideOpen.value = true
+}
+
+// For the "Questions about caring for your pair?" link in Materials & Care.
+const { href: whatsappHref } = useWhatsApp(() => whatsappMessage.product(props.product.name, null))
+const { whatsappClick } = useAnalytics()
 </script>
 
 <template>
+  <!--
+    From `md` the panel is sticky with its own vertical scroll, and a scroll
+    container clips on both axes. The colour and size rows use negative margins
+    (6px and 4px) so their 44px hit areas line up with the text. Flush against
+    the panel's edge, that clipped the selected swatch's ring on the left, and on
+    the right it left a few pixels to scroll sideways into. A trackpad swipe or
+    tabbing to a size then shifted the whole panel and cut the first letter off
+    every line.
+
+    So the panel gets 12px of padding each side for those rows to use, offset by
+    an equal negative margin. Widths are 24px wider to match, so the content is
+    still 340/400/440px wide and sits exactly where it did. `overflow-x-hidden`
+    stops sideways scrolling outright.
+  -->
   <div
-    class="flex w-full flex-col gap-px md:sticky md:top-4 md:max-h-[calc(100dvh-2rem)] md:w-[340px] md:shrink-0 md:overflow-y-auto lg:w-[400px] xl:w-[440px]"
+    class="flex w-full flex-col gap-px md:sticky md:top-4 md:-mx-3 md:max-h-[calc(100dvh-2rem)] md:w-[364px] md:shrink-0 md:overflow-y-auto md:overflow-x-hidden md:px-3 lg:w-[424px] xl:w-[464px]"
   >
     <!-- Identity -->
     <div class="flex w-full flex-col gap-1 border-b border-surface pb-4">
@@ -128,11 +178,22 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
         >
           <!-- The swatch stays 32px as drawn; the button around it is 44px. -->
           <span
-            class="block size-8 rounded-full border border-black/10"
-            :class="color.name === selectedColor ? 'ring-1 ring-graphite ring-offset-2' : ''"
+            class="relative block size-8 overflow-hidden rounded-full border border-black/10"
+            :class="[
+              color.name === selectedColor ? 'ring-1 ring-graphite ring-offset-2' : '',
+              colourSoldOut(color.name) ? 'opacity-40' : '',
+            ]"
             :style="{ backgroundColor: color.hex }"
-          />
-          <span class="sr-only">{{ color.name }}</span>
+          >
+            <!-- Struck through, like an unavailable size: still choosable, so
+                 the photos can be seen, but plainly not in stock. -->
+            <span
+              v-if="colourSoldOut(color.name)"
+              class="absolute left-1/2 top-1/2 h-px w-[140%] -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-graphite"
+              aria-hidden="true"
+            />
+          </span>
+          <span class="sr-only">{{ color.name }}{{ colourSoldOut(color.name) ? ' (out of stock)' : '' }}</span>
         </button>
       </div>
     </div>
@@ -141,7 +202,7 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
     <div v-if="product.sizes?.length" class="flex w-full flex-col gap-2.5 py-[18px]">
       <div class="flex w-full items-start justify-between text-caption">
         <span class="font-normal text-black">Select size (EU)</span>
-        <NuxtLink to="/size-guide" class="-my-3 flex min-h-[44px] items-center py-3 font-light text-graphite underline">Size Guide</NuxtLink>
+        <a href="/size-guide" class="-my-3 flex min-h-[44px] items-center py-3 font-light text-graphite underline" aria-haspopup="dialog" @click="openSizeGuide">Size Guide</a>
       </div>
 
       <!-- Same three-state selector the product card uses, one size up. The
@@ -150,13 +211,14 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
       <ShopSizeSelector
         v-model="selectedSize"
         size="lg"
+        hint
         :sizes="product.sizes"
         :availability="availability"
         :ignore-stock="product.is_pre_order"
       />
 
       <p v-if="selectedSize && !selectedInStock" class="text-caption text-sale">
-        Size {{ selectedSize }} is out of stock.
+        Size {{ selectedSize }} is out of stock<template v-if="product.variant_availability"> in {{ selectedColor }}</template>.
       </p>
       <p v-else-if="product.is_pre_order" class="text-caption text-muted">
         Made to order — pre-order pairs ship within three weeks.
@@ -204,79 +266,124 @@ onBeforeUnmount(() => ctaObserver?.disconnect())
       </Transition>
     </ClientOnly>
 
-    <!-- Service promises -->
-    <div class="flex w-full flex-col gap-6 border-t border-line py-6">
-      <div class="flex w-full items-center gap-4">
-        <ShopBenefitIcon name="shipping" />
-        <div class="flex min-w-0 flex-1 flex-col text-black">
-          <p class="text-filter-heading font-normal">Free Shipping</p>
-          <p class="text-caption font-light">
-            On all Ghana orders over ₵1,500
-            <NuxtLink to="/help/shipping" class="underline">Learn more.</NuxtLink>
+    <!--
+      Product details as an accordion. This replaces a stack of always-open
+      blocks: three service promises with icons, the description, Model, Fit and
+      Sustainability.
+
+      Shipping and returns copy comes from GOLD_COAST_TOKOTA.md §8, §9 and §21
+      only. The old service promises didn't match it: "Extended returns through
+      January 31" contradicted the 7-day window, and "Free shipping over ₵1,500"
+      and a free gift note are policies it doesn't state. See FOR_THE_TEAM.md.
+    -->
+    <div class="w-full border-t border-line">
+      <CommonAccordionItem title="Description">
+        <div class="flex flex-col gap-3">
+          <p v-if="product.description_heading" class="font-normal text-black">
+            {{ product.description_heading }}
+          </p>
+          <!-- No product has a description yet; until one is written in the
+               admin, the brand's own line (GOLD_COAST_TOKOTA.md §6) stands in. -->
+          <p>
+            {{ product.description || 'We handcraft sustainable Ahenema sandals that celebrate Ghanaian heritage while giving discarded materials a second life.' }}
           </p>
         </div>
-      </div>
+      </CommonAccordionItem>
 
-      <div class="flex w-full items-center gap-4">
-        <ShopBenefitIcon name="returns" />
-        <div class="flex min-w-0 flex-1 flex-col text-black">
-          <p class="text-filter-heading font-normal">Easy Returns &amp; Modifications</p>
-          <p class="text-caption font-light">
-            Extended returns through January 31.
-            <NuxtLink to="/help/returns" class="underline">Returns Details.</NuxtLink>
+      <CommonAccordionItem title="Materials & Care">
+        <div class="flex flex-col gap-3">
+          <ul v-if="product.materials?.length" class="flex flex-wrap gap-2">
+            <li
+              v-for="material in product.materials"
+              :key="material"
+              class="border border-line px-2.5 py-1.5 text-tag uppercase text-graphite"
+            >
+              {{ material }}
+            </li>
+          </ul>
+          <p>
+            Each pair is handcrafted, so slight variations in colour, texture and finish are
+            part of what makes it unique, not defects.
+          </p>
+          <p v-if="whatsappHref">
+            Questions about caring for your pair?
+            <a
+              :href="whatsappHref"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="underline underline-offset-2 hover:no-underline"
+              @click="whatsappClick({ source: 'product-detail' })"
+            >Ask us on WhatsApp</a>.
           </p>
         </div>
-      </div>
+      </CommonAccordionItem>
 
-      <div class="flex w-full items-center gap-4">
-        <ShopBenefitIcon name="gift" />
-        <div class="flex min-w-0 flex-1 flex-col text-black">
-          <p class="text-filter-heading font-normal">Send It As A Gift</p>
-          <p class="text-caption font-light">
-            Add a free personalized note or marking during checkout.
-          </p>
+      <CommonAccordionItem title="Fit">
+        <div class="flex flex-col gap-3">
+          <p v-if="product.model_note">{{ product.model_note }}</p>
+          <p>Sizes are EU. {{ SIZE_GUIDE_BETWEEN_SIZES }}</p>
+          <div class="-my-2.5 flex flex-wrap gap-x-6">
+            <a
+              href="/size-guide"
+              class="flex min-h-[44px] items-center text-black underline underline-offset-2 hover:no-underline"
+              aria-haspopup="dialog"
+              @click="openSizeGuide"
+            >Size Guide</a>
+            <NuxtLink
+              to="/contact"
+              class="flex min-h-[44px] items-center text-black underline underline-offset-2 hover:no-underline"
+            >
+              Contact Us
+            </NuxtLink>
+          </div>
         </div>
-      </div>
+      </CommonAccordionItem>
+
+      <CommonAccordionItem title="Shipping & Returns">
+        <div class="flex flex-col gap-3">
+          <p>
+            Orders are processed within 48 hours of payment. Delivery in Ghana takes 1–2 business
+            days. International delivery takes 5–21 business days depending on the destination,
+            and any customs duties are paid by the customer.
+          </p>
+          <p>
+            Returns are accepted within 7 days of receiving your order if a pair arrives
+            defective, damaged or incorrect. Size exchanges are available subject to stock.
+            Custom-made pairs, and sale items unless defective, can’t be returned.
+          </p>
+          <div class="-my-2.5 flex flex-wrap gap-x-6">
+            <NuxtLink
+              to="/help/shipping"
+              class="flex min-h-[44px] items-center text-black underline underline-offset-2 hover:no-underline"
+            >
+              Shipping details
+            </NuxtLink>
+            <NuxtLink
+              to="/help/returns"
+              class="flex min-h-[44px] items-center text-black underline underline-offset-2 hover:no-underline"
+            >
+              Returns details
+            </NuxtLink>
+          </div>
+        </div>
+      </CommonAccordionItem>
+
+      <CommonAccordionItem title="Sustainability">
+        <div class="flex flex-col gap-4">
+          <p>
+            Gold Coast Tokota transforms discarded materials into handcrafted footwear, preserving
+            Ghanaian craftsmanship while advancing sustainability.
+          </p>
+          <img
+            src="/design/pdp-sustainability.png"
+            alt="Renewed materials and cleaner chemistry certifications"
+            class="h-[63px] w-full object-contain object-left"
+            loading="lazy"
+          >
+        </div>
+      </CommonAccordionItem>
     </div>
 
-    <!-- Description -->
-    <div
-      v-if="product.description"
-      class="flex w-full flex-col gap-4 border-t border-line pb-3 pt-10 text-black"
-    >
-      <h2 v-if="product.description_heading" class="text-body font-normal">
-        {{ product.description_heading }}
-      </h2>
-      <p class="text-label font-light">{{ product.description }}</p>
-    </div>
-
-    <div
-      v-if="product.model_note"
-      class="flex w-full items-center border-b border-line py-5 text-black"
-    >
-      <h2 class="w-[106px] shrink-0 text-body font-normal">Model</h2>
-      <p class="min-w-0 flex-1 text-label font-light">{{ product.model_note }}</p>
-    </div>
-
-    <div class="flex w-full items-start border-b border-line py-5 text-black">
-      <h2 class="w-[106px] shrink-0 text-body font-normal">Fit</h2>
-      <div class="flex min-w-0 flex-1 flex-col text-label font-light">
-        <p>Questions about fit?</p>
-        <!-- These stack as their own rows rather than sitting inside a
-             sentence, so they take the 44px floor. -->
-        <NuxtLink to="/contact" class="-my-3 flex min-h-[44px] items-center py-3 underline">Contact Us</NuxtLink>
-        <NuxtLink to="/size-guide" class="-my-3 flex min-h-[44px] items-center py-3 underline">Size Guide</NuxtLink>
-      </div>
-    </div>
-
-    <div class="flex w-full flex-col items-start border-b border-line py-5">
-      <h2 class="w-full text-body font-normal text-black">Sustainability</h2>
-      <img
-        src="/design/pdp-sustainability.png"
-        alt="Renewed materials and cleaner chemistry certifications"
-        class="h-[63px] w-full object-contain object-left"
-        loading="lazy"
-      >
-    </div>
+    <ShopSizeGuideModal :open="sizeGuideOpen" @close="sizeGuideOpen = false" />
   </div>
 </template>

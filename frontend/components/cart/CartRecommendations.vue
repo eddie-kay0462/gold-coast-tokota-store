@@ -62,7 +62,7 @@ const subtitle = computed(() => {
           />
           <button
             type="button"
-            class="w-[81px] shrink-0 bg-graphite py-3 text-center text-label uppercase text-white transition-opacity hover:opacity-80"
+            class="btn-outline w-[81px] shrink-0 py-3 text-center text-label uppercase"
             @click="emit('add', current)"
           >
             Add

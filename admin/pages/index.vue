@@ -155,7 +155,8 @@ const alerts = computed(() => {
       <div class="card card-pad">
         <h2 class="card-title">Traffic by source</h2>
         <div class="mt-4">
-          <ChartsRankedBars v-if="charts" :data="charts.trafficBySource" />
+          <ChartsRankedBars v-if="charts?.trafficBySource" :data="charts.trafficBySource" />
+          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
         </div>
       </div>
     </div>
@@ -165,13 +166,15 @@ const alerts = computed(() => {
       <div class="card card-pad">
         <h2 class="card-title">Traffic by device</h2>
         <div class="mt-4">
-          <ChartsBar v-if="charts" :data="charts.trafficByDevice" />
+          <ChartsBar v-if="charts?.trafficByDevice" :data="charts.trafficByDevice" />
+          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
         </div>
       </div>
       <div class="card card-pad">
         <h2 class="card-title">Traffic by location</h2>
         <div class="mt-4">
-          <ChartsDonut v-if="charts" :data="charts.trafficByLocation" />
+          <ChartsDonut v-if="charts?.trafficByLocation" :data="charts.trafficByLocation" />
+          <p v-else-if="charts" class="py-10 text-center text-meta text-fg-faint">Not measured yet — analytics isn’t connected.</p>
         </div>
       </div>
     </div>

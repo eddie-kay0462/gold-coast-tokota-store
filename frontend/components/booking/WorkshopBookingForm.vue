@@ -4,6 +4,7 @@ import { useBookingStore } from '~/stores/bookings'
 import { whatsappMessage } from '~/utils/whatsapp'
 
 const config = useRuntimeConfig()
+const api = useApi()
 const bookingStore = useBookingStore()
 
 /**
@@ -53,7 +54,7 @@ async function onSubmit() {
     // Contact details go inside `details`, which is where StoreBookingRequest
     // validates them. They used to be sent at the top level, where the request
     // never looked — every submission would have failed validation.
-    await $fetch(`${config.public.apiBase}/bookings`, {
+    await api('/bookings', {
       method: 'POST',
       body: {
         type: 'workshop',

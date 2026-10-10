@@ -12,6 +12,7 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
+        'reference',
         'customer_id',
         'currency',
         'fx_rate_applied',
@@ -20,6 +21,7 @@ class Order extends Model
         'tax',
         'total',
         'status',
+        'delivered_at',
         'payment_gateway',
         'payment_reference',
         'delivery_provider',
@@ -34,6 +36,7 @@ class Order extends Model
         'tax' => 'integer',
         'total' => 'integer',
         'shipping_address' => 'array',
+        'delivered_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo
@@ -44,5 +47,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function returnRequests(): HasMany
+    {
+        return $this->hasMany(ReturnRequest::class);
     }
 }

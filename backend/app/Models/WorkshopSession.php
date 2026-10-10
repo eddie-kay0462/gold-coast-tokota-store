@@ -13,6 +13,7 @@ class WorkshopSession extends Model
     use HasFactory;
 
     protected $fillable = [
+        'workshop_type_id',
         'scheduled_date',
         'scheduled_slot',
         'capacity',
@@ -24,6 +25,11 @@ class WorkshopSession extends Model
         'scheduled_date' => 'date',
         'capacity' => 'integer',
     ];
+
+    public function workshopType(): BelongsTo
+    {
+        return $this->belongsTo(WorkshopType::class);
+    }
 
     public function createdByAdmin(): BelongsTo
     {

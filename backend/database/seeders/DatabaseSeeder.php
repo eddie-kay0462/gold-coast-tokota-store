@@ -4,11 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\AdminUser;
 use App\Models\BlogPost;
-use App\Models\Category;
-use App\Models\Collection;
 use App\Models\FxRate;
-use App\Models\InventoryItem;
-use App\Models\Product;
 use App\Models\SiteSetting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -19,11 +15,21 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Seeded as super_admin, not admin: §18 puts team management and
+        // payment configuration outside the Admin tier, so an `admin` seed
+        // would leave a fresh database with nobody able to create the first
+        // real account.
+        //
+        // The five people §17 names are deliberately NOT seeded. The document
+        // gives their roles and job titles but no email addresses, and
+        // inventing credentials for real colleagues is not something a seeder
+        // should do — see FOR_THE_TEAM.md.
         if (! AdminUser::query()->where('email', 'admin@goldcoasttokota.store')->exists()) {
             AdminUser::factory()->create([
-                'name' => 'Test Admin',
+                'name' => 'Test Super Admin',
+                'job_title' => 'Founder & CEO',
                 'email' => 'admin@goldcoasttokota.store',
-                'role' => 'admin',
+                'role' => 'super_admin',
             ]);
         }
 
@@ -60,7 +66,27 @@ class DatabaseSeeder extends Seeder
             ]),
             'business_hours' => 'Mon–Sat · 9am–5pm GMT',
             'contact_email' => 'hello@goldcoasttokota.store',
-            'diy_turnaround_estimate' => '2-3 weeks',
+            // §12. The document annotates the phone number "(update with the
+            // official number)", so it is seeded as given and flagged in
+            // admin rather than treated as final — see FOR_THE_TEAM.md.
+            'contact_phone' => '+233 25 753 4297',
+            'address' => 'Haatso, Accra, Ghana',
+            // §24.
+            'tagline' => 'Crafted with Purpose. Inspired by Culture.',
+            // §16's "DIY Sandal Kit" row. Was '2-3 weeks', which contradicted
+            // the published turnaround table outright — the storefront's DIY
+            // order form quotes this string directly.
+            'diy_turnaround_estimate' => '1–2 business days',
+            // Per-order-type estimates for the admin Workshops screen. These
+            // are the brand's to rewrite; seeded so a fresh database matches
+            // what the screen was designed against rather than showing nothing.
+            'diy_turnaround_tiers' => [
+                ['id' => 'standard', 'label' => 'Standard sandal order', 'estimate' => '1–2 business days', 'sort_order' => 1],
+                ['id' => 'custom', 'label' => 'Custom sandal order', 'estimate' => '3–5 business days', 'sort_order' => 2],
+                ['id' => 'kit', 'label' => 'DIY sandal kit', 'estimate' => '1–2 business days', 'sort_order' => 3],
+                ['id' => 'bulk', 'label' => 'Bulk orders (20+ pairs)', 'estimate' => '1–3 weeks (depending on quantity)', 'sort_order' => 4],
+                ['id' => 'corporate', 'label' => 'Corporate & event orders', 'estimate' => '1–2 weeks (subject to project scope)', 'sort_order' => 5],
+            ],
             // Deliberately conservative. The approved mockup's bar reads
             // "Free delivery in Accra" and "Order online, pick up in Osu";
             // neither is confirmed — checkout charges for Accra delivery, and
@@ -73,6 +99,10 @@ class DatabaseSeeder extends Seeder
                 'We ship worldwide',
             ],
         ]);
+
+        // The six experiences §15 publishes, with their real days, times and
+        // capacity ceilings.
+        $this->call(WorkshopTypeSeeder::class);
 
         // All page seeding lives in PageSeeder so the CMS slugs are in one place.
         $this->call(PageSeeder::class);
@@ -87,34 +117,12 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // Categories are the top-nav split; collections are the merchandising
-        // grouping within one (see design_prototype_schema_gaps memory / README
-        // deviation). Names match the colleague's design prototype so seeded
-        // data lines up with what the storefront actually renders.
-        $sandals = Category::query()->firstOrCreate(['slug' => 'sandals'], ['name' => 'Sandals']);
-        $ahenema = Category::query()->firstOrCreate(['slug' => 'ahenema'], ['name' => 'Ahenema']);
-
-        $sikapa = Collection::query()->firstOrCreate(['slug' => 'sikapa'], ['name' => 'Sikapa']);
-        $obrempong = Collection::query()->firstOrCreate(['slug' => 'obrempong'], ['name' => 'Obrempong']);
-        $slides = Collection::query()->firstOrCreate(['slug' => 'slides'], ['name' => 'Slides']);
-
-        if (Product::query()->count() === 0) {
-            Product::factory()
-                ->count(3)
-                ->featured()
-                ->has(InventoryItem::factory()->count(2))
-                ->create(['category_id' => $ahenema->id, 'collection_id' => $obrempong->id]);
-
-            Product::factory()
-                ->count(2)
-                ->has(InventoryItem::factory()->count(2))
-                ->create(['category_id' => $sandals->id, 'collection_id' => $sikapa->id]);
-
-            Product::factory()
-                ->count(2)
-                ->has(InventoryItem::factory()->count(2))
-                ->create(['category_id' => $sandals->id, 'collection_id' => $slides->id]);
-        }
+        // The brand's real catalogue — 26 slipper styles and 2 shoes, from the
+        // photo folders and price sheets the client supplied. Nothing is
+        // padded with faker any more: 28 real products are enough to exercise
+        // pagination and the listing filters, and a made-up product sitting
+        // next to a real one is indistinguishable from it on the storefront.
+        $this->call(ProductSeeder::class);
 
         // Titles match the colleague's design prototype (Stories section)
         // so /blog has real, on-brand content once the frontend wires it up.

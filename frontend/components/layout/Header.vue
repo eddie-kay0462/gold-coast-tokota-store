@@ -138,6 +138,14 @@ function isActive(to: string) {
   return hash ? route.hash === `#${hash}` : !route.hash
 }
 
+/** Sale keeps its red; everything else is graphite, going full ink when hovered
+ *  or current. `sale` clears 4.5:1 on white, so the lifted on-dark red is no
+ *  longer needed here. */
+function categoryClass(item: { accent?: boolean }, current: boolean) {
+  if (item.accent) return 'text-sale'
+  return current ? 'text-ink' : 'text-graphite hover:text-ink'
+}
+
 function isCategoryActive(to: string) {
   const [path, query] = to.split('?')
   if (route.path !== path) return false
@@ -148,28 +156,29 @@ function isCategoryActive(to: string) {
 </script>
 
 <template>
-  <!-- The chrome is dark from the approved mockup, and sticky as the mockup has
-       it — the announcement strip travels with the nav rather than scrolling
-       away, so the currency toggle and the cart stay reachable from anywhere on
-       a page.
+  <!-- White chrome with black accents, after the Crockett & Jones reference
+       header the brand chose over the earlier dark Template B bar: logo row and
+       category row on white, separated by hairlines. The announcement strip on
+       top is black with white type, framing the white rows beneath it. Sticky, so the currency toggle and the
+       cart stay reachable from anywhere on a page.
 
-       The ground is set here, but the text colour and the light focus ring are
-       set on each dark *row* rather than on this element, because the mega menu
-       and search panels are light-on-white children of it.
+       Only the announcement strip is dark, so it alone carries `chrome-dark`
+       (white focus ring); the rest uses the base graphite ring.
 
        Anchor landings are handled by `scroll-padding-top` on `html`
        (`assets/css/main.css`), not by `scroll-mt` on every target: a sticky
        header covers the top of the viewport for every anchor on the site, so
        the offset belongs in one place. -->
-  <header class="sticky top-0 z-50 bg-chrome" @keydown.esc="closeMenu(true); searchOpen = false">
+  <header class="sticky top-0 z-50 bg-white" @keydown.esc="closeMenu(true); searchOpen = false">
     <!-- Announcement bar. The flag/currency cluster used to be absolutely
          positioned, so it reserved no width and the centred message ran
          underneath it on a phone (measured: the sign-up link overlapped it by
          41px at both 320px and 375px). It is a normal flex child now, and below
          `sm` the message scrolls through a marquee rather than wrapping.
 
-         The strip is `ink` (#000) against the header's `chrome` (#111) — the
-         same two-tone relationship the approved mockup draws. -->
+         `ink` (#000) with solid white type, the one dark band above the white
+         header. The client tried white and gold here and settled on black.
+         Being dark, it carries `chrome-dark` for a white focus ring. -->
     <div class="chrome-dark flex w-full items-center gap-3 bg-ink px-5 text-white sm:grid sm:grid-cols-[1fr_auto_1fr] lg:px-[30px]">
       <!-- Empty left flank. From `sm` this row is the same three-column grid the
            logo row below uses: two equal `1fr` flanks with the content in an
@@ -180,13 +189,13 @@ function isCategoryActive(to: string) {
 
       <LayoutAnnouncementBar />
 
-      <div class="flex shrink-0 items-center justify-end gap-2.5">
+      <div class="flex shrink-0 items-center justify-end gap-2 sm:gap-2.5">
         <img
           :key="geo.country"
           :src="flagUrl(geo.country)"
           :alt="countryName(geo.country)"
           :title="countryName(geo.country)"
-          class="h-[15px] w-[21px] shrink-0 object-cover"
+          class="h-3 w-[17px] shrink-0 object-cover sm:h-[15px] sm:w-[21px]"
           width="21"
           height="15"
         >
@@ -196,8 +205,9 @@ function isCategoryActive(to: string) {
 
     <!-- Primary nav. Three columns with equal 1fr flanks so the logo sits
          optically centred in the row regardless of how wide the nav or the
-         icon cluster get. -->
-    <div class="chrome-dark grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-white/15 px-5 text-white md:px-10 lg:px-[68px]">
+         icon cluster get. Taller than the old dark row — the reference gives
+         the logo room — with a hairline under it. -->
+    <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 text-ink md:px-10 md:py-3 lg:px-[68px]">
       <div class="flex items-center justify-start">
         <button
           type="button"
@@ -215,20 +225,21 @@ function isCategoryActive(to: string) {
             v-for="item in primaryNav"
             :key="item.label"
             :to="item.to"
-            class="flex flex-col items-start gap-[18px] px-3 pt-5"
-            :class="isActive(item.to) ? '' : 'pb-5'"
+            class="group flex flex-col items-start gap-1.5 px-3 py-3"
           >
-            <span class="whitespace-nowrap text-center text-caption text-white">{{ item.label }}</span>
-            <span v-if="isActive(item.to)" class="h-0.5 w-full bg-gold" />
+            <span class="whitespace-nowrap text-center text-caption uppercase tracking-[1.4px] text-graphite group-hover:text-ink">{{ item.label }}</span>
+            <!-- Always rendered so the row never shifts; only its colour marks
+                 the current tab. -->
+            <span class="h-px w-full" :class="isActive(item.to) ? 'bg-ink' : 'bg-transparent'" />
           </NuxtLink>
         </nav>
       </div>
 
       <NuxtLink to="/" class="flex min-h-[44px] items-center justify-self-center px-4" aria-label="Gold Coast Tokota — home">
         <img
-          src="/brand/logo-white.png"
+          src="/brand/logo.png"
           alt="Gold Coast Tokota"
-          class="h-6 w-auto md:h-7"
+          class="h-7 w-auto md:h-9"
           width="435"
           height="108"
         >
@@ -250,14 +261,14 @@ function isCategoryActive(to: string) {
         </NuxtLink>
         <button
           type="button"
-          class="relative flex size-11 items-center justify-center"
+          class="relative ml-1 flex size-11 items-center justify-center rounded-full bg-surface transition-colors hover:bg-line"
           :aria-label="cart.itemCount ? `Cart, ${cart.itemCount} items` : 'Cart, empty'"
           @click="cart.openDrawer()"
         >
           <ShoppingCartSimple :size="16" />
           <span
             v-if="cart.itemCount"
-            class="absolute right-1 top-1 flex size-4 items-center justify-center rounded-full bg-gold text-[10px] leading-none text-chrome"
+            class="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-ink text-[10px] leading-none text-white"
           >
             {{ cart.itemCount }}
           </span>
@@ -270,9 +281,12 @@ function isCategoryActive(to: string) {
          line, so 56px is stable, and max-height animates without needing the
          height measured at runtime. `overflow-hidden` is what actually clips it
          on the way up. -->
+    <!-- Uppercase, tracked labels with a caret on the items that open a mega
+         menu, as the reference draws them. The open or current item is marked
+         in black: full ink and a 1px rule under the label. -->
     <nav
-      class="chrome-dark hidden w-full items-center justify-center overflow-hidden text-white motion-safe:transition-[max-height,opacity] motion-safe:duration-300 motion-safe:ease-out md:flex"
-      :class="rowOpen ? 'max-h-[64px] opacity-100' : 'max-h-0 opacity-0'"
+      class="hidden w-full items-center justify-center overflow-hidden border-line motion-safe:transition-[max-height,opacity] motion-safe:duration-300 motion-safe:ease-out md:flex lg:gap-x-6"
+      :class="rowOpen ? 'max-h-[64px] border-b opacity-100' : 'max-h-0 opacity-0'"
       aria-label="Categories"
       @mouseleave="scheduleClose"
       @focusin="rowFocused = true"
@@ -283,32 +297,33 @@ function isCategoryActive(to: string) {
           v-if="item.menu"
           :ref="(el) => registerTrigger(item.label, el)"
           type="button"
-          class="flex shrink-0 flex-col items-start px-3 py-5 text-caption"
-          :class="[
-            item.accent ? 'text-sale-on-dark' : 'text-white',
-            openMenu === item.label || isCategoryActive(item.to) ? 'font-bold' : '',
-          ]"
+          class="flex shrink-0 items-center gap-1.5 px-4 py-[18px] text-caption uppercase tracking-[1.4px] transition-colors"
+          :class="categoryClass(item, openMenu === item.label || isCategoryActive(item.to))"
           :aria-expanded="openMenu === item.label"
           :aria-controls="menuId(item.label)"
           @mouseenter="openMenuFor(item.label)"
           @focus="openMenuFor(item.label)"
           @click="openMenu === item.label ? closeMenu() : openMenuFor(item.label)"
         >
-          <span class="whitespace-nowrap">{{ item.label }}</span>
+          <span class="whitespace-nowrap border-b pb-0.5" :class="openMenu === item.label || isCategoryActive(item.to) ? 'border-current' : 'border-transparent'">{{ item.label }}</span>
+          <CaretDown
+            :size="10"
+            weight="bold"
+            class="motion-safe:transition-transform"
+            :class="openMenu === item.label ? 'rotate-180' : ''"
+            aria-hidden="true"
+          />
         </button>
 
         <NuxtLink
           v-else
           :to="item.to"
-          class="flex shrink-0 flex-col items-start px-3 py-5 text-caption"
-          :class="[
-            item.accent ? 'text-sale-on-dark' : 'text-white',
-            isCategoryActive(item.to) ? 'font-bold' : '',
-          ]"
+          class="flex shrink-0 items-center px-4 py-[18px] text-caption uppercase tracking-[1.4px] transition-colors"
+          :class="categoryClass(item, isCategoryActive(item.to))"
           @mouseenter="scheduleClose"
           @focus="closeMenu()"
         >
-          <span class="whitespace-nowrap">{{ item.label }}</span>
+          <span class="whitespace-nowrap border-b pb-0.5" :class="isCategoryActive(item.to) ? 'border-current' : 'border-transparent'">{{ item.label }}</span>
         </NuxtLink>
       </template>
     </nav>
@@ -338,14 +353,14 @@ function isCategoryActive(to: string) {
     <nav
       v-if="mobileNavOpen"
       id="mobile-nav"
-      class="chrome-dark flex max-h-[calc(100dvh-7rem)] w-full flex-col overflow-y-auto border-t border-white/15 text-white md:hidden"
+      class="flex max-h-[calc(100dvh-7rem)] w-full flex-col overflow-y-auto border-b border-line bg-white text-graphite md:hidden"
       aria-label="Mobile navigation"
     >
       <NuxtLink
         v-for="item in primaryNav"
         :key="item.label"
         :to="item.to"
-        class="px-5 py-4 text-caption text-white"
+        class="border-b border-line px-5 py-4 text-caption uppercase tracking-[1.4px] text-ink"
       >
         {{ item.label }}
       </NuxtLink>
@@ -354,8 +369,8 @@ function isCategoryActive(to: string) {
         <button
           v-if="item.menu"
           type="button"
-          class="flex items-center justify-between px-5 py-4 text-left text-caption"
-          :class="item.accent ? 'text-sale-on-dark' : 'text-white'"
+          class="flex items-center justify-between px-5 py-4 text-left text-caption uppercase tracking-[1.4px]"
+          :class="item.accent ? 'text-sale' : 'text-graphite'"
           :aria-expanded="mobileExpanded === item.label"
           @click="mobileExpanded = mobileExpanded === item.label ? null : item.label"
         >
@@ -370,8 +385,8 @@ function isCategoryActive(to: string) {
         <NuxtLink
           v-else
           :to="item.to"
-          class="px-5 py-4 text-caption"
-          :class="item.accent ? 'text-sale-on-dark' : 'text-white'"
+          class="px-5 py-4 text-caption uppercase tracking-[1.4px]"
+          :class="item.accent ? 'text-sale' : 'text-graphite'"
         >
           {{ item.label }}
         </NuxtLink>
