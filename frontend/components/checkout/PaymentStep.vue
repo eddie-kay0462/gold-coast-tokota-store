@@ -135,9 +135,9 @@ async function placeOrder() {
 
 <template>
   <div class="flex w-full flex-col items-start gap-5">
-    <div class="flex w-full flex-col items-start gap-2 border border-line p-5">
-      <p class="w-full text-caption text-muted">Paying in</p>
-      <p class="w-full text-display-sm font-normal text-black">
+    <div class="flex w-full flex-col items-start gap-2 border-y border-line py-5">
+      <p class="caps-label w-full text-muted">Paying in</p>
+      <p class="w-full text-display-sm font-normal text-ink">
         <CommonPriceDisplay :base-price-ghs="totalGhs" compact />
       </p>
       <p class="w-full text-caption text-muted">

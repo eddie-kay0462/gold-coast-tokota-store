@@ -90,4 +90,18 @@
   .btn-outline-on-dark {
     @apply btn-outline hover:border-white focus-visible:border-white;
   }
+
+  /* The home page's two small type treatments, named so the pages restyled to
+     match it (Stories, Bookings, the cart drawer, checkout, account) do not
+     each repeat the string. `caps-title` is the product and story tile name;
+     `caps-label` is the header's category-row style, used for eyebrows, tabs,
+     breadcrumbs and small section labels. The home components predate these
+     and still spell the classes out. */
+  .caps-title {
+    @apply text-label font-bold uppercase tracking-[1.4px] text-ink;
+  }
+
+  .caps-label {
+    @apply text-caption uppercase tracking-[1.4px];
+  }
 }

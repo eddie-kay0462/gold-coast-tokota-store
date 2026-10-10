@@ -13,9 +13,12 @@ defineProps<{ label?: string }>()
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-1 bg-chrome px-4 py-3.5 text-white">
-    <p class="text-caption font-normal uppercase tracking-[1px] text-gold">Waitlist</p>
-    <p class="text-label text-white/80">
+  <!-- Light, outlined in ink like the rest of the booking page. It used to sit
+       on the dark `chrome` ground with a gold label, from before the home page
+       went white. -->
+  <div class="flex w-full flex-col gap-1 border border-ink bg-white px-4 py-3.5">
+    <p class="caps-label text-ink">Waitlist</p>
+    <p class="text-label text-graphite">
       {{ label ?? 'This session is full. Send your details anyway and we’ll hold your place on the waitlist. We’ll be in touch as soon as a spot opens.' }}
     </p>
   </div>

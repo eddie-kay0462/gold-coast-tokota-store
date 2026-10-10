@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhArrowRight as ArrowRight, PhCaretDown as CaretDown, PhList as List, PhMagnifyingGlass as MagnifyingGlass, PhShoppingCartSimple as ShoppingCartSimple, PhUser as User, PhX as X } from '@phosphor-icons/vue'
+import { PhCaretDown as CaretDown, PhList as List, PhMagnifyingGlass as MagnifyingGlass, PhShoppingCartSimple as ShoppingCartSimple, PhUser as User, PhX as X } from '@phosphor-icons/vue'
 import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
 import { countryName, flagUrl } from '~/utils/geo'
@@ -391,9 +391,11 @@ function isCategoryActive(to: string) {
           {{ item.label }}
         </NuxtLink>
 
-        <div v-if="item.menu && mobileExpanded === item.label" class="on-light flex flex-col bg-surface">
+        <!-- Same content as the desktop panel, same look: white, tracked
+             headings, and the promos as photo-over-caption tiles side by side. -->
+        <div v-if="item.menu && mobileExpanded === item.label" class="on-light flex flex-col border-y border-line bg-white pb-5">
           <template v-for="column in item.menu.columns" :key="column.heading">
-            <p class="px-8 pb-1 pt-4 text-eyebrow font-normal uppercase text-muted">
+            <p class="caps-label px-8 pb-1 pt-5 text-muted">
               {{ column.heading }}
             </p>
             <NuxtLink
@@ -405,18 +407,17 @@ function isCategoryActive(to: string) {
               {{ link.label }}
             </NuxtLink>
           </template>
-          <NuxtLink
-            v-for="promo in item.menu.promos"
-            :key="promo.label"
-            :to="promo.to"
-            class="relative m-4 flex h-[140px] items-end gap-3 overflow-hidden px-4 py-3"
-          >
-            <img :src="promo.image" :alt="promo.alt" class="absolute inset-0 size-full object-cover">
-            <span class="relative flex-1 whitespace-pre-line text-body font-normal text-white">
-              {{ promo.label }}
-            </span>
-            <ArrowRight :size="20" class="relative shrink-0 text-white" />
-          </NuxtLink>
+          <div class="grid grid-cols-2 gap-1.5 px-5 pt-4">
+            <NuxtLink
+              v-for="promo in item.menu.promos"
+              :key="promo.label"
+              :to="promo.to"
+              class="flex min-w-0 flex-col gap-2"
+            >
+              <img :src="promo.image" :alt="promo.alt" class="aspect-[4/3] w-full bg-surface object-cover" loading="lazy">
+              <span class="caps-title text-caption">{{ promo.label }}</span>
+            </NuxtLink>
+          </div>
         </div>
       </template>
     </nav>

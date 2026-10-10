@@ -77,7 +77,7 @@ defineExpose({ validate })
        recipient, then the address, then the phone. -->
   <form class="flex w-full flex-col items-start gap-8" novalidate @submit.prevent="onSubmit">
     <section class="flex w-full flex-col items-start gap-4">
-      <h2 class="w-full text-body font-normal text-black">Contact</h2>
+      <h2 class="caps-title w-full">Contact</h2>
       <FormsFormField
         v-model="model.email"
         label="Email" name="email" type="email" autocomplete="email" required
@@ -87,7 +87,7 @@ defineExpose({ validate })
     </section>
 
     <section class="flex w-full flex-col items-start gap-4">
-      <h2 class="w-full text-body font-normal text-black">Delivery</h2>
+      <h2 class="caps-title w-full">Delivery</h2>
 
       <FormsFormField
         v-model="model.country"
@@ -131,7 +131,7 @@ defineExpose({ validate })
     <div class="flex w-full flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
       <button
         type="button"
-        class="-my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-caption text-graphite hover:underline sm:justify-start"
+        class="caps-label -my-2.5 flex min-h-[44px] items-center gap-1 py-2.5 text-ink hover:underline sm:justify-start"
         @click="emit('cart')"
       >
         <PhCaretLeft :size="12" aria-hidden="true" />

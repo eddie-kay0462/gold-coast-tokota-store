@@ -42,6 +42,13 @@ async function onLookup() {
     'check it for you.'
 }
 
+const helpLinks = [
+  { label: 'Help Centre', to: '/help' },
+  { label: 'Returns', to: '/help/returns' },
+  { label: 'Shipping', to: '/help/shipping' },
+  { label: 'Contact us', to: '/contact' },
+]
+
 useSeoMeta({
   title: 'Your account | Gold Coast Tokota',
   description: 'Sign in, create an account, or track an order you placed as a guest.',
@@ -64,36 +71,38 @@ useSeoMeta({
 
     <section
       v-else
-      class="page-gutter section-y mx-auto flex w-full max-w-[1044px] flex-col items-start gap-10"
+      class="page-gutter section-y mx-auto flex w-full max-w-[1044px] flex-col items-start gap-12"
     >
       <header class="flex w-full flex-col items-start gap-2">
-        <h1 class="w-full text-display-section font-normal text-black">Your account</h1>
-        <p class="w-full max-w-[720px] text-body text-graphite">
+        <h1 class="w-full text-display-section font-normal text-ink">Your account</h1>
+        <p class="w-full max-w-[720px] text-label text-subtle">
           Sign in to see your orders, or track an order you placed as a guest.
         </p>
       </header>
 
-      <div class="grid w-full grid-cols-1 gap-5 md:grid-cols-2">
-        <div class="flex min-w-0 flex-col items-start gap-3 border border-line p-6">
-          <h2 class="w-full text-display-sm font-normal text-black">Sign in</h2>
-          <p class="w-full flex-1 text-caption text-muted">
+      <!-- Two columns split by a hairline rather than two boxed cards, the home
+           page's white-and-rules look. -->
+      <div class="grid w-full grid-cols-1 border-t border-line md:grid-cols-2">
+        <div class="flex min-w-0 flex-col items-start gap-3 py-8 md:border-r md:border-line md:pr-10">
+          <h2 class="caps-title w-full">Sign in</h2>
+          <p class="w-full flex-1 text-label text-subtle">
             See past orders, save your delivery details and check out faster next time.
           </p>
-          <CommonBrandButton to="/account/login" full>Sign in</CommonBrandButton>
+          <CommonBrandButton to="/account/login" class="mt-2">Sign in</CommonBrandButton>
         </div>
 
-        <div class="flex min-w-0 flex-col items-start gap-3 border border-line p-6">
-          <h2 class="w-full text-display-sm font-normal text-black">Create an account</h2>
-          <p class="w-full flex-1 text-caption text-muted">
+        <div class="flex min-w-0 flex-col items-start gap-3 border-t border-line py-8 md:border-t-0 md:pl-10">
+          <h2 class="caps-title w-full">Create an account</h2>
+          <p class="w-full flex-1 text-label text-subtle">
             It takes a minute, and you never have to use it. Ordering as a guest works exactly the same.
           </p>
-          <CommonBrandButton to="/account/register" variant="white" full>Create account</CommonBrandButton>
+          <CommonBrandButton to="/account/register" class="mt-2">Create account</CommonBrandButton>
         </div>
       </div>
 
       <div class="flex w-full flex-col items-start gap-4 border-t border-line pt-10">
-        <h2 class="w-full text-display-sm font-normal text-black">Track an order</h2>
-        <p class="w-full max-w-[720px] text-body text-graphite">
+        <h2 class="w-full text-display-sm text-ink">Track an order</h2>
+        <p class="w-full max-w-[720px] text-label text-subtle">
           Ordered as a guest? Enter your order number and the email you used.
         </p>
 
@@ -118,12 +127,15 @@ useSeoMeta({
       </div>
 
       <div class="flex w-full flex-col items-start gap-3 border-t border-line pt-10">
-        <h2 class="w-full text-display-sm font-normal text-black">Need something else?</h2>
+        <h2 class="w-full text-display-sm text-ink">Need something else?</h2>
+        <!-- The home page's "Shop all" link style: tracked capitals, underlined. -->
         <ul class="flex flex-wrap items-center gap-x-6">
-          <li><NuxtLink to="/help" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Help Centre</NuxtLink></li>
-          <li><NuxtLink to="/help/returns" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Returns</NuxtLink></li>
-          <li><NuxtLink to="/help/shipping" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Shipping</NuxtLink></li>
-          <li><NuxtLink to="/contact" class="-my-3 flex min-h-[44px] items-center py-3 text-label text-muted underline hover:text-graphite">Contact us</NuxtLink></li>
+          <li v-for="link in helpLinks" :key="link.to">
+            <NuxtLink
+              :to="link.to"
+              class="caps-label -my-3 flex min-h-[44px] items-center py-3 text-ink underline underline-offset-4 hover:no-underline"
+            >{{ link.label }}</NuxtLink>
+          </li>
           <li>
             <CommonWhatsAppLink source="account" variant="quiet" :message="whatsappMessage.general()">
               WhatsApp

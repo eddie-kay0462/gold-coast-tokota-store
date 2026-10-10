@@ -40,14 +40,14 @@ useSeoMeta({
 
       <fieldset disabled class="flex w-full flex-col items-start gap-8">
         <section class="flex w-full max-w-[520px] flex-col items-start gap-5">
-          <h2 class="w-full text-display-sm font-normal text-black">Profile</h2>
+          <h2 class="caps-title w-full">Profile</h2>
           <FormsFormField v-model="profile.name" label="Name" name="profile-name" disabled />
           <FormsFormField v-model="profile.email" label="Email" name="profile-email" type="email" disabled />
           <FormsFormField v-model="profile.phone" label="Phone" name="profile-phone" type="tel" disabled />
         </section>
 
         <section class="flex w-full max-w-[520px] flex-col items-start gap-5 border-t border-line pt-8">
-          <h2 class="w-full text-display-sm font-normal text-black">Delivery address</h2>
+          <h2 class="caps-title w-full">Delivery address</h2>
           <FormsFormField v-model="address.line1" label="Street address" name="address-line1" disabled />
           <FormsFormField v-model="address.city" label="City" name="address-city" disabled />
           <FormsFormField v-model="address.region" label="Region" name="address-region" disabled />
@@ -55,7 +55,7 @@ useSeoMeta({
         </section>
 
         <section class="flex w-full max-w-[520px] flex-col items-start gap-5 border-t border-line pt-8">
-          <h2 class="w-full text-display-sm font-normal text-black">Preferences</h2>
+          <h2 class="caps-title w-full">Preferences</h2>
           <FormsFormField
             v-model="profile.currency"
             label="Preferred currency"
@@ -68,7 +68,7 @@ useSeoMeta({
         </section>
 
         <section class="flex w-full max-w-[520px] flex-col items-start gap-5 border-t border-line pt-8">
-          <h2 class="w-full text-display-sm font-normal text-black">Password</h2>
+          <h2 class="caps-title w-full">Password</h2>
           <FormsFormField v-model="password.current" label="Current password" name="password-current" type="password" disabled />
           <FormsFormField v-model="password.next" label="New password" name="password-next" type="password" disabled />
           <FormsFormField v-model="password.confirm" label="Confirm new password" name="password-confirm" type="password" disabled />

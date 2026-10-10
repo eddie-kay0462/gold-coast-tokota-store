@@ -26,14 +26,14 @@ const blocks = computed(() => {
        different arrangements before a reader reached the first paragraph. -->
   <article class="page-gutter mx-auto flex w-full max-w-[calc(52rem+120px)] flex-col items-center py-10 lg:py-16">
     <header class="flex w-full flex-col items-center gap-4 text-center">
-      <p class="text-caption uppercase tracking-[1px] text-muted">
+      <p class="caps-label text-muted">
         <time :datetime="post.published_at">{{ formatPostDate(post.published_at) }}</time>
         <template v-if="post.category">
           &nbsp;&middot;&nbsp;{{ post.category }}
         </template>
       </p>
 
-      <h1 class="w-full text-display-section font-normal text-black">{{ post.title }}</h1>
+      <h1 class="w-full text-display-section font-normal text-ink">{{ post.title }}</h1>
 
       <p v-if="post.subtitle" class="w-full max-w-[640px] text-lede font-light text-muted">
         {{ post.subtitle }}

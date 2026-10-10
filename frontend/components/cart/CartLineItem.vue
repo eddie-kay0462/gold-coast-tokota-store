@@ -26,25 +26,25 @@ const discountLabel = computed(() => {
       <img
         :src="item.image || '/design/product-kentehene.png'"
         :alt="item.name"
-        class="h-[100px] w-[70px] object-cover"
+        class="aspect-[3/4] w-[75px] bg-surface object-cover"
         loading="lazy"
       >
     </NuxtLink>
 
     <div class="flex min-w-0 flex-1 flex-col justify-between gap-3 self-stretch">
-      <div class="flex w-full items-center gap-3">
-        <div class="flex min-w-0 flex-1 flex-col font-light">
-          <NuxtLink :to="`/shop/${item.slug}`" class="w-full text-label text-black hover:underline">
+      <div class="flex w-full items-start gap-3">
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <NuxtLink :to="`/shop/${item.slug}`" class="caps-title w-full hover:underline">
             {{ item.name }}
           </NuxtLink>
-          <p v-if="item.variantLabel" class="w-full text-caption text-muted">
+          <p v-if="item.variantLabel" class="w-full text-caption text-subtle">
             {{ item.variantLabel }}
           </p>
         </div>
 
         <button
           type="button"
-          class="-m-3 flex size-11 shrink-0 items-center justify-center p-3 text-graphite transition-opacity hover:opacity-60"
+          class="-m-3 flex size-11 shrink-0 items-center justify-center p-3 text-ink transition-opacity hover:opacity-60"
           :aria-label="`Remove ${item.name} from cart`"
           @click="emit('remove')"
         >
@@ -52,15 +52,15 @@ const discountLabel = computed(() => {
         </button>
       </div>
 
-      <div class="flex w-full items-center justify-between gap-3">
-        <div class="flex min-w-0 flex-1 flex-col text-caption">
+      <div class="flex w-full items-end justify-between gap-3">
+        <div class="flex min-w-0 flex-1 flex-col text-label">
           <CommonPriceDisplay
-            class="min-w-0 text-graphite"
+            class="min-w-0 text-ink"
             :base-price-ghs="item.unitPriceGhs"
             :compare-at-ghs="item.compareAtGhs"
             compact
           />
-          <p v-if="discountLabel" class="w-full font-light text-sale">{{ discountLabel }}</p>
+          <p v-if="discountLabel" class="w-full text-caption font-light text-sale">{{ discountLabel }}</p>
         </div>
 
         <!-- The padding lives on the buttons, not the wrapper: with `p-3` on the
@@ -76,7 +76,7 @@ const discountLabel = computed(() => {
             <PhMinus :size="12" />
           </button>
 
-          <span class="min-w-3 text-center text-caption font-light text-black">
+          <span class="min-w-3 text-center text-caption tabular-nums text-ink">
             {{ item.quantity }}
           </span>
 

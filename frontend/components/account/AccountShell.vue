@@ -24,8 +24,8 @@ const route = useRoute()
 <template>
   <div class="page-gutter section-y mx-auto flex w-full max-w-[1190px] flex-col items-start gap-8">
     <header class="flex w-full flex-col items-start gap-2">
-      <h1 class="w-full text-display-section font-normal text-black">{{ heading }}</h1>
-      <p v-if="description" class="w-full max-w-[720px] text-body text-graphite">
+      <h1 class="w-full text-display-section font-normal text-ink">{{ heading }}</h1>
+      <p v-if="description" class="w-full max-w-[720px] text-label text-subtle">
         {{ description }}
       </p>
     </header>
@@ -35,16 +35,16 @@ const route = useRoute()
     <div class="flex w-full flex-col items-start gap-8 md:flex-row md:gap-12">
       <nav class="w-full shrink-0 md:w-[220px]" aria-label="Account sections">
         <ul
-          class="flex w-full items-center gap-4 overflow-x-auto border-b border-line md:flex-col md:items-start md:gap-1 md:overflow-visible md:border-b-0 md:border-l"
+          class="flex w-full items-center gap-6 overflow-x-auto border-b border-line [scrollbar-width:none] md:flex-col md:items-start md:gap-1 md:overflow-visible md:border-b-0 md:border-l [&::-webkit-scrollbar]:hidden"
         >
           <li v-for="item in accountNav" :key="item.to" class="md:w-full">
             <NuxtLink
               :to="item.to"
-              class="flex min-h-[44px] items-center whitespace-nowrap py-3 text-label hover:text-graphite md:w-full md:border-l-2 md:px-4"
+              class="caps-label -mb-px flex min-h-[44px] items-center whitespace-nowrap border-b py-3 transition-colors hover:text-ink md:-ml-px md:mb-0 md:w-full md:border-b-0 md:border-l-2 md:px-4"
               :class="
                 route.path === item.to
-                  ? 'text-graphite md:border-graphite'
-                  : 'text-muted md:border-transparent'
+                  ? 'border-ink text-ink'
+                  : 'border-transparent text-subtle'
               "
               :aria-current="route.path === item.to ? 'page' : undefined"
             >{{ item.label }}</NuxtLink>
