@@ -1,0 +1,94 @@
+# Production stack on the Contabo box shared with IRIS (docs/deploy/contabo.md).
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Nothing here publishes a port. The only way in is the `edge` network, which
+# IRIS's Caddy also joins and uses to reach `tokota-api:80`. The database is
+# Neon and images are on R2, so the only state on the box is Redis and .env.
+
+name: tokota
+
+# worker and scheduler run the image `app` builds; only `app` builds it, or
+# Compose builds the same tag three times at once and fails.
+x-app: &app
+  image: tokota-api:latest
+  pull_policy: never
+  volumes:
+    - ./.env:/var/www/html/.env:ro
+  restart: unless-stopped
+  # The box is shared with IRIS; a runaway PHP process must not push it into
+  # swap. FPM runs up to 5 children at PHP's 128M limit.
+  mem_limit: 768m
+  depends_on:
+    redis:
+      condition: service_healthy
+  networks: [default]
+
+services:
+  app:
+    <<: *app
+    build:
+      context: .
+      target: app
+
+  # Drains `shipping` first: a Yango price offer lapses 10 minutes after it is
+  # made, so courier jobs must not queue behind emails. Exits after an hour
+  # (--max-time) and is restarted, which keeps memory from creeping.
+  worker:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "redis", "--queue=shipping,default", "--tries=3", "--max-time=3600", "--sleep=3"]
+    stop_grace_period: 60s
+    mem_limit: 384m
+
+  # RefreshFxRate hourly, ReleaseExpiredReservations every 5 min,
+  # PollActiveShipments every minute, PruneOrphanedBookingUploads daily.
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    mem_limit: 256m
+
+  web:
+    image: tokota-web:latest
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    mem_limit: 64m
+    depends_on: [app]
+    networks:
+      default:
+      edge:
+        aliases: [tokota-api]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Queue, cache and sessions; never the database, so Neon can sleep.
+  # Reachable only from this stack's own network, so it has no password.
+  # appendonly keeps queued jobs across a restart.
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    mem_limit: 256m
+    volumes:
+      - redis-data:/data
+    networks: [default]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+networks:
+  default:
+  # Created once on the box (`docker network create edge`) and shared with
+  # IRIS's Caddy. Only `web` joins it.
+  edge:
+    external: true
+
+volumes:
+  redis-data:
