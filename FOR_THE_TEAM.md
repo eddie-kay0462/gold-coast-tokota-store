@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 10 October 2026 (Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 15 October 2026 (the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 10 October 2026: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,46 @@ inert at their last step.
 
 ## Recent changes
 
-### 10 October 2026 (latest): Stories, Bookings, cart, checkout, account, sign-in and the header dropdown match the home page
+### 15 October 2026 (latest): the API is dockerized, on the Contabo box shared with IRIS
+
+The Contabo server isn't empty. IRIS production runs there (`207.180.237.21`),
+and its Docker Caddy owns ports 80/443, so the old runbook (host nginx on 443,
+a Cloudflare Origin Certificate) couldn't work as written. The API now runs in
+Docker. `docs/deploy/contabo.md` is rewritten for this, worked out with whoever
+runs IRIS:
+
+- **`backend/Dockerfile`** replaces the Render-era `artisan serve` image. It
+  has two targets: `app` (PHP 8.3 FPM on Alpine; also runs the worker and
+  scheduler) and `web` (nginx serving `public/`). Helpers are in
+  `backend/docker/`: nginx.conf, php.ini (12M uploads, opcache) and an
+  entrypoint that caches config/routes/events from the mounted `.env` on every
+  start. Local development still uses `php artisan serve`.
+- **`backend/docker-compose.prod.yml`**, project `tokota`, in
+  `/opt/tokota/backend`, runs `app`, `web`, `worker`
+  (`--queue=shipping,default`), `scheduler` (`schedule:work`) and `redis`
+  (append-only, no password, private network). It publishes **no ports**.
+  IRIS's Caddy reaches `web` as `tokota-api:80` over a shared external
+  Docker network, `edge`. Every service has a `mem_limit` (about 1.7 GB in
+  total) so it can't starve IRIS.
+- **DNS for `api` is grey-cloud now**, not proxied. That matches IRIS: the
+  IP is already public, so proxying hid nothing and only added a certificate
+  and a list of IP ranges to maintain.
+- **New: `config/trustedproxy.php` (`TRUSTED_PROXIES`).** PHP only ever
+  hears from the stack's nginx, so Laravel has to trust it. Otherwise every
+  customer would share one IP for the 120/min rate limit, and HTTPS wouldn't
+  be detected. Production sets the private ranges. It's empty locally, which
+  means trust nothing. `tests/Feature/TrustedProxyTest.php` covers it.
+- The IRIS-side change (Caddy joins `edge`, plus a Caddyfile site block with
+  no `log` directive, so Tokota's 5xx errors don't page IRIS's Telegram) is
+  drafted in the IRIS repo. Recreating Caddy drops both sites for 1–2 s.
+  **The DNS record has to resolve before it goes live**, or Caddy's ACME
+  retries page IRIS.
+
+**Waiting on a human:** the Neon strings and other secrets in the box's
+`.env`, the `goldcoasttokota.store` DNS zone and R2 buckets on Cloudflare, and
+a quiet window to recreate IRIS's Caddy.
+
+### 10 October 2026: Stories, Bookings, cart, checkout, account, sign-in and the header dropdown match the home page
 
 The pages the home page redesign didn't reach now use its look: white
 backgrounds, hairline rules, square corners, outlined buttons and small
@@ -3185,8 +3224,8 @@ exchangerate.host need a human to request business access. Those requests have
 lead times measured in days, and they gate items 3–6 below — start them now,
 not when you reach the stage that needs them.
 
-**Hosting move (10 Oct).** Set up Neon (`docs/deploy/neon.md`), the Contabo
-server (`docs/deploy/contabo.md`) and the two R2 buckets, then point the
+**Hosting move (10 Oct).** Neon is done. Set up the Contabo
+server (`docs/deploy/contabo.md`; shared with IRIS, see 15 Oct) and the two R2 buckets, then point the
 Vercel apps' `NUXT_PUBLIC_API_BASE` and Paystack's webhook at
 `api.goldcoasttokota.store`. Uploads (D3) are durable once R2 is configured.
 The admin product editor can now gain a photo upload control.
