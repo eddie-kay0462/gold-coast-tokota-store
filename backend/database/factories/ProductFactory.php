@@ -3,11 +3,12 @@
 namespace Database\Factories;
 
 use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<\App\Models\Product>
+ * @extends Factory<Product>
  */
 class ProductFactory extends Factory
 {
@@ -85,6 +86,20 @@ class ProductFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'compare_at_ghs' => (int) round($attributes['base_price_ghs'] * 1.25),
+        ]);
+    }
+
+    /** Everything DHL needs: weight, packed size, HS code, origin. */
+    public function shippable(): static
+    {
+        return $this->state(fn () => [
+            'weight_grams' => 900,
+            'length_mm' => 320,
+            'width_mm' => 200,
+            'height_mm' => 120,
+            'hs_code' => '6403.99',
+            'origin_country' => 'GH',
+            'customs_description' => 'Leather sandals',
         ]);
     }
 }

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Enums\ShippingZone;
 use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Notifications\FishAfricaSmsService;
 use App\Services\Returns\ReturnPolicy;
+use App\Services\Shipping\ShippingManager;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -70,26 +72,43 @@ class SettingsController extends Controller
         ]]);
     }
 
-    public function delivery(): JsonResponse
+    public function delivery(ShippingManager $shipping): JsonResponse
     {
+        $zones = [];
+
+        foreach (ShippingZone::cases() as $zone) {
+            $configured = (array) config("shipping.zones.{$zone->value}", []);
+
+            $zones[] = [
+                'zone' => $zone->value,
+                'label' => $zone->label(),
+                // The chain as configured, and what actually serves the zone
+                // now — a carrier that is switched off or not built yet is
+                // skipped, and the zone falls back to manual dispatch.
+                'configured' => $configured,
+                'active' => array_map(fn ($carrier) => $carrier->name(), $shipping->chainFor($zone)),
+            ];
+        }
+
         return response()->json(['data' => [
-            // Fixed by the README's routing rule, not configurable: Ghana goes
-            // to Yango and everywhere else to DHL, and the acceptance criterion
-            // is that the two never cross.
-            'domestic_provider' => 'yango',
-            'international_provider' => 'dhl',
+            'zones' => $zones,
             // Straight from §8's shipping tables, which are published
-            // customer-facing promises. Every band here was previously a
-            // guess, and two of them understated the real figure.
-            'processing_hours' => 48,
+            // customer-facing promises.
+            'processing_hours' => DeliveryEstimates::PROCESSING_HOURS,
             'domestic_eta_label' => DeliveryEstimates::DOMESTIC,
             'international_bands' => DeliveryEstimates::bands(),
-            // Rates are a static table until credentials exist — the panel says
-            // so rather than implying these came from a courier.
-            'rates_are_live' => false,
-            'providers_configured' => [
-                'yango' => (bool) config('services.yango.key'),
-                'dhl' => (bool) config('services.dhl.key'),
+            'quote_buffer_percent' => (int) config('shipping.quote_buffer_percent'),
+            // What an unpriced Ghana region gets: the Ghana fallback rate, or
+            // refused and sent to WhatsApp.
+            'unpriced_regions' => config('shipping.unpriced_regions') === 'refuse' ? 'refuse' : 'fallback',
+            'fallback_rates' => [
+                'accra' => ['amount' => (int) config('shipping.fallback_rates.accra'), 'currency' => 'GHS'],
+                'ghana' => ['amount' => (int) config('shipping.fallback_rates.ghana'), 'currency' => 'GHS'],
+                'international' => ['amount' => (int) config('shipping.fallback_rates.international'), 'currency' => 'GHS'],
+            ],
+            'ops_alerts' => [
+                'email' => (bool) config('shipping.ops.email'),
+                'sms' => (bool) config('shipping.ops.phone'),
             ],
         ]]);
     }

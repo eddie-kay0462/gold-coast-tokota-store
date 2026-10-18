@@ -2,6 +2,7 @@
 import { PhCaretDown, PhCaretLeft, PhLockSimple } from '@phosphor-icons/vue'
 import type { CheckoutStep } from '~/components/checkout/CheckoutSteps.vue'
 import type { ShippingAddress } from '~/components/checkout/CheckoutForm.vue'
+import type { ShippingQuote } from '~/composables/useShippingQuote'
 import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
 
@@ -36,27 +37,45 @@ const address = reactive<ShippingAddress>({
   postcode: '',
   country: 'GH',
   phone: '',
+  lat: null,
+  lng: null,
+  placeId: null,
 })
 
-const deliveryMethod = ref<'standard' | 'express'>('standard')
-
-const isGhana = computed(() => address.country === 'GH')
-const provider = computed(() => (isGhana.value ? 'Yango' : 'DHL'))
+const shipping = useShippingQuote()
 
 /**
- * What the summary's Shipping row says.
- *
- * Never a number. The real figure comes from the courier quote at
- * checkout-session creation, which is not built, and putting a guess in the
- * Total is how someone ends up surprised at the payment screen. Shopify shows
- * "Calculated at next step" for the same reason before an address is entered.
+ * The summary's Shipping row: the chosen option's price once the delivery
+ * step has quoted one, and a plain explanation before that. Shopify shows
+ * "Calculated at next step" before an address is entered for the same reason:
+ * a guessed figure in the Total is how someone ends up surprised at payment.
  */
+const deliveryGhs = computed(() => (step.value === 'details' ? null : shipping.selected.value?.amount_ghs ?? null))
 const deliveryLabel = computed(() => {
   if (step.value === 'details') return 'Calculated at the next step'
-  return `${provider.value} · quoted at payment`
+  return shipping.loading.value ? 'Calculating…' : 'Choose a delivery option'
 })
 
+/**
+ * The quote expired, or the address no longer matched it, between the
+ * delivery step and placing the order. The API refused and sent a fresh
+ * quote; show it on the delivery step so the new price is seen before paying.
+ */
+const quoteChanged = ref(false)
+
+function onQuoteChanged(next: ShippingQuote) {
+  shipping.replace(next)
+  quoteChanged.value = true
+  step.value = 'delivery'
+}
+
 function goTo(next: CheckoutStep) {
+  // Every arrival at the delivery step re-prices: the address may have
+  // changed, and an old quote may have expired.
+  if (next === 'delivery') {
+    quoteChanged.value = false
+    shipping.fetchQuote(address)
+  }
   step.value = next
   // The step content replaces the previous step in place, so without this the
   // viewport stays wherever the last button was.
@@ -109,7 +128,7 @@ useSeoMeta({
         </button>
 
         <div v-show="summaryOpen" id="mobile-summary" class="border-t border-line py-6">
-          <CheckoutOrderSummary :delivery-ghs="null" :delivery-label="deliveryLabel" />
+          <CheckoutOrderSummary :delivery-ghs="deliveryGhs" :delivery-label="deliveryLabel" />
         </div>
       </div>
     </div>
@@ -162,7 +181,16 @@ useSeoMeta({
 
               <div class="flex w-full flex-col items-start gap-4">
                 <h2 class="caps-title w-full">Shipping method</h2>
-                <CheckoutDeliveryOptions v-model="deliveryMethod" :country="address.country" />
+                <CommonInlineNotice v-if="quoteChanged" title="Delivery price updated" role="status">
+                  The delivery price changed since you last saw it. Check it below, then continue to payment.
+                </CommonInlineNotice>
+                <CheckoutDeliveryOptions
+                  v-model="shipping.selectedId.value"
+                  :quote="shipping.quote.value"
+                  :loading="shipping.loading.value"
+                  :error="shipping.error.value"
+                  @retry="shipping.fetchQuote(address)"
+                />
               </div>
 
               <div class="flex w-full flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -174,7 +202,9 @@ useSeoMeta({
                   <PhCaretLeft :size="12" aria-hidden="true" />
                   Return to information
                 </button>
-                <CommonBrandButton @click="goTo('payment')">Continue to payment</CommonBrandButton>
+                <CommonBrandButton :disabled="!shipping.selected.value" @click="goTo('payment')">
+                  Continue to payment
+                </CommonBrandButton>
               </div>
             </div>
 
@@ -189,10 +219,12 @@ useSeoMeta({
 
               <CheckoutPaymentStep
                 :currency="currency.active"
-                :total-ghs="cart.subtotalGhs"
+                :total-ghs="cart.subtotalGhs + (shipping.selected.value?.amount_ghs ?? 0)"
                 :fx-rate="currency.fxRate"
                 :address="address"
-                :delivery-method="deliveryMethod"
+                :quote-id="shipping.quote.value?.quote_id ?? null"
+                :option-id="shipping.selectedId.value"
+                @quote-changed="onQuoteChanged"
               />
 
               <button
@@ -210,7 +242,7 @@ useSeoMeta({
 
       <aside class="hidden lg:block lg:border-l lg:border-line lg:bg-surface">
         <div class="sticky top-0 w-full max-w-[520px] px-5 py-14 lg:pl-14">
-          <CheckoutOrderSummary :delivery-ghs="null" :delivery-label="deliveryLabel" />
+          <CheckoutOrderSummary :delivery-ghs="deliveryGhs" :delivery-label="deliveryLabel" />
         </div>
       </aside>
     </div>

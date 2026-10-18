@@ -21,7 +21,7 @@ useHead({ title: 'Fulfilment' })
 
 const { useAdminList } = useAdminApi()
 const { formatRelative } = useFormatters()
-const { items: orders, pending } = useAdminList<Order>('admin-orders-board', '/admin/orders')
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders-board', '/admin/orders')
 
 const columns = computed(() =>
   ORDER_BOARD_COLUMNS.map((status: OrderStatus) => {
@@ -106,6 +106,6 @@ const drawerOpen = ref(false)
       </div>
     </div>
 
-    <OrdersOrderDrawer v-model:open="drawerOpen" :order="active" />
+    <OrdersOrderDrawer v-model:open="drawerOpen" :order="active" @changed="refresh()" />
   </div>
 </template>

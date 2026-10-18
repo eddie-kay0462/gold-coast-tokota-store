@@ -4,15 +4,17 @@ namespace App\Services\Checkout;
 
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\NoFxRateException;
+use App\Exceptions\RegionNotServedException;
+use App\Exceptions\ShippingOptionChangedException;
 use App\Exceptions\UnavailableProductException;
 use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Currency\FxRateService;
-use App\Services\Delivery\DeliveryProviderFactory;
 use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\PaymentGatewayFactory;
 use App\Services\Payment\PaymentSession;
+use App\Services\Shipping\CheckoutShipping;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -25,16 +27,17 @@ use Throwable;
  *   1. Re-price from the database. Nothing about money is taken from the
  *      request — a client that posts its own prices is a client that can set
  *      them.
- *   2. Quote shipping before payment, so the figure shown is the figure
- *      charged.
+ *   2. Price delivery from the quote the customer was shown, so the figure
+ *      shown is the figure charged (see CheckoutShipping).
  *   3. Lock the FX rate for USD orders, once, so the whole order converts on
  *      one rate.
  *   4. Reserve stock, inside a transaction, with the row locks
  *      InventoryReservationService already provides.
  *   5. Only then, once that transaction has committed, open a gateway session.
  *
- * Steps 1–4 are one transaction: if any throws, the Order and its
- * reservations roll away together. Step 5 is a network call to Paystack that
+ * Steps 3–4 are one transaction: if any throws, the Order and its
+ * reservations roll away together. Steps 1–2 run before it, because a live
+ * courier quote is a network call and must not hold stock rows locked. Step 5 is a network call to Paystack that
  * can take tens of seconds, so it runs after the commit — inside, it held the
  * stock rows locked, and every other checkout for the same size waited on it.
  * If it fails, the holds are released and the Order deleted by hand. Either
@@ -52,15 +55,17 @@ class CheckoutSessionService
     public function __construct(
         private readonly FxRateService $fxRates,
         private readonly InventoryReservationService $reservations,
-        private readonly DeliveryProviderFactory $delivery,
+        private readonly CheckoutShipping $shipping,
         private readonly PaymentGatewayFactory $gateways,
     ) {}
 
     /**
-     * @param  array{items: array<int, array{inventory_item_id: int, quantity: int}>, currency: string, shipping_address: array<string, mixed>, delivery_method: string, customer_id?: int|null}  $data
+     * @param  array{items: array<int, array{inventory_item_id: int, quantity: int}>, currency: string, shipping_address: array<string, mixed>, shipping_quote_id?: string|null, shipping_option_id?: string|null, customer_id?: int|null}  $data
      * @return array{order: Order, session: PaymentSession}
      *
      * @throws InsufficientStockException
+     * @throws RegionNotServedException
+     * @throws ShippingOptionChangedException
      */
     public function create(array $data): array
     {
@@ -70,19 +75,21 @@ class CheckoutSessionService
         // Paystack key refuses here, holding nothing.
         $gateway = $this->gateways->for($data['currency']);
 
-        $order = DB::transaction(function () use ($data, $expiresAt) {
-            $lines = $this->priceLines($data['items']);
-            $subtotal = array_sum(array_map(
-                fn (array $line) => $line['unit_price'] * $line['quantity'],
-                $lines,
-            ));
+        $lines = $this->priceLines($data['items']);
+        $subtotal = array_sum(array_map(
+            fn (array $line) => $line['unit_price'] * $line['quantity'],
+            $lines,
+        ));
 
-            $provider = $this->delivery->for($data['shipping_address']);
-            $shippingCost = $provider->quote(
-                $data['shipping_address'],
-                $data['delivery_method'],
-                $subtotal,
-            );
+        $quoteRequest = $this->shipping->request($data['shipping_address'], $lines, $subtotal);
+        $delivery = $this->shipping->choose(
+            $quoteRequest,
+            $data['shipping_quote_id'] ?? null,
+            $data['shipping_option_id'] ?? null,
+        );
+
+        $order = DB::transaction(function () use ($data, $expiresAt, $lines, $subtotal, $quoteRequest, $delivery) {
+            $shippingCost = $delivery->amountGhs;
 
             // One rate read for the whole order. Two reads could straddle the
             // hourly refresh and convert the subtotal and the shipping on
@@ -108,7 +115,9 @@ class CheckoutSessionService
                 'total' => $this->convert($subtotal + $shippingCost, $fxRate),
                 'status' => 'pending',
                 'payment_gateway' => null,
-                'delivery_provider' => $provider->name(),
+                'delivery_provider' => $delivery->carrier,
+                'shipping_zone' => $quoteRequest->zone,
+                'shipping_option' => $delivery->snapshot(),
                 'shipping_address' => $data['shipping_address'],
                 'reservation_expires_at' => $expiresAt,
             ]);

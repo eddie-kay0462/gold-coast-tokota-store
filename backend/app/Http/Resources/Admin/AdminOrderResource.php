@@ -46,7 +46,12 @@ class AdminOrderResource extends JsonResource
             'payment_reference' => $this->payment_reference,
             'delivery_provider' => $this->delivery_provider,
             'delivery_reference' => $this->delivery_reference,
+            'shipping_zone' => $this->shipping_zone?->value,
+            // How delivery was priced at checkout: carrier, live or fallback,
+            // raw quote and buffer. Admin-only — the customer saw the total.
+            'shipping_option' => $this->shipping_option,
             'shipping_address' => (object) $address,
+            'shipment' => $this->whenLoaded('shipment', fn () => $this->shipment ? new ShipmentResource($this->shipment) : null),
 
             'items' => AdminOrderItemResource::collection($this->whenLoaded('items')),
             'placed_at' => $this->created_at,

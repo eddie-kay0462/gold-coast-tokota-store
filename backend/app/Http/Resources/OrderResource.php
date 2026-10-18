@@ -24,6 +24,15 @@ class OrderResource extends JsonResource
             'payment_gateway' => $this->payment_gateway,
             'delivery_provider' => $this->delivery_provider,
             'delivery_reference' => $this->delivery_reference,
+            // The live booking, as far as the customer needs it: where it is
+            // and a link to follow it. Null until the order has shipped.
+            'shipment' => $this->whenLoaded('shipment', fn () => $this->shipment ? [
+                'status' => $this->shipment->status->value,
+                'courier' => $this->shipment->courier_name,
+                'tracking_url' => $this->shipment->tracking_url,
+                'dispatched_at' => $this->shipment->dispatched_at,
+                'delivered_at' => $this->shipment->delivered_at,
+            ] : null),
             'shipping_address' => (object) $this->shipping_address,
             // §8's published promises, resolved for this order's destination.
             // Sent rather than left to the storefront so the confirmation

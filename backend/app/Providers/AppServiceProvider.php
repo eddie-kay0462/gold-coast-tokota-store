@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Notifications\NotificationChannelFactory;
 use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Shipping\ShippingManager;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -25,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
             NotificationDispatcher::class,
             fn () => (new NotificationChannelFactory)->make(),
         );
+
+        // One manager per process, so a driver registered with extend() —
+        // in a later phase, or by a test — is the one every caller gets.
+        $this->app->singleton(ShippingManager::class);
     }
 
     /**

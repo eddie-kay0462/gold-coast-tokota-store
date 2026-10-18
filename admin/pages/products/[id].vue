@@ -12,11 +12,12 @@ import { formatMoney, usdFrom } from '~/utils/currency'
  * does not and must not exist.
  */
 const route = useRoute()
-const { useAdminItem, useAdminList } = useAdminApi()
+const { useAdminItem, useAdminList, adminFetch } = useAdminApi()
+const toast = useToast()
 const { can } = useAuth()
 const { formatDate } = useFormatters()
 
-const { item: product } = useAdminItem<Product>(`product-${route.params.id}`, `/admin/products/${route.params.id}`)
+const { item: product, refresh } = useAdminItem<Product>(`product-${route.params.id}`, `/admin/products/${route.params.id}`)
 const { item: fx } = useAdminItem<FxRate>('product-fx', '/fx-rate')
 const { items: inventory } = useAdminList<InventoryItem>('product-inventory', '/admin/inventory')
 
@@ -30,6 +31,58 @@ const priceGhs = ref('')
 watchEffect(() => {
   if (product.value) priceGhs.value = (product.value.basePriceGhs.amount / 100).toFixed(2)
 })
+
+// --- Shipping and customs ------------------------------------------------
+// Grams and millimetres, as stored. International checkout refuses a product
+// missing weight, size or HS code while DHL is switched on.
+const shipping = reactive({
+  weightGrams: '' as string | number,
+  lengthMm: '' as string | number,
+  widthMm: '' as string | number,
+  heightMm: '' as string | number,
+  hsCode: '',
+  originCountry: 'GH',
+  customsDescription: '',
+})
+watchEffect(() => {
+  const s = product.value?.shipping
+  if (!s) return
+  Object.assign(shipping, {
+    weightGrams: s.weightGrams ?? '', lengthMm: s.lengthMm ?? '', widthMm: s.widthMm ?? '', heightMm: s.heightMm ?? '',
+    hsCode: s.hsCode ?? '', originCountry: s.originCountry || 'GH', customsDescription: s.customsDescription ?? '',
+  })
+})
+const savingShipping = ref(false)
+const shippingError = ref<string | null>(null)
+const whole = (v: string | number) => (v === '' || v === null ? null : Math.round(Number(v)))
+
+async function saveShipping() {
+  if (!product.value) return
+  savingShipping.value = true
+  shippingError.value = null
+  try {
+    await adminFetch(`/admin/products/${product.value.id}`, {
+      method: 'PUT',
+      body: {
+        weight_grams: whole(shipping.weightGrams),
+        length_mm: whole(shipping.lengthMm),
+        width_mm: whole(shipping.widthMm),
+        height_mm: whole(shipping.heightMm),
+        hs_code: shipping.hsCode.trim() || null,
+        origin_country: shipping.originCountry.trim().toUpperCase() || 'GH',
+        customs_description: shipping.customsDescription.trim() || null,
+      },
+    })
+    await refresh()
+    toast.success('Shipping details saved')
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
+    if (e.statusCode === 401 || e.statusCode === 419) return
+    shippingError.value = Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Saving failed. Try again in a moment.'
+  } finally {
+    savingShipping.value = false
+  }
+}
 
 const derivedUsd = computed(() => {
   if (!fx.value) return null
@@ -91,6 +144,56 @@ const derivedUsd = computed(() => {
           <template #footer>
             <UiPermissionGate capability="pricing.write">
               <UiButton size="sm">Save price</UiButton>
+            </UiPermissionGate>
+          </template>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Shipping and customs"
+          description="The packed box, as a courier weighs and measures it. International orders need all of these and an HS code."
+        >
+          <div class="mb-3">
+            <UiBadge :tone="product.shipping?.readyForInternational ? 'success' : 'warning'" dot>
+              {{ product.shipping?.readyForInternational ? 'Ready to ship abroad' : 'Can’t ship abroad yet' }}
+            </UiBadge>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-4">
+            <div>
+              <label class="field-label" for="ship-weight">Weight (g)</label>
+              <input id="ship-weight" v-model="shipping.weightGrams" type="number" min="1" class="field w-full" :disabled="!can('products.write')">
+            </div>
+            <div>
+              <label class="field-label" for="ship-length">Length (mm)</label>
+              <input id="ship-length" v-model="shipping.lengthMm" type="number" min="1" class="field w-full" :disabled="!can('products.write')">
+            </div>
+            <div>
+              <label class="field-label" for="ship-width">Width (mm)</label>
+              <input id="ship-width" v-model="shipping.widthMm" type="number" min="1" class="field w-full" :disabled="!can('products.write')">
+            </div>
+            <div>
+              <label class="field-label" for="ship-height">Height (mm)</label>
+              <input id="ship-height" v-model="shipping.heightMm" type="number" min="1" class="field w-full" :disabled="!can('products.write')">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="field-label" for="ship-hs">HS code</label>
+              <input id="ship-hs" v-model="shipping.hsCode" type="text" placeholder="e.g. 6403.99" class="field w-full" :disabled="!can('products.write')">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="field-label" for="ship-origin">Made in (country code)</label>
+              <input id="ship-origin" v-model="shipping.originCountry" type="text" maxlength="2" class="field w-full uppercase" :disabled="!can('products.write')">
+            </div>
+            <div class="sm:col-span-4">
+              <label class="field-label" for="ship-customs">Customs description</label>
+              <input id="ship-customs" v-model="shipping.customsDescription" type="text" maxlength="255" placeholder="e.g. Leather sandals" class="field w-full" :disabled="!can('products.write')">
+              <p class="mt-1.5 text-meta text-fg-faint">What the goods are, plainly, for the customs declaration. Not the product name.</p>
+            </div>
+          </div>
+          <p v-if="shippingError" class="mt-3 rounded-lg bg-danger-soft px-3 py-2.5 text-meta text-danger" role="alert">
+            {{ shippingError }}
+          </p>
+          <template #footer>
+            <UiPermissionGate capability="products.write" quiet>
+              <UiButton size="sm" :loading="savingShipping" @click="saveShipping">Save shipping details</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>

@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 15 October 2026 (the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 10 October 2026: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 15 October 2026 (the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -86,6 +86,317 @@ runs IRIS:
 **Waiting on a human:** the Neon strings and other secrets in the box's
 `.env`, the `goldcoasttokota.store` DNS zone and R2 buckets on Cloudflare, and
 a quiet window to recreate IRIS's Caddy.
+
+### 11 October 2026: `db:seed` works locally again
+
+`DatabaseSeeder` applied its 12-character rule for the first admin's password
+everywhere, but the local password is `password` (8 characters). So
+`php artisan db:seed` could only succeed in production. The rule now applies
+in production only, where `SEED_ADMIN_PASSWORD` is still required.
+`tests/Feature/DatabaseSeederTest.php` covers both cases.
+
+**Local database.** Postgres 16 in Docker (container `gct-postgres`, port 5432,
+trust auth, database `gold_coast_tokota`), which matches `.env.example` as it
+stands. Setup:
+1. `cp .env.example .env`
+2. `php artisan key:generate`
+3. `php artisan migrate --seed`
+
+That gives 28 products, the 16 shipping regions and
+`admin@goldcoasttokota.store` / `password`.
+
+**The 4 `AdminAuthTest` failures** noted in the shipping entries below were
+only a missing `backend/.env`. With one, the full suite passes: 510 tests.
+
+### 11 October 2026: shipping phase 3, DHL Express for international orders
+
+International orders can now go out with **DHL Express**, booked from the
+order screen. It is off until `DHL_ENABLED=true`, and points at DHL's **test
+environment** by default.
+
+**How it runs**
+1. **Checkout:** `POST /rates` lists DHL's products for the destination,
+   cheapest first, with the 10% buffer. Restrict them with `DHL_PRODUCTS=P`.
+   - **A USD billing price** is converted at the usable FX rate.
+   - **Anything else** falls back to the ₵350 rate.
+   - **ETAs** are §8's bands, not DHL's.
+2. **Customs data required.** With DHL on, a cart holding a product with no
+   weight, packed size or HS code is **refused**: 422 with `blocked_items`,
+   and the storefront names the products. It is not charged a fallback for a
+   parcel nobody can send. New nullable product columns hold this data:
+   - `weight_grams`, `length_mm`, `width_mm`, `height_mm`
+   - `hs_code` and `origin_country` (default GH)
+   - `customs_description`
+
+   They are edited on the admin product page in a new "Shipping and customs"
+   section (`products.write`), with a "Ready to ship abroad" badge.
+3. **"Mark packed & book DHL Express"** does one `POST /shipments` call
+   covering:
+   - the AWB;
+   - the label and commercial invoice, stored in the **private** bucket at
+     `shipments/{uuid}/` (admin opens them through a 10-minute signed link
+     from "Print label" and "Customs invoice");
+   - the pickup (`pickup.isRequested`, so there is no separate pickup call);
+   - **DAP** terms: §8 makes duties the customer's.
+
+   The order goes to shipped, and the customer is told with the tracking link.
+4. **Tracking:** `GET /shipments/{awb}/tracking` hourly (`DHL_POLL_MINUTES`).
+   - `PU`: in transit.
+   - `WC`: out for delivery.
+   - `OK`: delivered.
+   - `RT`: returned.
+   - Any other checkpoint keeps the parcel in transit, and its description is
+     recorded so a person can read it.
+
+**No idempotency at DHL.** A booking failure is **never retried**. A timeout
+may have created the shipment anyway, so it goes to the team with "check MyDHL
+for order X before booking again", and an AWB is never booked twice.
+
+**Duties estimate at checkout** (`POST /landed-cost`) is built but **off**
+(`SHIPPING_DHL_LANDED_COST=false`). It is shown and never charged, but its
+breakdown codes (`DUTY`/`TAX`) are the least certain part.
+
+**Not verified against DHL's own spec.**
+- **Confirmed** from DHL's developer portal: paths, base URLs and Basic auth.
+- **Unconfirmed**, built to match the open-source `sonnenglas/mydhl-php-sdk`
+  (spec 3.3.1), because DHL's spec only renders in a browser:
+  - the request and response bodies;
+  - the `x-version` header DHL requires;
+  - the checkpoint codes.
+- `tests/Feature/Shipping/DhlExpressCarrierTest.php` pins exactly what is sent,
+  so the first run against the test API will show what needs correcting.
+  Fix the driver and the fixtures together.
+
+**Without credentials** (local development, `DHL_ENABLED=true`), a
+`FakeDhlCarrier` quotes two products, writes a blank PDF label and walks
+tracking to delivered. Production without credentials skips DHL.
+
+**New env keys** (all in `backend/.env.example`):
+- `DHL_ENABLED`, `DHL_API_USERNAME`, `DHL_API_PASSWORD`, `DHL_ACCOUNT_NUMBER`
+- `DHL_API_VERSION`, `DHL_POLL_MINUTES`, `DHL_PRODUCTS`
+- `DHL_REQUEST_PICKUP`, `DHL_PICKUP_CLOSE_TIME`, `DHL_PICKUP_LOCATION`
+- `SHIPPING_DHL_LANDED_COST`, `SHIPPING_ORIGIN_POSTCODE`
+- `DHL_API_KEY` is gone.
+
+**Checked**
+- **18 new tests** against `Http::fake()`.
+- **Full suite passes**, apart from the 4 `AdminAuthTest` cases that need a
+  `.env`.
+- Driven in Chrome with the fake DHL:
+  1. A London checkout was blocked for missing customs data.
+  2. The customs data was filled in on the product page.
+  3. The checkout then offered DHL Express Worldwide (₵410) and 12:00.
+  4. Packing booked it. The label opened and the poller followed it to
+     delivered.
+- **Not checked against DHL's real API**, since no credentials exist.
+
+**Before switching DHL on**
+1. Get credentials from a DHL Express account consultant. Confirm the
+   account's billing currency, and that **DAP** is allowed.
+2. Run one rate and one shipment against `/mydhlapi/test`.
+3. Enter weight, size and HS code for **every** product. While DHL is on, a
+   product without them can't be ordered abroad.
+
+### 11 October 2026: shipping phase 2, Yango for Accra
+
+Accra-zone orders can now go out with a **Yango courier**, booked from the
+order screen. It is off until `YANGO_ENABLED=true`.
+
+**How it runs**
+1. **Checkout:** prices with `check-price`, plus the 10% buffer.
+2. **"Mark packed & book Yango"** (`POST /admin/shipments/{id}/pack`,
+   `shipments.update`): creates the claim with `request_id = {uuid}-a{attempt}`,
+   so a retry or double click can never order two couriers.
+3. **The poller** (`PollActiveShipments`, every minute; each shipment has its
+   own `next_poll_at`):
+   - sees `ready_for_approval` and accepts the claim with its `version`, well
+     inside the 10-minute offer window;
+   - once a courier is assigned, fetches the tracking link, marks the order
+     shipped and tells the customer once;
+   - at delivery, records Yango's final price.
+4. **No courier** (`performer_not_found`, or still searching after 15
+   minutes):
+   - cancel through `cancel-info`, then `cancel`, and try once more;
+   - after that, hand over to the next carrier in the Accra chain (Swoove,
+     phase 4);
+   - otherwise mark it failed and tell the team.
+   - **A claim Yango won't let us cancel is never re-booked**, because its
+     courier may still be on the way.
+
+**The guard.** `YangoCarrier::confirm()` refuses outside
+`APP_ENV=production` before any request is built, and no setting overrides
+it. `auto_accept` is never sent, and an assertion makes sure of that. There
+is no Yango sandbox, so on staging with a real token claims are created and
+priced, then marked failed: "only accepted in production". They lapse
+unaccepted, at no cost.
+
+**Without a token** (local development, `YANGO_ENABLED=true`), a
+`FakeYangoCarrier` walks a claim through Yango's real status names, one step
+per poll. Putting `NOCOURIER` in the address line exercises the retry path.
+Production without a token skips Yango, and Accra falls back to manual.
+
+**Every request and field is from the Express API reference:**
+- Bearer auth and `Accept-Language: en`.
+- Coordinates are `[lng, lat]`.
+- Prices are `Decimal(18,4)` strings, parsed without floats.
+- The spelling is `droppof_point`, as Yango spells it.
+- **All 26 claim statuses are mapped**, and a test pins the list.
+- **Still undocumented:** the callback payload and its signing. The poller
+  does the work; a webhook would only ever queue a refresh.
+
+**Admin**
+- **Packing:** the shipment panel gets "Mark packed" for every shipment. For
+  Yango it also books the courier. Packing moves the order to `processing`
+  and is refused for an order in `inventory_conflict`.
+- **Courier bookings:** mark delivered and mark failed are refused while the
+  booking is still being arranged (server and UI), so nobody closes a booking
+  that can still send a courier.
+
+**Deploy (`docs/deploy/contabo.md` updated)**
+- Run the worker with `--queue=shipping,default`, then set
+  `SHIPPING_QUEUE=shipping`.
+- Cron must be running, or bookings are never confirmed.
+- New env keys:
+  - `YANGO_ENABLED` and `YANGO_TAXI_CLASS`
+  - `YANGO_CONFIRM_POLL_SECONDS`, `YANGO_POLL_SECONDS` and
+    `YANGO_COURIER_TIMEOUT_MINUTES`
+  - `SHIPPING_QUEUE`
+- `SHIPPING_ORIGIN_LAT` and `SHIPPING_ORIGIN_LNG` must be set, or Yango can't
+  quote and checkout charges the fallback.
+
+**Checked**
+- **26 new tests** against `Http::fake()`, including the guard (nothing is
+  sent outside production) and the full poll-to-delivered path in
+  production.
+- **Full suite passes**, apart from the 4 `AdminAuthTest` cases that need a
+  `.env`.
+- Driven in Chrome with the fake Yango: Accra checkout charged ₵39, "Mark
+  packed & book Yango" booked it, the poller confirmed it and followed it to
+  delivered, and the customer page showed "Track your delivery".
+- **Not checked against the real Yango API**, since no token exists. The
+  first real call should be a `check-price` from staging.
+
+### 11 October 2026: zone-based shipping, phase 1
+
+Delivery is now priced by **zone** before the customer pays, and every paid
+order gets a **shipment** that staff dispatch from the order screen. This is
+phase 1 of 4 in the shipping plan: Yango comes in phase 2, DHL in phase 3 and
+Swoove in phase 4. Until then **every zone is dispatched by hand**, so nothing
+here can book a real courier.
+
+**Zones.** `ZoneResolver` decides, and the client never does:
+- **Accra:** a Ghana address whose map pin falls inside the Accra polygon.
+- **Ghana:** the rest of Ghana, including any Ghana address with no pin.
+- **International:** any other country.
+
+The polygon is GeoJSON uploaded in admin (Settings → Delivery). **With no
+polygon there is no Accra zone**, so every Ghana order is flat-rated. Point
+in polygon is about 60 lines of PHP, and no package was added.
+
+**Pricing.** `ShippingManager` replaces `DeliveryProviderFactory`. The old
+`DeliveryProvider`, `YangoService` and `DhlService` are deleted.
+- Each zone has a chain of drivers in `config/shipping.php`. A driver that is
+  switched off is skipped, and an empty chain falls back to `manual`.
+- A live quote gets the buffer (10%, rounded up to a whole cedi).
+- A failed quote charges the fallback rate, so a courier outage never blocks
+  payment.
+- **Ghana regions:** each region's flat rate is in `shipping_zone_rates`, set
+  in admin with `pricing.write`, so Staff can't change prices.
+- **Unpriced regions:** a region with no active rate is charged
+  `SHIPPING_FALLBACK_GHANA_GHS`, which is ₵25, today's price. This means
+  deploying it changes no price until rates are entered. Set
+  `SHIPPING_UNPRICED_REGIONS=refuse` once every region you deliver to has a
+  rate. The customer is then sent to WhatsApp instead.
+- **Fallback rates:** Accra ₵25 and international ₵350. These are the old
+  static numbers.
+
+**Shown = charged.** The checkout steps are:
+1. `POST /checkout/shipping-quote` returns the options and a `quote_id`. It
+   is cached for 15 minutes and tied to the cart and the address.
+2. `POST /checkout/session` takes `shipping_quote_id` and
+   `shipping_option_id`, and charges exactly that.
+3. An expired or mismatched quote gets **409 with a fresh quote**. The
+   storefront goes back to the delivery step and shows "Delivery price
+   updated".
+
+`delivery_method` (standard/express) is gone, with one option per zone
+instead. A client that sends no quote id still works, and the server prices
+delivery itself. Delivery pricing now runs *before* the checkout
+transaction, so a live courier call can never hold stock rows locked.
+
+**Storefront**
+- The country field lists every ISO country. This fixes "Somewhere else",
+  which sent `OTHER` and got a 422.
+- Ghana's region is a dropdown of the 16 regions.
+- New `AddressPinPicker` gives Google Places search, a draggable pin and "Use
+  my current location". It needs `NUXT_PUBLIC_GOOGLE_MAPS_KEY`. Without a key,
+  only the location button shows, and that still sets coordinates.
+- The summary shows the real shipping figure, and the confirmation page
+  shows a "Track your delivery" link.
+- `/help/shipping` was rewritten to say only what §8 says (see decision 44).
+
+**On payment.** A queued `CreateShipmentForPaidOrder` listener opens a
+`pending` shipment. **It does not book a courier.** README Feature 5 says to
+book on payment, but a Yango courier arrives within minutes and §21 gives up
+to 48 hours to process, so booking waits for "Mark as packed" in phase 2. A
+manual shipment emails and texts the team (`OPS_ALERT_EMAIL` /
+`OPS_ALERT_PHONE`). With neither set, the alert is only a log warning.
+
+**Admin**
+- **Order drawer:** has a shipment panel with these actions:
+  - Record dispatch: courier, tracking number and link, what we paid, notes.
+  - Mark delivered and Mark failed.
+  - Dispatch by hand, which rescues a failed courier booking. It opens a new
+    manual shipment and keeps the failed one on record.
+- **Timeline:** the panel shows the shipment's history, which is append-only
+  `shipment_events`.
+- **Order follows the shipment:** dispatched makes the order `shipped` and
+  tells the customer once; delivered makes it `delivered` and starts the
+  returns clock. Once a shipment exists, `PATCH /admin/orders` refuses
+  `shipped`/`delivered`, so the two can't disagree.
+- **Shipments page:** now reads the real API (it was silently on fixtures,
+  because its shape never matched). It has a "Needs attention" filter for
+  failed shipments and shipments pending more than 48h.
+- **Settings → Delivery:** edits the regional rates, the polygon and the
+  free-shipping threshold.
+- **Fix:** the drawer's "Domestic/International" read a `countryCode` the API
+  never sends, so every real order showed International.
+
+**Free shipping** is now `shipping_settings.free_shipping_threshold_ghs`.
+It is **off by default** and applies to Ghana and Accra when set (decision
+44). The old checkout gave ₵0 above ₵1,500 with no basis in the brand
+document.
+
+**Schema** (`2026_10_11_*`, all additive):
+- `shipping_settings`
+- `shipping_zone_rates`, seeded with 16 inactive regions
+- `shipments`, one row per booking attempt, keyed by uuid
+- `shipment_events`
+- `orders.shipping_zone` and `orders.shipping_option`
+
+Shipment statuses are the first PHP backed enums in the app
+(`app/Enums/ShipmentStatus`, `ShippingZone`).
+
+**New env keys:** `SHIPPING_*`, `OPS_ALERT_*` and `ADMIN_URL` (backend), and
+`NUXT_PUBLIC_GOOGLE_MAPS_KEY` / `_MAP_ID` (storefront). Each is described in
+the `.env.example` files.
+
+**Checked:**
+- **Backend suite passes**, including 42 new shipping tests. The only failures
+  are the 4 `AdminAuthTest` cases that need a `.env` and failed the same way
+  before this change.
+- Both Nuxt apps build.
+- Driven in Chrome against a local API:
+  1. Kumasi checkout charged the Ashanti rate.
+  2. An Accra checkout, pinned via geolocation, charged ₵25.
+  3. The Accra order was paid through the fake gateway. That opened a
+     shipment and logged the ops email.
+  4. "Record dispatch" in admin moved the order to shipped.
+- **Not checked:** the Google Maps search and map, since no key exists.
+
+**Found on the way, not fixed:** `php artisan db:seed` can't succeed
+locally. `DatabaseSeeder` demands a 12+ character admin password, but the
+local default is `password` (8 characters).
 
 ### 10 October 2026: Stories, Bookings, cart, checkout, account, sign-in and the header dropdown match the home page
 
@@ -3254,7 +3565,21 @@ In dependency order:
    no Stripe. *What is left is `PAYSTACK_SECRET_KEY`*, which is self-serve and
    an hour of somebody's time. The notification listener landed on `OrderPaid`
    on 8 Sep, so a paid order now emails the customer.
-4. **Feature 5 — Delivery.** Yango (domestic) and DHL (international) quote/booking.
+4. **Feature 5 — Delivery.** **Phases 1–3 of 4 landed 11 Oct** (see Recent changes): zones,
+   regional rates, quote-before-pay, shipments, manual dispatch, Yango for
+   Accra, and DHL Express abroad (rates, customs data, labels, pickup,
+   tracking). *What is left:* checking the DHL payloads against DHL's test API,
+   which no credentials exist for yet; and phase 4, Swoove as the Accra
+   fallback. **Needed from a human before each one:**
+   - Regional rates for the 16 regions, and the Accra polygon (Yango can
+     supply its own service area).
+   - The pickup address, coordinates and contact.
+   - Yango API token.
+   - DHL account number, API credentials, billing currency, and confirmation
+     that DAP is allowed.
+   - Swoove API reference and test key (developer@swoove.delivery).
+   - Google Maps key.
+   - `OPS_ALERT_EMAIL` and `OPS_ALERT_PHONE`.
 5. **Feature 7 — Bookings.** Workshop sessions with capacity + waitlist and the
    unlimited DIY queue exist; the programme behind them landed 28 Aug (§15's six
    experiences, `GET /workshop-types` public and admin). ~~*What is left:* an
@@ -3388,7 +3713,10 @@ will light up:
 | # | Issue | Notes |
 |---|---|---|
 | 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
-| 44 | **The product page promised shipping and return terms GOLD_COAST_TOKOTA.md doesn't state** | Removed 9 Oct with the accordion. **"Extended returns through January 31"** contradicted §9/§21's 7-day window, which was wrong and has gone. **"Free shipping on all Ghana orders over ₵1,500"** is not in the doc either (it says shipping is "calculated at checkout based on destination, package weight and courier rates"), **but checkout really does it**: `YangoService::FREE_SHIPPING_THRESHOLD` charges ₵0 above ₵1,500, set to match this page's Figma copy. `utils/policyContent.ts` (`/help/shipping`) states it too, and gives Ghana delivery as "1–2 days in Accra, 2–4 elsewhere" where §8 says 1–2 business days. **"Free personalized note or marking during checkout"** has no source and no checkout field. **Decide:** is free shipping over ₵1,500 real policy? If yes, add it to the doc and put it back on the product page. If no, remove it from `YangoService` and `/help/shipping`. Either way, reconcile `/help/shipping` with §8. |
+| 46 | **Shipping updates go by email and SMS, not WhatsApp** | §8 and §22.17 promise shipping updates "via Email, WhatsApp". There is no WhatsApp channel (only wa.me links), so the dispatch message goes by email and Fish Africa SMS. **Decide** whether to add a WhatsApp Business API provider. |
+| 47 | **Couriers are booked on "Mark as packed", not on payment** | README Feature 5 says the webhook books the courier. The shipping plan books it when staff mark the parcel packed (phase 2), because a Yango courier arrives within minutes and orders take up to 48 hours to process. Payment only opens a pending shipment. |
+| 48 | **Unpriced Ghana regions get ₵25 (`SHIPPING_UNPRICED_REGIONS=fallback`)** | Chosen so deploying regional rates changed no price on day one. Once the 16 rates are entered, consider `refuse`, which sends unpriced regions to WhatsApp instead of charging a guess. |
+| 44 | **The product page promised shipping and return terms GOLD_COAST_TOKOTA.md doesn't state** | **Partly settled 11 Oct:** free shipping is now an admin setting, *off* by default, so checkout no longer gives ₵0 above ₵1,500, and `/help/shipping` now says only what §8 says (1–2 business days in Ghana, no free-shipping line). *Still to decide:* whether free shipping is real policy. If it is, add it to the brand document and switch the threshold on in Settings → Delivery. Removed 9 Oct with the accordion. **"Extended returns through January 31"** contradicted §9/§21's 7-day window, which was wrong and has gone. **"Free shipping on all Ghana orders over ₵1,500"** is not in the doc either (it says shipping is "calculated at checkout based on destination, package weight and courier rates"), **but checkout really does it**: `YangoService::FREE_SHIPPING_THRESHOLD` charges ₵0 above ₵1,500, set to match this page's Figma copy. `utils/policyContent.ts` (`/help/shipping`) states it too, and gives Ghana delivery as "1–2 days in Accra, 2–4 elsewhere" where §8 says 1–2 business days. **"Free personalized note or marking during checkout"** has no source and no checkout field. **Decide:** is free shipping over ₵1,500 real policy? If yes, add it to the doc and put it back on the product page. If no, remove it from `YangoService` and `/help/shipping`. Either way, reconcile `/help/shipping` with §8. |
 | 45 | **No care instructions for the sandals** | The new Materials & Care section lists materials and the handmade-variation note, then points to WhatsApp, because GOLD_COAST_TOKOTA.md has no care guidance (cleaning, water, storage, leather vs. recycled uppers). **The brand should supply it**, ideally per material, so it can become a field or a shared block. |
 | 43 | ~~**The admin "Adjust" stock button does nothing**~~ | **Closed 1 Oct.** Opens `InventoryAdjustModal`, which PATCHes an absolute count and threshold and shows the API's refusal verbatim when checkouts hold more than the new count. **Stock still has to actually be entered in production** — every size there is 0 until somebody does. |
 | 38 | **The real products have no copy** | No descriptions, no was-prices, no cost breakdown were supplied, and none were invented. The "Transparent Pricing" panel and description block are hidden for every product until the brand writes them. |

@@ -72,6 +72,13 @@ return [
         ',',
     )), '/'),
 
+    // The admin dashboard, for links in staff alerts. The second entry in
+    // FRONTEND_URLS by the same convention.
+    'admin_url' => rtrim((string) env('ADMIN_URL', explode(
+        ',',
+        (string) env('FRONTEND_URLS', 'http://localhost:3000,http://localhost:3001'),
+    )[1] ?? 'http://localhost:3001'), '/'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

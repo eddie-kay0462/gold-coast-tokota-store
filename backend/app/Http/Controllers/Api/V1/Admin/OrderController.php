@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\UpdateOrderStatusRequest;
 use App\Http\Resources\Admin\AdminOrderResource;
 use App\Jobs\SendOrderNotification;
 use App\Models\Order;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ class OrderController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $orders = Order::query()
-            ->with(['customer', 'items'])
+            ->with(['customer', 'items', 'shipment'])
             ->when(
                 $request->filled('status'),
                 fn ($query) => $query->where('status', $request->string('status')),
@@ -58,17 +59,26 @@ class OrderController extends Controller
     public function show(string $reference): AdminOrderResource
     {
         $order = Order::query()
-            ->with(['customer', 'items'])
+            ->with(['customer', 'items', 'shipment.events'])
             ->where('reference', $reference)
             ->firstOrFail();
 
         return new AdminOrderResource($order);
     }
 
-    public function updateStatus(UpdateOrderStatusRequest $request, string $reference): AdminOrderResource
+    public function updateStatus(UpdateOrderStatusRequest $request, string $reference): AdminOrderResource|JsonResponse
     {
         $order = Order::query()->where('reference', $reference)->firstOrFail();
         $status = $request->validated('status');
+
+        // Once an order has a shipment, `shipped` and `delivered` are facts
+        // about the parcel, recorded on the shipment — the order follows it.
+        // Setting them here as well would let the two disagree.
+        if (in_array($status, ['shipped', 'delivered'], true) && $order->shipment()->exists()) {
+            return response()->json([
+                'message' => 'Record dispatch and delivery on the order\'s shipment; the order status follows it.',
+            ], 422);
+        }
         $wasShipped = $order->status === 'shipped';
 
         $order->update([
@@ -91,7 +101,7 @@ class OrderController extends Controller
             SendOrderNotification::dispatch($order, 'shipped');
         }
 
-        return new AdminOrderResource($order->load(['customer', 'items']));
+        return new AdminOrderResource($order->load(['customer', 'items', 'shipment']));
     }
 
     /**

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhChatsTeardrop, PhTruck, PhX } from '@phosphor-icons/vue'
-import type { Order } from '~/types'
+import type { Order, Shipment } from '~/types'
 import { PAYMENT_METHOD_LABELS } from '~/types'
 import { formatMoney } from '~/utils/currency'
 
@@ -10,6 +10,37 @@ import { formatMoney } from '~/utils/currency'
  */
 const props = defineProps<{ order: Order | null }>()
 const open = defineModel<boolean>('open', { default: false })
+/** A shipment action changed the order's status too; the list should refetch. */
+const emit = defineEmits<{ changed: [] }>()
+
+// Held locally so an action's result shows at once, without waiting for the
+// list behind the drawer to refetch.
+const shipment = ref<Shipment | null>(null)
+watch(() => props.order?.shipment, (value) => { shipment.value = value ?? null }, { immediate: true })
+
+// List rows carry the shipment without its history; fetch that on open.
+const { adminFetch } = useAdminApi()
+watch([open, () => shipment.value?.id], async ([isOpen, id]) => {
+  if (!isOpen || !id || shipment.value?.events?.length) return
+  try {
+    const { data } = await adminFetch<Shipment>(`/admin/shipments/${id}`)
+    if (shipment.value?.id === id) shipment.value = data
+  } catch {
+    // The panel still shows the shipment; only the timeline is missing.
+  }
+}, { immediate: true })
+
+function onShipmentUpdated(next: Shipment) {
+  shipment.value = { ...next, events: next.events ?? shipment.value?.events }
+  emit('changed')
+}
+
+// The API sends `country` as the ISO code; fixtures carried a separate
+// `countryCode`. Reading only `countryCode` made every real order look
+// international.
+const isDomestic = computed(() =>
+  (props.order?.shippingAddress.countryCode ?? props.order?.shippingAddress.country) === 'GH',
+)
 const { formatDateTime } = useFormatters()
 useBodyScrollLock(open)
 
@@ -103,18 +134,36 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <h3 class="text-meta uppercase tracking-wide text-fg-faint">Delivery</h3>
                 <p class="mt-1.5 flex items-center gap-2 text-ui">
                   <PhTruck :size="16" class="text-fg-faint" />
-                  <span class="uppercase">{{ order.deliveryProvider }}</span>
-                  <span class="text-fg-muted">
-                    · {{ order.shippingAddress.countryCode === 'GH' ? 'Domestic' : 'International' }}
+                  <span>{{ isDomestic ? 'Domestic' : 'International' }}</span>
+                  <span v-if="order.shippingOption" class="text-fg-muted">
+                    · {{ order.shippingOption.label }}<template v-if="order.shippingOption.source === 'fallback'">
+                      (fallback rate)</template>
                   </span>
                 </p>
                 <address class="mt-1.5 not-italic text-ui text-fg-muted">
                   {{ order.shippingAddress.line1 }}<br>
-                  {{ order.shippingAddress.city }}, {{ order.shippingAddress.region }}<br>
+                  {{ order.shippingAddress.city }}<template v-if="order.shippingAddress.region">, {{ order.shippingAddress.region }}</template><br>
                   {{ order.shippingAddress.country }}
                 </address>
-                <p v-if="order.deliveryReference" class="mt-1.5 font-mono text-meta text-fg-faint">
+                <a
+                  v-if="order.shippingAddress.lat != null && order.shippingAddress.lng != null"
+                  :href="`https://www.google.com/maps/search/?api=1&query=${order.shippingAddress.lat},${order.shippingAddress.lng}`"
+                  target="_blank" rel="noopener"
+                  class="mt-1 inline-block text-meta text-fg-muted underline hover:text-fg-strong"
+                >
+                  Open delivery pin in Maps
+                </a>
+
+                <OrdersShipmentPanel
+                  v-if="shipment" class="mt-3"
+                  :shipment="shipment" :order-reference="order.reference"
+                  @updated="onShipmentUpdated"
+                />
+                <p v-else-if="order.deliveryReference" class="mt-1.5 font-mono text-meta text-fg-faint">
                   {{ order.deliveryReference }}
+                </p>
+                <p v-else class="mt-1.5 text-meta text-fg-faint">
+                  No shipment yet. One opens when the order is paid.
                 </p>
               </section>
             </div>

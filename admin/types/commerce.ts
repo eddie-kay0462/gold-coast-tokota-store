@@ -22,7 +22,14 @@ export const ORDER_BOARD_COLUMNS: OrderStatus[] = [
 ]
 
 export type PaymentGateway = 'paystack' | 'stripe'
-export type DeliveryProvider = 'yango' | 'dhl'
+/**
+ * Who carries a parcel. `manual` is staff booking a courier themselves; every
+ * zone falls back to it while its courier API is switched off.
+ */
+export type DeliveryProvider = 'yango' | 'swoove' | 'dhl' | 'manual'
+
+/** Decided by the API from the address: the Accra pin zone, the rest of Ghana, abroad. */
+export type ShippingZone = 'accra' | 'ghana' | 'international'
 
 /**
  * Paystack methods from the brand PDF's "Payment Gateway Accounts" section.
@@ -49,8 +56,12 @@ export interface ShippingAddress {
   city: string
   region: string
   postcode?: string
+  /** ISO code from the API (e.g. `GH`); fixtures used a display name. */
   country: string
-  countryCode: string
+  /** Fixture-only; the API sends `country` as the ISO code. */
+  countryCode?: string
+  lat?: number | null
+  lng?: number | null
 }
 
 export interface OrderItem {
@@ -86,8 +97,21 @@ export interface Order {
   paymentGateway: PaymentGateway
   paymentMethod: PaymentMethod
   paymentReference: string
-  deliveryProvider: DeliveryProvider
+  deliveryProvider: DeliveryProvider | null
   deliveryReference: string | null
+  shippingZone?: ShippingZone | null
+  /** How delivery was priced at checkout. */
+  shippingOption?: {
+    carrier: DeliveryProvider
+    label: string
+    source: 'live' | 'fallback' | 'flat'
+    quotedRaw: number | null
+    quotedCurrency: string | null
+    bufferPercent: number
+    free: boolean
+  } | null
+  /** The live delivery booking. Loaded on the list and the detail. */
+  shipment?: Shipment | null
   shippingAddress: ShippingAddress
   /** Set when an inbox thread was linked to this order. */
   whatsappThreadId: string | null
@@ -135,25 +159,77 @@ export interface ReturnRequest {
   notes: string
 }
 
+/** The API's canonical shipment states; every courier's own statuses map onto these. */
 export type ShipmentStatus =
+  | 'pending'
+  | 'booking'
   | 'awaiting_pickup'
   | 'in_transit'
-  | 'customs'
   | 'out_for_delivery'
   | 'delivered'
-  | 'exception'
+  | 'failed'
+  | 'cancelled'
+  | 'returned'
 
-export interface Shipment {
+export const SHIPMENT_STATUSES: ShipmentStatus[] = [
+  'pending', 'booking', 'awaiting_pickup', 'in_transit', 'out_for_delivery',
+  'delivered', 'failed', 'cancelled', 'returned',
+]
+
+export interface ShipmentEvent {
   id: number
-  orderId: number
-  orderReference: string
-  provider: DeliveryProvider
-  trackingReference: string
+  status: ShipmentStatus | null
+  carrierStatus: string | null
+  source: 'poll' | 'webhook' | 'admin' | 'system'
+  message: string | null
+  occurredAt: Timestamp
+}
+
+/** One courier booking for an order. A retry or carrier hand-over is a new one. */
+export interface Shipment {
+  /** The shipment's uuid; the API's route key. */
+  id: string
+  zone: ShippingZone
+  carrier: DeliveryProvider
+  serviceCode: string | null
+  attempt: number
   status: ShipmentStatus
-  destination: string
-  destinationCountryCode: string
-  /** From the PDF's shipping SLA table, per destination band. */
-  etaLabel: string
+  carrierStatus: string | null
+  carrierReference: string | null
+  trackingUrl: string | null
+  /** DHL's pickup booking number. */
+  pickupReference: string | null
+  courierName: string | null
+  notes: string | null
+  failureReason: string | null
+  quotedCost: Money | null
+  actualCost: Money | null
+  hasLabel: boolean
+  hasInvoice: boolean
+  packedAt: Timestamp | null
   dispatchedAt: Timestamp | null
-  updatedAt: Timestamp
+  deliveredAt: Timestamp | null
+  cancelledAt: Timestamp | null
+  createdAt: Timestamp
+  events?: ShipmentEvent[]
+}
+
+/** A Ghana region's flat delivery rate, for orders outside the Accra zone. */
+export interface ShippingZoneRate {
+  region: string
+  amount: Money
+  isActive: boolean
+  updatedBy: string | null
+  updatedAt: Timestamp | null
+}
+
+export interface ShippingSettings {
+  accraPolygon: Record<string, unknown> | null
+  accraPolygonSummary: {
+    polygons: number
+    points: number
+    bounds: { south: number; north: number; west: number; east: number }
+  } | null
+  freeShippingThreshold: Money | null
+  updatedAt: Timestamp | null
 }

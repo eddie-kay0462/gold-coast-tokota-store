@@ -1,5 +1,6 @@
 import type {
   Order, OrderItem, OrderStatus, PaymentMethod, ReturnRequest, Shipment, ShippingAddress,
+  ShippingSettings, ShippingZoneRate,
 } from '~/types'
 import { customers } from './people'
 import { products } from './catalogue'
@@ -41,6 +42,37 @@ const statusWeights: OrderStatus[] = [
 ]
 
 const ghMethods: PaymentMethod[] = ['mtn_momo', 'mtn_momo', 'card', 'telecel_cash', 'airteltigo_money', 'bank_transfer']
+
+/** Every courier API is switched off until credentials arrive, so fixtures dispatch by hand. */
+function fixtureShipment(status: OrderStatus, isGh: boolean, placedAt: string): Shipment | null {
+  if (!['paid', 'processing', 'shipped', 'delivered'].includes(status)) return null
+  const shipped = status === 'shipped' || status === 'delivered'
+  return {
+    id: `fx-${placedAt}`,
+    zone: isGh ? 'ghana' : 'international',
+    carrier: 'manual',
+    serviceCode: null,
+    attempt: 1,
+    status: status === 'delivered' ? 'delivered' : shipped ? 'in_transit' : 'pending',
+    carrierStatus: null,
+    carrierReference: shipped ? `VIP-${int(10 ** 5, 9 * 10 ** 5)}` : null,
+    trackingUrl: null,
+    pickupReference: null,
+    courierName: shipped ? (isGh ? 'VIP Bus Parcels' : 'DHL counter') : null,
+    notes: null,
+    failureReason: null,
+    quotedCost: null,
+    actualCost: shipped ? ghs(isGh ? 3000 : 32000) : null,
+    hasLabel: false,
+    hasInvoice: false,
+    packedAt: null,
+    dispatchedAt: shipped ? placedAt : null,
+    deliveredAt: status === 'delivered' ? placedAt : null,
+    cancelledAt: null,
+    createdAt: placedAt,
+    events: [],
+  }
+}
 
 export const orders: Order[] = Array.from({ length: 72 }, (_, i) => {
   const customer = pick(customers)
@@ -93,8 +125,10 @@ export const orders: Order[] = Array.from({ length: 72 }, (_, i) => {
     paymentGateway: isGh ? 'paystack' : 'stripe',
     paymentMethod: isGh ? pick(ghMethods) : 'card',
     paymentReference: isGh ? `ps_${int(10 ** 9, 9 * 10 ** 9)}` : `pi_${int(10 ** 9, 9 * 10 ** 9)}`,
-    deliveryProvider: isGh ? 'yango' : 'dhl',
-    deliveryReference: dispatched ? (isGh ? `YG${int(10 ** 6, 9 * 10 ** 6)}` : `DHL${int(10 ** 8, 9 * 10 ** 8)}`) : null,
+    deliveryProvider: 'manual',
+    deliveryReference: dispatched ? `VIP-${int(10 ** 5, 9 * 10 ** 5)}` : null,
+    shippingZone: isGh ? 'ghana' : 'international',
+    shipment: fixtureShipment(status, isGh, placedAt),
     shippingAddress: address,
     whatsappThreadId: null,
     placedAt,
@@ -139,28 +173,33 @@ export const returnRequests: ReturnRequest[] = Array.from({ length: 14 }, (_, i)
   }
 })
 
-/** ETA bands come straight from the PDF's International Shipping table. */
-const etaFor = (cc: string) =>
-  cc === 'GH' ? '1–2 business days'
-    : cc === 'NG' ? '5–10 business days'
-    : ['GB', 'DE', 'NL'].includes(cc) ? '7–14 business days'
-    : ['US', 'CA'].includes(cc) ? '7–14 business days'
-    : '10–21 business days'
+/**
+ * The Shipments screen lists orders, each with its live shipment, exactly as
+ * `GET /admin/shipments` returns them.
+ */
+export const shipments: Order[] = orders.filter((o) => ['paid', 'processing', 'shipped', 'delivered'].includes(o.status))
 
-export const shipments: Shipment[] = orders
-  .filter((o) => o.deliveryReference)
-  .map((o, i) => ({
-    id: 5000 + i,
-    orderId: o.id,
-    orderReference: o.reference,
-    provider: o.deliveryProvider,
-    trackingReference: o.deliveryReference!,
-    status: o.status === 'delivered'
-      ? 'delivered'
-      : pick(['awaiting_pickup', 'in_transit', 'customs', 'out_for_delivery', 'exception'] as const),
-    destination: `${o.shippingAddress.city}, ${o.shippingAddress.country}`,
-    destinationCountryCode: o.shippingAddress.countryCode,
-    etaLabel: etaFor(o.shippingAddress.countryCode),
-    dispatchedAt: o.placedAt,
-    updatedAt: o.updatedAt,
-  }))
+/** Ghana's sixteen regions, a few priced, as `GET /admin/shipping/rates` lists them. */
+const priced: Record<string, number> = { 'Greater Accra': 3000, Ashanti: 4500, Central: 4000, Eastern: 4000 }
+export const shippingRates: ShippingZoneRate[] = [
+  'Ahafo', 'Ashanti', 'Bono', 'Bono East', 'Central', 'Eastern',
+  'Greater Accra', 'North East', 'Northern', 'Oti', 'Savannah',
+  'Upper East', 'Upper West', 'Volta', 'Western', 'Western North',
+].map((region) => ({
+  region,
+  amount: ghs(priced[region] ?? 0),
+  isActive: region in priced,
+  updatedBy: region in priced ? 'Akosua Owusu' : null,
+  updatedAt: region in priced ? daysAgo(3) : null,
+}))
+
+export const shippingSettings: ShippingSettings = {
+  accraPolygon: null,
+  accraPolygonSummary: null,
+  freeShippingThreshold: null,
+  updatedAt: null,
+}
+
+export const shipmentAttention = {
+  count: shipments.filter((o) => o.shipment?.status === 'failed' || o.shipment?.status === 'pending').length,
+}

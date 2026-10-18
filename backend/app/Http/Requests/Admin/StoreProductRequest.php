@@ -44,6 +44,15 @@ class StoreProductRequest extends FormRequest
             // out_of_stock/limited_stock are always computed (Product::getEffectiveBadgeAttribute)
             // — admin can only set the one editorial state that can't be inferred from stock.
             'merchandising_badge' => ['nullable', Rule::in(['back_in_stock'])],
+
+            // Shipping and customs (international delivery).
+            'weight_grams' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'length_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'width_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'height_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'hs_code' => ['nullable', 'string', 'regex:/^\d{4}(\.?\d{2}){0,3}$/'],
+            'origin_country' => ['sometimes', 'string', 'size:2', 'alpha'],
+            'customs_description' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

@@ -40,6 +40,9 @@ const map: Record<string, { tone: Tone; icon: unknown; label?: string }> = {
   customs: { tone: 'warning', icon: PhHourglass },
   out_for_delivery: { tone: 'info', icon: PhTruck, label: 'Out for delivery' },
   exception: { tone: 'danger', icon: PhWarningCircle },
+  booking: { tone: 'info', icon: PhHourglass, label: 'Booking courier' },
+  failed: { tone: 'danger', icon: PhWarningCircle },
+  returned: { tone: 'neutral', icon: PhXCircle },
 }
 
 const entry = computed(() => map[props.status] ?? { tone: 'neutral' as Tone, icon: PhClock })

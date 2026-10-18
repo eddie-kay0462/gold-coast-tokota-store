@@ -29,6 +29,15 @@ class UpdateProductRequest extends FormRequest
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             'merchandising_badge' => ['nullable', Rule::in(['back_in_stock'])],
+
+            // Shipping and customs (international delivery).
+            'weight_grams' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'length_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'width_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'height_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'hs_code' => ['nullable', 'string', 'regex:/^\d{4}(\.?\d{2}){0,3}$/'],
+            'origin_country' => ['sometimes', 'string', 'size:2', 'alpha'],
+            'customs_description' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

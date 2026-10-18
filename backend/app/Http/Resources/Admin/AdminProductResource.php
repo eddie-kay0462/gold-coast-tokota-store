@@ -71,6 +71,20 @@ class AdminProductResource extends JsonResource
             'is_returnable' => $this->is_returnable,
             'merchandising_badge' => $this->merchandising_badge,
 
+            // What couriers and customs need. International checkout is
+            // refused for a product missing any of these while DHL is on.
+            'shipping' => [
+                'weight_grams' => $this->weight_grams,
+                'length_mm' => $this->length_mm,
+                'width_mm' => $this->width_mm,
+                'height_mm' => $this->height_mm,
+                'hs_code' => $this->hs_code,
+                'origin_country' => $this->origin_country,
+                'customs_description' => $this->customs_description,
+                'ready_for_international' => $this->weight_grams && $this->length_mm && $this->width_mm
+                    && $this->height_mm && filled($this->hs_code),
+            ],
+
             // Rolled up across variants for the list view. `total_available` is
             // raw physical stock and `total_reserved` the units held by
             // in-progress checkouts — shown side by side because "12 in stock,

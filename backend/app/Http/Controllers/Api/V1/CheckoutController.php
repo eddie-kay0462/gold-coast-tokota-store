@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\NoFxRateException;
 use App\Exceptions\PaymentUnavailableException;
+use App\Exceptions\RegionNotServedException;
+use App\Exceptions\ShippingDataMissingException;
+use App\Exceptions\ShippingOptionChangedException;
 use App\Exceptions\UnavailableProductException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCheckoutSessionRequest;
 use App\Http\Resources\OrderResource;
 use App\Services\Checkout\CheckoutSessionService;
+use App\Services\Shipping\ShippingQuotePresenter;
 use Illuminate\Http\JsonResponse;
 
 class CheckoutController extends Controller
@@ -43,6 +47,18 @@ class CheckoutController extends Controller
                 'message' => 'One of the items in your order is no longer available.',
                 'inventory_item_id' => $e->inventoryItemId,
                 'line' => $this->lineFor($data['items'], $e->inventoryItemId),
+            ], 409);
+        } catch (RegionNotServedException $e) {
+            return ShippingQuotePresenter::regionNotServed($e);
+        } catch (ShippingDataMissingException $e) {
+            return ShippingQuotePresenter::dataMissing($e);
+        } catch (ShippingOptionChangedException $e) {
+            // 409 with the new price attached: the storefront shows it and
+            // asks again, rather than the order quietly charging a figure the
+            // customer never saw.
+            return response()->json([
+                'message' => 'The delivery price has changed since you saw it. Please check it and place your order again.',
+                'shipping_quote' => ShippingQuotePresenter::present($e->quoteId, $e->quote),
             ], 409);
         } catch (PaymentUnavailableException) {
             return response()->json([

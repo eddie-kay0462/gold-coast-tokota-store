@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ShippingAddress } from '~/components/checkout/CheckoutForm.vue'
+import { addressPayload, cartLine, type ShippingQuote } from '~/composables/useShippingQuote'
 import { useCartStore } from '~/stores/cart'
 import { formatMoney } from '~/utils/formatters'
 import { whatsappMessage } from '~/utils/whatsapp'
@@ -7,7 +8,8 @@ import { whatsappMessage } from '~/utils/whatsapp'
  * The payment step.
  *
  * `placeOrder()` posts the cart to `POST /checkout/session`, which re-prices
- * every line, quotes delivery, locks the FX rate for USD, reserves stock and
+ * every line, charges the delivery quote named by `quoteId`, locks the FX rate
+ * for USD, reserves stock and
  * opens a Paystack session, then sends the customer to Paystack's hosted page.
  * Paystack returns them to `/order-confirmation/{reference}`, which waits for
  * the webhook to mark the order paid. Paystack handles both currencies (§13 of
@@ -25,8 +27,12 @@ const props = defineProps<{
   /** Live GHS→USD rate, or 0 when the FX endpoint hasn't responded. */
   fxRate: number
   address: ShippingAddress
-  deliveryMethod: 'standard' | 'express'
+  /** The delivery quote the customer saw, and the option they picked from it. */
+  quoteId: string | null
+  optionId: string | null
 }>()
+
+const emit = defineEmits<{ 'quote-changed': [ShippingQuote] }>()
 
 const cart = useCartStore()
 const api = useApi()
@@ -51,13 +57,7 @@ const notice = ref<{ title: string, body: string } | null>(null)
 
 interface SessionError {
   statusCode?: number
-  data?: { message?: string, line?: number | null, errors?: Record<string, string[]> }
-}
-
-/** `slug:size:colour` → the `{ slug, size, colour }` the API resolves to a stock row. */
-function lineFor(item: (typeof cart.items)[number]) {
-  const [slug, size, colour] = item.inventoryItemId.split(':')
-  return { slug: slug || item.slug, size: size || null, colour: colour || null, quantity: item.quantity }
+  data?: { message?: string, line?: number | null, errors?: Record<string, string[]>, shipping_quote?: ShippingQuote }
 }
 
 function describeError(err: SessionError): { title: string, body: string } {
@@ -103,19 +103,11 @@ async function placeOrder() {
       {
         method: 'POST',
         body: {
-          items: cart.items.map(lineFor),
+          items: cart.items.map(cartLine),
           currency: props.currency,
-          delivery_method: props.deliveryMethod,
-          shipping_address: {
-            full_name: props.address.fullName,
-            email: props.address.email,
-            phone: props.address.phone,
-            line1: props.address.line1,
-            city: props.address.city,
-            region: props.address.region || null,
-            postcode: props.address.postcode || null,
-            country: props.address.country,
-          },
+          shipping_quote_id: props.quoteId,
+          shipping_option_id: props.optionId,
+          shipping_address: addressPayload(props.address),
         },
       },
     )
@@ -127,8 +119,15 @@ async function placeOrder() {
     // customer who backs out of Paystack still has their basket.
     window.location.assign(url)
   } catch (err: unknown) {
-    notice.value = describeError(err as SessionError)
+    const error = err as SessionError
     submitting.value = false
+    // The delivery price moved since it was shown. Hand the fresh quote back
+    // to the page, which returns to the delivery step to show it.
+    if (error.statusCode === 409 && error.data?.shipping_quote) {
+      emit('quote-changed', error.data.shipping_quote)
+      return
+    }
+    notice.value = describeError(error)
   }
 }
 </script>
