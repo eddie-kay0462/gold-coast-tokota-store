@@ -28,8 +28,8 @@ export interface Product {
    * storefront-relative paths, which on the admin's origin load its own HTML.
    */
   imageUrls?: string[]
-  /** Photos grouped by colourway, in swatch order. */
-  colourPhotos?: { colour: string, hex: string | null, urls: string[] }[]
+  /** Photos grouped by colourway, in swatch order. `keys` are the stored references, index-aligned with `urls`. */
+  colourPhotos?: { colour: string, hex: string | null, urls: string[], keys?: string[] }[]
   isActive: boolean
   isFeatured: boolean
   /** What couriers and customs need; required for international orders while DHL is on. */

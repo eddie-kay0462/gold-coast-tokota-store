@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterCon
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\V1\Admin\ProductPhotoController as AdminProductPhotoController;
 use App\Http\Controllers\Api\V1\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Api\V1\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\V1\Admin\ShipmentController as AdminShipmentController;
@@ -393,6 +394,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:products.write,pricing.write')->name('products.update');
             Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])
                 ->middleware('capability:products.delete')->name('products.destroy');
+
+            // Photos don't touch price: products.write alone.
+            Route::post('/products/{product}/photos', [AdminProductPhotoController::class, 'store'])
+                ->middleware('capability:products.write')->name('products.photos.store');
+            Route::delete('/products/{product}/photos', [AdminProductPhotoController::class, 'destroy'])
+                ->middleware('capability:products.write')->name('products.photos.destroy');
         });
     });
 });

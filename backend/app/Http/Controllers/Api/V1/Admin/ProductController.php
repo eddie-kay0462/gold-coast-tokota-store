@@ -29,7 +29,7 @@ class ProductController extends Controller
 {
     /** Relations every response loads — stock rollups and the category name
      *  are part of the resource, so omitting them would silently drop fields. */
-    private const WITH = ['category', 'collection', 'inventoryItems'];
+    public const WITH = ['category', 'collection', 'inventoryItems'];
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -80,7 +80,17 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product): AdminProductResource
     {
-        $product->update($request->validated());
+        $data = $request->validated();
+
+        // A photo dropped from the gallery leaves its colourway too.
+        if (array_key_exists('images', $data)) {
+            $data['images'] ??= [];
+            $product->forceFill(['colour_images' => collect($product->colour_images ?? [])
+                ->map(fn (array $keys) => array_values(array_intersect($keys, $data['images'])))
+                ->all()]);
+        }
+
+        $product->fill($data)->save();
 
         return new AdminProductResource($product->load(self::WITH));
     }

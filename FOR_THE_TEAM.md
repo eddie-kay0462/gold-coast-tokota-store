@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 15 October 2026 (the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 18 October 2026 (catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,132 @@ inert at their last step.
 
 ## Recent changes
 
-### 15 October 2026 (latest): the API is dockerized, on the Contabo box shared with IRIS
+### 18 October 2026 (latest): catalogue photos go to R2; the admin can upload and view product photos
+
+The client's photo folders on Drive (Ahenema, Shoe, Slippers) can now be
+published to R2 with a repeatable, two-step import. The Python half and its
+procedure (`scripts/catalogue/`) are git-ignored and live on Kirk's laptop
+with the photos; ask him for them.
+
+**Admin photo upload (new).** The product page's Photos section now has
+"Add photo" per colourway and a remove button on each photo, backed by
+`POST`/`DELETE /admin/products/{id}/photos` (`products.write`). An upload is
+named and stored exactly like an imported photo: cropped to 1500×1667,
+WebP, `catalogue/{slug}/{n}-{colour}-{hash}.webp` in R2, with a media-library
+row. Both paths go through `App\Support\Catalogue\CataloguePhoto`, so they
+can't drift. `images` on the product endpoints can now only reorder or remove
+(no typed-in paths), so the convention holds for every product, new or old.
+
+**Viewing photos in the admin (new).** `UiLightbox` shows a photo full-screen
+inside the app, with arrows/keyboard to step through and Esc to close. The
+product page's thumbnails open it instead of a new tab, and the media library
+now shows real thumbnails (it showed an icon) that open it too. Imported
+photos show "Catalogue import" as their uploader.
+
+1. **`scripts/catalogue/cutout.py`** runs locally in Python, and the photos
+   never leave the machine. For each photo:
+   - rembg's **BiRefNet** model removes the background;
+   - the result is placed on the storefront grey (`#F5F4F4`) in the 9:10
+     product-card frame (1500×1667), with a soft contact shadow;
+   - a `review.html` sheet shows the original, the cut-out and the framed
+     version side by side.
+
+   A pilot on five existing photos gave clean masks, including toe loops and
+   white leather on grey.
+2. **`php artisan catalogue:import-media <dir>`** publishes the framed photos.
+   It uploads them to the media disk as `catalogue/{slug}/{n}-{colour}-{hash}.webp`.
+   It never uses a `products/…` key, because MediaUrl reads that prefix as a
+   storefront path. It then points `images`/`colour_images` at them.
+   - **Safe to re-run:** it uploads only changed photos, offers `--dry-run`
+     and `--only=slug`, and checks every photo before writing anything.
+   - **Backup:** a file is written before every run, and `--restore` puts the
+     old photos back.
+   - **Existing products:** besides their photos, they take the fixture's
+     category, product type and any colour they don't have yet (a colour is
+     only added, never removed, with its own inventory rows: 0 stock in
+     production). Price, name, materials and stock are left alone, and the
+     dry run lists every such change.
+   - **New styles:** one missing from the database, such as the Ahenema
+     styles, is created from its products.json entry, with 0 stock in
+     production.
+   - **Production run:** from the laptop, with a throwaway
+     `backend/.env.production`.
+
+**What it reads:** each products.json entry's new `source` block, which maps
+the client's file names to their order and colour. A photo marked
+`"background": "keep"` publishes the original instead of the cut-out.
+
+**Re-seeding:** `ProductSeeder` now goes through a shared
+`App\Support\Catalogue\ProductUpserter`, and leaves a product's photos
+alone once they are media-disk keys. So `db:seed` no longer puts
+`/products/…` back.
+
+**Tests:** 10 new ones in `tests/Feature/CatalogueImportMediaTest.php` and
+8 in `tests/Feature/AdminProductPhotoTest.php`. Full suite: 531 passing. `phpunit.xml` now blanks the `PAYSTACK_*` keys:
+three checkout/admin tests had started calling the real Paystack because a
+developer's `.env` held a live key.
+
+**Run on the real photos (18 Oct):**
+- **The download:** 96 product photos and 40 price sheets. The sheets are
+  photos too, and `cutout.py` skips them.
+- **The cut-outs:** all 96 came out clean, checked one by one. Masks hold up
+  on strap gaps, black leather, beads and white pairs.
+- **The 28 existing styles:** each photo was matched to the one already on
+  the site, so their order and colours carry over unchanged.
+- **The 12 new Ahenema styles** were added to products.json from the client's
+  sheets: Adehye, Ahotoso, Anigye, Asanteni, Asew Preman, Kentehene, Nana,
+  Obrempong, Osagyefo, Otumfour, Preman Ahenema and Sikapa.
+  - Prices are ₵500–600. Sizes are 36–45, or 36–42 for the three women's
+    styles. Materials are in the sheet's order.
+  - "Unisex" is stored as `["mens","womens"]`, as for Ohene.
+  - Colours are named from the photos with the catalogue's existing colour
+    names: the footbed where colourways differ by footbed, the strap where
+    they differ by strap. Two-tone pairs are a judgement call.
+  - `ProductSeeder` skips entries with no committed photos, so these styles
+    exist only once the import has created them with their photos.
+- **Local import:** 40 products and 96 photos.
+- **Decided 18 Oct (Kirk):**
+  - **Opanyin gets a third colourway, Grey** (`#A39D91`, the woven upper of
+    `IMG_4416`), with a committed storefront photo `3-grey.webp` like its
+    other two.
+  - **Ohene moves to Ahenema** (category and product type), as the client's
+    Drive files it. Slippers is now 25 styles.
+  - The colour names read off the photos stand as they are; they can be
+    renamed in the admin.
+
+- **The shop shows the client's original photos, not the cut-outs.** Every
+  photo in products.json is `"background": "keep"`: the Drive original,
+  cropped to the 9:10 card, on R2. Kirk chose this after seeing the cut-outs
+  live. `cutout.py` and the cut-outs remain for later; switching back is a
+  matter of dropping the `keep`s and re-running the import. (Ohene was the
+  first `keep`: its cut-out lost the white footbed's toe edge.)
+
+**Production runs (18 Oct), from the laptop:**
+1. 16:40, with cut-outs: 40 products, 96 photos.
+2. 17:17: someone ran `php artisan db:seed` on the server. The deployed
+   seeder is the committed one, which predates `ProductUpserter`, so it put
+   27 styles back on `/products/…` photos and undid Ohene's move and
+   Opanyin's Grey. **Don't run `db:seed` on the server until this change is
+   deployed**; the new seeder leaves imported photos alone.
+3. After that, with originals: all 40 products back on R2, Ohene in
+   Ahenema, Opanyin with Grey.
+
+Backups for `--restore` are in `backend/storage/app/catalogue-import/` on
+Kirk's laptop, one per run.
+
+**Waiting on a person:**
+- **Stock:** the 12 new Ahenema styles and Opanyin's Grey start at 0 in
+  production and show as sold out until counts are entered in the admin.
+- **`backend/.env.production`** on Kirk's laptop holds production secrets;
+  delete it once a restore is no longer wanted.
+
+**Local setup for the photos:** run `php artisan storage:link` once, or
+`/storage/catalogue/…` returns 403.
+
+**Domain:** R2's public domain is `images.goldcoasttokota.store`, not
+`media.` (`docs/deploy/contabo.md` is updated).
+
+### 15 October 2026: the API is dockerized, on the Contabo box shared with IRIS
 
 The Contabo server isn't empty. IRIS production runs there (`207.180.237.21`),
 and its Docker Caddy owns ports 80/443, so the old runbook (host nginx on 443,

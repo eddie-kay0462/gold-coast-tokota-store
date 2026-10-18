@@ -62,6 +62,11 @@ class AdminProductResource extends JsonResource
                         MediaUrl::absolute(...),
                         ($this->colour_images ?? [])[$colour['name']] ?? [],
                     ))),
+                    // The stored keys, index-aligned with `urls`, for removing one.
+                    'keys' => array_values(array_filter(
+                        ($this->colour_images ?? [])[$colour['name']] ?? [],
+                        fn ($key) => MediaUrl::absolute($key) !== null,
+                    )),
                 ])
                 ->values()
                 ->all(),

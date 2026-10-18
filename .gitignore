@@ -7,3 +7,9 @@
 .env.example
 
 gold coast tokota store front details.pdf
+# Catalogue photo tooling and the client's photos: kept on the machine that
+# runs the import, not in the repo.
+scripts/catalogue/
+__pycache__/
+tokota-drive/
+tokota-cutout/

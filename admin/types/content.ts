@@ -49,6 +49,7 @@ export interface MediaAsset {
   width: number | null
   height: number | null
   altText: string
-  uploadedByName: string
+  /** Null for photos put there by `catalogue:import-media`. */
+  uploadedByName: string | null
   uploadedAt: Timestamp
 }

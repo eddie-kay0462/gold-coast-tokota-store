@@ -24,8 +24,12 @@ class UpdateProductRequest extends FormRequest
             'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
             'base_price_ghs' => ['sometimes', 'required', 'integer', 'min:0'],
             'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('products', 'sku')->ignore($product)],
+            // Reorder or remove only. New photos go through
+            // POST /admin/products/{product}/photos, which names and stores
+            // them the catalogue way (CataloguePhoto); a path typed in here
+            // would skip that.
             'images' => ['nullable', 'array'],
-            'images.*' => ['string'],
+            'images.*' => ['string', 'distinct', Rule::in($product->images ?? [])],
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             'merchandising_badge' => ['nullable', Rule::in(['back_in_stock'])],

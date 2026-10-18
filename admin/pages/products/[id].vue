@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { PhArrowLeft } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhPlus, PhX } from '@phosphor-icons/vue'
 import type { FxRate, InventoryItem, Product } from '~/types'
+import type { LightboxImage } from '~/components/ui/Lightbox.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
 
 /**
@@ -81,6 +82,79 @@ async function saveShipping() {
     shippingError.value = Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Saving failed. Try again in a moment.'
   } finally {
     savingShipping.value = false
+  }
+}
+
+// --- Photos -------------------------------------------------------------
+// Uploads go to POST /admin/products/{id}/photos, which crops each one to the
+// storefront's 9:10 card, converts it to WebP and stores it in R2 as
+// catalogue/{slug}/{n}-{colour}-{hash}.webp, the same as the client's
+// imported photos. There is no other way to add one.
+const photoBusy = ref<string | null>(null)
+
+// Every photo in one list for the viewer, in the order shown on the page.
+const viewerImages = computed<LightboxImage[]>(() => {
+  const p = product.value
+  if (!p) return []
+  if (p.colourPhotos?.length) {
+    return p.colourPhotos.flatMap((g) => g.urls.map((src, i) => ({
+      src,
+      alt: `${p.name} in ${g.colour}`,
+      caption: `${g.colour} · photo ${i + 1} of ${g.urls.length}`,
+    })))
+  }
+  return (p.imageUrls ?? []).map((src) => ({ src, alt: p.name }))
+})
+const viewing = ref<number | null>(null)
+const openViewer = (src: string) => {
+  const i = viewerImages.value.findIndex((img) => img.src === src)
+  viewing.value = i === -1 ? null : i
+}
+const photoError = ref<string | null>(null)
+
+function failureMessage(err: unknown, fallback: string): string | null {
+  const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
+  if (e.statusCode === 401 || e.statusCode === 419) return null
+  return Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? fallback
+}
+
+async function addPhotos(event: Event, colour: string | null) {
+  const input = event.target as HTMLInputElement
+  const files = Array.from(input.files ?? [])
+  input.value = ''
+  if (!product.value || !files.length) return
+  photoBusy.value = colour ?? ''
+  photoError.value = null
+  try {
+    // One at a time, so they're numbered in the order chosen.
+    for (const file of files) {
+      const body = new FormData()
+      body.append('file', file)
+      if (colour) body.append('colour', colour)
+      await adminFetch(`/admin/products/${product.value.id}/photos`, { method: 'POST', body })
+    }
+    await refresh()
+    toast.success(files.length === 1 ? 'Photo added' : `${files.length} photos added`)
+  } catch (err: unknown) {
+    photoError.value = failureMessage(err, 'The photo didn’t upload. Try again in a moment.')
+    await refresh()
+  } finally {
+    photoBusy.value = null
+  }
+}
+
+async function removePhoto(key: string) {
+  if (!product.value) return
+  photoBusy.value = key
+  photoError.value = null
+  try {
+    await adminFetch(`/admin/products/${product.value.id}/photos`, { method: 'DELETE', body: { key } })
+    await refresh()
+    toast.success('Photo removed')
+  } catch (err: unknown) {
+    photoError.value = failureMessage(err, 'The photo wasn’t removed. Try again in a moment.')
+  } finally {
+    photoBusy.value = null
   }
 }
 
@@ -214,34 +288,81 @@ const derivedUsd = computed(() => {
                   {{ group.urls.length }} photo{{ group.urls.length === 1 ? '' : 's' }}
                 </span>
               </p>
-              <div v-if="group.urls.length" class="flex flex-wrap gap-2">
-                <a
-                  v-for="url in group.urls" :key="url" :href="url" target="_blank" rel="noopener"
-                  class="block overflow-hidden rounded-lg border border-border hover:border-border-strong"
+              <div class="flex flex-wrap gap-2">
+                <div v-for="(url, i) in group.urls" :key="url" class="relative">
+                  <button
+                    type="button"
+                    class="block overflow-hidden rounded-lg border border-border hover:border-border-strong"
+                    :aria-label="`View ${group.colour} photo ${i + 1}`"
+                    @click="openViewer(url)"
+                  >
+                    <img :src="url" :alt="`${product.name} in ${group.colour}`" loading="lazy" class="h-28 w-[100px] object-cover">
+                  </button>
+                  <button
+                    v-if="can('products.write') && group.keys?.[i]"
+                    type="button"
+                    class="absolute right-1 top-1 rounded-full bg-bg/90 p-1 text-fg-muted shadow hover:text-danger disabled:opacity-50"
+                    :aria-label="`Remove this ${group.colour} photo`"
+                    :disabled="photoBusy !== null"
+                    @click="removePhoto(group.keys[i])"
+                  >
+                    <PhX :size="12" />
+                  </button>
+                </div>
+                <label
+                  v-if="can('products.write')"
+                  class="flex h-28 w-[100px] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border text-meta text-fg-muted hover:border-border-strong"
+                  :class="{ 'pointer-events-none opacity-50': photoBusy !== null }"
                 >
-                  <img :src="url" :alt="`${product.name} in ${group.colour}`" loading="lazy" class="h-28 w-[84px] object-cover">
-                </a>
+                  <PhPlus :size="16" />
+                  {{ photoBusy === group.colour ? 'Uploading…' : 'Add photo' }}
+                  <input
+                    type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple class="sr-only"
+                    :disabled="photoBusy !== null"
+                    @change="addPhotos($event, group.colour)"
+                  >
+                </label>
               </div>
-              <p v-else class="text-meta text-warning">No photo of this colourway yet.</p>
+              <p v-if="!group.urls.length" class="text-meta text-warning">No photo of this colourway yet.</p>
             </div>
           </div>
 
           <div v-else-if="product.imageUrls?.length" class="flex flex-wrap gap-2">
-            <a
-              v-for="url in product.imageUrls" :key="url" :href="url" target="_blank" rel="noopener"
+            <button
+              v-for="(url, i) in product.imageUrls" :key="url" type="button"
               class="block overflow-hidden rounded-lg border border-border hover:border-border-strong"
+              :aria-label="`View photo ${i + 1}`"
+              @click="openViewer(url)"
             >
-              <img :src="url" :alt="product.name" loading="lazy" class="h-28 w-[84px] object-cover">
-            </a>
+              <img :src="url" :alt="product.name" loading="lazy" class="h-28 w-[100px] object-cover">
+            </button>
           </div>
 
           <p v-else class="text-ui text-fg-muted">This product has no photos.</p>
 
-          <!-- View-only for now: the API can store uploads in Cloudflare R2
-               (MediaStorage), but the editor has no upload control yet. -->
-          <p class="mt-4 text-meta text-fg-faint">
-            Photos can’t be changed here yet. That comes once images move to cloud storage.
+          <!-- A product with no colourways takes photos without one. -->
+          <label
+            v-if="!product.colourPhotos?.length && can('products.write')"
+            class="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-2 text-meta text-fg-muted hover:border-border-strong"
+            :class="{ 'pointer-events-none opacity-50': photoBusy !== null }"
+          >
+            <PhPlus :size="14" />
+            {{ photoBusy === '' ? 'Uploading…' : 'Add photos' }}
+            <input
+              type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple class="sr-only"
+              :disabled="photoBusy !== null"
+              @change="addPhotos($event, null)"
+            >
+          </label>
+
+          <p v-if="photoError" class="mt-3 rounded-lg bg-danger-soft px-3 py-2.5 text-meta text-danger" role="alert">
+            {{ photoError }}
           </p>
+          <p class="mt-4 text-meta text-fg-faint">
+            Photos are cropped to the shop’s 9:10 card and converted to WebP. The first photo is the one on the shop grid.
+          </p>
+
+          <UiLightbox v-model:index="viewing" :images="viewerImages" />
         </SettingsSection>
 
         <SettingsSection title="Variants" description="Stock per size and colourway.">

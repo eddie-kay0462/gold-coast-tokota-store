@@ -128,8 +128,10 @@ Anything that writes them directly is a bug.
 | GET | `/admin/settings/diy-turnaround` | Per-order-type estimates. Staff may read |
 | PUT | `/admin/settings/diy-turnaround` | `settings.write` — Admin+ |
 | GET | `/admin/products` · `/admin/products/{id}` | `products.view` — every tier. **Unscoped:** drafts included. `?active=` `?q=` `?category_id=` `?per_page=` |
-| — | admin product `image_urls`, `colour_photos` | `AdminProductResource` (2 Oct). `images` stays the raw stored references; `image_urls` are absolute and loadable from the admin's origin (storefront-relative `/products/…` paths resolve against `STOREFRONT_URL`, `products/…` keys against the storefront too, other bare keys through the `public` disk — `App\Support\MediaUrl`). `colour_photos` is `[{colour, hex, urls}]` in swatch order |
-| POST/PUT | `/admin/products` | `products.write` **and** `pricing.write` — Admin+ |
+| — | admin product `image_urls`, `colour_photos` | `AdminProductResource` (2 Oct). `images` stays the raw stored references; `image_urls` are absolute and loadable from the admin's origin (storefront-relative `/products/…` paths resolve against `STOREFRONT_URL`, `products/…` keys against the storefront too, other bare keys through the `public` disk — `App\Support\MediaUrl`). `colour_photos` is `[{colour, hex, urls, keys}]` in swatch order; `keys` are the stored references, index-aligned with `urls` |
+| POST/PUT | `/admin/products` | `products.write` **and** `pricing.write` — Admin+. **`images` can't add photos:** POST refuses any; PUT accepts only references already on the product (reorder or remove; a removed one leaves its colourway too) |
+| POST | `/admin/products/{id}/photos` | `products.write` — Admin+ (18 Oct). Multipart `file` (JPG/PNG/WebP/AVIF, ≤15 MB, ≥600 px a side) and `colour` (required when the product has colourways, one of them; refused when it has none). Cropped to 1500×1667, WebP, stored at `catalogue/{slug}/{n}-{colour}-{hash}.webp` on the media disk with a media-library row (`App\Support\Catalogue\CataloguePhoto`, the same naming `catalogue:import-media` uses). Appended to `images` and `colour_images[colour]`. Returns the product |
+| DELETE | `/admin/products/{id}/photos` | `products.write` — Admin+. JSON `key` (one of `images`). Takes it off the product and its colourway; the file stays in the media library |
 | DELETE | `/admin/products/{id}` | `products.delete` — Admin+ |
 
 #### The admin product shape is not the storefront's

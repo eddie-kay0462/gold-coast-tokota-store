@@ -55,7 +55,32 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": true
+    "is_featured": true,
+    "source": {
+      "dir": "Slippers /Abrantie Collection ",
+      "photos": [
+        {
+          "file": "IMG_4190.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4193.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4195.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4308.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "adomba",
@@ -101,7 +126,22 @@
       "Soft leather"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Adomba collection ",
+      "photos": [
+        {
+          "file": "IMG_4292.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4296.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "agudie",
@@ -154,7 +194,22 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Agudie collection ",
+      "photos": [
+        {
+          "file": "IMG_4228.JPG",
+          "colour": "Red",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4276.JPG",
+          "colour": "White",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "ahoofe",
@@ -196,7 +251,17 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Ahoɔfɛ collection",
+      "photos": [
+        {
+          "file": "IMG_4305.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "asantewaa",
@@ -236,7 +301,17 @@
       "Foam board"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Asantewaa collection ",
+      "photos": [
+        {
+          "file": "IMG_4287.JPG",
+          "colour": "Red",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "aseda",
@@ -285,7 +360,22 @@
       "Foam board"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Aseda collection ",
+      "photos": [
+        {
+          "file": "IMG_4298.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4299.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "atwerebor",
@@ -333,7 +423,22 @@
       "Foam board"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Atwerebor collection ",
+      "photos": [
+        {
+          "file": "IMG_4306.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4237.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "awia",
@@ -374,7 +479,17 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Awia collection ",
+      "photos": [
+        {
+          "file": "IMG_4282.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "awuraba",
@@ -423,7 +538,22 @@
       "Foam board"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Awuraba Collection ",
+      "photos": [
+        {
+          "file": "IMG_4224.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4225.JPG",
+          "colour": "Navy",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "besiwaa",
@@ -465,7 +595,17 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Besiwaa collection ",
+      "photos": [
+        {
+          "file": "IMG_4242.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "danso",
@@ -506,7 +646,17 @@
       "Macro"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Danso collection ",
+      "photos": [
+        {
+          "file": "IMG_4326.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "domfo",
@@ -569,7 +719,32 @@
       "Bona"
     ],
     "category": "slippers",
-    "is_featured": true
+    "is_featured": true,
+    "source": {
+      "dir": "Slippers /Domfo Collection ",
+      "photos": [
+        {
+          "file": "IMG_4219.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4226.JPG",
+          "colour": "Green",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4227.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4279.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "gyata",
@@ -610,7 +785,17 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Gyata collection ",
+      "photos": [
+        {
+          "file": "IMG_4322.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "kania",
@@ -667,7 +852,27 @@
       "Eyelet"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Kania collection ",
+      "photos": [
+        {
+          "file": "IMG_4302.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4301.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4300.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "nanaba",
@@ -722,7 +927,27 @@
       "Foam board"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Nanaba collection ",
+      "photos": [
+        {
+          "file": "IMG_4258.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4259.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4260.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "nimdea",
@@ -763,7 +988,17 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Nimdea collection ",
+      "photos": [
+        {
+          "file": "IMG_4283.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "nshira",
@@ -814,7 +1049,27 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Nshira collection ",
+      "photos": [
+        {
+          "file": "IMG_4290.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4291.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4281.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "nyarko",
@@ -871,7 +1126,27 @@
       "Welt"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Nyarko Collection ",
+      "photos": [
+        {
+          "file": "IMG_4307.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4216.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4217.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "obaapa",
@@ -928,7 +1203,27 @@
       "Velvet fabric"
     ],
     "category": "slippers",
-    "is_featured": true
+    "is_featured": true,
+    "source": {
+      "dir": "Slippers /Obaapa collection ",
+      "photos": [
+        {
+          "file": "IMG_4248.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4249.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4251.JPG",
+          "colour": "Purple",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "odehyieba",
@@ -985,7 +1280,27 @@
       "Macro"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Odehyieba collection ",
+      "photos": [
+        {
+          "file": "IMG_4198.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4200.JPG",
+          "colour": "White",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4202.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "odeneho",
@@ -1052,7 +1367,37 @@
       "Macro"
     ],
     "category": "slippers",
-    "is_featured": true
+    "is_featured": true,
+    "source": {
+      "dir": "Slippers /Odeneho collection ",
+      "photos": [
+        {
+          "file": "IMG_4262.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4238.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4229.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4333.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4334.JPG",
+          "colour": "Green",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "ogya",
@@ -1095,7 +1440,22 @@
       "Macro"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Ogya collection ",
+      "photos": [
+        {
+          "file": "IMG_4277.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4286.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "ohene",
@@ -1116,7 +1476,7 @@
         "/products/ohene/1-white.webp"
       ]
     },
-    "product_type": "slippers",
+    "product_type": "ahenema",
     "departments": [
       "mens",
       "womens"
@@ -1140,8 +1500,18 @@
       "Soft leather",
       "Adinkra symbol"
     ],
-    "category": "slippers",
-    "is_featured": false
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Ohene collection ",
+      "photos": [
+        {
+          "file": "IMG_4449.JPG",
+          "colour": "White",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "okatakyie",
@@ -1198,7 +1568,27 @@
       "Macro"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Okatakyie Collection ",
+      "photos": [
+        {
+          "file": "IMG_4208.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4206.JPG",
+          "colour": "Navy",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4205.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "opanyin",
@@ -1206,7 +1596,8 @@
     "base_price_ghs": 50000,
     "images": [
       "/products/opanyin/1-black.webp",
-      "/products/opanyin/2-green.webp"
+      "/products/opanyin/2-green.webp",
+      "/products/opanyin/3-grey.webp"
     ],
     "color": "Black",
     "colors": [
@@ -1217,6 +1608,10 @@
       {
         "name": "Green",
         "hex": "#2F4A3A"
+      },
+      {
+        "name": "Grey",
+        "hex": "#A39D91"
       }
     ],
     "colour_images": {
@@ -1225,6 +1620,9 @@
       ],
       "Green": [
         "/products/opanyin/2-green.webp"
+      ],
+      "Grey": [
+        "/products/opanyin/3-grey.webp"
       ]
     },
     "product_type": "slippers",
@@ -1248,7 +1646,27 @@
       "Macro"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Opanyin collection ",
+      "photos": [
+        {
+          "file": "IMG_4246.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4245.JPG",
+          "colour": "Green",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4416.JPG",
+          "colour": "Grey",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "wofa",
@@ -1296,7 +1714,22 @@
       "Soft leather"
     ],
     "category": "slippers",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Slippers /Wofa collection ",
+      "photos": [
+        {
+          "file": "IMG_4327.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4425.JPG",
+          "colour": "Navy",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "krakye",
@@ -1344,7 +1777,22 @@
       "Welt"
     ],
     "category": "shoes",
-    "is_featured": false
+    "is_featured": false,
+    "source": {
+      "dir": "Shoe/Krakye collection ",
+      "photos": [
+        {
+          "file": "IMG_4494.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4261.JPG",
+          "colour": "Navy",
+          "background": "keep"
+        }
+      ]
+    }
   },
   {
     "slug": "osram",
@@ -1401,6 +1849,797 @@
       "Macro"
     ],
     "category": "shoes",
-    "is_featured": true
+    "is_featured": true,
+    "source": {
+      "dir": "Shoe/Osram collection ",
+      "photos": [
+        {
+          "file": "IMG_4271.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4274.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4275.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "adehye",
+    "name": "Adehye Collection",
+    "base_price_ghs": 60000,
+    "images": [],
+    "color": "Brown",
+    "colors": [
+      {
+        "name": "Brown",
+        "hex": "#5A3A22"
+      },
+      {
+        "name": "Green",
+        "hex": "#2F4A3A"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Bona",
+      "Foam board",
+      "Adinkra symbol",
+      "Macro",
+      "Soft leather",
+      "Velvet fabric"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Adehye collection ",
+      "photos": [
+        {
+          "file": "IMG_3492.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4438.JPG",
+          "colour": "Green",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "ahotoso",
+    "name": "Ahotoso Collection",
+    "base_price_ghs": 50000,
+    "images": [],
+    "color": "Black",
+    "colors": [
+      {
+        "name": "Black",
+        "hex": "#000000"
+      },
+      {
+        "name": "Navy",
+        "hex": "#1B2A4A"
+      },
+      {
+        "name": "Tan",
+        "hex": "#B8732E"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Soft fabric",
+      "Soft leather",
+      "Foam board",
+      "Bona",
+      "Macro",
+      "Gold crown"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Ahotoso collection",
+      "photos": [
+        {
+          "file": "IMG_4267.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4270.JPG",
+          "colour": "Navy",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4313.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "anigye",
+    "name": "Anigye Collection",
+    "base_price_ghs": 50000,
+    "images": [],
+    "color": "Black",
+    "colors": [
+      {
+        "name": "Black",
+        "hex": "#000000"
+      },
+      {
+        "name": "Red",
+        "hex": "#C6212B"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "materials": [
+      "Kente",
+      "Soft leather",
+      "Adinkra symbol",
+      "Bona",
+      "Macro"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Anigye collection",
+      "photos": [
+        {
+          "file": "IMG_4280.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4285.JPG",
+          "colour": "Red",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "asanteni",
+    "name": "Asanteni Collection",
+    "base_price_ghs": 50000,
+    "images": [],
+    "color": "Red",
+    "colors": [
+      {
+        "name": "Red",
+        "hex": "#C6212B"
+      },
+      {
+        "name": "White",
+        "hex": "#FFFFFF"
+      },
+      {
+        "name": "Brown",
+        "hex": "#5A3A22"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Bona",
+      "Foam board",
+      "Macro",
+      "Soft leather",
+      "Gold chain"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Asanteni collection ",
+      "photos": [
+        {
+          "file": "IMG_4264.JPG",
+          "colour": "Red",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4272.JPG",
+          "colour": "White",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4273.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "asew-preman",
+    "name": "Asew Preman Collection",
+    "base_price_ghs": 60000,
+    "images": [],
+    "color": "Purple",
+    "colors": [
+      {
+        "name": "Purple",
+        "hex": "#3B1F5B"
+      },
+      {
+        "name": "Green",
+        "hex": "#2F4A3A"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "materials": [
+      "Velvet fabric",
+      "Beads",
+      "Velvet bias",
+      "Bona",
+      "Macro",
+      "Foam board"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Asew Preman collection ",
+      "photos": [
+        {
+          "file": "IMG_4328.JPG",
+          "colour": "Purple",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4329.JPG",
+          "colour": "Green",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4330.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "kentehene",
+    "name": "Kentehene Collection",
+    "base_price_ghs": 55000,
+    "images": [],
+    "color": "Blue",
+    "colors": [
+      {
+        "name": "Blue",
+        "hex": "#1E4C8F"
+      },
+      {
+        "name": "Tan",
+        "hex": "#B8732E"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Kente",
+      "Soft leather",
+      "Macro",
+      "Bona",
+      "Adinkra symbol"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Kentehene Collection",
+      "photos": [
+        {
+          "file": "IMG_4210.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4211.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        },
+        {
+          "file": "Kentehene.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_5847.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "nana",
+    "name": "Nana Collection",
+    "base_price_ghs": 55000,
+    "images": [],
+    "color": "Blue",
+    "colors": [
+      {
+        "name": "Blue",
+        "hex": "#1E4C8F"
+      },
+      {
+        "name": "Black",
+        "hex": "#000000"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Soft leather",
+      "Bona",
+      "Foam board",
+      "Macro",
+      "Velvet",
+      "Adinkra symbol"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Nana  collection ",
+      "photos": [
+        {
+          "file": "IMG_4212.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4266.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "obrempong",
+    "name": "Obrempong Collection",
+    "base_price_ghs": 50000,
+    "images": [],
+    "color": "Black",
+    "colors": [
+      {
+        "name": "Black",
+        "hex": "#000000"
+      },
+      {
+        "name": "Blue",
+        "hex": "#1E4C8F"
+      },
+      {
+        "name": "Tan",
+        "hex": "#B8732E"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Bona",
+      "Foam board",
+      "Macro",
+      "Soft leather",
+      "Gold chain",
+      "Velvet fabric"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Obrempong collection ",
+      "photos": [
+        {
+          "file": "IMG_4268.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4312.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4325.JPG",
+          "colour": "Tan",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "osagyefo",
+    "name": "Osagyefo Collection",
+    "base_price_ghs": 55000,
+    "images": [],
+    "color": "Purple",
+    "colors": [
+      {
+        "name": "Purple",
+        "hex": "#3B1F5B"
+      },
+      {
+        "name": "Blue",
+        "hex": "#1E4C8F"
+      },
+      {
+        "name": "Red",
+        "hex": "#C6212B"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Soft leather",
+      "Bona",
+      "Macro",
+      "Velvet fabric",
+      "Adinkra symbol"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Osagyefo collection ",
+      "photos": [
+        {
+          "file": "IMG_4244.JPG",
+          "colour": "Purple",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4269.JPG",
+          "colour": "Blue",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4385.JPG",
+          "colour": "Red",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "otumfour",
+    "name": "Otumfour Collection",
+    "base_price_ghs": 50000,
+    "images": [],
+    "color": "Black",
+    "colors": [
+      {
+        "name": "Black",
+        "hex": "#000000"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Soft leather",
+      "Bona",
+      "Foam board",
+      "Velvet fabric",
+      "Macro"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Otumfour collection ",
+      "photos": [
+        {
+          "file": "IMG_4315.JPG",
+          "colour": "Black",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "preman-ahenema",
+    "name": "Preman Ahenema Collection",
+    "base_price_ghs": 60000,
+    "images": [],
+    "color": "Black",
+    "colors": [
+      {
+        "name": "Black",
+        "hex": "#000000"
+      },
+      {
+        "name": "Red",
+        "hex": "#C6212B"
+      },
+      {
+        "name": "Green",
+        "hex": "#2F4A3A"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42"
+    ],
+    "materials": [
+      "Beads",
+      "Bona",
+      "Foam board",
+      "Velvet fabric",
+      "Macro",
+      "Totem",
+      "Velvet bias"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Preman Ahenema collection ",
+      "photos": [
+        {
+          "file": "IMG_4252.JPG",
+          "colour": "Black",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4253.JPG",
+          "colour": "Red",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4254.JPG",
+          "colour": "Green",
+          "background": "keep"
+        }
+      ]
+    }
+  },
+  {
+    "slug": "sikapa",
+    "name": "Sikapa Collection",
+    "base_price_ghs": 50000,
+    "images": [],
+    "color": "Red",
+    "colors": [
+      {
+        "name": "Red",
+        "hex": "#C6212B"
+      },
+      {
+        "name": "Green",
+        "hex": "#2F4A3A"
+      },
+      {
+        "name": "Brown",
+        "hex": "#5A3A22"
+      }
+    ],
+    "colour_images": {},
+    "product_type": "ahenema",
+    "departments": [
+      "mens",
+      "womens"
+    ],
+    "sizes": [
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "42",
+      "43",
+      "44",
+      "45"
+    ],
+    "materials": [
+      "Bona",
+      "Foam board",
+      "Adinkra symbol",
+      "Macro",
+      "Soft leather"
+    ],
+    "category": "ahenema",
+    "is_featured": false,
+    "source": {
+      "dir": "Ahenema/Sikapa collection ",
+      "photos": [
+        {
+          "file": "IMG_4311.JPG",
+          "colour": "Red",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4314.JPG",
+          "colour": "Green",
+          "background": "keep"
+        },
+        {
+          "file": "IMG_4321.JPG",
+          "colour": "Brown",
+          "background": "keep"
+        }
+      ]
+    }
   }
 ]

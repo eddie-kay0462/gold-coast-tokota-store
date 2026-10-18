@@ -37,8 +37,10 @@ class StoreProductRequest extends FormRequest
             'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
             'base_price_ghs' => ['required', 'integer', 'min:0'],
             'sku' => ['required', 'string', 'max:255', 'unique:products,sku'],
-            'images' => ['nullable', 'array'],
-            'images.*' => ['string'],
+            // Photos are added once the product exists, through
+            // POST /admin/products/{product}/photos (CataloguePhoto names
+            // them from the slug), never as paths here.
+            'images' => ['nullable', 'array', 'max:0'],
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             // out_of_stock/limited_stock are always computed (Product::getEffectiveBadgeAttribute)

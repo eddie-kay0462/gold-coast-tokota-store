@@ -17,6 +17,8 @@ namespace App\Support;
  *    leading slash. Rows were rewritten to this form on 2 Oct, when photos
  *    briefly moved to S3; it resolves to the storefront like the `/` form.
  *  - `media/2026/10/x.webp` — a key on the image disk (MediaStorage).
+ *    `catalogue:import-media` writes product photos as `catalogue/{slug}/…`
+ *    keys, and must never use a `products/` prefix, which means storefront.
  */
 final class MediaUrl
 {

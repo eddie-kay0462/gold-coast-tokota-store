@@ -79,7 +79,7 @@ return [
             'region' => 'auto',
             'bucket' => env('R2_BUCKET'),
             // The bucket's public address: a custom domain such as
-            // https://media.goldcoasttokota.store.
+            // https://images.goldcoasttokota.store.
             'url' => env('R2_PUBLIC_URL'),
             'endpoint' => env('R2_ENDPOINT'),
             'use_path_style_endpoint' => true,
