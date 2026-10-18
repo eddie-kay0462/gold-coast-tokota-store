@@ -167,6 +167,14 @@ Kirk's laptop, one per run.
 - **`backend/.env.production`** on Kirk's laptop holds production secrets;
   delete it once a restore is no longer wanted.
 
+**Deploy fix (18 Oct):** the first deploy of this change returned 502 from
+`web`. Only `app`'s image changed, so `up -d` recreated `app` on a new
+address while nginx, which had looked `app` up once at start, kept calling
+the old one. `docker/nginx.conf` now re-resolves `app` through Docker's DNS
+(`resolver 127.0.0.11`), so a deploy no longer needs `restart web`. Upload
+limits went from 12 MB to 16 MB (nginx and php.ini) to fit 15 MB product
+photos.
+
 **Local setup for the photos:** run `php artisan storage:link` once, or
 `/storage/catalogue/…` returns 403.
 
@@ -184,7 +192,7 @@ runs IRIS:
 - **`backend/Dockerfile`** replaces the Render-era `artisan serve` image. It
   has two targets: `app` (PHP 8.3 FPM on Alpine; also runs the worker and
   scheduler) and `web` (nginx serving `public/`). Helpers are in
-  `backend/docker/`: nginx.conf, php.ini (12M uploads, opcache) and an
+  `backend/docker/`: nginx.conf, php.ini (16M uploads since 18 Oct, opcache) and an
   entrypoint that caches config/routes/events from the mounted `.env` on every
   start. Local development still uses `php artisan serve`.
 - **`backend/docker-compose.prod.yml`**, project `tokota`, in
