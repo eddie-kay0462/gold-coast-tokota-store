@@ -165,7 +165,7 @@ R2_ENDPOINT=https://<account id>.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET=tokota-media
-R2_PUBLIC_URL=https://media.goldcoasttokota.store
+R2_PUBLIC_URL=https://images.goldcoasttokota.store
 R2_PRIVATE_BUCKET=tokota-private
 
 # Payments — Paystack only (CLAUDE.md)
@@ -298,10 +298,20 @@ recategorisation at fortiguard.com/webfilter.
    (private — leave public access off). One bucket can't be half public,
    and customers' DIY photos must not be.
 2. On `tokota-media`, connect the custom domain
-   **`media.goldcoasttokota.store`**. That is `R2_PUBLIC_URL`.
+   **`images.goldcoasttokota.store`**. That is `R2_PUBLIC_URL`.
 3. Create an R2 API token with **Object Read & Write** on just those two
    buckets. Its access key and secret are `R2_ACCESS_KEY_ID` and
    `R2_SECRET_ACCESS_KEY`; the account ID goes in `R2_ENDPOINT`.
+4. Check it from the server. With the two buckets connected and the `R2_*`
+   values in `.env`:
+   - a file put on `r2` loads from `https://images.goldcoasttokota.store/…`
+   - a signed link from `r2-private` works
+   - the same private file without its signature is refused
+
+**Catalogue photos** go into `tokota-media` under `catalogue/`: in bulk from
+the laptop with `catalogue:import-media` (its Python half, `scripts/catalogue/`,
+is git-ignored and kept with the client's photos), or one at a time from the
+admin product page. Both name them `catalogue/{slug}/{n}-{colour}-{hash}.webp`.
 
 **DNS:**
 
@@ -309,7 +319,7 @@ recategorisation at fortiguard.com/webfilter.
 |---|---|---|
 | `api` | `207.180.237.21` (A record) | **DNS only** (grey), the same as IRIS's `iris-api`. Caddy terminates TLS with its own ACME certificate |
 | `@`, `www`, `admin` | Vercel, as Vercel's domain screen says | **DNS only** (grey). Vercel advises against proxying, which interferes with its SSL and caching |
-| `media` | set up by R2 in step 2 | (managed by R2) |
+| `images` | set up by R2 in step 2 | (managed by R2) |
 
 Why grey and not proxied: the server's IP is already public through IRIS, so
 proxying `api` would hide nothing, and it would add a Cloudflare Origin

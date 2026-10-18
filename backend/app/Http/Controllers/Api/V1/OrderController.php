@@ -43,7 +43,7 @@ class OrderController extends Controller
     public function show(string $reference): OrderResource
     {
         $order = Order::query()
-            ->with('items.product')
+            ->with(['items.product', 'shipment'])
             ->where('reference', $reference)
             ->firstOrFail();
 

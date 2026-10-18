@@ -9,7 +9,7 @@ import type { Order } from '~/types'
  */
 const route = useRoute()
 const { useAdminItem } = useAdminApi()
-const { item: order } = useAdminItem<Order>(`order-${route.params.id}`, `/admin/orders/${route.params.id}`)
+const { item: order, refresh } = useAdminItem<Order>(`order-${route.params.id}`, `/admin/orders/${route.params.id}`)
 
 useHead({ title: computed(() => order.value?.reference ?? 'Order') })
 
@@ -33,7 +33,7 @@ const open = ref(true)
 
     <template v-else>
       <UiButton variant="secondary" size="sm" @click="open = true">Open details</UiButton>
-      <OrdersOrderDrawer v-model:open="open" :order="order" />
+      <OrdersOrderDrawer v-model:open="open" :order="order" @changed="refresh()" />
     </template>
   </div>
 </template>

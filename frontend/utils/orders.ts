@@ -40,8 +40,16 @@ export type ApiOrder = {
   tax: number
   total: number
   payment_gateway: 'paystack' | 'stripe' | null
-  delivery_provider: 'yango' | 'dhl' | null
+  delivery_provider: 'yango' | 'swoove' | 'dhl' | 'manual' | null
   delivery_reference: string | null
+  /** The live delivery booking; null until the order has one. */
+  shipment?: {
+    status: 'pending' | 'booking' | 'awaiting_pickup' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'failed' | 'cancelled' | 'returned'
+    courier: string | null
+    tracking_url: string | null
+    dispatched_at: string | null
+    delivered_at: string | null
+  } | null
   shipping_address: {
     full_name?: string
     line1?: string
@@ -59,8 +67,13 @@ export function isAwaitingPayment(status: OrderStatus): boolean {
   return status === 'pending'
 }
 
-export function deliveryProviderLabel(provider: ApiOrder['delivery_provider']): string {
+/**
+ * The courier as a customer knows it. A manual booking is named by the
+ * courier staff recorded, once there is one.
+ */
+export function deliveryProviderLabel(provider: ApiOrder['delivery_provider'], courier?: string | null): string {
   if (provider === 'yango') return 'Yango'
-  if (provider === 'dhl') return 'DHL'
-  return 'To be confirmed'
+  if (provider === 'swoove') return 'Swoove'
+  if (provider === 'dhl') return 'DHL Express'
+  return courier || 'To be confirmed'
 }

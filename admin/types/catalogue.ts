@@ -28,16 +28,30 @@ export interface Product {
    * storefront-relative paths, which on the admin's origin load its own HTML.
    */
   imageUrls?: string[]
-  /** Photos grouped by colourway, in swatch order. */
-  colourPhotos?: { colour: string, hex: string | null, urls: string[] }[]
+  /** Photos grouped by colourway, in swatch order. `keys` are the stored references, index-aligned with `urls`. */
+  colourPhotos?: { colour: string, hex: string | null, urls: string[], keys?: string[] }[]
   isActive: boolean
   isFeatured: boolean
+  /** What couriers and customs need; required for international orders while DHL is on. */
+  shipping?: ProductShipping
   /** Rolled up across variants, for the list view. */
   totalAvailable: number
   totalReserved: number
   lowStock: boolean
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+export interface ProductShipping {
+  weightGrams: number | null
+  lengthMm: number | null
+  widthMm: number | null
+  heightMm: number | null
+  /** Harmonized System code for the export declaration, e.g. 6403.99. */
+  hsCode: string | null
+  originCountry: string
+  customsDescription: string | null
+  readyForInternational: boolean
 }
 
 export interface InventoryItem {

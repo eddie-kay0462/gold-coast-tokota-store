@@ -106,6 +106,12 @@ export default defineNuxtConfig({
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api/v1',
       whatsappNumber: process.env.NUXT_PUBLIC_WHATSAPP_NUMBER || '',
       gaMeasurementId: process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || '',
+      // The checkout delivery pin. Restrict the key to this site's referrers
+      // and to the Maps JavaScript and Places APIs. Without one, checkout
+      // offers "use my current location" only.
+      googleMapsKey: process.env.NUXT_PUBLIC_GOOGLE_MAPS_KEY || '',
+      // Advanced markers need a map id; Google's demo id works in development.
+      googleMapsMapId: process.env.NUXT_PUBLIC_GOOGLE_MAPS_MAP_ID || '',
     },
   },
 })

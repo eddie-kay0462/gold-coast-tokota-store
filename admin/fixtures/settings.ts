@@ -68,8 +68,12 @@ export const paymentSettings: PaymentSettings = {
 }
 
 export const deliverySettings: DeliverySettings = {
-  domesticProvider: 'yango',
-  internationalProvider: 'dhl',
+  zones: [
+    { zone: 'accra', label: 'Accra', configured: ['yango', 'swoove'], active: ['manual'] },
+    { zone: 'ghana', label: 'Ghana', configured: ['manual'], active: ['manual'] },
+    { zone: 'international', label: 'International', configured: ['dhl'], active: ['manual'] },
+  ],
+  processingHours: 48,
   domesticEtaLabel: '1–2 business days',
   internationalBands: [
     { region: 'West Africa', eta: '5–10 business days' },
@@ -77,6 +81,14 @@ export const deliverySettings: DeliverySettings = {
     { region: 'North America', eta: '7–14 business days' },
     { region: 'Other destinations', eta: '10–21 business days' },
   ],
+  quoteBufferPercent: 10,
+  unpricedRegions: 'fallback',
+  fallbackRates: {
+    accra: { amount: 2500, currency: 'GHS' },
+    ghana: { amount: 2500, currency: 'GHS' },
+    international: { amount: 35000, currency: 'GHS' },
+  },
+  opsAlerts: { email: false, sms: false },
 }
 
 export const notificationSettings: NotificationSettings = {

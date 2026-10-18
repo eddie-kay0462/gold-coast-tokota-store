@@ -29,7 +29,10 @@ class DatabaseSeeder extends Seeder
             // production it would be a live super_admin anyone could guess.
             $password = app()->isProduction() ? env('SEED_ADMIN_PASSWORD') : 'password';
 
-            if (! is_string($password) || strlen($password) < 12) {
+            // Only production is held to the 12-character rule. Locally the
+            // password is `password` by design, and checking it everywhere
+            // meant `db:seed` could never succeed outside production.
+            if (app()->isProduction() && (! is_string($password) || strlen($password) < 12)) {
                 throw new \RuntimeException('Set SEED_ADMIN_PASSWORD (12+ characters) to seed the first admin in production.');
             }
 
@@ -115,6 +118,10 @@ class DatabaseSeeder extends Seeder
 
         // All page seeding lives in PageSeeder so the CMS slugs are in one place.
         $this->call(PageSeeder::class);
+
+        // Ghana's sixteen regions, unpriced and switched off until an Admin
+        // sets their delivery rates.
+        $this->call(ShippingZoneRateSeeder::class);
 
         // Bootstrap rate so price_usd resolves on the very first request,
         // before RefreshFxRate has ever run (Feature 2). A placeholder

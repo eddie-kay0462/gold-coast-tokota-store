@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\PollActiveShipments;
 use App\Jobs\PruneOrphanedBookingUploads;
 use App\Jobs\RefreshFxRate;
 use App\Jobs\ReleaseExpiredReservations;
@@ -24,3 +25,9 @@ Schedule::job(new ReleaseExpiredReservations)->everyFiveMinutes();
 // removes uploads older than its own 24-hour grace window, so running it more
 // often would delete nothing extra.
 Schedule::job(new PruneOrphanedBookingUploads)->dailyAt('03:30');
+
+// Courier bookings and parcels in flight. Every minute, but each shipment has
+// its own next_poll_at, so this only refreshes the ones that are due: a Yango
+// claim waiting to be confirmed (its offer lapses in 10 minutes) far more
+// often than a parcel already on its way.
+Schedule::job(new PollActiveShipments)->everyMinute()->withoutOverlapping();

@@ -1,50 +1,101 @@
 <script setup lang="ts">
-import type { Shipment } from '~/types'
+import type { Order, ShipmentStatus } from '~/types'
+import { SHIPMENT_STATUSES } from '~/types'
 import type { Column } from '~/components/ui/DataTable.vue'
 import { humanise } from '~/utils/formatters'
 
 /**
- * Shipments. The provider column is derived, never chosen: README Feature 5
- * routes Ghana addresses to Yango and everything else to DHL, so showing it
- * alongside the destination makes a mis-route obvious at a glance.
+ * Shipments: every paid order and its delivery booking, waiting-to-go first.
+ *
+ * The courier is decided by the API from the destination: a pin inside the
+ * Accra zone goes to Yango (Swoove as fallback), the rest of Ghana at its
+ * regional rate by hand, everywhere else by DHL. While a courier's API is
+ * switched off its zone is dispatched by hand, which is what "By hand" means
+ * here. "Needs attention" is the failed bookings and anything still waiting
+ * past the 48 hours §21 allows for processing.
  */
 useHead({ title: 'Shipments' })
 
-const { useAdminList } = useAdminApi()
+const { useAdminList, useAdminItem } = useAdminApi()
 const { formatRelative } = useFormatters()
-const { items: shipments, pending } = useAdminList<Shipment>('admin-shipments', '/admin/shipments')
 
-const r = useResource<Shipment>(shipments, {
-  searchFields: ['orderReference', 'trackingReference', 'destination'],
-  defaultSort: 'updatedAt',
+const attentionOnly = ref(false)
+const query = computed(() => (attentionOnly.value ? { attention: 1 } : {}))
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-shipments', '/admin/shipments', query)
+const { item: attention, refresh: refreshAttention } = useAdminItem<{ count: number }>(
+  'admin-shipments-attention', '/admin/shipments/attention',
+)
+
+const CARRIERS: Record<string, string> = {
+  manual: 'By hand', yango: 'Yango', swoove: 'Swoove', dhl: 'DHL Express',
+}
+const ZONES: Record<string, string> = { accra: 'Accra', ghana: 'Ghana', international: 'International' }
+
+type Row = {
+  id: number
+  reference: string
+  destination: string
+  zone: string
+  carrier: string
+  courier: string
+  shipmentStatus: ShipmentStatus | 'none'
+  tracking: string
+  dispatchedAt: string | null
+  placedAt: string
+  order: Order
+}
+
+const rows = computed<Row[]>(() => orders.value.map((o) => ({
+  id: o.id,
+  reference: o.reference,
+  destination: [o.shippingAddress.city, o.shippingAddress.country].filter(Boolean).join(', '),
+  zone: o.shippingZone ?? o.shipment?.zone ?? '',
+  carrier: o.shipment?.carrier ?? o.deliveryProvider ?? '',
+  courier: o.shipment?.courierName ?? CARRIERS[o.shipment?.carrier ?? o.deliveryProvider ?? ''] ?? 'Not booked',
+  shipmentStatus: o.shipment?.status ?? 'none',
+  tracking: o.shipment?.carrierReference ?? o.deliveryReference ?? '',
+  dispatchedAt: o.shipment?.dispatchedAt ?? null,
+  placedAt: o.placedAt,
+  order: o,
+})))
+
+const r = useResource<Row>(rows, {
+  searchFields: ['reference', 'tracking', 'destination', 'courier'],
+  defaultSort: 'placedAt',
   defaultDir: 'desc',
 })
 
-const providerOptions = [
-  { value: 'all', label: 'Both couriers' },
-  { value: 'yango', label: 'Yango · domestic' },
-  { value: 'dhl', label: 'DHL · international' },
+const carrierOptions = [
+  { value: 'all', label: 'All couriers' },
+  ...Object.entries(CARRIERS).map(([value, label]) => ({ value, label })),
 ]
 const statusOptions = [
   { value: 'all', label: 'All statuses' },
-  ...['awaiting_pickup', 'in_transit', 'customs', 'out_for_delivery', 'delivered', 'exception']
-    .map((s) => ({ value: s, label: humanise(s) })),
+  ...SHIPMENT_STATUSES.map((s) => ({ value: s, label: humanise(s) })),
 ]
 
-const columns: Column<Shipment>[] = [
-  { key: 'orderReference', label: 'Order', sortable: true },
-  { key: 'provider', label: 'Courier', sortable: true },
+const columns: Column<Row>[] = [
+  { key: 'reference', label: 'Order', sortable: true },
+  { key: 'courier', label: 'Courier', sortable: true },
   { key: 'destination', label: 'Destination', sortable: true },
-  { key: 'etaLabel', label: 'ETA', hideOnCard: true },
-  { key: 'status', label: 'Status', sortable: true },
+  { key: 'shipmentStatus', label: 'Status', sortable: true },
 ]
+
+const active = ref<Order | null>(null)
+const drawerOpen = ref(false)
+function openRow(row: Row) { active.value = row.order; drawerOpen.value = true }
+
+function onChanged() {
+  refresh()
+  refreshAttention()
+}
 </script>
 
 <template>
   <div class="admin-stack">
     <UiPageHeader
       title="Shipments"
-      description="Ghana addresses go via Yango and everywhere else via DHL, picked automatically from the shipping country."
+      description="Each order's courier is picked from where it is going: the Accra pin zone, the rest of Ghana, or abroad."
     />
 
     <UiToolbar
@@ -52,13 +103,20 @@ const columns: Column<Shipment>[] = [
       placeholder="Search by order, tracking or destination…" @clear-filters="r.clearFilters()"
     >
       <template #actions>
+        <UiButton
+          :variant="attentionOnly ? 'primary' : 'secondary'" size="sm"
+          :aria-pressed="attentionOnly" @click="attentionOnly = !attentionOnly"
+        >
+          Needs attention
+          <UiBadge v-if="attention?.count" tone="danger" size="sm">{{ attention.count }}</UiBadge>
+        </UiButton>
         <UiSelect
-          :model-value="r.filters.value.provider ?? 'all'" :options="providerOptions" class="w-48"
-          @update:model-value="r.setFilter('provider', $event)"
+          :model-value="r.filters.value.carrier ?? 'all'" :options="carrierOptions" class="w-44"
+          @update:model-value="r.setFilter('carrier', $event)"
         />
         <UiSelect
-          :model-value="r.filters.value.status ?? 'all'" :options="statusOptions" class="w-44"
-          @update:model-value="r.setFilter('status', $event)"
+          :model-value="r.filters.value.shipmentStatus ?? 'all'" :options="statusOptions" class="w-44"
+          @update:model-value="r.setFilter('shipmentStatus', $event)"
         />
       </template>
     </UiToolbar>
@@ -66,29 +124,31 @@ const columns: Column<Shipment>[] = [
     <UiDataTable
       :columns="columns" :rows="r.paged.value" :loading="pending"
       :sort="r.sort.value" :dir="r.dir.value"
-      empty-title="No shipments match"
+      :empty-title="attentionOnly ? 'Nothing needs attention' : 'No shipments match'"
       @sort="r.toggleSort"
     >
-      <template #cell-orderReference="{ row }">
-        <span class="block font-mono text-fg-strong">{{ row.orderReference }}</span>
-        <span class="block font-mono text-meta text-fg-faint">{{ row.trackingReference }}</span>
+      <template #cell-reference="{ row }">
+        <button type="button" class="block font-mono text-fg-strong underline-offset-4 hover:underline" @click="openRow(row)">
+          {{ row.reference }}
+        </button>
+        <span v-if="row.tracking" class="block font-mono text-meta text-fg-faint">{{ row.tracking }}</span>
       </template>
-      <template #cell-provider="{ row }">
-        <UiBadge :tone="row.provider === 'yango' ? 'info' : 'neutral'">
-          {{ row.provider.toUpperCase() }}
-        </UiBadge>
+      <template #cell-courier="{ row }">
+        <UiBadge :tone="row.carrier === 'manual' ? 'neutral' : 'info'">{{ CARRIERS[row.carrier] ?? 'Not booked' }}</UiBadge>
+        <span v-if="row.carrier === 'manual' && row.order.shipment?.courierName" class="block text-meta text-fg-faint">
+          {{ row.order.shipment.courierName }}
+        </span>
       </template>
       <template #cell-destination="{ row }">
         <span class="text-fg">{{ row.destination }}</span>
         <span class="block text-meta text-fg-faint">
-          {{ row.dispatchedAt ? `Dispatched ${formatRelative(row.dispatchedAt)}` : 'Not dispatched' }}
+          {{ ZONES[row.zone] ?? '' }}<template v-if="row.zone"> · </template>
+          {{ row.dispatchedAt ? `Dispatched ${formatRelative(row.dispatchedAt)}` : `Paid ${formatRelative(row.placedAt)}` }}
         </span>
       </template>
-      <template #cell-etaLabel="{ row }">
-        <span class="text-fg-muted">{{ row.etaLabel }}</span>
-      </template>
-      <template #cell-status="{ row }">
-        <UiStatusBadge :status="row.status" />
+      <template #cell-shipmentStatus="{ row }">
+        <UiStatusBadge v-if="row.shipmentStatus !== 'none'" :status="row.shipmentStatus" />
+        <span v-else class="text-meta text-fg-faint">No shipment</span>
       </template>
       <template #footer>
         <UiPagination
@@ -98,5 +158,7 @@ const columns: Column<Shipment>[] = [
         />
       </template>
     </UiDataTable>
+
+    <OrdersOrderDrawer v-model:open="drawerOpen" :order="active" @changed="onChanged" />
   </div>
 </template>

@@ -8,7 +8,7 @@ use App\Notifications\NotificationRecipient;
 /**
  * One delivery channel for a transactional message (README Feature 8).
  *
- * The same shape as PaymentGateway and DeliveryProvider, and for the same
+ * The same shape as PaymentGateway and ShippingCarrier, and for the same
  * reason: the concrete implementations need credentials nobody has yet, so the
  * interface is what lets the rest of Feature 8 be built and tested now. Email
  * goes out through MailChannel, SMS through FishAfricaSmsService, and a

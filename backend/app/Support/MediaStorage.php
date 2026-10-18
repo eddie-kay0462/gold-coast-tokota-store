@@ -15,8 +15,9 @@ use Throwable;
  * tests; production puts them in two Cloudflare R2 buckets, `r2` and
  * `r2-private`, because an R2 bucket is public or private as a whole.
  *
- * Product photos are not here: they are committed to the storefront under
- * frontend/public/products (see MediaUrl).
+ * Product photos start out committed to the storefront under
+ * frontend/public/products (see MediaUrl) and move here, under `catalogue/`,
+ * when `catalogue:import-media` publishes the client's originals.
  */
 final class MediaStorage
 {

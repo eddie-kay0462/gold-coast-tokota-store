@@ -18,8 +18,11 @@ class ProductSeederTest extends TestCase
         $this->seed(ProductSeeder::class);
 
         $this->assertSame(28, Product::query()->count());
-        $this->assertSame(26, Category::query()->where('slug', 'slippers')->firstOrFail()->products()->count());
+        $this->assertSame(25, Category::query()->where('slug', 'slippers')->firstOrFail()->products()->count());
         $this->assertSame(2, Category::query()->where('slug', 'shoes')->firstOrFail()->products()->count());
+        // Ohene is the one Ahenema seeded with the 30 Sep set; the client's
+        // Drive files it under Ahenema.
+        $this->assertSame(['ohene'], Category::query()->where('slug', 'ahenema')->firstOrFail()->products()->pluck('slug')->all());
 
         // Prices are the client's cedi figures in pesewas.
         $this->assertSame(50000, Product::query()->where('slug', 'abrantie')->value('base_price_ghs'));

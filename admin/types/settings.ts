@@ -1,4 +1,4 @@
-import type { Timestamp } from './common'
+import type { Money, Timestamp } from './common'
 import type { DiyTurnaroundTier } from './bookings'
 
 /** README Data Models: SiteSetting, extended with what the PDF documents. */
@@ -45,11 +45,24 @@ export interface PaymentSettings {
 }
 
 export interface DeliverySettings {
-  /** Ghana addresses route to Yango, everything else DHL (README Feature 5). */
-  domesticProvider: 'yango'
-  internationalProvider: 'dhl'
+  /**
+   * Each zone's courier chain as configured, and what actually serves it now:
+   * a courier that is switched off is skipped and the zone falls back to
+   * manual dispatch.
+   */
+  zones: {
+    zone: 'accra' | 'ghana' | 'international'
+    label: string
+    configured: string[]
+    active: string[]
+  }[]
+  processingHours: number
   domesticEtaLabel: string
   internationalBands: { region: string; eta: string }[]
+  quoteBufferPercent: number
+  unpricedRegions: 'fallback' | 'refuse'
+  fallbackRates: { accra: Money; ghana: Money; international: Money }
+  opsAlerts: { email: boolean; sms: boolean }
 }
 
 export interface NotificationSettings {

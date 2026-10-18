@@ -278,14 +278,15 @@ export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
       {
         heading: 'Within Ghana',
         body: [
-          'Domestic orders are delivered by Yango. Accra deliveries typically arrive within one to two working days; elsewhere in Ghana, two to four.',
-          'Delivery is free on Ghana orders over ₵1,500.',
+          'Orders are processed within 48 hours of payment. Standard delivery within Ghana then takes one to two business days, depending on where you are.',
+          'In Accra, drop a pin on the map at checkout and an on-demand courier brings your order to the door. Elsewhere in Ghana we send it with a trusted courier partner.',
+          'The delivery cost depends on where it is going and is shown at checkout before you pay.',
         ],
       },
       {
         heading: 'International',
         body: [
-          'International orders ship with DHL. Transit time depends on the destination and is shown at checkout before you pay.',
+          'International orders ship by express courier. Transit time depends on the destination: five to ten business days in West Africa, seven to fourteen in Europe and North America, and ten to twenty-one elsewhere. The delivery cost is shown at checkout before you pay.',
         ],
       },
       {

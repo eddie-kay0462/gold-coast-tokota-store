@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { PhCaretLeft } from '@phosphor-icons/vue'
+import type { Pin } from '~/components/checkout/AddressPinPicker.vue'
+import { countryOptions as allCountries, GHANA_REGIONS } from '~/utils/countries'
 import { isValidEmail, isValidGhanaPhone } from '~/utils/validators'
 
 export type ShippingAddress = {
@@ -11,6 +13,10 @@ export type ShippingAddress = {
   postcode: string
   country: string
   phone: string
+  /** The delivery pin, Ghana only. Decides whether Accra's courier zone applies. */
+  lat: number | null
+  lng: number | null
+  placeId: string | null
 }
 
 const model = defineModel<ShippingAddress>({ required: true })
@@ -18,22 +24,42 @@ const emit = defineEmits<{ submit: [], cart: [] }>()
 
 const errors = reactive<Record<string, string | undefined>>({})
 
-// Kept short deliberately: this is the delivery-routing decision (Ghana → Yango,
-// everything else → DHL), not a full ISO list. Extend from the API when the
-// delivery integration lands.
-const countryOptions = [
-  { value: 'GH', label: 'Ghana' },
-  { value: 'NG', label: 'Nigeria' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'US', label: 'United States' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'DE', label: 'Germany' },
-  { value: 'FR', label: 'France' },
-  { value: 'ZA', label: 'South Africa' },
-  { value: 'OTHER', label: 'Somewhere else' },
+// Every country, Ghana first. The country decides the delivery zone, so it has
+// to be a real ISO code; the old "Somewhere else" option sent one the API
+// refused.
+const countryOptions = allCountries()
+
+const regionOptions = [
+  { value: '', label: 'Choose a region' },
+  ...GHANA_REGIONS.map((region) => ({ value: region, label: region })),
 ]
 
 const isGhana = computed(() => model.value.country === 'GH')
+
+const pin = computed<Pin | null>({
+  get: () => model.value.lat != null && model.value.lng != null
+    ? { lat: model.value.lat, lng: model.value.lng, placeId: model.value.placeId }
+    : null,
+  set: (value) => {
+    model.value.lat = value?.lat ?? null
+    model.value.lng = value?.lng ?? null
+    model.value.placeId = value?.placeId ?? null
+  },
+})
+
+/** A searched place fills the address only where the customer left it blank. */
+function onPlace(place: { line1: string | null, city: string | null }) {
+  if (!model.value.line1.trim() && place.line1) model.value.line1 = place.line1
+  if (!model.value.city.trim() && place.city) model.value.city = place.city
+}
+
+// A pin only means anything in Ghana, and a region typed for one country is
+// rarely valid in the next.
+watch(() => model.value.country, (country, previous) => {
+  if (country === previous) return
+  if (country !== 'GH') pin.value = null
+  if (country === 'GH' || previous === 'GH') model.value.region = ''
+})
 
 function validate(): boolean {
   errors.email = !model.value.email.trim()
@@ -46,6 +72,8 @@ function validate(): boolean {
   errors.line1 = !model.value.line1.trim() ? 'Enter a street address.' : undefined
   errors.city = !model.value.city.trim() ? 'Enter a city or town.' : undefined
   errors.country = !model.value.country ? 'Choose a delivery country.' : undefined
+  // Outside Accra, the region is what prices delivery.
+  errors.region = isGhana.value && !model.value.region ? 'Choose your region.' : undefined
 
   // The Ghana pattern applies only to a Ghana address. Running it on every
   // order would reject every international customer, which is the bug this
@@ -108,9 +136,15 @@ defineExpose({ validate })
           label="City" name="city" autocomplete="address-level2" required :error="errors.city"
         />
         <FormsFormField
+          v-if="isGhana"
           v-model="model.region"
-          :label="isGhana ? 'Region' : 'State or province'"
-          name="region" autocomplete="address-level1"
+          label="Region" name="region" type="select" :options="regionOptions" required
+          autocomplete="address-level1" :error="errors.region"
+        />
+        <FormsFormField
+          v-else
+          v-model="model.region"
+          label="State or province" name="region" autocomplete="address-level1"
         />
         <FormsFormField
           v-if="!isGhana"
@@ -118,6 +152,9 @@ defineExpose({ validate })
           label="Postal code" name="postcode" autocomplete="postal-code"
         />
       </div>
+      <ClientOnly v-if="isGhana">
+        <CheckoutAddressPinPicker v-model="pin" @place="onPlace" />
+      </ClientOnly>
       <FormsFormField
         v-model="model.phone"
         label="Phone (WhatsApp)" name="phone" type="tel" autocomplete="tel" required
