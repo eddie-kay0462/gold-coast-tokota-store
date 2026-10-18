@@ -76,14 +76,29 @@ return [
     ],
 
     // Feature 5 couriers.
+    // Yango Delivery, the Accra zone's on-demand courier. `key` is the OAuth
+    // token from the Yango business cabinet (Integration tab), sent as
+    // `Authorization: Bearer`. There is no documented sandbox: an accepted
+    // claim sends a real courier, which is why YangoCarrier refuses to accept
+    // a claim anywhere but production. Off until YANGO_ENABLED=true.
     'yango' => [
-        'base_url' => env('YANGO_API_BASE_URL'),
+        'enabled' => (bool) env('YANGO_ENABLED', false),
+        'base_url' => env('YANGO_API_BASE_URL', 'https://b2b.delivery.yango.tech'),
         'key' => env('YANGO_API_KEY'),
     ],
 
+    // DHL Express (MyDHL API), the International zone's courier. HTTP Basic
+    // auth with the API username and password a DHL Express account
+    // consultant issues, plus the shipper account number. Defaults to the
+    // test environment (500 calls a day), which creates no real shipment.
+    // `api_version` is sent as the `x-version` header DHL requires.
     'dhl' => [
-        'base_url' => env('DHL_API_BASE_URL'),
-        'key' => env('DHL_API_KEY'),
+        'enabled' => (bool) env('DHL_ENABLED', false),
+        'base_url' => env('DHL_API_BASE_URL', 'https://express.api.dhl.com/mydhlapi/test'),
+        'username' => env('DHL_API_USERNAME'),
+        'password' => env('DHL_API_PASSWORD'),
+        'account_number' => env('DHL_ACCOUNT_NUMBER'),
+        'api_version' => env('DHL_API_VERSION', '3.3.1'),
     ],
 
     // Feature 8 SMS.

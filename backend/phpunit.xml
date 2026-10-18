@@ -32,5 +32,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Keep a real key in a developer's .env from reaching Paystack. -->
+        <env name="PAYSTACK_PUBLIC_KEY" value=""/>
+        <env name="PAYSTACK_SECRET_KEY" value=""/>
+        <env name="PAYSTACK_WEBHOOK_SECRET" value=""/>
     </php>
 </phpunit>

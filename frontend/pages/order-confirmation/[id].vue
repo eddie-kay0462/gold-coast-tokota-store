@@ -201,9 +201,18 @@ useSeoMeta({
       <section class="flex w-full flex-col items-start gap-2 border-t border-line pt-6">
         <h2 class="w-full text-display-sm font-normal text-black">Delivery</h2>
         <p class="w-full text-body text-graphite">
-          By {{ deliveryProviderLabel(order.delivery_provider) }}<template v-if="order.delivery_reference">
+          By {{ deliveryProviderLabel(order.delivery_provider, order.shipment?.courier) }}<template v-if="order.delivery_reference">
             · tracking {{ order.delivery_reference }}</template>.
         </p>
+        <a
+          v-if="order.shipment?.tracking_url"
+          :href="order.shipment.tracking_url"
+          target="_blank"
+          rel="noopener"
+          class="caps-label -my-2.5 flex min-h-[44px] items-center py-2.5 text-ink underline underline-offset-4 hover:no-underline"
+        >
+          Track your delivery
+        </a>
         <address v-if="order.shipping_address" class="w-full text-caption not-italic text-muted">
           {{ order.shipping_address.full_name }}<br>
           {{ order.shipping_address.line1 }}<br>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PhImage, PhUploadSimple } from '@phosphor-icons/vue'
 import type { MediaAsset } from '~/types'
+import type { LightboxImage } from '~/components/ui/Lightbox.vue'
 
 useHead({ title: 'Media' })
 
@@ -16,6 +17,16 @@ const visible = computed(() => {
 
 /** Flag anything without alt text; it is the accessibility gap that scales. */
 const missingAlt = computed(() => assets.value.filter((a) => !a.altText.trim()).length)
+
+// The viewer steps through what the search is showing.
+const viewerImages = computed<LightboxImage[]>(() => visible.value.map((a) => ({
+  src: a.url,
+  alt: a.altText || a.filename,
+  caption: a.filename,
+  meta: [a.width && a.height ? `${a.width}×${a.height}` : null, formatBytes(a.sizeBytes), a.altText || 'No alt text']
+    .filter(Boolean).join(' · '),
+})))
+const viewing = ref<number | null>(null)
 
 const toast = useToast()
 const uploading = ref(false)
@@ -63,10 +74,16 @@ function onFiles(files: File[]) {
     </div>
 
     <ul v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-      <li v-for="a in visible" :key="a.id" class="card overflow-hidden">
-        <div class="flex aspect-[4/3] items-center justify-center bg-bg-sunken text-fg-faint">
-          <PhImage :size="28" />
-        </div>
+      <li v-for="(a, i) in visible" :key="a.id" class="card overflow-hidden">
+        <button
+          type="button"
+          class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-bg-sunken text-fg-faint"
+          :aria-label="`View ${a.filename}`"
+          @click="viewing = i"
+        >
+          <img v-if="a.url" :src="a.url" :alt="a.altText || a.filename" loading="lazy" class="size-full object-contain">
+          <PhImage v-else :size="28" />
+        </button>
         <div class="p-3">
           <p class="truncate text-ui text-fg-strong">{{ a.filename }}</p>
           <p class="mt-0.5 text-meta text-fg-faint">
@@ -76,10 +93,12 @@ function onFiles(files: File[]) {
             {{ a.altText || 'No alt text' }}
           </p>
           <p class="mt-1 truncate text-meta text-fg-faint">
-            {{ a.uploadedByName }} · {{ formatRelative(a.uploadedAt) }}
+            {{ a.uploadedByName ?? 'Catalogue import' }} · {{ formatRelative(a.uploadedAt) }}
           </p>
         </div>
       </li>
     </ul>
+
+    <UiLightbox v-model:index="viewing" :images="viewerImages" />
   </div>
 </template>

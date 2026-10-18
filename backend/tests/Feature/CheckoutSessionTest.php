@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ShippingZone;
 use App\Models\FxRate;
 use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ShippingSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -51,7 +53,6 @@ class CheckoutSessionTest extends TestCase
         return array_replace([
             'items' => [['inventory_item_id' => $item->id, 'quantity' => 1]],
             'currency' => 'GHS',
-            'delivery_method' => 'standard',
             'shipping_address' => self::ADDRESS_GH,
         ], $overrides);
     }
@@ -175,27 +176,53 @@ class CheckoutSessionTest extends TestCase
 
     // --- delivery -------------------------------------------------------
 
-    public function test_ghana_addresses_route_to_yango_and_never_to_dhl(): void
+    /**
+     * No courier API is switched on in a test, so every zone falls back to
+     * manual dispatch — and the order records which zone it was priced for.
+     */
+    public function test_a_ghana_address_with_no_pin_is_priced_in_the_ghana_zone(): void
     {
         $item = $this->stockedProduct();
 
         $this->postJson('/api/v1/checkout/session', $this->payload($item))
             ->assertCreated()
-            ->assertJsonPath('data.delivery_provider', 'yango');
+            ->assertJsonPath('data.delivery_provider', 'manual')
+            ->assertJsonPath('data.shipping_cost', 2_500);
+
+        $this->assertSame(ShippingZone::Ghana, Order::first()->shipping_zone);
     }
 
-    public function test_international_addresses_route_to_dhl(): void
+    public function test_international_addresses_are_priced_in_the_international_zone(): void
     {
         $item = $this->stockedProduct();
 
         $this->postJson('/api/v1/checkout/session', $this->payload($item, [
             'shipping_address' => self::ADDRESS_INTL,
-        ]))->assertCreated()->assertJsonPath('data.delivery_provider', 'dhl');
+        ]))->assertCreated()->assertJsonPath('data.shipping_cost', 35_000);
+
+        $order = Order::first();
+        $this->assertSame(ShippingZone::International, $order->shipping_zone);
+        // DHL is not switched on, so the zone falls back to manual dispatch
+        // at the configured international rate.
+        $this->assertSame('manual', $order->shipping_option['carrier']);
     }
 
-    public function test_domestic_standard_shipping_is_free_above_the_advertised_threshold(): void
+    /**
+     * The ₵1,500 free-shipping rule is not in the brand document, so it ships
+     * switched off (FOR_THE_TEAM.md open item #44).
+     */
+    public function test_free_shipping_is_off_until_a_threshold_is_set(): void
     {
-        // The product page promises free delivery on Ghana orders over GHS 1,500.
+        $item = $this->stockedProduct(priceGhs: 160_000);
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item))
+            ->assertCreated()
+            ->assertJsonPath('data.shipping_cost', 2_500);
+    }
+
+    public function test_domestic_shipping_is_free_above_a_configured_threshold(): void
+    {
+        ShippingSetting::current()->update(['free_shipping_threshold_ghs' => 150_000]);
         $item = $this->stockedProduct(priceGhs: 160_000);
 
         $this->postJson('/api/v1/checkout/session', $this->payload($item))

@@ -2,7 +2,7 @@ import type { ListQuery, Paginated } from '~/types'
 
 import { adminUsers, customers, feedbackEntries, newsletterSubscribers } from './people'
 import { categories, fxRate, inventoryItems, products } from './catalogue'
-import { orders, returnRequests, shipments } from './commerce'
+import { orders, returnRequests, shipmentAttention, shipments, shippingRates, shippingSettings } from './commerce'
 import { bookings, diyTurnaroundTiers, workshopSessions, workshopTypes } from './bookings'
 import { blogPosts, cmsPages, mediaAssets } from './content'
 import { chatMessages, chatThreads, messageTemplates } from './messaging'
@@ -16,7 +16,7 @@ export * from './_seed'
 export {
   adminUsers, customers, feedbackEntries, newsletterSubscribers,
   categories, fxRate, inventoryItems, products,
-  orders, returnRequests, shipments,
+  orders, returnRequests, shipments, shippingRates, shippingSettings,
   bookings, diyTurnaroundTiers, workshopSessions, workshopTypes,
   blogPosts, cmsPages, mediaAssets,
   chatMessages, chatThreads, messageTemplates,
@@ -36,6 +36,7 @@ const collections: Record<string, unknown[]> = {
   '/admin/orders': orders,
   '/admin/returns': returnRequests,
   '/admin/shipments': shipments,
+  '/admin/shipping/rates': shippingRates,
   '/admin/products': products,
   '/admin/categories': categories,
   '/admin/inventory': inventoryItems,
@@ -64,6 +65,8 @@ const singletons: Record<string, unknown> = {
   '/admin/settings/commerce': commerceSettings,
   '/admin/settings/payments': paymentSettings,
   '/admin/settings/delivery': deliverySettings,
+  '/admin/shipments/attention': shipmentAttention,
+  '/admin/shipping/settings': shippingSettings,
   '/admin/settings/notifications': notificationSettings,
   '/admin/settings/whatsapp': whatsappSettings,
   '/admin/settings/diy-turnaround': diyTurnaroundTiers,

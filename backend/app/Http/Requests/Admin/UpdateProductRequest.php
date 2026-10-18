@@ -24,11 +24,24 @@ class UpdateProductRequest extends FormRequest
             'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
             'base_price_ghs' => ['sometimes', 'required', 'integer', 'min:0'],
             'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('products', 'sku')->ignore($product)],
+            // Reorder or remove only. New photos go through
+            // POST /admin/products/{product}/photos, which names and stores
+            // them the catalogue way (CataloguePhoto); a path typed in here
+            // would skip that.
             'images' => ['nullable', 'array'],
-            'images.*' => ['string'],
+            'images.*' => ['string', 'distinct', Rule::in($product->images ?? [])],
             'is_active' => ['boolean'],
             'is_featured' => ['boolean'],
             'merchandising_badge' => ['nullable', Rule::in(['back_in_stock'])],
+
+            // Shipping and customs (international delivery).
+            'weight_grams' => ['nullable', 'integer', 'min:1', 'max:100000'],
+            'length_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'width_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'height_mm' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'hs_code' => ['nullable', 'string', 'regex:/^\d{4}(\.?\d{2}){0,3}$/'],
+            'origin_country' => ['sometimes', 'string', 'size:2', 'alpha'],
+            'customs_description' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

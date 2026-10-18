@@ -15,7 +15,7 @@ useHead({ title: 'Orders' })
 
 const { useAdminList } = useAdminApi()
 const { formatDateTime } = useFormatters()
-const { items: orders, pending } = useAdminList<Order>('admin-orders', '/admin/orders')
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders')
 
 const r = useResource<Order>(orders, {
   searchFields: ['reference', 'customerName', 'customerEmail'],
@@ -94,7 +94,7 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
       <template #cell-customerName="{ row }">
         <span class="block truncate text-fg">{{ row.customerName }}</span>
         <span class="block truncate text-meta text-fg-faint">
-          {{ row.shippingAddress.country }} · {{ row.deliveryProvider.toUpperCase() }}
+          {{ row.shippingAddress.country }}<template v-if="row.deliveryProvider"> · {{ row.deliveryProvider === 'manual' ? 'By hand' : row.deliveryProvider.toUpperCase() }}</template>
         </span>
       </template>
       <template #cell-placedAt="{ row }">
@@ -119,6 +119,6 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
       </template>
     </UiDataTable>
 
-    <OrdersOrderDrawer v-model:open="drawerOpen" :order="active" />
+    <OrdersOrderDrawer v-model:open="drawerOpen" :order="active" @changed="refresh()" />
   </div>
 </template>

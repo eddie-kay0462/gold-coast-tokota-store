@@ -12,9 +12,12 @@ use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterCon
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\PageController as AdminPageController;
 use App\Http\Controllers\Api\V1\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Api\V1\Admin\ProductPhotoController as AdminProductPhotoController;
 use App\Http\Controllers\Api\V1\Admin\ReturnController as AdminReturnController;
 use App\Http\Controllers\Api\V1\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\V1\Admin\ShipmentController as AdminShipmentController;
+use App\Http\Controllers\Api\V1\Admin\ShippingSettingController as AdminShippingSettingController;
+use App\Http\Controllers\Api\V1\Admin\ShippingZoneRateController as AdminShippingZoneRateController;
 use App\Http\Controllers\Api\V1\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\V1\Admin\TeamController as AdminTeamController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopSessionController as AdminWorkshopSessionController;
@@ -35,6 +38,7 @@ use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductStockController;
+use App\Http\Controllers\Api\V1\ShippingQuoteController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
 use App\Http\Controllers\Api\V1\WorkshopSessionController;
 use App\Http\Controllers\Api\V1\WorkshopTypeController;
@@ -111,6 +115,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // "not practically guessable" into "not worth trying".
     Route::middleware('throttle:20,1')->group(function () {
         Route::post('/checkout/session', [CheckoutController::class, 'store'])->name('checkout.session');
+    });
+
+    // Delivery quotes, asked for at checkout's delivery step. Throttled on
+    // their own: each one can be a live call to a courier's API, which is
+    // metered, and nothing is reserved so the checkout throttle does not
+    // cover it.
+    Route::middleware('throttle:30,1')->group(function () {
+        Route::post('/checkout/shipping-quote', [ShippingQuoteController::class, 'store'])->name('checkout.shipping-quote');
     });
 
     Route::middleware('throttle:60,1')->group(function () {
@@ -272,10 +284,40 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('/customers/{customer}', [AdminCustomerController::class, 'show'])
                 ->middleware('capability:customers.view')->name('customers.show');
 
-            // Shipments are a view over orders, not a second table — see
-            // ShipmentController.
+            // Shipments. The list is a view over orders; each order's
+            // bookings live on `shipments` — see ShipmentController. Recording
+            // a dispatch and closing a shipment is fulfilment work, so Staff.
             Route::get('/shipments', [AdminShipmentController::class, 'index'])
                 ->middleware('capability:shipments.view')->name('shipments.index');
+            Route::get('/shipments/attention', [AdminShipmentController::class, 'attention'])
+                ->middleware('capability:shipments.view')->name('shipments.attention');
+            Route::get('/shipments/{shipment}', [AdminShipmentController::class, 'show'])
+                ->middleware('capability:shipments.view')->name('shipments.show');
+            Route::get('/shipments/{shipment}/documents/{kind}', [AdminShipmentController::class, 'document'])
+                ->whereIn('kind', ['label', 'invoice'])
+                ->middleware('capability:shipments.view')->name('shipments.document');
+            Route::post('/shipments/{shipment}/pack', [AdminShipmentController::class, 'pack'])
+                ->middleware('capability:shipments.update')->name('shipments.pack');
+            Route::post('/shipments/{shipment}/manual-dispatch', [AdminShipmentController::class, 'manualDispatch'])
+                ->middleware('capability:shipments.update')->name('shipments.manual-dispatch');
+            Route::post('/shipments/{shipment}/mark-delivered', [AdminShipmentController::class, 'markDelivered'])
+                ->middleware('capability:shipments.update')->name('shipments.mark-delivered');
+            Route::post('/shipments/{shipment}/mark-failed', [AdminShipmentController::class, 'markFailed'])
+                ->middleware('capability:shipments.update')->name('shipments.mark-failed');
+
+            // Regional delivery rates are prices, so pricing.write — §18 lets
+            // Staff move stock but not price it. The Accra polygon and the
+            // free-shipping threshold are store configuration: settings.write.
+            Route::prefix('shipping')->name('shipping.')->group(function () {
+                Route::get('/rates', [AdminShippingZoneRateController::class, 'index'])
+                    ->middleware('capability:shipments.view')->name('rates.index');
+                Route::put('/rates', [AdminShippingZoneRateController::class, 'update'])
+                    ->middleware('capability:pricing.write')->name('rates.update');
+                Route::get('/settings', [AdminShippingSettingController::class, 'show'])
+                    ->middleware('capability:settings.view')->name('settings.show');
+                Route::put('/settings', [AdminShippingSettingController::class, 'update'])
+                    ->middleware('capability:settings.write')->name('settings.update');
+            });
 
             // Media library. This is what makes products.images fillable.
             Route::get('/media', [AdminMediaController::class, 'index'])
@@ -352,6 +394,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:products.write,pricing.write')->name('products.update');
             Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])
                 ->middleware('capability:products.delete')->name('products.destroy');
+
+            // Photos don't touch price: products.write alone.
+            Route::post('/products/{product}/photos', [AdminProductPhotoController::class, 'store'])
+                ->middleware('capability:products.write')->name('products.photos.store');
+            Route::delete('/products/{product}/photos', [AdminProductPhotoController::class, 'destroy'])
+                ->middleware('capability:products.write')->name('products.photos.destroy');
         });
     });
 });

@@ -1,3 +1,5 @@
+import type { WatchSource } from 'vue'
+
 /**
  * Reference-counted body scroll lock.
  *
@@ -37,7 +39,7 @@ function unlock() {
   window.scrollTo(0, savedScrollY)
 }
 
-export function useBodyScrollLock(active: Ref<boolean>) {
+export function useBodyScrollLock(active: WatchSource<boolean>) {
   let held = false
   const sync = (on: boolean) => {
     if (on && !held) { lock(); held = true }

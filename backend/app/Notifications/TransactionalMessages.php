@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Booking;
 use App\Models\Order;
+use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Returns\ReturnPolicy;
 
 /**
@@ -57,7 +58,10 @@ final class TransactionalMessages
      */
     public static function orderShipped(Order $order): NotificationMessage
     {
-        $tracking = $order->delivery_reference;
+        $shipment = $order->shipment;
+        $tracking = $shipment?->carrier_reference ?? $order->delivery_reference;
+        $trackingUrl = $shipment?->tracking_url;
+        $international = ($order->shipping_address['country'] ?? 'GH') !== 'GH';
 
         return new NotificationMessage(
             key: 'order_shipped',
@@ -66,15 +70,28 @@ final class TransactionalMessages
             data: [
                 'order' => $order,
                 'tracking' => $tracking,
-                'courier' => $order->delivery_provider === 'dhl' ? 'DHL' : 'our courier partner',
+                'trackingUrl' => $trackingUrl,
+                'courier' => self::courierName($shipment?->carrier ?? $order->delivery_provider, $shipment?->courier_name),
+                'international' => $international,
+                'deliveryEstimate' => DeliveryEstimates::for($order->shipping_address['country'] ?? null),
             ],
-            // "where available" is doing real work: most orders will have no
-            // tracking reference until courier credentials exist (Feature 5 is
-            // still a static rate table), so the message has to read correctly
-            // without one rather than trailing an empty label.
+            // "where available" is doing real work: a courier booked by hand
+            // may give no tracking at all, so the message has to read
+            // correctly without one rather than trailing an empty label.
             sms: "Gold Coast Tokota: order {$order->reference} has been dispatched."
-                .($tracking ? " Tracking: {$tracking}" : ''),
+                .($trackingUrl ? " Track it: {$trackingUrl}" : ($tracking ? " Tracking: {$tracking}" : '')),
         );
+    }
+
+    /** The courier as a customer knows it, not as the code names it. */
+    private static function courierName(?string $carrier, ?string $manualCourier): string
+    {
+        return match ($carrier) {
+            'dhl' => 'DHL Express',
+            'yango' => 'Yango',
+            'swoove' => 'Swoove',
+            default => $manualCourier ?: 'our courier partner',
+        };
     }
 
     public static function bookingSubmitted(Booking $booking): NotificationMessage
