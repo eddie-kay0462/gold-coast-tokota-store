@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 19 October 2026 (WhatsApp phase 3: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 19 October 2026 (WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,85 @@ inert at their last step.
 
 ## Recent changes
 
-### 19 October 2026 (latest): WhatsApp phase 3 — Order on WhatsApp
+### 19 October 2026 (latest): WhatsApp phase 4 — semi-automated messaging
+
+This completes the WhatsApp plan (phases 0–4). What's left for it is in
+"What is left to do → WhatsApp" below and in decision 49.
+
+**Automatic replies (`AutoReplies`, run on each customer message). Both are
+off until an Admin switches them on.**
+- **Greeting:** §14's greeting (`whatsapp_greeting`), on a contact's first
+  message or the first after 30 days of silence.
+- **After-hours note:** outside business hours, **once per closed spell**, so
+  three messages overnight get one note. Never sent if a team member (in the
+  inbox or on the phone) replied in the last 30 minutes, whatever the clock
+  says. Never alongside the greeting, which already gives the hours.
+- **Hours are structured** (`site_settings.whatsapp_hours`, ISO days plus
+  open and close in GMT; `App\Support\BusinessHours`), seeded from §14:
+  Monday – Saturday, 9:00 AM – 5:00 PM. `business_hours` remains display
+  copy.
+- The after-hours text is the owner's own, or a default that quotes the
+  hours.
+- Nothing automatic goes to anyone who replied STOP.
+- **Why off by default:** with coexistence, the WhatsApp Business app on the
+  brand phone may already send its own greeting and away messages. The
+  settings screen says to turn those off first, or customers are greeted
+  twice.
+- Settings: inbox → "Automatic replies" tab, `GET|PUT /admin/inbox/automation`
+  (write needs `inbox.automation`, Admin and up).
+
+**Order and booking updates on WhatsApp: `WhatsAppChannel`,** a third channel
+in `NotificationChannelFactory` beside email and SMS. It adds no triggers. It
+joins the existing ones: order placed, order dispatched, booking submitted,
+booking confirmed, waitlist promoted.
+- **It only reaches customers who have written to the brand on WhatsApp**
+  (matched by phone) and haven't replied STOP. WhatsApp requires opt-in for
+  business-initiated messages, and a website checkout gives it for email and
+  SMS, not WhatsApp.
+- Inside the 24-hour window, the SMS wording goes as plain text (free, and
+  already short).
+- Outside it, the approved template named in `config/whatsapp.php`
+  (`order_confirmed`, `order_dispatched`, `booking_confirmed`,
+  `waitlist_place_open`, each with its documented body values).
+- With no such template, nothing goes on WhatsApp; email and SMS still go.
+- **This partly closes decision 46.**
+
+**Quick replies** (`quick_replies`, `QuickReplyRenderer`):
+- In the reply box: chips above it, or type `/` and a shortcut (`/hours`,
+  `/returns`…). Enter takes the first match.
+- **Slots are filled on the server from the chat:** first name, the linked
+  order's number, status, total and tracking, the published delivery time for
+  its destination, the return window, the next workshop with places left, and
+  the hours. A slot with nothing to fill it shows as `[order number]` and the
+  sender is told, rather than a sentence going out with a hole in it.
+- Six are seeded, worded from §7, §14 and §21.
+- Written on the inbox "Quick replies" tab (`inbox.templates`, Admin and up);
+  used by everyone at the inbox. The four fixed chips the composer used to
+  hard-code are gone.
+
+**Deviation from the plan:** product price and stock slots aren't in quick
+replies. A reply would need a product chosen per use, and the Stock tab
+(phase 2) already inserts exactly that line.
+
+**Tests:** 607 passing, on SQLite and Postgres 16. The 15 new cases in
+`WhatsAppAutomationTest` pin the clock to a known Tuesday and Sunday in
+Accra and cover:
+- off by default;
+- the greeting on a first message and after 30 days;
+- after-hours once per spell, across a weekend and a new evening;
+- no note while a team member is replying;
+- only the greeting on a first message after hours;
+- nothing to someone who replied STOP;
+- only an Admin can change the automatic replies, and the hours are
+  validated;
+- an order update to a chatting customer, and nothing to someone who never
+  wrote;
+- a template outside the window, or nothing without one;
+- a booking confirmation;
+- quick-reply slot filling, unfillable slots, and the next workshop;
+- quick-reply write permission and unique shortcuts.
+
+### 19 October 2026: WhatsApp phase 3 — Order on WhatsApp
 
 A WhatsApp order is now a real order, in the same table, with the same stock
 holds, ledger, payment and fulfilment as a web order. It just starts in a
@@ -3999,6 +4077,26 @@ API, per the folder structure in `README.md`.
 
 ## What is left to do
 
+### WhatsApp (phases 0–4 built 19 Oct)
+
+1. **The client's Meta setup** (decision 49): a verified Meta Business and a
+   Meta app, the official number confirmed (§12) and connected with
+   coexistence, the five templates approved, and a per-message budget. Then
+   set the six `WHATSAPP_*` variables and the webhook (`docs/deploy/contabo.md`).
+2. **Rehearse on Meta's test number first.** The coexistence payloads
+   (`smb_message_echoes`, `history`, `smb_app_state_sync`) were written from
+   partner documentation. Confirm the field names against real deliveries,
+   along with delivery ticks, a template, the Pay button and a phone-app reply
+   echoing into the inbox.
+3. **Click through the inbox in a browser** against a running API. Every
+   endpoint is tested and the admin builds, but nobody has used `/inbox`, the
+   context panel, the order builder or the two new tabs against live data yet.
+4. **Paystack link lifetime.** Paystack documents none. Resend link covers a
+   stale one; if links turn out to die well inside the hold, consider
+   Paystack's Payment Requests API inside `PaystackService`.
+5. **Not built, by decision:** AI-drafted replies, and product slots in quick
+   replies (see the phase 4 entry).
+
 ### Backend — the critical path
 
 This section used to open "Almost nothing exists yet." That has not been true
@@ -4190,9 +4288,9 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
-| 49 | **WhatsApp Cloud API: the client has to arrange Meta access before phase 1 can go live** | The live inbox, Order on WhatsApp and the status templates (19 Oct entry) need things only the business can provide: (1) a **verified Meta Business** account and a Meta app; (2) **coexistence onboarding** of the brand number through Embedded Signup. §12 says the number on file (+233 257 534 297) is *not* confirmed as the official one, so confirm it first: onboarding the wrong number moves the wrong chats; (3) **approval of the utility templates** (order paid, dispatched, delivered, and `payment_link` with four values: first name, order number, total, link), with copy the client signs off; (4) a budget for **Meta's per-message charges** on business-initiated templates in Ghana (replies inside the 24-hour customer window are free). Check current rates before quoting a figure. Meta's current coexistence requirements (app version, how long the number must have been active, unsupported features) are to be checked at the start of phase 1, not assumed. Phases 0 and 2, and most of 1, 3 and 4, can be built and tested against a logging client without any of this. **Waiting on the client.** |
+| 49 | **WhatsApp Cloud API: the client has to arrange Meta access before phase 1 can go live** | The live inbox, Order on WhatsApp and the status templates (19 Oct entry) need things only the business can provide: (1) a **verified Meta Business** account and a Meta app; (2) **coexistence onboarding** of the brand number through Embedded Signup. §12 says the number on file (+233 257 534 297) is *not* confirmed as the official one, so confirm it first: onboarding the wrong number moves the wrong chats; (3) **approval of the utility templates**, with copy the client signs off, each with its body values in order: `payment_link` (first name, order number, total, link), `order_confirmed` (first name, order number, total), `order_dispatched` (first name, order number), `booking_confirmed` (first name), `waitlist_place_open` (first name). Names are overridable with `WHATSAPP_TEMPLATE_*`; see `config/whatsapp.php`; (3b) **turning off the phone app's own greeting and away messages** before the inbox's automatic replies are switched on; (4) a budget for **Meta's per-message charges** on business-initiated templates in Ghana (replies inside the 24-hour customer window are free). Check current rates before quoting a figure. Meta's current coexistence requirements (app version, how long the number must have been active, unsupported features) are to be checked at the start of phase 1, not assumed. Phases 0 and 2, and most of 1, 3 and 4, can be built and tested against a logging client without any of this. **Waiting on the client.** |
 | 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
-| 46 | **Shipping updates go by email and SMS, not WhatsApp** | **Update 19 Oct:** being addressed. Phase 4 of the WhatsApp work adds a WhatsApp notification channel next to email and SMS (see row 49 for what it is waiting on). §8 and §22.17 promise shipping updates "via Email, WhatsApp". There is no WhatsApp channel (only wa.me links), so the dispatch message goes by email and Fish Africa SMS. **Decide** whether to add a WhatsApp Business API provider. |
+| 46 | **Shipping updates go by email and SMS, not WhatsApp** | **Update 19 Oct, phase 4 built:** order, dispatch and booking updates now also go on WhatsApp, but only to customers who have written to the brand there (WhatsApp's opt-in rule), and outside the 24-hour window only through approved templates (row 49). Live once the number is connected. §8 and §22.17 promise shipping updates "via Email, WhatsApp". There is no WhatsApp channel (only wa.me links), so the dispatch message goes by email and Fish Africa SMS. **Decide** whether to add a WhatsApp Business API provider. |
 | 47 | **Couriers are booked on "Mark as packed", not on payment** | README Feature 5 says the webhook books the courier. The shipping plan books it when staff mark the parcel packed (phase 2), because a Yango courier arrives within minutes and orders take up to 48 hours to process. Payment only opens a pending shipment. |
 | 48 | **Unpriced Ghana regions get ₵25 (`SHIPPING_UNPRICED_REGIONS=fallback`)** | Chosen so deploying regional rates changed no price on day one. Once the 16 rates are entered, consider `refuse`, which sends unpriced regions to WhatsApp instead of charging a guess. |
 | 44 | **The product page promised shipping and return terms GOLD_COAST_TOKOTA.md doesn't state** | **Partly settled 11 Oct:** free shipping is now an admin setting, *off* by default, so checkout no longer gives ₵0 above ₵1,500, and `/help/shipping` now says only what §8 says (1–2 business days in Ghana, no free-shipping line). *Still to decide:* whether free shipping is real policy. If it is, add it to the brand document and switch the threshold on in Settings → Delivery. Removed 9 Oct with the accordion. **"Extended returns through January 31"** contradicted §9/§21's 7-day window, which was wrong and has gone. **"Free shipping on all Ghana orders over ₵1,500"** is not in the doc either (it says shipping is "calculated at checkout based on destination, package weight and courier rates"), **but checkout really does it**: `YangoService::FREE_SHIPPING_THRESHOLD` charges ₵0 above ₵1,500, set to match this page's Figma copy. `utils/policyContent.ts` (`/help/shipping`) states it too, and gives Ghana delivery as "1–2 days in Accra, 2–4 elsewhere" where §8 says 1–2 business days. **"Free personalized note or marking during checkout"** has no source and no checkout field. **Decide:** is free shipping over ₵1,500 real policy? If yes, add it to the doc and put it back on the product page. If no, remove it from `YangoService` and `/help/shipping`. Either way, reconcile `/help/shipping` with §8. |

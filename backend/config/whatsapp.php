@@ -39,5 +39,19 @@ return [
         // Sent when a payment link has to go outside the 24-hour window.
         // Four body values, in order: first name, order number, total, link.
         'payment_link' => env('WHATSAPP_TEMPLATE_PAYMENT_LINK', 'payment_link'),
+
+        // Status updates outside the window (WhatsAppChannel). Inside it the
+        // SMS wording goes as plain text and needs no template. Body values:
+        //   order_placed       first name, order number, total
+        //   order_shipped      first name, order number
+        //   booking_confirmed  first name
+        //   waitlist_promoted  first name
+        // booking_submitted has none: it is only ever sent inside the window,
+        // straight after the customer submits.
+        'order_placed' => env('WHATSAPP_TEMPLATE_ORDER_PLACED', 'order_confirmed'),
+        'order_shipped' => env('WHATSAPP_TEMPLATE_ORDER_SHIPPED', 'order_dispatched'),
+        'booking_confirmed' => env('WHATSAPP_TEMPLATE_BOOKING_CONFIRMED', 'booking_confirmed'),
+        'waitlist_promoted' => env('WHATSAPP_TEMPLATE_WAITLIST_PROMOTED', 'waitlist_place_open'),
+        'booking_submitted' => null,
     ],
 ];

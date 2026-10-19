@@ -5,7 +5,7 @@ import {
   PhHammer, PhArchive, PhArrowCounterClockwise, PhUserCircle, PhDeviceMobile, PhRobot,
   PhTag, PhProhibit, PhSidebarSimple, PhShoppingCartSimple,
 } from '@phosphor-icons/vue'
-import type { ChatMessage, ChatThread, MessageTemplate, ThreadTopic } from '~/types'
+import type { ChatMessage, ChatThread, MessageTemplate, QuickReply, ThreadTopic } from '~/types'
 
 /**
  * Thread view and composer, Figma node 29:8158 right pane.
@@ -21,6 +21,7 @@ const props = defineProps<{
   thread: ChatThread | null
   messages: ChatMessage[]
   templates?: MessageTemplate[]
+  quickReplies?: QuickReply[]
   sending?: boolean
   /** Live API data: times are compared with the real clock, not the fixture one. */
   live?: boolean
@@ -36,6 +37,8 @@ const emit = defineEmits<{
   (e: 'set-topic', topic: ThreadTopic): void
   (e: 'toggle-panel'): void
   (e: 'new-order'): void
+  /** Fill a quick reply's slots for this chat; the result comes back through `insert`. */
+  (e: 'use-quick-reply', id: number, replace: boolean): void
 }>()
 
 const { formatDate, formatTime, now: fixtureNow } = useFormatters()
@@ -183,13 +186,34 @@ const windowWarning = computed(() => {
 const draft = ref('')
 const composer = ref<HTMLTextAreaElement | null>(null)
 
-/** Called by the context panel: adds a line to the reply, never sends it. */
-function insert(text: string) {
-  draft.value = draft.value.trim() ? `${draft.value.trimEnd()}\n${text}` : text
+/** Called by the context panel and quick replies: adds to the reply, never sends it. */
+function insert(text: string, replace = false) {
+  draft.value = replace || !draft.value.trim() ? text : `${draft.value.trimEnd()}\n${text}`
   nextTick(() => composer.value?.focus())
 }
 
 defineExpose({ insert })
+
+/**
+ * "/" at the start of an empty reply lists quick replies by shortcut, the
+ * way the WhatsApp Business app does. Enter or a click takes the first
+ * match; the filled text replaces the "/word".
+ */
+const slashMatches = computed(() => {
+  const m = draft.value.match(/^\/([\w-]*)$/)
+  if (!m) return []
+  const q = m[1]!.toLowerCase()
+  return (props.quickReplies ?? []).filter((r) => (r.shortcut ?? '').startsWith(q) || r.title.toLowerCase().startsWith(q)).slice(0, 6)
+})
+
+function pickQuickReply(reply: QuickReply, replace = false) {
+  emit('use-quick-reply', reply.id, replace)
+}
+
+function onEnter() {
+  if (slashMatches.value.length) return pickQuickReply(slashMatches.value[0]!, true)
+  send()
+}
 
 watch(() => props.thread?.id, () => {
   draft.value = ''
@@ -228,12 +252,6 @@ function sendTemplate() {
   templateId.value = ''
 }
 
-const quickReplies = [
-  'Thanks for getting in touch. Let me check that now.',
-  'Yes, that size is in stock. Shall I reserve it?',
-  'Processing takes 48 hours, then 1–2 business days within Ghana.',
-  'Custom orders run 3–5 business days.',
-]
 </script>
 
 <template>
@@ -487,14 +505,28 @@ const quickReplies = [
 
     <!-- Composer: free text inside the window -->
     <div v-if="sessionOpen && (canReply || canDraft)" class="shrink-0 border-t border-border p-3">
-      <div class="flex flex-wrap gap-1.5 pb-2">
+      <div v-if="quickReplies?.length" class="flex flex-wrap gap-1.5 pb-2">
         <button
-          v-for="q in quickReplies" :key="q"
+          v-for="q in quickReplies" :key="q.id"
           type="button"
           class="truncate rounded-pill border border-border px-2.5 py-1 text-meta text-fg-muted transition-colors hover:bg-bg-sunken hover:text-fg-strong"
-          @click="draft = q"
-        >{{ q }}</button>
+          :title="q.body"
+          @click="pickQuickReply(q)"
+        >{{ q.title }}</button>
       </div>
+
+      <ul v-if="slashMatches.length" class="mb-2 overflow-hidden rounded-lg border border-border bg-bg-elevated" role="listbox" aria-label="Quick replies">
+        <li v-for="(q, i) in slashMatches" :key="q.id">
+          <button
+            type="button" class="flex w-full items-baseline gap-2 px-3 py-2 text-left text-meta hover:bg-bg-sunken"
+            :class="i === 0 && 'bg-bg-sunken'"
+            @click="pickQuickReply(q, true)"
+          >
+            <span class="font-mono text-fg-strong">/{{ q.shortcut }}</span>
+            <span class="text-fg-muted">{{ q.title }}</span>
+          </button>
+        </li>
+      </ul>
 
       <form class="flex items-end gap-2" @submit.prevent="send">
         <textarea
@@ -503,7 +535,7 @@ const quickReplies = [
           :placeholder="canReply ? 'Write a message…' : 'Write a draft for a Staff member to send…'"
           aria-label="Message"
           class="field max-h-32 min-h-[44px] flex-1 resize-none py-3"
-          @keydown.enter.exact.prevent="send"
+          @keydown.enter.exact.prevent="onEnter"
         />
         <UiButton type="submit" size="md" :disabled="!draft.trim() || sending" :loading="sending" class="shrink-0" :class="canReply && '!px-3'">
           <template v-if="canReply">

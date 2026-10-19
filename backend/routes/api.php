@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryControl
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\Api\V1\Admin\InboxAutomationController as AdminInboxAutomationController;
 use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
 use App\Http\Controllers\Api\V1\Admin\InboxLookupController as AdminInboxLookupController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
@@ -258,6 +259,24 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     ->middleware('capability:inbox.draft')->name('messages.destroy');
                 Route::get('/media/{message}', [AdminInboxController::class, 'media'])
                     ->middleware('capability:inbox.view')->name('media');
+
+                // Semi-automation. Everyone at the inbox can use quick replies;
+                // writing them is template work, and the automatic replies are
+                // an Admin's to switch on.
+                Route::get('/automation', [AdminInboxAutomationController::class, 'show'])
+                    ->middleware('capability:inbox.view')->name('automation.show');
+                Route::put('/automation', [AdminInboxAutomationController::class, 'update'])
+                    ->middleware('capability:inbox.automation')->name('automation.update');
+                Route::get('/quick-replies', [AdminInboxAutomationController::class, 'quickReplies'])
+                    ->middleware('capability:inbox.view')->name('quick-replies.index');
+                Route::post('/quick-replies', [AdminInboxAutomationController::class, 'storeQuickReply'])
+                    ->middleware('capability:inbox.templates')->name('quick-replies.store');
+                Route::put('/quick-replies/{quickReply}', [AdminInboxAutomationController::class, 'updateQuickReply'])
+                    ->middleware('capability:inbox.templates')->name('quick-replies.update');
+                Route::delete('/quick-replies/{quickReply}', [AdminInboxAutomationController::class, 'destroyQuickReply'])
+                    ->middleware('capability:inbox.templates')->name('quick-replies.destroy');
+                Route::post('/quick-replies/{quickReply}/render', [AdminInboxAutomationController::class, 'render'])
+                    ->middleware('capability:inbox.view')->name('quick-replies.render');
 
                 Route::get('/templates', [AdminInboxController::class, 'templates'])
                     ->middleware('capability:inbox.view')->name('templates.index');

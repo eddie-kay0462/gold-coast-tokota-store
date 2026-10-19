@@ -202,3 +202,30 @@ export interface PlacedWhatsAppOrder {
   /** Set when the order stands but its link could not be sent by itself. */
   warning: string | null
 }
+
+// --- semi-automation: `/admin/inbox/quick-replies` and `/admin/inbox/automation` ---
+
+export interface QuickReply {
+  id: number
+  title: string
+  /** Typed after "/" in the reply box. */
+  shortcut: string | null
+  /** With {slots}, filled by the server for each chat. */
+  body: string
+  sortOrder: number
+}
+
+export interface BusinessHoursValue { days: number[]; open: string; close: string }
+
+export interface InboxAutomation {
+  autoGreeting: boolean
+  greeting: string | null
+  afterHoursEnabled: boolean
+  afterHoursMessage: string | null
+  /** What goes out when the message above is blank. */
+  afterHoursPreview: string
+  hours: BusinessHoursValue
+  hoursLabel: string
+  openNow: boolean
+  slots: { slot: string; description: string }[]
+}

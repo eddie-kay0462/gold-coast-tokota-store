@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhArrowLeft, PhArrowsClockwise, PhGear, PhInfo, PhPlugs } from '@phosphor-icons/vue'
-import type { ChatMessage, ChatThread, MessageTemplate, OrderLineDraft, PlacedWhatsAppOrder } from '~/types'
+import type { ChatMessage, ChatThread, InboxAutomation, MessageTemplate, OrderLineDraft, PlacedWhatsAppOrder, QuickReply } from '~/types'
 
 /**
  * WhatsApp inbox, Figma node 29:8158.
@@ -34,14 +34,16 @@ const source = ref<'live' | 'fixture'>('fixture')
 const connected = ref(false)
 const loading = ref(true)
 
-const tab = ref<'conversations' | 'templates'>('conversations')
+type Tab = 'conversations' | 'templates' | 'quick replies' | 'automatic replies'
+const tab = ref<Tab>('conversations')
+const tabCount = (t: Tab) => ({ conversations: threads.value.length, templates: templates.value.length, 'quick replies': quickReplies.value.length, 'automatic replies': null })[t]
 const activeId = ref<string | null>(null)
 
 const activeThread = computed(() => threads.value.find((t) => t.id === activeId.value) ?? null)
 
 /** The context panel: a column from xl, a slide-over below it. */
 const panelOpen = ref(false)
-const threadPane = ref<{ insert: (text: string) => void } | null>(null)
+const threadPane = ref<{ insert: (text: string, replace?: boolean) => void } | null>(null)
 
 function insertIntoReply(text: string) {
   const closesAt = activeThread.value?.sessionExpiresAt
@@ -69,9 +71,38 @@ async function loadTemplates() {
   templates.value = (await adminFetch<MessageTemplate[]>('/admin/inbox/templates')).data
 }
 
+const quickReplies = ref<QuickReply[]>([])
+const automation = ref<InboxAutomation | null>(null)
+
+/** Quick replies and the automation settings only exist on the live API. */
+async function loadAutomation() {
+  if (source.value !== 'live') return
+  const [replies, settings] = await Promise.all([
+    adminFetch<QuickReply[]>('/admin/inbox/quick-replies'),
+    adminFetch<InboxAutomation>('/admin/inbox/automation'),
+  ])
+  quickReplies.value = replies.data
+  automation.value = settings.data
+}
+
+/** Fills a quick reply for the open chat and puts it in the reply box. */
+async function useQuickReply(id: number, replace: boolean) {
+  if (!activeId.value) return
+  try {
+    const { data } = await adminFetch<{ body: string; missing: string[] }>(`/admin/inbox/quick-replies/${id}/render`, {
+      method: 'POST', body: { thread: Number(activeId.value) },
+    })
+    threadPane.value?.insert(data.body, replace)
+    if (data.missing.length) toast.info('Fill in the gaps', 'Some parts in [brackets] had nothing in this chat to fill them.')
+  } catch {
+    toast.error('Couldn’t fill in that reply', 'Try again in a moment.')
+  }
+}
+
 onMounted(async () => {
   try {
     await Promise.all([loadThreads(), loadTemplates()])
+    await loadAutomation().catch(() => {})
   } finally {
     loading.value = false
   }
@@ -343,15 +374,13 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
 
     <div class="flex items-center gap-5 border-b border-border">
       <button
-        v-for="t in (['conversations', 'templates'] as const)" :key="t"
+        v-for="t in (['conversations', 'templates', 'quick replies', 'automatic replies'] as const)" v-show="t === 'conversations' || t === 'templates' || source === 'live'" :key="t"
         type="button" class="-mb-px border-b-2 pb-2.5 text-ui capitalize transition-colors"
         :class="tab === t ? 'border-accent font-medium text-fg-strong' : 'border-transparent text-fg-muted hover:text-fg-strong'"
         @click="tab = t"
       >
         {{ t }}
-        <span class="ml-1.5 text-meta text-fg-faint">
-          {{ t === 'conversations' ? threads.length : templates.length }}
-        </span>
+        <span v-if="tabCount(t) !== null" class="ml-1.5 text-meta text-fg-faint">{{ tabCount(t) }}</span>
       </button>
     </div>
 
@@ -385,6 +414,7 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           :live="source === 'live'"
           :messages="activeMessages"
           :templates="templates"
+          :quick-replies="quickReplies"
           :sending="sending"
           @send="sendText"
           @send-template="sendTemplate"
@@ -398,6 +428,7 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           @set-topic="threadActions.setTopic"
           @toggle-panel="panelOpen = !panelOpen"
           @new-order="builderOpen = true"
+          @use-quick-reply="useQuickReply"
         />
       </div>
 
@@ -411,8 +442,20 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
       />
     </div>
 
+    <InboxQuickReplyManager
+      v-else-if="tab === 'quick replies'"
+      :replies="quickReplies" :slots="automation?.slots ?? []"
+      @changed="loadAutomation"
+    />
+
+    <InboxAutomationSettings
+      v-else-if="tab === 'automatic replies' && automation"
+      :automation="automation"
+      @saved="(a) => (automation = a)"
+    />
+
     <!-- Templates -->
-    <div v-else class="admin-stack">
+    <div v-else-if="tab === 'templates'" class="admin-stack">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <p class="max-w-prose text-ui text-fg-muted">
           Outside the 24-hour reply window, WhatsApp only permits pre-approved templates. Each one
