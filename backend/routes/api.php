@@ -189,6 +189,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:inventory.view')->name('inventory.index');
             Route::patch('/inventory/{inventoryItem}', [AdminInventoryController::class, 'update'])
                 ->middleware('capability:inventory.adjust')->name('inventory.update');
+            Route::get('/inventory/{inventoryItem}/movements', [AdminInventoryController::class, 'movements'])
+                ->middleware('capability:inventory.view')->name('inventory.movements');
 
             Route::get('/feedback', [AdminFeedbackController::class, 'index'])
                 ->middleware('capability:customers.view')->name('feedback.index');

@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 18 October 2026 (catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 19 October 2026 (WhatsApp as a full sales channel, phase 0: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,92 @@ inert at their last step.
 
 ## Recent changes
 
-### 18 October 2026 (latest): catalogue photos go to R2; the admin can upload and view product photos
+### 19 October 2026 (latest): WhatsApp becomes a full sales channel — phase 0, per-order stock holds and a stock ledger
+
+**The client's decision.** WhatsApp is to be integrated deeply, not just linked.
+Customers can move an order to WhatsApp at any point; the team replies from a
+live inbox in the admin; and every WhatsApp order, stock hold and stock
+movement lands in the same database and admin screens as a web order. This is
+a **scope expansion beyond README Feature 6** ("deep link, no API
+integration"). It also settles the inbox part of decision 28: the inbox is
+WhatsApp thread history. Decided with the user on 18 Oct:
+
+1. **Coexistence onboarding.** The brand number stays in the WhatsApp Business
+   app on the phone and is also connected to the Cloud API. Replies typed on the
+   phone come back to the API as echoes and appear in the admin thread.
+2. **WhatsApp orders are paid by Paystack link only**, sent in the chat. There
+   is no manual "mark paid"; §13 names Paystack and nothing else.
+3. **How long a WhatsApp order holds stock is an admin setting** (default 24 h).
+4. **First-build automation:** the §14 greeting and an after-hours reply,
+   order and shipping status templates, and quick replies filled with live
+   data. AI-drafted replies are out of scope.
+
+The plan has five phases: 0 groundwork, 1 Cloud API and live inbox, 2 the
+chat's context panel (stock, events, info), 3 Order on WhatsApp, 4 automation.
+**Phase 0 is this change** and needs no Meta account.
+
+**Why phase 0 had to come first: stock holds are now one row per order.** A
+variant's holds used to be one counter (`quantity_reserved`) with one expiry
+(`reservation_expires_at`), and a new hold could only *extend* that expiry. A
+24-hour WhatsApp hold on a size would therefore keep every abandoned
+15-minute web checkout on the same size held for 24 hours too. Now:
+
+- **`stock_holds`** has one row per order per variant, each with its own
+  `expires_at`, plus `released_at` (with `release_reason` `released` or
+  `expired`) and `finalized_at`.
+- **`quantity_reserved` stays**, and equals the sum of the active holds. It is
+  recounted under the item's row lock after every change, so every reader of
+  `sellable_quantity` (storefront, polling, admin) is unchanged.
+- **`inventory_items.reservation_expires_at`** is now display-only: the latest
+  active expiry.
+- **`reservations_cleared_at` is dropped.** It existed only so a late payment
+  could tell whether a wipe of the shared counter had taken its hold, and a
+  hold row now says that itself. The late-payment rules are unchanged:
+  - paid after the hold lapsed → sold from the shelf if a pair is free
+  - nothing free → `inventory_conflict`
+  - other customers' holds are never touched
+- **`InventoryReservationService` API changed:**
+  - `reserve()` takes the order.
+  - `release(item, qty)` is replaced by `releaseOrder(order)`.
+  - `finalize()` takes the order instead of its expiry time.
+  - `releaseAllExpired()` returns the number of holds released, not items.
+- **Deploy-time backfill.** The migration gives every pending order with an
+  unexpired hold a row per line, and resets each item's counter to the sum of
+  those rows. Anything else in the old counter belonged to a hold that had
+  already run out.
+
+**Every stock change is logged: `inventory_movements`.** It is append-only:
+`hold`, `hold_released`, `hold_expired`, `sale` and `adjustment`, each with
+the deltas, the counts after the change, the channel, the order, and the admin
+who did it. It is written in the same transaction as the change, by the
+reservation service and by the admin recount (`PATCH /admin/inventory/{id}`,
+which now takes an optional `note`). Changing only the threshold is not a
+movement. It is readable at `GET /admin/inventory/{id}/movements`
+(`inventory.view`, so interns too), and in the admin's Adjust stock modal,
+which has a new **History** tab and a **Reason** field.
+
+**Orders know their channel.** `orders.channel` (`web` default or
+`whatsapp`), `whatsapp_conversation_id` (a plain column for now; it gets its
+foreign key with the inbox tables in phase 1) and `created_by_admin_id`. The
+admin orders list has a channel filter and a WhatsApp badge, `?channel=` works
+on the API, and `/admin/dashboard/metrics` adds
+`orders_this_week_by_channel`. The reference generator moved from
+`CheckoutSessionService` to `App\Support\OrderReference`, so the WhatsApp
+draft codes in phase 3 use the same no-O/0, no-I/1 alphabet.
+
+**Tests:** 538 passing, on SQLite and on Postgres 16 locally. The new cases:
+
+- A 15-minute and a 24-hour hold on one variant expire independently.
+- `releaseOrder` frees only its own order's holds.
+- The lapsed-payment paths are covered at service level.
+- The ledger sequence and its deltas are checked.
+- A recount is logged with who made it and why; a threshold-only change is not.
+- History access: interns can read it, guests can't.
+
+The Paystack late-payment tests now build their holds through the service
+instead of writing the counter directly.
+
+### 18 October 2026: catalogue photos go to R2; the admin can upload and view product photos
 
 The client's photo folders on Drive (Ahenema, Shoe, Slippers) can now be
 published to R2 with a repeatable, two-step import. The Python half and its
@@ -3845,8 +3930,9 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
+| 49 | **WhatsApp Cloud API: the client has to arrange Meta access before phase 1 can go live** | The live inbox, Order on WhatsApp and the status templates (19 Oct entry) need things only the business can provide: (1) a **verified Meta Business** account and a Meta app; (2) **coexistence onboarding** of the brand number through Embedded Signup. §12 says the number on file (+233 257 534 297) is *not* confirmed as the official one, so confirm it first: onboarding the wrong number moves the wrong chats; (3) **approval of the utility templates** (order paid, dispatched, delivered, payment link), with copy the client signs off; (4) a budget for **Meta's per-message charges** on business-initiated templates in Ghana (replies inside the 24-hour customer window are free). Check current rates before quoting a figure. Meta's current coexistence requirements (app version, how long the number must have been active, unsupported features) are to be checked at the start of phase 1, not assumed. Phases 0 and 2, and most of 1, 3 and 4, can be built and tested against a logging client without any of this. **Waiting on the client.** |
 | 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
-| 46 | **Shipping updates go by email and SMS, not WhatsApp** | §8 and §22.17 promise shipping updates "via Email, WhatsApp". There is no WhatsApp channel (only wa.me links), so the dispatch message goes by email and Fish Africa SMS. **Decide** whether to add a WhatsApp Business API provider. |
+| 46 | **Shipping updates go by email and SMS, not WhatsApp** | **Update 19 Oct:** being addressed. Phase 4 of the WhatsApp work adds a WhatsApp notification channel next to email and SMS (see row 49 for what it is waiting on). §8 and §22.17 promise shipping updates "via Email, WhatsApp". There is no WhatsApp channel (only wa.me links), so the dispatch message goes by email and Fish Africa SMS. **Decide** whether to add a WhatsApp Business API provider. |
 | 47 | **Couriers are booked on "Mark as packed", not on payment** | README Feature 5 says the webhook books the courier. The shipping plan books it when staff mark the parcel packed (phase 2), because a Yango courier arrives within minutes and orders take up to 48 hours to process. Payment only opens a pending shipment. |
 | 48 | **Unpriced Ghana regions get ₵25 (`SHIPPING_UNPRICED_REGIONS=fallback`)** | Chosen so deploying regional rates changed no price on day one. Once the 16 rates are entered, consider `refuse`, which sends unpriced regions to WhatsApp instead of charging a guess. |
 | 44 | **The product page promised shipping and return terms GOLD_COAST_TOKOTA.md doesn't state** | **Partly settled 11 Oct:** free shipping is now an admin setting, *off* by default, so checkout no longer gives ₵0 above ₵1,500, and `/help/shipping` now says only what §8 says (1–2 business days in Ghana, no free-shipping line). *Still to decide:* whether free shipping is real policy. If it is, add it to the brand document and switch the threshold on in Settings → Delivery. Removed 9 Oct with the accordion. **"Extended returns through January 31"** contradicted §9/§21's 7-day window, which was wrong and has gone. **"Free shipping on all Ghana orders over ₵1,500"** is not in the doc either (it says shipping is "calculated at checkout based on destination, package weight and courier rates"), **but checkout really does it**: `YangoService::FREE_SHIPPING_THRESHOLD` charges ₵0 above ₵1,500, set to match this page's Figma copy. `utils/policyContent.ts` (`/help/shipping`) states it too, and gives Ghana delivery as "1–2 days in Accra, 2–4 elsewhere" where §8 says 1–2 business days. **"Free personalized note or marking during checkout"** has no source and no checkout field. **Decide:** is free shipping over ₵1,500 real policy? If yes, add it to the doc and put it back on the product page. If no, remove it from `YangoService` and `/help/shipping`. Either way, reconcile `/help/shipping` with §8. |
@@ -3862,7 +3948,7 @@ will light up:
 | 35 | **Three of the six workshop experiences cannot actually be booked** | §15 runs Corporate Team Building, Cultural Craft and International Visitor "By Appointment" — no standing schedule, so no `workshop_session` for a booking to attach to. `GET /workshop-types` advertises them and `requires_appointment` flags them, but a customer who picks one has nowhere to go except the WhatsApp link. An enquiry path (a booking with no session, or a routed form) is the fix; **whether it is a booking or an enquiry is a business question**, so it is not guessed. |
 | 36 | ~~**Two tests fail on Postgres but pass on SQLite — neither is a production bug**~~ | **Closed 10 Oct 2026.** (b) and the seeder test were fixed as test bugs, and CI now runs the suite on Postgres 18. **(a) closed 10 Oct:** the webhook's marker and order update are one transaction now, with the duplicate caught outside it, and the replay test passes on Postgres. **Still open on Postgres:** (b) below, and `ProductSeederTest > each colourway has its own photographs`, which compares `colour_images` key order. `jsonb` does not keep key order, so this is a test bug too. Original note: Found by running the whole suite against a scratch Postgres database on 8 Sep, which is what issue 29 recommends. (a) `PaystackPaymentTest > a replayed webhook…` fails with `SQLSTATE[25P02] current transaction is aborted`. The webhook's idempotency catches a unique-constraint violation from `ProcessedWebhookEvent::create()`; on Postgres a failed statement poisons the surrounding transaction, and under `RefreshDatabase` **the test itself is that transaction**. In production there is no wrapping transaction, so the catch works and the endpoint is correct. It is still worth hardening — if anyone ever wraps that handler in a transaction, idempotency breaks on Postgres and only on Postgres; `insertOrIgnore` or a savepoint would remove the trap. (b) `FeedbackTest > feedback is listed newest first` passes `created_at` to `Feedback::create()`, but `created_at` is not in the model's `$fillable`, so it is silently dropped and both rows get the same timestamp — the ordering is then a coin flip that SQLite happens to win. A test bug, not an API bug. **Neither was touched on 8 Sep**: both are outside the catalogue-filter change, and quietly editing the payment path while doing something else is how a money bug gets in. |
 | 30 | **Production serves the API with `php artisan serve`** | The Dockerfile's CMD is Laravel's built-in dev server: single-threaded, explicitly not for production in Laravel's own docs. It will work for a demo and fall over under real traffic. The fix is a proper process manager — FrankenPHP is the smallest change (one base-image swap plus a Caddyfile), php-fpm + nginx the conventional one. **Not done in the hardening pass deliberately:** it is a container change that cannot be verified without an actual deploy, and shipping an unverified web server swap is worse than a documented known issue. Needs one deploy to test. |
-| 28 | **Five admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **27 now exist** (the two product reads landed 8 Sep). What is left is inbox (×3), activity and audit. **Returns and workshop-types came off this list on 28 Aug**: they were unguessable only because the README covers neither, and §9/§21 and §15 of the brand document write both out in full — which made them transcription rather than invention. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. What is left — a 3-endpoint inbox, an activity feed and an audit log — **is in neither the README nor the brand document, and has no model.** Same pattern as the reviews UI: the inbox could be WhatsApp thread history, a ticketing system or email, and each produces a different schema; the audit log's retention and scope are policy questions with compliance weight. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** |
+| 28 | **Five admin endpoints have a data model nobody can guess** | The admin app calls 30 paths; **27 now exist** (the two product reads landed 8 Sep). What is left is inbox (×3), activity and audit. **Returns and workshop-types came off this list on 28 Aug**: they were unguessable only because the README covers neither, and §9/§21 and §15 of the brand document write both out in full — which made them transcription rather than invention. The rest of the previously-listed set was built on 27 Aug once it was clear their shape was obvious. What is left — a 3-endpoint inbox, an activity feed and an audit log — **is in neither the README nor the brand document, and has no model.** Same pattern as the reviews UI: the inbox could be WhatsApp thread history, a ticketing system or email, and each produces a different schema; the audit log's retention and scope are policy questions with compliance weight. They fall back to fixtures with the demo-data chip, so nothing is broken; but this is unbudgeted scope and should be a decision, not a launch-checklist surprise. **Awaiting a decision on launch scope.** **Update 19 Oct:** the inbox part is decided: it is a live WhatsApp inbox on the Cloud API (see the 19 Oct entry), being built in phases 1–4. The activity feed and audit log are still open. |
 | 29 | ~~**The test suite runs on SQLite; production is Postgres**~~ | **Closed 10 Oct 2026:** `.github/workflows/backend-tests.yml` runs the suite on both Postgres 18 and SQLite for every PR into `dev` or `main`. Original note: `phpunit.xml` sets `DB_CONNECTION=sqlite`. Every `jsonb` column is plain JSON under test, and Postgres-only SQL (`ILIKE`, JSON operators) passes or fails differently in the two. Already bit once — see the 27 Aug admin-operations entry. Nothing is wrong today; the fix is either running tests against Postgres in CI or keeping queries strictly portable. |
 | 24 | **Product reviews are unplanned scope, and fully built** | `ProductReviews.vue` renders sort, a star filter, a rating distribution and a fit meter — and **no README feature covers reviews at all**. `rating` and `reviews` are the only two `ApiProduct` fields the API does not send; the section hides itself via `v-if` until it does. Before a `product_reviews` table gets built someone needs to decide **who writes reviews, whether they are moderated, and whether launch ships seeded ones**. Cheapest honest option if it is deferred: drop the section rather than leave it fixture-fed. **Awaiting a decision.** |
 | 25 | ~~**Seeded collection assignments are a guess**~~ | **Closed 30 Sep.** The six demo products and their guessed collections are gone; the real catalogue is seeded with no collection at all. Whether the brand wants merchandising groupings above its 28 styles is issue 41. |

@@ -15,6 +15,7 @@ use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\PaymentGatewayFactory;
 use App\Services\Payment\PaymentSession;
 use App\Services\Shipping\CheckoutShipping;
+use App\Support\OrderReference;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -48,9 +49,6 @@ class CheckoutSessionService
 {
     /** How long stock is held for a checkout in progress (README Feature 3). */
     private const RESERVATION_TTL_MINUTES = 15;
-
-    /** Unambiguous alphabet — no O/0 or I/1, since customers read these aloud. */
-    private const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
     public function __construct(
         private readonly FxRateService $fxRates,
@@ -102,7 +100,7 @@ class CheckoutSessionService
                 : null;
 
             $order = Order::create([
-                'reference' => $this->generateReference(),
+                'reference' => OrderReference::forOrder(),
                 'customer_id' => $data['customer_id'] ?? null,
                 'currency' => $data['currency'],
                 'fx_rate_applied' => $fxRate,
@@ -126,7 +124,7 @@ class CheckoutSessionService
                 // Reserve before writing the line, so a stock failure aborts
                 // the whole transaction rather than leaving a paid-for order
                 // item with nothing behind it.
-                $this->reservations->reserve($line['inventory_item'], $line['quantity'], $expiresAt);
+                $this->reservations->reserve($line['inventory_item'], $line['quantity'], $expiresAt, $order);
 
                 OrderItem::create([
                     'order_id' => $order->id,
@@ -163,13 +161,9 @@ class CheckoutSessionService
     private function abandon(Order $order): void
     {
         DB::transaction(function () use ($order) {
-            foreach ($order->items()->with('inventoryItem')->get() as $item) {
-                if ($item->inventoryItem) {
-                    $this->reservations->release($item->inventoryItem, $item->quantity);
-                }
-            }
+            $this->reservations->releaseOrder($order, 'Payment session failed to open');
 
-            // order_items cascade.
+            // order_items and stock_holds cascade.
             $order->delete();
         });
     }
@@ -231,18 +225,5 @@ class CheckoutSessionService
     private function convert(int $amountGhs, ?string $fxRate): int
     {
         return $fxRate === null ? $amountGhs : (int) round($amountGhs * (float) $fxRate);
-    }
-
-    private function generateReference(): string
-    {
-        $max = strlen(self::REFERENCE_ALPHABET) - 1;
-
-        do {
-            $reference = 'GCT-'.collect(range(1, 12))
-                ->map(fn () => self::REFERENCE_ALPHABET[random_int(0, $max)])
-                ->implode('');
-        } while (Order::query()->where('reference', $reference)->exists());
-
-        return $reference;
     }
 }

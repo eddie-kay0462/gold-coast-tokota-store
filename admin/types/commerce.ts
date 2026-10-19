@@ -94,6 +94,9 @@ export interface Order {
   tax: Money
   total: Money
   status: OrderStatus
+  /** Where it was placed. A WhatsApp order was built in the inbox and paid by link. */
+  channel: 'web' | 'whatsapp'
+  whatsappConversationId: number | null
   paymentGateway: PaymentGateway
   paymentMethod: PaymentMethod
   paymentReference: string

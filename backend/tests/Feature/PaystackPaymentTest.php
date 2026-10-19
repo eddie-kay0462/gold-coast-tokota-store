@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ProcessedWebhookEvent;
 use App\Models\Product;
+use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\FakeGateway;
 use App\Services\Payment\PaymentGatewayFactory;
 use App\Services\Payment\PaystackService;
@@ -47,7 +48,7 @@ class PaystackPaymentTest extends TestCase
         $inventory = InventoryItem::factory()->create([
             'product_id' => $product->id,
             'quantity_available' => 5,
-            'quantity_reserved' => 2,
+            'quantity_reserved' => 0,
         ]);
 
         $order = Order::factory()->create([
@@ -55,6 +56,7 @@ class PaystackPaymentTest extends TestCase
             'currency' => $currency,
             'total' => $total,
             'shipping_address' => ['email' => 'ama@example.com', 'country' => 'GH'],
+            'reservation_expires_at' => now()->addMinutes(15),
         ]);
 
         OrderItem::factory()->create([
@@ -63,6 +65,8 @@ class PaystackPaymentTest extends TestCase
             'inventory_item_id' => $inventory->id,
             'quantity' => 2,
         ]);
+
+        app(InventoryReservationService::class)->reserve($inventory, 2, now()->addMinutes(15), $order);
 
         return $order->fresh('items');
     }
@@ -340,19 +344,19 @@ class PaystackPaymentTest extends TestCase
     }
 
     /**
-     * A pending order whose 15-minute hold on one pair has been swept, and the
-     * pair it held then reserved by someone else. `$available` is the shelf
-     * count the late payment finds.
+     * A pending order whose 15-minute hold on one pair has lapsed, the clock
+     * run on, and that pair then reserved by someone else (unless
+     * `$swept` is false, when the lapsed hold is left for the payment itself
+     * to find). `$available` is the shelf count the late payment finds.
      */
-    private function lapsedOrder(int $available): array
+    private function lapsedOrder(int $available, bool $swept = true): array
     {
+        $reservations = app(InventoryReservationService::class);
         $product = Product::factory()->create();
         $inventory = InventoryItem::factory()->create([
             'product_id' => $product->id,
             'quantity_available' => $available,
-            'quantity_reserved' => 1,
-            'reservation_expires_at' => now()->addMinutes(10),
-            'reservations_cleared_at' => now()->subMinutes(5),
+            'quantity_reserved' => 0,
         ]);
 
         $order = Order::factory()->create([
@@ -360,7 +364,7 @@ class PaystackPaymentTest extends TestCase
             'currency' => 'GHS',
             'total' => 60_000,
             'shipping_address' => ['email' => 'ama@example.com', 'country' => 'GH'],
-            'reservation_expires_at' => now()->subMinutes(10),
+            'reservation_expires_at' => now()->addMinutes(15),
         ]);
 
         OrderItem::factory()->create([
@@ -369,6 +373,14 @@ class PaystackPaymentTest extends TestCase
             'inventory_item_id' => $inventory->id,
             'quantity' => 1,
         ]);
+
+        $reservations->reserve($inventory, 1, now()->addMinutes(15), $order);
+        $this->travel(25)->minutes();
+
+        if ($swept) {
+            $reservations->releaseAllExpired();
+            $reservations->reserve($inventory, 1, now()->addMinutes(15), Order::factory()->create());
+        }
 
         return [$order->fresh('items'), $inventory];
     }
@@ -410,12 +422,8 @@ class PaystackPaymentTest extends TestCase
     public function test_a_late_payment_before_the_sweep_still_counts_as_lapsed(): void
     {
         $this->configureGateway();
-        [$order, $inventory] = $this->lapsedOrder(available: 1);
-        $inventory->update([
-            'quantity_reserved' => 1,
-            'reservation_expires_at' => now()->subMinutes(10),
-            'reservations_cleared_at' => null,
-        ]);
+        [$order, $inventory] = $this->lapsedOrder(available: 1, swept: false);
+        $this->assertSame(1, $inventory->fresh()->quantity_reserved);
 
         $this->deliver($this->chargeSuccess($order))->assertOk();
 

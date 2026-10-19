@@ -98,10 +98,11 @@ Anything that writes them directly is a bug.
 | POST | `/webhooks/paystack` | HMAC-signed, idempotent. Throttled 300/min — see below |
 | POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard. Login takes optional `remember` (boolean, the "Keep me signed in" box). Writes need the `X-XSRF-TOKEN` header from the `XSRF-TOKEN` cookie, re-read after login — Laravel rotates it |
 | GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` `?per_page=` — 50/page by default, max 500 (one row per size; the admin screen asks for 500) |
-| PATCH | `/admin/inventory/{id}` | `inventory.adjust` (Staff and up; not Intern). Body: `quantity_available` and/or `low_stock_threshold`, both absolute integers ≥ 0. `422` if the count would fall below `quantity_reserved`. `quantity_reserved` is never writable. Returns the row |
+| PATCH | `/admin/inventory/{id}` | `inventory.adjust` (Staff and up; not Intern). Body: `quantity_available` and/or `low_stock_threshold`, both absolute integers ≥ 0, plus an optional `note` (≤255) kept on the movement. `422` if the count would fall below `quantity_reserved`. `quantity_reserved` is never writable. A changed count writes an `adjustment` movement. Returns the row |
+| GET | `/admin/inventory/{id}/movements` | `inventory.view`. The variant's stock history, newest first, `?per_page=` (50, max 200). Each row: `reason` (`hold` · `hold_released` · `hold_expired` · `sale` · `adjustment`), `delta_available`, `delta_reserved`, `quantity_available_after`, `quantity_reserved_after`, `channel` (`web`¦`whatsapp`¦null), `order_reference`, `admin_name`, `note`, `created_at` |
 | GET | `/admin/feedback` | Admin **and** Staff. Read-only, newest first — 50/page |
 | GET | `/admin/dashboard/metrics` | Admin **and** Staff. Live queries, no caching |
-| GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` — 25/page |
+| GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` `?channel=web¦whatsapp` — 25/page. Each order carries `channel`, `whatsapp_conversation_id` and `created_by_admin_id` |
 | PATCH | `/admin/orders/{reference}` | Status. **`refunded` needs `orders.refund`**. `delivered` stamps `delivered_at` |
 | GET/POST | `/admin/returns` · GET `/admin/returns/{id}` | `returns.view`. `?status=` `?reason=` — 25/page |
 | PATCH | `/admin/returns/{id}` | `returns.resolve` (Admin+). `refunded` also needs `orders.refund` |

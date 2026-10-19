@@ -44,7 +44,7 @@ class FinalizeInventoryForPaidOrder implements ShouldQueue
             $finalized = $this->reservations->finalize(
                 $item->inventoryItem,
                 $item->quantity,
-                $event->order->reservation_expires_at,
+                $event->order,
             );
 
             if ($finalized === null) {
