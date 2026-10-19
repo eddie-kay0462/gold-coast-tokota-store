@@ -112,6 +112,19 @@ function openSizeGuide(event: MouseEvent) {
   sizeGuideOpen.value = true
 }
 
+/**
+ * "Order on WhatsApp" for one pair, once a size is chosen: saved under a code
+ * so the team opens the chat with it already in the order builder. Without a
+ * size there is nothing exact to carry, so the plain message goes on its own.
+ */
+const { active: activeCurrency } = useCurrency()
+const whatsappOrderDraft = computed(() => selectedSize.value
+  ? {
+      items: [{ slug: props.product.slug, size: selectedSize.value, colour: selectedColor.value || null, quantity: 1 }],
+      currency: activeCurrency.value,
+    }
+  : null)
+
 // For the "Questions about caring for your pair?" link in Materials & Care.
 const { href: whatsappHref } = useWhatsApp(() => whatsappMessage.product(props.product.name, null))
 const { whatsappClick } = useAnalytics()
@@ -240,6 +253,7 @@ const { whatsappClick } = useAnalytics()
         source="product-detail"
         full
         :message="whatsappMessage.product(product.name, selectedSize)"
+        :order-draft="whatsappOrderDraft"
       >
         Prefer to order via WhatsApp?
       </CommonWhatsAppLink>

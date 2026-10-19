@@ -29,7 +29,7 @@ class FakeGateway implements PaymentGateway
         return $this->simulating;
     }
 
-    public function createSession(Order $order): PaymentSession
+    public function createSession(Order $order, ?string $reference = null): PaymentSession
     {
         $reference = 'fake_'.Str::lower(Str::random(24));
 

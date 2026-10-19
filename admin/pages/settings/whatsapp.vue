@@ -21,7 +21,7 @@ const { useAdminItem } = useAdminApi()
 const { item: wa } = useAdminItem<WhatsappSettings>('whatsapp-settings', '/admin/settings/whatsapp')
 const { item: site } = useAdminItem<SiteSettings>('whatsapp-site-settings', '/admin/site-settings')
 
-const form = reactive({ number: '', message: '', greeting: '', hours: '' })
+const form = reactive({ number: '', message: '', greeting: '', hours: '', holdHours: 24 })
 watchEffect(() => {
   if (!site.value) return
   Object.assign(form, {
@@ -29,22 +29,28 @@ watchEffect(() => {
     message: site.value.whatsappDefaultMessage,
     greeting: site.value.whatsappGreeting,
     hours: site.value.businessHours,
+    holdHours: site.value.whatsappHoldHours ?? 24,
   })
 })
 
 const { adminFetch } = useAdminApi()
 const toast = useToast()
-const saving = ref<'link' | 'greeting' | null>(null)
+const saving = ref<'link' | 'greeting' | 'orders' | null>(null)
 
 /** Partial update: each section saves only its own fields. */
-async function save(section: 'link' | 'greeting') {
-  const body = section === 'link'
-    ? { whatsapp_number: form.number.replace(/\D/g, ''), whatsapp_default_message: form.message, business_hours: form.hours }
-    : { whatsapp_greeting: form.greeting }
+async function save(section: 'link' | 'greeting' | 'orders') {
+  const body = {
+    link: { whatsapp_number: form.number.replace(/\D/g, ''), whatsapp_default_message: form.message, business_hours: form.hours },
+    greeting: { whatsapp_greeting: form.greeting },
+    orders: { whatsapp_hold_hours: Number(form.holdHours) },
+  }[section]
   saving.value = section
   try {
     await adminFetch('/admin/site-settings', { method: 'PUT', body })
-    toast.success(section === 'link' ? 'WhatsApp link saved' : 'Greeting saved', 'Live on the storefront now.')
+    toast.success(
+      { link: 'WhatsApp link saved', greeting: 'Greeting saved', orders: 'Hold time saved' }[section],
+      section === 'orders' ? 'New WhatsApp orders use it from now on.' : 'Live on the storefront now.',
+    )
   } catch (err) {
     const e = err as { statusCode?: number; data?: { message?: string; errors?: Record<string, string[]> } }
     if (e.statusCode === 401 || e.statusCode === 419) return
@@ -111,6 +117,23 @@ const deepLink = computed(
           <template #footer>
             <UiPermissionGate capability="settings.write" quiet>
               <UiButton size="sm" :loading="saving === 'greeting'" @click="save('greeting')">Save</UiButton>
+            </UiPermissionGate>
+          </template>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Orders on WhatsApp"
+          description="How long an order built in the Inbox holds its stock while the customer pays from the link. Web checkout holds for 15 minutes."
+        >
+          <div class="max-w-xs">
+            <UiField
+              v-model="form.holdHours" type="number" label="Hold stock for (hours)"
+              hint="Between 1 and 72. Held pairs can't be sold to anyone else, so keep it as short as customers need."
+            />
+          </div>
+          <template #footer>
+            <UiPermissionGate capability="settings.write" quiet>
+              <UiButton size="sm" :loading="saving === 'orders'" @click="save('orders')">Save</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>

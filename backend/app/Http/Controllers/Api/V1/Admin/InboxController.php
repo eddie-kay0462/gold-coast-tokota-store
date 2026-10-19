@@ -40,6 +40,7 @@ class InboxController extends Controller
     {
         $threads = WhatsAppConversation::query()
             ->with(['contact.customer:id,name', 'linkedOrder:id,reference', 'assignedAdmin:id,name'])
+            ->withExists(['orderDrafts as has_order_draft' => fn ($q) => $q->open()])
             ->when(
                 in_array($request->query('status'), ['open', 'closed'], true),
                 fn ($q) => $q->where('status', $request->query('status')),

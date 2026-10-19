@@ -3,7 +3,7 @@ import {
   PhFileText, PhImage, PhPaperPlaneTilt, PhDotsThreeVertical,
   PhCheck, PhChecks, PhClock, PhWarningCircle, PhLink, PhReceipt, PhCalendarPlus,
   PhHammer, PhArchive, PhArrowCounterClockwise, PhUserCircle, PhDeviceMobile, PhRobot,
-  PhTag, PhProhibit, PhSidebarSimple,
+  PhTag, PhProhibit, PhSidebarSimple, PhShoppingCartSimple,
 } from '@phosphor-icons/vue'
 import type { ChatMessage, ChatThread, MessageTemplate, ThreadTopic } from '~/types'
 
@@ -35,6 +35,7 @@ const emit = defineEmits<{
   (e: 'link-order', reference: string | null): void
   (e: 'set-topic', topic: ThreadTopic): void
   (e: 'toggle-panel'): void
+  (e: 'new-order'): void
 }>()
 
 const { formatDate, formatTime, now: fixtureNow } = useFormatters()
@@ -266,6 +267,10 @@ const quickReplies = [
         {{ thread.linkedOrderReference }}
       </NuxtLink>
 
+      <UiButton v-if="can('orders.create') && canReply" variant="secondary" size="sm" class="hidden sm:inline-flex" @click="emit('new-order')">
+        <PhShoppingCartSimple :size="15" />
+        New order
+      </UiButton>
       <button type="button" class="toolbar-btn xl:hidden" aria-label="Customer, stock and events" @click="emit('toggle-panel')">
         <PhSidebarSimple :size="18" />
       </button>
@@ -314,6 +319,16 @@ const quickReplies = [
         </UiDropdownItem>
       </UiDropdown>
     </header>
+
+    <!-- The customer came with a cart from the website -->
+    <div
+      v-if="thread.hasOrderDraft && can('orders.create')"
+      class="flex shrink-0 items-center gap-3 border-b border-accent/30 bg-bg-sunken px-4 py-2.5"
+    >
+      <PhShoppingCartSimple :size="16" class="shrink-0 text-accent" />
+      <p class="min-w-0 flex-1 text-meta text-fg">{{ thread.contactName }} sent a cart from the website.</p>
+      <UiButton size="sm" @click="emit('new-order')">Build the order</UiButton>
+    </div>
 
     <!-- Messages -->
     <div ref="scroller" class="min-h-0 flex-1 overflow-y-auto px-4 py-4">

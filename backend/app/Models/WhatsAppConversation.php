@@ -43,6 +43,12 @@ class WhatsAppConversation extends Model
         return $this->hasMany(WhatsAppMessage::class, 'conversation_id');
     }
 
+    /** Carts the customer carried here from the storefront ("Order on WhatsApp"). */
+    public function orderDrafts(): HasMany
+    {
+        return $this->hasMany(WhatsAppOrderDraft::class, 'conversation_id');
+    }
+
     public function assignedAdmin(): BelongsTo
     {
         return $this->belongsTo(AdminUser::class, 'assigned_admin_id');

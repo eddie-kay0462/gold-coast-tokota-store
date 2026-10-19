@@ -43,6 +43,9 @@ class ChatThreadResource extends JsonResource
             'is_archived' => $this->status === 'closed',
             'customer_id' => $contact?->customer_id,
             'opted_out' => (bool) $contact?->opted_out_at,
+            // The customer arrived with a cart from the storefront that isn't an
+            // order yet. Only computed on the thread list.
+            'has_order_draft' => (bool) ($this->has_order_draft ?? false),
         ];
     }
 }

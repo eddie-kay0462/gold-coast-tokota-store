@@ -8,6 +8,8 @@ export interface SiteSettings {
   /** The PDF's full "Default Greeting Message". */
   whatsappGreeting: string
   businessHours: string
+  /** How long a WhatsApp order holds its stock while the customer pays (1–72). */
+  whatsappHoldHours?: number
   contactEmail: string
   contactPhone: string
   addressLine: string

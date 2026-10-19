@@ -58,16 +58,22 @@ class CheckoutSessionService
     ) {}
 
     /**
+     * `$options` is how an order built by a team member in the WhatsApp
+     * inbox goes through the same path as a web checkout: same re-pricing,
+     * FX lock, stock holds and payment session, with its own channel and a
+     * longer hold (the customer pays from a link in the chat).
+     *
      * @param  array{items: array<int, array{inventory_item_id: int, quantity: int}>, currency: string, shipping_address: array<string, mixed>, shipping_quote_id?: string|null, shipping_option_id?: string|null, customer_id?: int|null}  $data
+     * @param  array{channel?: string, hold_minutes?: int, created_by_admin_id?: int|null, whatsapp_conversation_id?: int|null}  $options
      * @return array{order: Order, session: PaymentSession}
      *
      * @throws InsufficientStockException
      * @throws RegionNotServedException
      * @throws ShippingOptionChangedException
      */
-    public function create(array $data): array
+    public function create(array $data, array $options = []): array
     {
-        $expiresAt = now()->addMinutes(self::RESERVATION_TTL_MINUTES);
+        $expiresAt = now()->addMinutes($options['hold_minutes'] ?? self::RESERVATION_TTL_MINUTES);
 
         // Resolved before anything is reserved: a production API with no
         // Paystack key refuses here, holding nothing.
@@ -86,7 +92,7 @@ class CheckoutSessionService
             $data['shipping_option_id'] ?? null,
         );
 
-        $order = DB::transaction(function () use ($data, $expiresAt, $lines, $subtotal, $quoteRequest, $delivery) {
+        $order = DB::transaction(function () use ($data, $options, $expiresAt, $lines, $subtotal, $quoteRequest, $delivery) {
             $shippingCost = $delivery->amountGhs;
 
             // One rate read for the whole order. Two reads could straddle the
@@ -118,6 +124,9 @@ class CheckoutSessionService
                 'shipping_option' => $delivery->snapshot(),
                 'shipping_address' => $data['shipping_address'],
                 'reservation_expires_at' => $expiresAt,
+                'channel' => $options['channel'] ?? 'web',
+                'created_by_admin_id' => $options['created_by_admin_id'] ?? null,
+                'whatsapp_conversation_id' => $options['whatsapp_conversation_id'] ?? null,
             ]);
 
             foreach ($lines as $line) {
@@ -155,6 +164,32 @@ class CheckoutSessionService
         ]);
 
         return ['order' => $order->fresh('items'), 'session' => $session];
+    }
+
+    /**
+     * A fresh payment session for an order still awaiting payment, under a
+     * new transaction reference (`GCT-…-2`, `-3`, …), since a gateway takes
+     * each reference once. Used when a WhatsApp payment link is resent. The
+     * hold, prices and FX rate are untouched: this is the same order.
+     */
+    public function reopenPayment(Order $order): PaymentSession
+    {
+        $gateway = $this->gateways->for($order->currency);
+
+        $attempt = 2;
+        $last = (string) $order->payment_reference;
+        if (preg_match('/^'.preg_quote($order->reference, '/').'-(\d+)$/', $last, $m)) {
+            $attempt = (int) $m[1] + 1;
+        }
+
+        $session = $gateway->createSession($order, "{$order->reference}-{$attempt}");
+
+        $order->update([
+            'payment_gateway' => $session->gateway,
+            'payment_reference' => $session->reference,
+        ]);
+
+        return $session;
     }
 
     /** Undoes a committed checkout whose payment session never opened. */

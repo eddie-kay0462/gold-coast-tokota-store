@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhArrowLeft, PhArrowsClockwise, PhGear, PhInfo, PhPlugs } from '@phosphor-icons/vue'
-import type { ChatMessage, ChatThread, MessageTemplate } from '~/types'
+import type { ChatMessage, ChatThread, MessageTemplate, OrderLineDraft, PlacedWhatsAppOrder } from '~/types'
 
 /**
  * WhatsApp inbox, Figma node 29:8158.
@@ -232,6 +232,54 @@ const threadActions = {
   setTopic: (topic: ChatThread['topic']) => updateThread({ topic }, 'Topic updated'),
 }
 
+// --- Order on WhatsApp ------------------------------------------------------
+
+const builderOpen = ref(false)
+/** Lines added from the Stock tab, waiting to join the builder. */
+const pendingLines = ref<OrderLineDraft[]>([])
+const panels = ref<{ reload: () => void }[]>([])
+
+function addToOrder(line: OrderLineDraft) {
+  pendingLines.value = [...pendingLines.value, line]
+  builderOpen.value = true
+  panelOpen.value = false
+}
+
+function afterOrderChange() {
+  if (activeId.value) messagePoll.now()
+  loadThreads().catch(() => {})
+  panels.value.forEach((p) => p?.reload())
+}
+
+function onPlaced(result: PlacedWhatsAppOrder) {
+  if (result.message && activeId.value) merge(activeId.value, [result.message])
+  afterOrderChange()
+}
+
+async function resendLink(reference: string) {
+  try {
+    const { data } = await adminFetch<PlacedWhatsAppOrder>(`/admin/inbox/orders/${reference}/resend-link`, { method: 'POST' })
+    if (data.message && activeId.value) merge(activeId.value, [data.message])
+    toast[data.warning ? 'info' : 'success'](data.warning ? 'New link made, not sent' : 'New payment link sent', data.warning ?? undefined)
+    afterOrderChange()
+  } catch (err) {
+    const message = refusal(err, 'No new link was made.')
+    if (message) toast.error('Not resent', message)
+  }
+}
+
+async function cancelOrder(reference: string) {
+  if (!window.confirm(`Cancel order ${reference}? Its stock is released at once, and the payment link should no longer be used.`)) return
+  try {
+    await adminFetch(`/admin/inbox/orders/${reference}/cancel`, { method: 'POST' })
+    toast.success(`Order ${reference} cancelled`, 'The held stock is back on sale.')
+    afterOrderChange()
+  } catch (err) {
+    const message = refusal(err, 'The order wasn’t cancelled.')
+    if (message) toast.error('Not cancelled', message)
+  }
+}
+
 // --- templates ------------------------------------------------------------
 
 const syncing = ref(false)
@@ -349,31 +397,19 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           @link-order="threadActions.linkOrder"
           @set-topic="threadActions.setTopic"
           @toggle-panel="panelOpen = !panelOpen"
+          @new-order="builderOpen = true"
         />
       </div>
 
       <InboxContextPanel
         v-if="activeThread"
+        :ref="(el) => { if (el) panels[0] = el as unknown as { reload: () => void } }"
         class="hidden w-[320px] shrink-0 border-l border-border xl:flex"
         :thread="activeThread" :live="source === 'live'"
         @insert="insertIntoReply"
+        @add-to-order="addToOrder" @resend-link="resendLink" @cancel-order="cancelOrder"
       />
     </div>
-
-    <!-- Below xl the panel slides over the thread -->
-    <Transition
-      enter-active-class="transition duration-200" enter-from-class="translate-x-full opacity-0"
-      leave-active-class="transition duration-150" leave-to-class="translate-x-full opacity-0"
-    >
-      <div v-if="panelOpen && activeThread" class="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col border-l border-border bg-bg-elevated shadow-xl xl:hidden">
-        <InboxContextPanel
-          class="flex min-h-0 flex-1"
-          :thread="activeThread" :live="source === 'live'"
-          @insert="insertIntoReply" @close="panelOpen = false"
-        />
-      </div>
-    </Transition>
-    <div v-if="panelOpen && activeThread" class="fixed inset-0 z-30 bg-black/30 xl:hidden" aria-hidden="true" @click="panelOpen = false" />
 
     <!-- Templates -->
     <div v-else class="admin-stack">
@@ -422,5 +458,30 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
         </li>
       </ul>
     </div>
+
+    <!-- Below xl the panel slides over the thread -->
+    <Transition
+      enter-active-class="transition duration-200" enter-from-class="translate-x-full opacity-0"
+      leave-active-class="transition duration-150" leave-to-class="translate-x-full opacity-0"
+    >
+      <div v-if="panelOpen && activeThread" class="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col border-l border-border bg-bg-elevated shadow-xl xl:hidden">
+        <InboxContextPanel
+          :ref="(el) => { if (el) panels[1] = el as unknown as { reload: () => void } }"
+          class="flex min-h-0 flex-1"
+          :thread="activeThread" :live="source === 'live'"
+          @insert="insertIntoReply" @close="panelOpen = false"
+          @add-to-order="addToOrder" @resend-link="resendLink" @cancel-order="cancelOrder"
+        />
+      </div>
+    </Transition>
+    <div v-if="panelOpen && activeThread" class="fixed inset-0 z-30 bg-black/30 xl:hidden" aria-hidden="true" @click="panelOpen = false" />
+
+    <InboxOrderBuilder
+      v-model:open="builderOpen"
+      :thread="activeThread"
+      :extra-lines="pendingLines"
+      @consumed-extra="pendingLines = []"
+      @placed="onPlaced"
+    />
   </div>
 </template>

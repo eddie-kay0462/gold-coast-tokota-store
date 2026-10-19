@@ -32,4 +32,12 @@ return [
     'service_window_hours' => 24,
 
     'timeout' => (int) env('WHATSAPP_TIMEOUT', 15),
+
+    // Templates the system sends by name. They are written and approved in
+    // WhatsApp Manager by the business; these are the names it looks for.
+    'templates' => [
+        // Sent when a payment link has to go outside the 24-hour window.
+        // Four body values, in order: first name, order number, total, link.
+        'payment_link' => env('WHATSAPP_TEMPLATE_PAYMENT_LINK', 'payment_link'),
+    ],
 ];

@@ -32,6 +32,7 @@ export const siteSettings: SiteSettings = {
   whatsappDefaultMessage: 'Hi! I have a question about your sandals.',
   whatsappGreeting: WHATSAPP_GREETING,
   businessHours: 'Monday – Saturday, 9:00 AM – 5:00 PM (GMT)',
+  whatsappHoldHours: 24,
   contactEmail: 'hello@goldcoasttokota.store',
   contactPhone: '+233257534297',
   addressLine: 'Haatso, Accra, Ghana',

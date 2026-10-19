@@ -84,6 +84,8 @@ export interface ChatThread {
   customerId?: number | null
   /** The customer replied STOP: no templates or automatic messages. */
   optedOut?: boolean
+  /** Arrived with a cart from the storefront that isn't an order yet. */
+  hasOrderDraft?: boolean
 }
 
 export type TemplateStatus = 'approved' | 'pending' | 'rejected'
@@ -149,4 +151,54 @@ export interface InfoLookup {
   paymentMethods: string[]
   turnaround: { label: string; estimate: string }[]
   rates: { accra: Money; regions: { region: string; rate: Money }[]; internationalNote: string }
+}
+
+// --- Order on WhatsApp: `/admin/inbox/threads/{id}/order-builder` and friends ---
+
+export interface OrderLineDraft {
+  inventoryItemId: number
+  quantity: number
+  productName: string | null
+  variantLabel: string | null
+  unitPrice: Money | null
+  unitPriceUsd?: Money | null
+  sellable: number
+  /** Why this line can't go into an order as it stands, if anything. */
+  problem?: string | null
+}
+
+export interface WhatsAppOrderSummary {
+  reference: string
+  status: string
+  total: Money
+  heldUntil: Timestamp | null
+  paymentReference: string | null
+  placedAt: Timestamp
+}
+
+export interface OrderBuilderData {
+  draft: { reference: string; currency: 'GHS' | 'USD'; createdAt: Timestamp; lines: OrderLineDraft[] } | null
+  prefill: {
+    fullName: string | null; email: string | null; phone: string
+    line1: string | null; city: string | null; region: string | null; postcode: string | null; country: string
+    fromLastOrder: string | null
+  }
+  currency: 'GHS' | 'USD'
+  regions: string[]
+  holdHours: number
+  windowOpen: boolean
+  paymentTemplateReady: boolean
+  openOrders: WhatsAppOrderSummary[]
+}
+
+export interface ShippingQuoteOption {
+  id: string; carrier: string; label: string; amountGhs: number; free: boolean; eta: string | null
+}
+
+export interface PlacedWhatsAppOrder {
+  order: WhatsAppOrderSummary
+  paymentUrl: string | null
+  message: ChatMessage | null
+  /** Set when the order stands but its link could not be sent by itself. */
+  warning: string | null
 }

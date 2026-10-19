@@ -21,6 +21,11 @@ interface PaymentGateway
      * Open a payment session for an order that has already been priced,
      * FX-locked and inventory-reserved. Implementations must not mutate the
      * order or touch inventory.
+     *
+     * `$reference` overrides the transaction reference (the order's own by
+     * default). A gateway refuses a reference twice, so re-opening payment
+     * for an order, e.g. resending a WhatsApp payment link whose page has
+     * gone stale, needs a new one; the webhook matches either.
      */
-    public function createSession(Order $order): PaymentSession;
+    public function createSession(Order $order, ?string $reference = null): PaymentSession;
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\Admin\ShippingSettingController as AdminShipping
 use App\Http\Controllers\Api\V1\Admin\ShippingZoneRateController as AdminShippingZoneRateController;
 use App\Http\Controllers\Api\V1\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\V1\Admin\TeamController as AdminTeamController;
+use App\Http\Controllers\Api\V1\Admin\WhatsAppOrderController as AdminWhatsAppOrderController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopSessionController as AdminWorkshopSessionController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopTypeController as AdminWorkshopTypeController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
@@ -42,6 +43,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductStockController;
 use App\Http\Controllers\Api\V1\ShippingQuoteController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
+use App\Http\Controllers\Api\V1\WhatsAppOrderDraftController;
 use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use App\Http\Controllers\Api\V1\WorkshopSessionController;
 use App\Http\Controllers\Api\V1\WorkshopTypeController;
@@ -118,6 +120,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // "not practically guessable" into "not worth trying".
     Route::middleware('throttle:20,1')->group(function () {
         Route::post('/checkout/session', [CheckoutController::class, 'store'])->name('checkout.session');
+    });
+
+    // "Order on WhatsApp": saves the cart under a short code for the chat.
+    // Holds no stock (see WhatsAppOrderDraftController), so throttled like
+    // feedback rather than like checkout.
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/whatsapp-orders', [WhatsAppOrderDraftController::class, 'store'])->name('whatsapp-orders.store');
     });
 
     // Delivery quotes, asked for at checkout's delivery step. Throttled on
@@ -229,6 +238,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     ->middleware('capability:inbox.view,bookings.view')->name('lookup.events');
                 Route::get('/lookup/info', [AdminInboxLookupController::class, 'info'])
                     ->middleware('capability:inbox.view')->name('lookup.info');
+
+                // Order on WhatsApp. Building an order needs orders.create;
+                // sending its payment link into the chat needs inbox.reply too.
+                Route::get('/threads/{thread}/order-builder', [AdminWhatsAppOrderController::class, 'builder'])
+                    ->middleware('capability:inbox.view,orders.create')->name('orders.builder');
+                Route::post('/threads/{thread}/orders', [AdminWhatsAppOrderController::class, 'store'])
+                    ->middleware('capability:inbox.reply,orders.create')->name('orders.store');
+                Route::post('/orders/{order:reference}/resend-link', [AdminWhatsAppOrderController::class, 'resendLink'])
+                    ->middleware('capability:inbox.reply,orders.create')->name('orders.resend-link');
+                Route::post('/orders/{order:reference}/cancel', [AdminWhatsAppOrderController::class, 'cancel'])
+                    ->middleware('capability:orders.create')->name('orders.cancel');
 
                 Route::get('/messages', [AdminInboxController::class, 'messages'])
                     ->middleware('capability:inbox.view')->name('messages.index');

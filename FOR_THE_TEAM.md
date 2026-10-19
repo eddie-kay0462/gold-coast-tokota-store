@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 19 October 2026 (WhatsApp phase 2: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 19 October 2026 (WhatsApp phase 3: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,103 @@ inert at their last step.
 
 ## Recent changes
 
-### 19 October 2026 (latest): WhatsApp phase 2 — answer from the chat without leaving it
+### 19 October 2026 (latest): WhatsApp phase 3 — Order on WhatsApp
+
+A WhatsApp order is now a real order, in the same table, with the same stock
+holds, ledger, payment and fulfilment as a web order. It just starts in a
+chat.
+
+**From the storefront: carry the cart into the chat.**
+- "Order on WhatsApp instead" (cart drawer), "Continue on WhatsApp"
+  (checkout) and "Prefer to order via WhatsApp?" (product page, once a size is
+  picked) first `POST /whatsapp-orders`.
+- That saves the cart as a **draft** under a short code (`WA-7KQ2MP`, the
+  same no-O/0, no-I/1 alphabet as order numbers), appended to the message as
+  `Order code: WA-7KQ2MP`.
+- **A draft holds no stock.** The endpoint is public, and one that held stock
+  for hours would let anyone empty the shelf.
+- The WhatsApp tab opens inside the click, so popup blockers allow it, and
+  goes to WhatsApp once the code is back. If saving fails or takes over
+  2.5 s, the customer still lands in WhatsApp with the old message.
+- When the customer's message arrives, `LinkWhatsAppOrderDraft` finds the
+  code (any case) and links the chat to the cart. The thread then shows
+  "Ama sent a cart from the website · Build the order".
+- Unused drafts are pruned after 7 days (`PruneWhatsAppOrderDrafts`, daily
+  at 03:45).
+
+**In the inbox: the order builder.** "New order" in the thread header,
+"Build the order" on that banner, or the cart icon on any size in the Stock
+tab opens it:
+- the lines, with live sellable stock and a reason when a line can't be sold
+  as it stands;
+- GHS or USD;
+- name, email, phone and address, prefilled from the account or last order;
+- a delivery price from the same `/checkout/shipping-quote` the storefront
+  uses.
+
+"Place order and send link" calls `CheckoutSessionService::create()`, which
+now takes `channel`, `hold_minutes`, `created_by_admin_id` and
+`whatsapp_conversation_id`. That is the same re-pricing, FX lock, per-order
+stock holds and Paystack session as a web checkout.
+
+- The **hold lasts `site_settings.whatsapp_hold_hours`**: default 24,
+  1–72, set by an Admin on `/settings/whatsapp` under "Orders on WhatsApp".
+- The link goes into the chat as a **"Pay GH₵900.00" button** under the
+  order lines, the total and when the hold ends.
+- Outside the 24-hour window it goes as the approved **`payment_link`
+  template** instead. If there is none, the order still stands and the
+  builder hands back the link to pass on.
+- **Paying runs the ordinary paid path** (`OrderPaid` → stock finalised, a
+  shipment opened, confirmation sent), so the order then sits in Orders like
+  any other, with its WhatsApp badge.
+
+The Customer tab shows pending WhatsApp orders with **Resend link** and
+**Cancel**:
+- **Cancel** releases the stock at once.
+- **Resend link** opens a *fresh* Paystack transaction. Paystack documents
+  no lifetime for its links, and a reference can't be reused, so the new
+  one is `GCT-…-2`, `-3`…, recorded as `payment_reference`.
+
+**Payment safety changes, which affect every order:**
+- `PaymentGateway::createSession()` takes an optional reference.
+- The Paystack webhook matches an order by `reference` **or**
+  `payment_reference`.
+- A payment the order can't keep now raises a new
+  **`OpsAlert::paymentNeedsRefund`** (email or SMS to ops) instead of being
+  dropped silently. That covers a second payment through the other link of a
+  resent order, and a payment on a link for a cancelled order. Both charges
+  are real, so a person refunds one in Paystack.
+
+**An email is required to place a WhatsApp order.** Paystack won't open a
+payment without one, and the confirmation goes there. The builder prefills
+it when it can.
+
+**For the client (decision 49):** a `payment_link` utility template, with
+four body values in this order: first name, order number, total, link. Its
+name can be changed with `WHATSAPP_TEMPLATE_PAYMENT_LINK`.
+
+**Tests:** 592 passing, on SQLite and Postgres 16. The 18 new cases in
+`WhatsAppOrderTest` cover:
+- the draft: resolved from a slug and size, holds nothing, refuses an unknown
+  size;
+- code linking: case-insensitive, with expired codes ignored;
+- builder prefill, and stock problems shown;
+- placing: the configured 36-hour hold, the WhatsApp channel on the hold and
+  movement, the Pay button and its link, the draft marked converted;
+- paying through the dev fake gateway: stock finalised, shipment opened;
+- refusals: not enough stock (nothing held), a missing email;
+- outside the window: the template, or no template with the link handed back;
+- interns refused;
+- cancel releasing at once, and twice refused; a web order refused;
+- a resent link as a fresh Paystack reference, either link able to pay, and a
+  refund alert on the second payment;
+- a refund alert on a cancelled order;
+- pruning;
+- the hold setting's bounds and capability.
+
+`Http::preventStrayRequests()` is on in this file.
+
+### 19 October 2026: WhatsApp phase 2 — answer from the chat without leaving it
 
 The inbox has a third column: a **context panel**. From `xl` it sits beside
 the thread; on smaller screens it slides over from a button in the thread
@@ -4094,7 +4190,7 @@ will light up:
 
 | # | Issue | Notes |
 |---|---|---|
-| 49 | **WhatsApp Cloud API: the client has to arrange Meta access before phase 1 can go live** | The live inbox, Order on WhatsApp and the status templates (19 Oct entry) need things only the business can provide: (1) a **verified Meta Business** account and a Meta app; (2) **coexistence onboarding** of the brand number through Embedded Signup. §12 says the number on file (+233 257 534 297) is *not* confirmed as the official one, so confirm it first: onboarding the wrong number moves the wrong chats; (3) **approval of the utility templates** (order paid, dispatched, delivered, payment link), with copy the client signs off; (4) a budget for **Meta's per-message charges** on business-initiated templates in Ghana (replies inside the 24-hour customer window are free). Check current rates before quoting a figure. Meta's current coexistence requirements (app version, how long the number must have been active, unsupported features) are to be checked at the start of phase 1, not assumed. Phases 0 and 2, and most of 1, 3 and 4, can be built and tested against a logging client without any of this. **Waiting on the client.** |
+| 49 | **WhatsApp Cloud API: the client has to arrange Meta access before phase 1 can go live** | The live inbox, Order on WhatsApp and the status templates (19 Oct entry) need things only the business can provide: (1) a **verified Meta Business** account and a Meta app; (2) **coexistence onboarding** of the brand number through Embedded Signup. §12 says the number on file (+233 257 534 297) is *not* confirmed as the official one, so confirm it first: onboarding the wrong number moves the wrong chats; (3) **approval of the utility templates** (order paid, dispatched, delivered, and `payment_link` with four values: first name, order number, total, link), with copy the client signs off; (4) a budget for **Meta's per-message charges** on business-initiated templates in Ghana (replies inside the 24-hour customer window are free). Check current rates before quoting a figure. Meta's current coexistence requirements (app version, how long the number must have been active, unsupported features) are to be checked at the start of phase 1, not assumed. Phases 0 and 2, and most of 1, 3 and 4, can be built and tested against a logging client without any of this. **Waiting on the client.** |
 | 37 | ~~**Seeded stock is a placeholder, not a count**~~ | **Closed 30 Sep.** The brand will enter counts from the admin inventory screen. Production seeds 0 per size; only local/test databases get the nominal 5. **Until counts are entered, every product in production reads OUT OF STOCK.** |
 | 46 | **Shipping updates go by email and SMS, not WhatsApp** | **Update 19 Oct:** being addressed. Phase 4 of the WhatsApp work adds a WhatsApp notification channel next to email and SMS (see row 49 for what it is waiting on). §8 and §22.17 promise shipping updates "via Email, WhatsApp". There is no WhatsApp channel (only wa.me links), so the dispatch message goes by email and Fish Africa SMS. **Decide** whether to add a WhatsApp Business API provider. |
 | 47 | **Couriers are booked on "Mark as packed", not on payment** | README Feature 5 says the webhook books the courier. The shipping plan books it when staff mark the parcel packed (phase 2), because a Yango courier arrives within minutes and orders take up to 48 hours to process. Payment only opens a pending shipment. |

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
   PhUser, PhPackage, PhCalendarBlank, PhInfo, PhMagnifyingGlass, PhArrowBendDownLeft,
-  PhArrowSquareOut, PhX, PhWarningCircle,
+  PhArrowSquareOut, PhX, PhWarningCircle, PhShoppingCartSimple,
 } from '@phosphor-icons/vue'
-import type { ChatThread, EventsLookup, InboxContext, InfoLookup, StockLookupProduct, StockVariant } from '~/types'
+import type { ChatThread, EventsLookup, InboxContext, InfoLookup, OrderLineDraft, StockLookupProduct, StockVariant } from '~/types'
 import { formatMoney } from '~/utils/currency'
 
 /**
@@ -26,7 +26,25 @@ const props = defineProps<{ thread: ChatThread | null; live: boolean }>()
 const emit = defineEmits<{
   (e: 'insert', text: string): void
   (e: 'close'): void
+  (e: 'add-to-order', line: OrderLineDraft): void
+  (e: 'resend-link' | 'cancel-order', reference: string): void
 }>()
+
+function addToOrder(p: StockLookupProduct, v: StockVariant) {
+  emit('add-to-order', {
+    inventoryItemId: v.inventoryItemId,
+    quantity: 1,
+    productName: p.name,
+    variantLabel: [v.size, v.colour].filter(Boolean).join(' | ') || null,
+    unitPrice: p.price,
+    unitPriceUsd: p.priceUsd,
+    sellable: v.sellable,
+    problem: !p.isActive ? 'This product is no longer on sale.' : v.sellable === 0 ? 'Sold out.' : null,
+  })
+}
+
+/** Exposed so the inbox can refresh the customer tab after an order changes. */
+defineExpose({ reload: () => loadContext() })
 
 const { adminFetch } = useAdminApi()
 const { can } = useAuth()
@@ -198,9 +216,15 @@ function stockTone(n: number) {
                   <template v-if="o.channel === 'whatsapp'"> · WhatsApp</template>
                   <template v-if="o.isLinked"> · linked to this chat</template>
                 </p>
-                <button type="button" class="mt-1.5 flex items-center gap-1 text-meta text-accent hover:underline" @click="emit('insert', say.order(o))">
-                  <PhArrowBendDownLeft :size="13" /> Insert status
-                </button>
+                <div class="mt-1.5 flex flex-wrap gap-3">
+                  <button type="button" class="flex items-center gap-1 text-meta text-accent hover:underline" @click="emit('insert', say.order(o))">
+                    <PhArrowBendDownLeft :size="13" /> Insert status
+                  </button>
+                  <template v-if="o.channel === 'whatsapp' && o.status === 'pending' && can('orders.create')">
+                    <button v-if="can('inbox.reply')" type="button" class="text-meta text-fg-muted hover:underline" @click="emit('resend-link', o.reference)">Resend link</button>
+                    <button type="button" class="text-meta text-danger hover:underline" @click="emit('cancel-order', o.reference)">Cancel</button>
+                  </template>
+                </div>
               </li>
             </ul>
           </section>
@@ -260,9 +284,18 @@ function stockTone(n: number) {
                       · {{ v.sellable }} available<template v-if="v.held"> ({{ v.held }} held)</template>
                     </span>
                   </span>
-                  <button type="button" class="toolbar-btn !size-7" :aria-label="`Insert ${v.label} availability into the reply`" @click="emit('insert', say.variant(p, v))">
-                    <PhArrowBendDownLeft :size="14" />
-                  </button>
+                  <span class="flex shrink-0 items-center">
+                    <button
+                      v-if="can('orders.create') && p.isActive && v.sellable > 0"
+                      type="button" class="toolbar-btn !size-7" :aria-label="`Add ${v.label} to an order`"
+                      @click="addToOrder(p, v)"
+                    >
+                      <PhShoppingCartSimple :size="14" />
+                    </button>
+                    <button type="button" class="toolbar-btn !size-7" :aria-label="`Insert ${v.label} availability into the reply`" @click="emit('insert', say.variant(p, v))">
+                      <PhArrowBendDownLeft :size="14" />
+                    </button>
+                  </span>
                 </li>
               </ul>
               <div class="mt-2 flex flex-wrap gap-3">

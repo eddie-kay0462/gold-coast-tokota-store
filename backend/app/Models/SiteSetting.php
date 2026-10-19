@@ -11,6 +11,7 @@ class SiteSetting extends Model
         'whatsapp_default_message',
         'whatsapp_greeting',
         'business_hours',
+        'whatsapp_hold_hours',
         'contact_email',
         'contact_phone',
         'address',

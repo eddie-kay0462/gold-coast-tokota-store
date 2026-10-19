@@ -51,6 +51,23 @@ class OpsAlert
         );
     }
 
+    /**
+     * Money arrived that the order cannot keep: a second payment through a
+     * resent link, or a payment for an order the team had cancelled. Nothing
+     * automatic can undo a charge, so a person refunds it in Paystack.
+     */
+    public function paymentNeedsRefund(Order $order, string $paymentReference, string $why): void
+    {
+        $this->send(
+            key: 'ops_payment_refund',
+            subject: "Refund needed: order {$order->reference}",
+            body: "Paystack payment {$paymentReference} for order {$order->reference} cannot be kept: {$why}. "
+                .'Refund it from the Paystack dashboard, or contact the customer if they meant to reinstate the order.',
+            sms: "GCT ops: refund needed for {$order->reference} (payment {$paymentReference}). Check admin.",
+            order: $order,
+        );
+    }
+
     private function send(string $key, string $subject, string $body, ?string $sms, Order $order): void
     {
         if (! config('shipping.ops.email') && ! config('shipping.ops.phone')) {
