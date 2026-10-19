@@ -1,24 +1,29 @@
 import type { Timestamp } from './common'
 
 /**
- * WhatsApp inbox.
+ * WhatsApp inbox, served by `/admin/inbox/*` on the Laravel API (WhatsApp
+ * Cloud API, with coexistence: the brand phone's WhatsApp Business app keeps
+ * working and its replies arrive here as `source: 'phone_app'`).
  *
- * SCOPE NOTE, and it matters: README Feature 6 specifies WhatsApp as a
- * *deep link only*: `https://wa.me/<number>`, no API integration. A two-way
- * inbox implies the WhatsApp Business Cloud API plus a webhook receiver, which
- * is new backend scope that does not exist and has not been costed.
- *
- * So everything below is modelled against the real Cloud API shape (message
- * direction, delivery receipts, 24-hour session window, approved templates) but
- * served entirely from fixtures, and the UI says so on every screen. Nothing
- * here sends a real message.
+ * With no Cloud API credentials the API uses a logging stand-in: everything
+ * works, nothing is delivered, and each such message has `simulated: true`.
+ * With `NUXT_PUBLIC_ADMIN_DATA=fixtures` the page runs on sample data.
  */
 export type MessageDirection = 'inbound' | 'outbound'
 
-/** Mirrors the Cloud API's status webhook values. */
-export type MessageStatus = 'sent' | 'delivered' | 'read' | 'failed'
+/**
+ * The Cloud API's status webhook values, plus three of the inbox's own:
+ * `draft` (an intern's reply awaiting someone who can send), `queued`
+ * (accepted, not yet handed to WhatsApp) and `received` (inbound).
+ */
+export type MessageStatus = 'draft' | 'queued' | 'sent' | 'delivered' | 'read' | 'failed' | 'received'
 
-export type MessageKind = 'text' | 'image' | 'document' | 'template' | 'system'
+export type MessageKind =
+  | 'text' | 'image' | 'document' | 'audio' | 'video' | 'sticker' | 'location'
+  | 'template' | 'interactive' | 'system'
+
+/** Who or what produced the message. */
+export type MessageSource = 'customer' | 'agent' | 'automation' | 'phone_app' | 'history'
 
 export interface ChatMessage {
   id: string
@@ -26,9 +31,18 @@ export interface ChatMessage {
   direction: MessageDirection
   kind: MessageKind
   body: string
-  attachment: { filename: string; url: string; mimeType: string } | null
+  /** `url` is null while a customer's file is still being fetched from WhatsApp. */
+  attachment: { filename: string; url: string | null; mimeType: string } | null
   status: MessageStatus
-  /** True for anything this app generated locally rather than received. */
+  /** Why WhatsApp refused it, when `status` is `failed`. */
+  error?: string | null
+  source?: MessageSource
+  templateName?: string | null
+  /** A link button (e.g. a payment link) sent with the message. */
+  cta?: { button: string; url: string } | null
+  sentByName?: string | null
+  draftedByName?: string | null
+  /** True when the logging stand-in "sent" it, so nothing reached WhatsApp. */
   simulated: boolean
   sentAt: Timestamp
 }
@@ -58,11 +72,18 @@ export interface ChatThread {
    * Surfacing this is the difference between a toy and something an operator
    * can trust.
    */
-  sessionExpiresAt: Timestamp
+  /** Null when the customer has never written: only a template can open the chat. */
+  sessionExpiresAt: Timestamp | null
   linkedOrderId: number | null
+  linkedOrderReference?: string | null
   linkedBookingId: number | null
   assignedToAdminId: number | null
+  assignedToName?: string | null
   isArchived: boolean
+  status?: 'open' | 'closed'
+  customerId?: number | null
+  /** The customer replied STOP: no templates or automatic messages. */
+  optedOut?: boolean
 }
 
 export type TemplateStatus = 'approved' | 'pending' | 'rejected'

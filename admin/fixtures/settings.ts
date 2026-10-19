@@ -114,10 +114,13 @@ export const notificationSettings: NotificationSettings = {
  */
 export const whatsappSettings: WhatsappSettings = {
   connected: false,
+  integration: 'wa_me_link',
   phoneNumberId: '',
   wabaId: '',
   webhookUrl: 'https://api.goldcoasttokota.store/api/v1/webhooks/whatsapp',
-  verifyTokenMasked: '',
+  webhookSigningConfigured: false,
+  webhookVerifyTokenConfigured: false,
+  lastWebhookAt: null,
   displayNumber: '+233 25 753 4297',
 }
 

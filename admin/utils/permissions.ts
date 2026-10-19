@@ -18,6 +18,8 @@ export const CAPABILITIES = [
   // Commerce
   'orders.view',
   'orders.update_status',
+  /** Build an order for a customer in the WhatsApp inbox. Prices come from the database. */
+  'orders.create',
   'orders.refund',
   'returns.view',
   'returns.resolve',
@@ -53,6 +55,8 @@ export const CAPABILITIES = [
   'inbox.draft',
   'inbox.reply',
   'inbox.templates',
+  /** The greeting and after-hours auto-replies. */
+  'inbox.automation',
 
   // Platform
   'analytics.view',
@@ -67,6 +71,8 @@ export const CAPABILITIES = [
   'settings.write',
   'settings.payments',
   'settings.fx',
+  /** Connecting third-party accounts such as the WhatsApp number. §18: Integrations are Super Admin only. */
+  'settings.integrations',
   'team.view',
   'team.manage',
   'team.extend_access',
@@ -82,7 +88,7 @@ const ALL: Capability[] = [...CAPABILITIES]
  * site settings; README Feature 9 is explicit about this boundary.
  */
 const STAFF: Capability[] = [
-  'orders.view', 'orders.update_status',
+  'orders.view', 'orders.update_status', 'orders.create',
   'returns.view',
   'shipments.view', 'shipments.update',
   'customers.view',
@@ -123,7 +129,7 @@ const INTERN: Capability[] = [
  * management are Super Admin only.
  */
 const ADMIN: Capability[] = ALL.filter(
-  (c) => !(['settings.payments', 'settings.fx', 'team.manage'] as string[]).includes(c),
+  (c) => !(['settings.payments', 'settings.fx', 'settings.integrations', 'team.manage'] as string[]).includes(c),
 )
 
 export const ROLE_CAPABILITIES: Record<AdminRole, Capability[]> = {
@@ -166,6 +172,9 @@ export function denialMessage(capability: Capability, role: AdminRole): string {
     'team.extend_access': 'Only an Admin can extend intern access.',
     'content.publish': 'Publishing is restricted. You can save a draft and ask an Admin to publish it.',
     'inbox.reply': 'You can draft a reply, but sending it needs a Staff or Admin account.',
+    'inbox.automation': 'Automatic replies are managed by an Admin.',
+    'orders.create': 'Creating an order needs a Staff or Admin account.',
+    'settings.integrations': 'Connecting integrations such as WhatsApp is restricted to the Super Admin.',
     'analytics.revenue': 'Revenue figures are visible to Admins only.',
   }
 

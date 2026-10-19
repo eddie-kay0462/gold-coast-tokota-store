@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 19 October 2026 (WhatsApp as a full sales channel, phase 0: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 19 October 2026 (WhatsApp phase 1: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,120 @@ inert at their last step.
 
 ## Recent changes
 
-### 19 October 2026 (latest): WhatsApp becomes a full sales channel — phase 0, per-order stock holds and a stock ledger
+### 19 October 2026 (latest): WhatsApp phase 1 — the inbox is real
+
+`/inbox` no longer runs on fixtures. Backed by the WhatsApp Cloud API, it
+receives every message to the brand number, shows replies typed on the brand
+phone, and sends from the admin. Until the client connects the number
+(decision 49) it runs end to end on a **logging stand-in** that sends nothing.
+Each such reply is marked "Not delivered: WhatsApp isn't connected", and a
+banner says so. The fixture banner shows only when the API itself isn't
+answering.
+
+**Receiving: `/api/v1/webhooks/whatsapp`.**
+- GET answers Meta's verify challenge with `WHATSAPP_VERIFY_TOKEN`.
+- POST checks `X-Hub-Signature-256` against `WHATSAPP_APP_SECRET`. With no
+  secret, everything is refused.
+- The work is queued (`ProcessWhatsAppWebhook`, run by
+  `WhatsAppWebhookProcessor`), so Meta gets its 200 at once.
+- Handled: customer messages (text, media, location, buttons, reactions),
+  delivery statuses, **coexistence echoes** (`smb_message_echoes`: a reply on
+  the phone shows in the thread as "Sent from the brand phone" and clears
+  unread), the one-off **history import** (`history`: stored without marking
+  anything unread), **phone contact names** (`smb_app_state_sync`), and
+  template approvals and rejections.
+- Media goes to `r2-private` (`DownloadWhatsAppMedia`) and is only ever shown
+  through a 10-minute signed link.
+- A contact is matched to a `Customer` on phone number. `App\Support\PhoneNumber`
+  reads "024 555 1234" and "+233 24…" as the same number. A number shared by
+  two customers is left unlinked.
+- STOP and START opt a contact out and back in.
+
+**Deviation from the plan: no `processed_webhook_events` for WhatsApp.**
+Idempotency is per message instead. `wamid` is unique, so a replay inserts
+nothing, and a delivery status only ever moves forward (a late `delivered`
+can't undo `read`). That is stricter than per-delivery dedupe, because Meta
+can re-batch messages across deliveries.
+
+**The coexistence payload shapes are unconfirmed.** They are written from
+Meta's partner documentation (360dialog). Meta's own reference wasn't
+reachable. Confirm the field names against real deliveries on Meta's test
+number before the brand number is connected.
+
+**Sending: `WhatsAppOutbox`.** Every send goes through it and is checked
+before it is queued, so a refusal is an immediate 422 in plain words with a
+`reason`:
+- free-form text only inside **24 hours** of the customer's last message,
+  otherwise `service_window_closed`;
+- outside the window, only an **approved template**, with its `{{1}}` values
+  filled;
+- no template or automation to a contact who replied STOP (`opted_out`).
+
+`SendWhatsAppMessage` retries throttling and outages three times. A
+permanent error (for example, not on WhatsApp) fails the message at once,
+with WhatsApp's reason shown under the bubble.
+
+**Interns draft, Staff send.** An intern's reply is stored as a draft in the
+thread. Anyone with `inbox.reply` can edit it and send it. The sender is
+recorded as `sent_by` and the intern as `drafted_by`. An intern can discard
+only their own drafts.
+
+**Admin screens:**
+- `pages/inbox.vue` polls with a new `usePolling` composable (paused while the
+  tab is hidden, per the README): the list every 15 s, the open thread every
+  5 s, asking only for new or changed messages.
+- `MessageThread.vue`:
+  - status ticks (queued → sent → delivered → read, or failed with the reason);
+  - who sent each reply, and labels for phone and automatic messages;
+  - drafts with Send, Edit and Discard;
+  - a countdown in the window's last four hours;
+  - outside the window, a **template picker** in place of the text box, with
+    a live preview;
+  - Assign to me, archive or reopen, set the topic, and link an order by
+    number.
+- The sidebar's unread badge is now live: 30 s polling, plus the inbox page.
+- `/settings/whatsapp`:
+  - It reports the real connection: masked IDs, the webhook URL to paste into
+    Meta, whether the app secret and verify token are set, and when the last
+    webhook arrived.
+  - **Fixed in passing:** neither Save button on that page did anything. The
+    deep link (number, message, hours) and the greeting now save to
+    `PUT /admin/site-settings`.
+
+**Capabilities**, in both `AdminCapability` and `permissions.ts`:
+- `orders.create` (Staff and up, for phase 3);
+- `inbox.automation` (Admin and up, for phase 4);
+- `settings.integrations` (Super Admin only, §18 "Integrations").
+
+**Config:** `config/whatsapp.php`, plus six `WHATSAPP_*` env vars in
+`.env.example` and `docs/deploy/contabo.md`. The deploy doc also notes that
+Cloudflare must not challenge Meta's webhook requests.
+
+**Tests:** 567 passing, on SQLite and Postgres 16. The 29 new cases in
+`WhatsAppInboxTest` drive the real webhook with signed payloads and cover:
+- verification, and forged or unsigned deliveries;
+- replays, and a different phone number;
+- customer matching from a local-format number;
+- STOP and START;
+- media into the private bucket;
+- out-of-order statuses;
+- echoes, history, and contact sync;
+- template status;
+- the thread shape the admin reads, and polling with `after`;
+- sends inside and outside the window;
+- templates, and the opt-out refusal;
+- intern drafts and Staff sending them;
+- draft ownership;
+- assign, link and archive, with reopening on reply;
+- real Cloud API request bodies, and permanent errors;
+- template sync;
+- the new capabilities.
+
+**Not yet checked in a browser.** The admin builds, and every endpoint the
+page calls is tested, but nobody has clicked through `/inbox` against a
+running API yet. Do that before relying on it.
+
+### 19 October 2026: WhatsApp becomes a full sales channel — phase 0, per-order stock holds and a stock ledger
 
 **The client's decision.** WhatsApp is to be integrated deeply, not just linked.
 Customers can move an order to WhatsApp at any point; the team replies from a

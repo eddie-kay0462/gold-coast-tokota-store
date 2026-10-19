@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryControl
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductStockController;
 use App\Http\Controllers\Api\V1\ShippingQuoteController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
+use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use App\Http\Controllers\Api\V1\WorkshopSessionController;
 use App\Http\Controllers\Api\V1\WorkshopTypeController;
 use Illuminate\Support\Facades\Route;
@@ -138,6 +140,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         ->middleware('throttle:300,1')
         ->name('webhooks.paystack');
 
+    // WhatsApp Cloud API. GET is Meta's one-off ownership check; POST carries
+    // messages, delivery statuses and coexistence echoes, signed with the app
+    // secret. Same generous throttle as Paystack: Meta batches and retries.
+    Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])
+        ->middleware('throttle:60,1')
+        ->name('webhooks.whatsapp.verify');
+    Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
+        ->middleware('throttle:300,1')
+        ->name('webhooks.whatsapp.receive');
+
     // Booking system (Feature 7) — Workshop (capacity/waitlist) + DIY orders
     // (unlimited/queue-based). No auth required: guest bookings are supported,
     // same as guest checkout.
@@ -191,6 +203,34 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:inventory.adjust')->name('inventory.update');
             Route::get('/inventory/{inventoryItem}/movements', [AdminInventoryController::class, 'movements'])
                 ->middleware('capability:inventory.view')->name('inventory.movements');
+
+            // The WhatsApp inbox. Interns read and draft; Staff and up send.
+            Route::prefix('inbox')->name('inbox.')->group(function () {
+                Route::get('/threads', [AdminInboxController::class, 'threads'])
+                    ->middleware('capability:inbox.view')->name('threads.index');
+                Route::patch('/threads/{thread}', [AdminInboxController::class, 'update'])
+                    ->middleware('capability:inbox.reply')->name('threads.update');
+                Route::post('/threads/{thread}/read', [AdminInboxController::class, 'markRead'])
+                    ->middleware('capability:inbox.view')->name('threads.read');
+                Route::post('/threads/{thread}/messages', [AdminInboxController::class, 'send'])
+                    ->middleware('capability:inbox.reply')->name('threads.send');
+                Route::post('/threads/{thread}/drafts', [AdminInboxController::class, 'storeDraft'])
+                    ->middleware('capability:inbox.draft')->name('threads.drafts.store');
+
+                Route::get('/messages', [AdminInboxController::class, 'messages'])
+                    ->middleware('capability:inbox.view')->name('messages.index');
+                Route::post('/messages/{message}/send', [AdminInboxController::class, 'sendDraft'])
+                    ->middleware('capability:inbox.reply')->name('messages.send-draft');
+                Route::delete('/messages/{message}', [AdminInboxController::class, 'destroyDraft'])
+                    ->middleware('capability:inbox.draft')->name('messages.destroy');
+                Route::get('/media/{message}', [AdminInboxController::class, 'media'])
+                    ->middleware('capability:inbox.view')->name('media');
+
+                Route::get('/templates', [AdminInboxController::class, 'templates'])
+                    ->middleware('capability:inbox.view')->name('templates.index');
+                Route::post('/templates/sync', [AdminInboxController::class, 'syncTemplates'])
+                    ->middleware('capability:inbox.templates')->name('templates.sync');
+            });
 
             Route::get('/feedback', [AdminFeedbackController::class, 'index'])
                 ->middleware('capability:customers.view')->name('feedback.index');

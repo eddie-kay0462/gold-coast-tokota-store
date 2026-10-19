@@ -1,77 +1,240 @@
 <script setup lang="ts">
-import { PhArrowLeft, PhGear, PhPlugs } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhArrowsClockwise, PhGear, PhInfo, PhPlugs } from '@phosphor-icons/vue'
 import type { ChatMessage, ChatThread, MessageTemplate } from '~/types'
 
 /**
  * WhatsApp inbox, Figma node 29:8158.
  *
- * SIMULATED. Nothing here sends or receives a real message.
+ * Live on `/admin/inbox/*` (the WhatsApp Cloud API with coexistence: replies
+ * typed on the brand phone arrive here too). Three honest states, each said
+ * on screen:
  *
- * README Feature 6 scopes WhatsApp as a deep link only: `wa.me/<number>`,
- * no API integration. A two-way inbox needs the Business Cloud API, a verified
- * WABA, approved templates and a webhook receiver on the Laravel side, none of
- * which exist. So this is built against the real Cloud API's shape (message
- * direction, delivery receipts, the 24-hour session window, template approval
- * states) and served from fixtures, and says so on every screen. The
- * alternative (a convincing inbox with no disclosure) is how someone ends up
- * believing a customer was replied to when they were not.
+ *   live + connected   real conversations, replies are delivered
+ *   live, no number    real inbox, but the API has no Cloud API credentials,
+ *                      so replies are recorded and marked simulated
+ *   fixtures           sample conversations; nothing leaves the page
  *
- * The conversations themselves are real scenarios this business handles: a
- * size exchange inside the 7-day window, a sold-out Sip & Paint, a Lagos
- * wholesale enquiry, a DIY order with foot measurements, a MoMo confirmation.
+ * Freshness is polling, as the README specifies: the thread list every 15 s,
+ * the open thread every 5 s (only what is new), both paused while the tab is
+ * hidden.
  */
 useHead({ title: 'Inbox' })
 
-const { useAdminList } = useAdminApi()
-const { can } = useAuth()
+const { adminFetch } = useAdminApi()
+const { can, user } = useAuth()
 const { formatRelative } = useFormatters()
+const toast = useToast()
 
-const { items: threads } = useAdminList<ChatThread>('inbox-threads', '/admin/inbox/threads')
-const { items: allMessages } = useAdminList<ChatMessage>('inbox-messages', '/admin/inbox/messages')
-const { items: templates } = useAdminList<MessageTemplate>('inbox-templates', '/admin/inbox/templates')
+/** Shared with the layout, so the sidebar badge follows the inbox. */
+const unreadBadge = useState<number | null>('inbox-unread', () => null)
+
+const threads = ref<ChatThread[]>([])
+const templates = ref<MessageTemplate[]>([])
+const source = ref<'live' | 'fixture'>('fixture')
+const connected = ref(false)
+const loading = ref(true)
 
 const tab = ref<'conversations' | 'templates'>('conversations')
 const activeId = ref<string | null>(null)
 
-/** Locally appended sends, kept separate so fixtures stay immutable. */
-const localMessages = ref<ChatMessage[]>([])
-
-watchEffect(() => {
-  if (!activeId.value && threads.value.length) activeId.value = threads.value[0]!.id
-})
-
 const activeThread = computed(() => threads.value.find((t) => t.id === activeId.value) ?? null)
 
+async function loadThreads() {
+  const res = await adminFetch<ChatThread[]>('/admin/inbox/threads')
+  threads.value = res.data
+  source.value = res.source
+  connected.value = res.source === 'live' && Boolean(res.meta?.connected)
+  if (res.source === 'live') unreadBadge.value = Number(res.meta?.unreadTotal ?? 0)
+  if (!activeId.value && threads.value.length && import.meta.client && window.innerWidth >= 1024) {
+    selectThread(threads.value[0]!.id, false)
+  }
+}
+
+async function loadTemplates() {
+  templates.value = (await adminFetch<MessageTemplate[]>('/admin/inbox/templates')).data
+}
+
+onMounted(async () => {
+  try {
+    await Promise.all([loadThreads(), loadTemplates()])
+  } finally {
+    loading.value = false
+  }
+})
+
+usePolling(loadThreads, 15_000)
+
+// --- the open thread ------------------------------------------------------
+
+/** Messages per thread id, so switching back to a thread is instant. */
+const messagesByThread = ref<Record<string, ChatMessage[]>>({})
+const lastPolledAt = ref<Record<string, string>>({})
+
 const activeMessages = computed(() =>
-  [...allMessages.value, ...localMessages.value]
-    .filter((m) => m.threadId === activeId.value)
-    .sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()),
+  [...(messagesByThread.value[activeId.value ?? ''] ?? [])]
+    .sort((a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime() || Number(a.id) - Number(b.id)),
 )
 
-function send(body: string) {
-  if (!activeId.value) return
-  // Appended locally and flagged `simulated`. It goes nowhere.
-  localMessages.value.push({
-    id: `local-${Date.now()}`,
-    threadId: activeId.value,
-    direction: 'outbound',
-    kind: 'text',
-    body,
-    attachment: null,
-    status: 'sent',
-    simulated: true,
-    sentAt: new Date().toISOString(),
-  })
+function merge(threadId: string, incoming: ChatMessage[]) {
+  const byId = new Map((messagesByThread.value[threadId] ?? []).map((m) => [m.id, m]))
+  for (const m of incoming) byId.set(m.id, m)
+  messagesByThread.value = { ...messagesByThread.value, [threadId]: [...byId.values()] }
 }
+
+function remove(threadId: string, messageId: string) {
+  messagesByThread.value = {
+    ...messagesByThread.value,
+    [threadId]: (messagesByThread.value[threadId] ?? []).filter((m) => m.id !== messageId),
+  }
+}
+
+async function loadMessages(threadId: string) {
+  const known = messagesByThread.value[threadId]
+  const since = lastPolledAt.value[threadId]
+  const lastId = known?.length ? Math.max(...known.map((m) => Number(m.id) || 0)) : null
+  const startedAt = new Date().toISOString()
+
+  const query: Record<string, unknown> = { thread: threadId }
+  if (lastId) query.after = lastId
+  if (since) query.changed_since = since
+
+  let res = await adminFetch<ChatMessage[]>('/admin/inbox/messages', { query })
+  if (res.source === 'fixture') {
+    // Fixture mode reads every query key as a filter, so ask for the lot and
+    // pick this thread's messages out here.
+    res = await adminFetch<ChatMessage[]>('/admin/inbox/messages')
+    res = { ...res, data: res.data.filter((m) => m.threadId === threadId) }
+  }
+
+  merge(threadId, res.data)
+  lastPolledAt.value = { ...lastPolledAt.value, [threadId]: startedAt }
+}
+
+const messagePoll = usePolling(async () => {
+  if (activeId.value && tab.value === 'conversations') await loadMessages(activeId.value)
+}, 5_000)
 
 /** Below lg the two panes become one: list, then thread. */
 const showThreadOnMobile = ref(false)
-function selectThread(id: string) {
+
+async function selectThread(id: string, openOnMobile = true) {
   activeId.value = id
-  showThreadOnMobile.value = true
+  if (openOnMobile) showThreadOnMobile.value = true
+
+  await loadMessages(id).catch(() => toast.error('Couldn’t load this conversation', 'Try again in a moment.'))
+
+  const thread = threads.value.find((t) => t.id === id)
+  if (thread?.unreadCount && source.value === 'live') {
+    thread.unreadCount = 0
+    if (unreadBadge.value) unreadBadge.value = Math.max(0, unreadBadge.value - 1)
+    adminFetch(`/admin/inbox/threads/${id}/read`, { method: 'POST' }).catch(() => {})
+  }
 }
 
-const templateTone = { approved: 'success', pending: 'warning', rejected: 'danger' } as const
+// --- sending ----------------------------------------------------------------
+
+const sending = ref(false)
+
+function refusal(err: unknown, fallback: string): string {
+  const e = err as { statusCode?: number; data?: { message?: string; errors?: Record<string, string[]> } }
+  if (e.statusCode === 401 || e.statusCode === 419) return ''
+  return e.data?.message ?? Object.values(e.data?.errors ?? {})[0]?.[0] ?? fallback
+}
+
+async function post(path: string, body: Record<string, unknown>, okTitle?: string) {
+  if (!activeId.value) return
+  if (source.value !== 'live') {
+    toast.info('Sample conversation', 'The inbox is showing sample data, so nothing was sent.')
+    return
+  }
+  const threadId = activeId.value
+  sending.value = true
+  try {
+    const { data } = await adminFetch<ChatMessage>(path, { method: 'POST', body })
+    merge(threadId, [data])
+    if (okTitle) toast.success(okTitle)
+    messagePoll.now()
+    loadThreads().catch(() => {})
+    return data
+  } catch (err) {
+    const message = refusal(err, 'The message wasn’t sent. Try again in a moment.')
+    if (message) toast.error('Not sent', message)
+  } finally {
+    sending.value = false
+  }
+}
+
+function sendText(body: string) {
+  return can('inbox.reply')
+    ? post(`/admin/inbox/threads/${activeId.value}/messages`, { body })
+    : post(`/admin/inbox/threads/${activeId.value}/drafts`, { body }, 'Draft saved for a Staff member to send')
+}
+
+function sendTemplate(payload: { templateId: string; parameters: string[] }) {
+  return post(`/admin/inbox/threads/${activeId.value}/messages`, {
+    template_id: Number(payload.templateId),
+    parameters: payload.parameters,
+  })
+}
+
+function sendDraft(payload: { id: string; body: string }) {
+  return post(`/admin/inbox/messages/${payload.id}/send`, { body: payload.body })
+}
+
+async function discardDraft(id: string) {
+  if (!activeId.value) return
+  const threadId = activeId.value
+  try {
+    await adminFetch(`/admin/inbox/messages/${id}`, { method: 'DELETE' })
+    remove(threadId, id)
+  } catch (err) {
+    const message = refusal(err, 'The draft wasn’t discarded.')
+    if (message) toast.error('Not discarded', message)
+  }
+}
+
+async function updateThread(changes: Record<string, unknown>, okTitle: string) {
+  if (!activeThread.value || source.value !== 'live') {
+    toast.info('Sample conversation', 'The inbox is showing sample data, so nothing was saved.')
+    return
+  }
+  try {
+    const { data } = await adminFetch<ChatThread>(`/admin/inbox/threads/${activeThread.value.id}`, { method: 'PATCH', body: changes })
+    threads.value = threads.value.map((t) => (t.id === data.id ? data : t))
+    toast.success(okTitle)
+  } catch (err) {
+    const message = refusal(err, 'Nothing was saved. Try again in a moment.')
+    if (message) toast.error('Not saved', message)
+  }
+}
+
+const threadActions = {
+  archive: () => updateThread({ status: 'closed' }, 'Conversation archived'),
+  reopen: () => updateThread({ status: 'open' }, 'Conversation reopened'),
+  assignToMe: () => updateThread({ assigned_admin_id: user.value?.id }, 'Assigned to you'),
+  unassign: () => updateThread({ assigned_admin_id: null }, 'Unassigned'),
+  linkOrder: (reference: string | null) => updateThread({ linked_order_reference: reference }, reference ? `Linked to ${reference}` : 'Order unlinked'),
+  setTopic: (topic: ChatThread['topic']) => updateThread({ topic }, 'Topic updated'),
+}
+
+// --- templates ------------------------------------------------------------
+
+const syncing = ref(false)
+
+async function syncTemplates() {
+  syncing.value = true
+  try {
+    templates.value = (await adminFetch<MessageTemplate[]>('/admin/inbox/templates/sync', { method: 'POST' })).data
+    toast.success('Templates refreshed from WhatsApp')
+  } catch (err) {
+    const message = refusal(err, 'Couldn’t reach WhatsApp. Try again in a moment.')
+    if (message) toast.error('Not refreshed', message)
+  } finally {
+    syncing.value = false
+  }
+}
+
+const templateTone = { approved: 'success', pending: 'warning', rejected: 'danger', paused: 'warning', disabled: 'danger' } as const
 </script>
 
 <template>
@@ -87,16 +250,30 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
       </template>
     </UiPageHeader>
 
-    <!-- Honesty banner. Not dismissible: this is the page's most important fact. -->
-    <div class="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3">
+    <!-- Honesty banners. Not dismissible: whether a reply reaches the customer is the page's most important fact. -->
+    <div
+      v-if="!loading && source === 'fixture'"
+      class="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3"
+    >
       <PhPlugs :size="20" class="mt-px shrink-0 text-warning" />
       <div class="min-w-0">
-        <p class="text-ui font-medium text-warning">Simulated: the WhatsApp Business Cloud API is not connected</p>
+        <p class="text-ui font-medium text-warning">Sample conversations: the inbox API isn’t answering</p>
         <p class="mt-1 text-meta text-warning/90">
-          These conversations are sample data. Messages sent from here go nowhere. Wiring this up
-          needs a verified Business account, Cloud API credentials and a webhook receiver on the
-          API. The original scope covered the <code class="font-mono">wa.me</code> deep link
-          only, so this is additional work.
+          These are examples, and messages sent from here go nowhere. Once the API is reachable this
+          page shows the real WhatsApp inbox.
+        </p>
+      </div>
+    </div>
+    <div
+      v-else-if="!loading && !connected"
+      class="flex items-start gap-3 rounded-lg border border-info/30 bg-info-soft px-4 py-3"
+    >
+      <PhInfo :size="20" class="mt-px shrink-0 text-info" />
+      <div class="min-w-0">
+        <p class="text-ui font-medium text-info">The WhatsApp number isn’t connected yet</p>
+        <p class="mt-1 text-meta text-info/90">
+          The inbox works, but replies are recorded here and not delivered. They’re marked
+          “not delivered”. A Super Admin connects the brand number with Meta to switch this on.
         </p>
       </div>
     </div>
@@ -117,12 +294,17 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
 
     <!-- Conversations -->
     <div v-if="tab === 'conversations'" class="card flex min-h-[36rem] flex-1 overflow-hidden">
-      <!-- List: always visible from lg, otherwise only when no thread is open -->
       <div
         class="w-full shrink-0 border-border lg:block lg:w-[340px] lg:border-r"
         :class="showThreadOnMobile ? 'hidden' : 'block'"
       >
-        <InboxThreadList :threads="threads" :active-id="activeId" @select="selectThread" />
+        <p v-if="loading" class="p-6 text-center text-meta text-fg-faint">Loading conversations…</p>
+        <UiEmptyState
+          v-else-if="!threads.length"
+          title="No conversations yet"
+          description="When a customer messages the brand on WhatsApp, the chat appears here."
+        />
+        <InboxThreadList v-else :threads="threads" :active-id="activeId" @select="selectThread" />
       </div>
 
       <div class="min-w-0 flex-1 flex-col lg:flex" :class="showThreadOnMobile ? 'flex' : 'hidden'">
@@ -134,18 +316,47 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           <PhArrowLeft :size="16" />
           All conversations
         </button>
-        <InboxMessageThread :thread="activeThread" :messages="activeMessages" @send="send" />
+        <InboxMessageThread
+          :thread="activeThread"
+          :messages="activeMessages"
+          :templates="templates"
+          :sending="sending"
+          @send="sendText"
+          @send-template="sendTemplate"
+          @send-draft="sendDraft"
+          @discard-draft="discardDraft"
+          @archive="threadActions.archive"
+          @reopen="threadActions.reopen"
+          @assign-to-me="threadActions.assignToMe"
+          @unassign="threadActions.unassign"
+          @link-order="threadActions.linkOrder"
+          @set-topic="threadActions.setTopic"
+        />
       </div>
     </div>
 
     <!-- Templates -->
     <div v-else class="admin-stack">
-      <p class="text-ui text-fg-muted">
-        Outside the 24-hour reply window, WhatsApp only permits pre-approved templates. Each one
-        is reviewed by Meta before it can be used.
-      </p>
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <p class="max-w-prose text-ui text-fg-muted">
+          Outside the 24-hour reply window, WhatsApp only permits pre-approved templates. Each one
+          is written in Meta’s WhatsApp Manager and reviewed by Meta before it can be used.
+        </p>
+        <UiPermissionGate capability="inbox.templates" quiet>
+          <UiButton variant="secondary" size="sm" :loading="syncing" @click="syncTemplates">
+            <PhArrowsClockwise :size="16" />
+            Refresh from WhatsApp
+          </UiButton>
+        </UiPermissionGate>
+      </div>
 
-      <ul class="grid gap-4 lg:grid-cols-2">
+      <UiEmptyState
+        v-if="!templates.length"
+        title="No templates yet"
+        description="Templates are created in WhatsApp Manager. Once approved, refresh to bring them in."
+      />
+
+      <ul v-else class="grid gap-4 lg:grid-cols-2">
         <li v-for="t in templates" :key="t.id" class="card card-pad">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -154,7 +365,7 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
                 {{ t.category }} · {{ t.language }} · updated {{ formatRelative(t.updatedAt) }}
               </p>
             </div>
-            <UiBadge :tone="templateTone[t.status]" dot>{{ t.status }}</UiBadge>
+            <UiBadge :tone="templateTone[t.status as keyof typeof templateTone] ?? 'neutral'" dot>{{ t.status }}</UiBadge>
           </div>
 
           <p class="mt-3 rounded-lg bg-bg-sunken px-3 py-2.5 text-ui leading-relaxed text-fg">
@@ -170,10 +381,6 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           </p>
         </li>
       </ul>
-
-      <p v-if="!can('inbox.templates')" class="text-meta text-fg-faint">
-        Editing templates needs an Admin account.
-      </p>
     </div>
   </div>
 </template>
