@@ -3,7 +3,7 @@ import {
   PhFileText, PhImage, PhPaperPlaneTilt, PhDotsThreeVertical,
   PhCheck, PhChecks, PhClock, PhWarningCircle, PhLink, PhReceipt, PhCalendarPlus,
   PhHammer, PhArchive, PhArrowCounterClockwise, PhUserCircle, PhDeviceMobile, PhRobot,
-  PhTag, PhProhibit,
+  PhTag, PhProhibit, PhSidebarSimple,
 } from '@phosphor-icons/vue'
 import type { ChatMessage, ChatThread, MessageTemplate, ThreadTopic } from '~/types'
 
@@ -22,6 +22,8 @@ const props = defineProps<{
   messages: ChatMessage[]
   templates?: MessageTemplate[]
   sending?: boolean
+  /** Live API data: times are compared with the real clock, not the fixture one. */
+  live?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -32,9 +34,22 @@ const emit = defineEmits<{
   (e: 'archive' | 'reopen' | 'assign-to-me' | 'unassign'): void
   (e: 'link-order', reference: string | null): void
   (e: 'set-topic', topic: ThreadTopic): void
+  (e: 'toggle-panel'): void
 }>()
 
-const { formatDate, formatTime, now } = useFormatters()
+const { formatDate, formatTime, now: fixtureNow } = useFormatters()
+
+/**
+ * The 24-hour window is a live fact, so live threads use the real clock.
+ * `useFormatters().now` switches to the fixed fixture clock as soon as any
+ * screen anywhere has fallen back to fixtures (the activity feed still does),
+ * which would show a live window as open or closed against the wrong time.
+ */
+const wallClock = ref(new Date())
+let clockTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => { clockTimer = setInterval(() => { wallClock.value = new Date() }, 30_000) })
+onBeforeUnmount(() => { if (clockTimer) clearInterval(clockTimer) })
+const now = computed(() => (props.live ? wallClock.value : fixtureNow.value))
 const { can, user } = useAuth()
 
 const canReply = computed(() => can('inbox.reply'))
@@ -165,6 +180,15 @@ const windowWarning = computed(() => {
 // --- composer -------------------------------------------------------------
 
 const draft = ref('')
+const composer = ref<HTMLTextAreaElement | null>(null)
+
+/** Called by the context panel: adds a line to the reply, never sends it. */
+function insert(text: string) {
+  draft.value = draft.value.trim() ? `${draft.value.trimEnd()}\n${text}` : text
+  nextTick(() => composer.value?.focus())
+}
+
+defineExpose({ insert })
 
 watch(() => props.thread?.id, () => {
   draft.value = ''
@@ -241,6 +265,10 @@ const quickReplies = [
         <PhLink :size="13" />
         {{ thread.linkedOrderReference }}
       </NuxtLink>
+
+      <button type="button" class="toolbar-btn xl:hidden" aria-label="Customer, stock and events" @click="emit('toggle-panel')">
+        <PhSidebarSimple :size="18" />
+      </button>
 
       <UiDropdown v-if="canReply" label="Conversation actions">
         <template #trigger>
@@ -455,6 +483,7 @@ const quickReplies = [
 
       <form class="flex items-end gap-2" @submit.prevent="send">
         <textarea
+          ref="composer"
           v-model="draft" rows="1"
           :placeholder="canReply ? 'Write a message…' : 'Write a draft for a Staff member to send…'"
           aria-label="Message"

@@ -1,4 +1,4 @@
-import type { Timestamp } from './common'
+import type { Money, Timestamp } from './common'
 
 /**
  * WhatsApp inbox, served by `/admin/inbox/*` on the Laravel API (WhatsApp
@@ -98,4 +98,55 @@ export interface MessageTemplate {
   variables: string[]
   rejectionReason: string | null
   updatedAt: Timestamp
+}
+
+// --- context panel: `/admin/inbox/threads/{id}/context` and `/admin/inbox/lookup/*` ---
+
+export interface InboxContext {
+  contact: { name: string; phone: string; profileName: string | null; optedOut: boolean; firstContactAt: Timestamp }
+  customer: {
+    id: number; name: string; email: string; phone: string | null
+    preferredCurrency: 'GHS' | 'USD' | null; since: Timestamp
+  } | null
+  orders: {
+    reference: string; status: string; channel: 'web' | 'whatsapp'; total: Money; items: string[]
+    shipmentStatus: string | null; trackingReference: string | null; trackingUrl: string | null
+    placedAt: Timestamp; isLinked: boolean
+  }[]
+  bookings: {
+    id: number; type: 'workshop' | 'diy_order'; status: string; experience: string | null
+    date: string | null; slot: string | null; attendees: number | null; createdAt: Timestamp
+  }[]
+}
+
+export interface StockVariant {
+  inventoryItemId: number; size: string | null; colour: string | null; label: string
+  /** On the shelf minus held for orders awaiting payment: what can be sold now. */
+  sellable: number; onShelf: number; held: number; low: boolean
+}
+
+export interface StockLookupProduct {
+  id: number; name: string; slug: string; url: string; sku: string; isActive: boolean
+  image: string | null; price: Money; priceUsd: Money | null; compareAt: Money | null
+  sellableTotal: number; variants: StockVariant[]
+}
+
+export interface EventsLookup {
+  sessions: {
+    id: number; experience: string | null; duration: string | null; date: string; slot: string
+    capacity: number; remaining: number; waitlisted: number; locationNotes: string | null
+  }[]
+  byAppointment: { name: string; days: string | null; duration: string | null; capacity: number }[]
+  posts: { title: string; url: string; publishedAt: Timestamp }[]
+}
+
+export interface PolicyLine { label: string; text: string; section: string }
+
+export interface InfoLookup {
+  businessHours: string | null
+  delivery: PolicyLine[]
+  returns: PolicyLine[]
+  paymentMethods: string[]
+  turnaround: { label: string; estimate: string }[]
+  rates: { accra: Money; regions: { region: string; rate: Money }[]; internationalNote: string }
 }

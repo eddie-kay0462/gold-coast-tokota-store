@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerControl
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
+use App\Http\Controllers\Api\V1\Admin\InboxLookupController as AdminInboxLookupController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
@@ -216,6 +217,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     ->middleware('capability:inbox.reply')->name('threads.send');
                 Route::post('/threads/{thread}/drafts', [AdminInboxController::class, 'storeDraft'])
                     ->middleware('capability:inbox.draft')->name('threads.drafts.store');
+
+                // The context panel. Each lookup also needs the capability its
+                // data needs anywhere else in the admin: the panel is not a way
+                // round a permission.
+                Route::get('/threads/{thread}/context', [AdminInboxLookupController::class, 'context'])
+                    ->middleware('capability:inbox.view,customers.view')->name('threads.context');
+                Route::get('/lookup/stock', [AdminInboxLookupController::class, 'stock'])
+                    ->middleware('capability:inbox.view,inventory.view')->name('lookup.stock');
+                Route::get('/lookup/events', [AdminInboxLookupController::class, 'events'])
+                    ->middleware('capability:inbox.view,bookings.view')->name('lookup.events');
+                Route::get('/lookup/info', [AdminInboxLookupController::class, 'info'])
+                    ->middleware('capability:inbox.view')->name('lookup.info');
 
                 Route::get('/messages', [AdminInboxController::class, 'messages'])
                     ->middleware('capability:inbox.view')->name('messages.index');

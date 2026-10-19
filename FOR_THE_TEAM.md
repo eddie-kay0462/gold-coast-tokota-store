@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 19 October 2026 (WhatsApp phase 1: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 19 October 2026 (WhatsApp phase 2: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,58 @@ inert at their last step.
 
 ## Recent changes
 
-### 19 October 2026 (latest): WhatsApp phase 1 — the inbox is real
+### 19 October 2026 (latest): WhatsApp phase 2 — answer from the chat without leaving it
+
+The inbox has a third column: a **context panel**. From `xl` it sits beside
+the thread; on smaller screens it slides over from a button in the thread
+header. Its four tabs answer what customers ask most, without navigating
+away. Every row can be **inserted into the reply** as a short line in the
+§7 customer-service voice. Inserting never sends anything.
+
+| Tab | What it shows | API |
+|---|---|---|
+| **Customer** | The contact, their customer account if one has this number, their last 10 orders (with status, items, tracking, and "linked to this chat") and bookings. Guest orders and bookings are found by the phone on the address or the booking, matched like the inbox matches contacts, so "024 555 1234" counts and a number that only ends the same way doesn't | `GET /admin/inbox/threads/{id}/context` |
+| **Stock** | Search by name or SKU. Each product shows GHS and live-derived USD prices and its storefront link; each size and colour shows its **sellable** count (on the shelf minus held for orders awaiting payment, so a WhatsApp customer's 24-hour hold counts). Inactive products are flagged. Refreshes every 30 s while open | `GET /admin/inbox/lookup/stock` |
+| **Events** | Sessions in the next 60 days with places left and the waitlist count; the by-appointment experiences; the latest News & Events posts | `GET /admin/inbox/lookup/events` |
+| **Info** | Business hours, delivery times, returns and refunds, delivery rates, production times and payment methods | `GET /admin/inbox/lookup/info` |
+
+**Every tab needs the capability its data needs elsewhere** (`customers.view`,
+`inventory.view`, `bookings.view`), as well as `inbox.view`. The API enforces
+this, and the panel hides tabs the account can't use. The panel is not a way
+round a permission.
+
+**Policies are quoted word for word, from one place:
+`App\Support\PublishedPolicy`.** It transcribes §8, §13 and §21 (return
+window, refund days, size exchange, custom and sale items, handmade
+variation, unavailable-after-purchase, delivery bands, payment methods),
+building on the existing `ReturnPolicy` and `DeliveryEstimates` constants.
+Phase 4's quick replies will read from it too, so a WhatsApp answer can never
+quote a different window from the website.
+
+**Deviation from the plan:** stock lookup is its own endpoint, not a `q`
+filter on `/admin/inventory`. That endpoint returns inventory rows without
+prices, photos or storefront links, and the panel needs all three, grouped
+by product.
+
+**Fixed in passing:** the thread compared the 24-hour window with
+`useFormatters().now`. That switches to the fixed fixture clock once any
+screen falls back to fixtures (the dashboard's activity feed still does), so
+after visiting the dashboard, a live chat could show its window open or
+closed against the wrong time. Live threads now use the real clock. Inserting
+into a chat whose window has closed explains why, rather than doing nothing.
+
+**Tests:** 574 passing, on SQLite and Postgres 16. The 7 new cases in
+`WhatsAppContextPanelTest` cover:
+- guest orders found by a local-format phone, and a number that only shares
+  its last four digits left out;
+- a contact with no account;
+- sellable stock net of a WhatsApp hold, in GHS and USD;
+- inactive products flagged and sorted after active ones;
+- remaining places and the waitlist, with past sessions and drafts left out;
+- policy text checked word for word against the brand document;
+- guests refused.
+
+### 19 October 2026: WhatsApp phase 1 — the inbox is real
 
 `/inbox` no longer runs on fixtures. Backed by the WhatsApp Cloud API, it
 receives every message to the brand number, shows replies typed on the brand

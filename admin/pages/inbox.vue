@@ -39,6 +39,21 @@ const activeId = ref<string | null>(null)
 
 const activeThread = computed(() => threads.value.find((t) => t.id === activeId.value) ?? null)
 
+/** The context panel: a column from xl, a slide-over below it. */
+const panelOpen = ref(false)
+const threadPane = ref<{ insert: (text: string) => void } | null>(null)
+
+function insertIntoReply(text: string) {
+  const closesAt = activeThread.value?.sessionExpiresAt
+  if (source.value === 'live' && (!closesAt || new Date(closesAt).getTime() <= Date.now())) {
+    // The text box is replaced by the template picker outside the window.
+    toast.info('Only a template can be sent now', 'The 24-hour reply window for this chat has closed.')
+    return
+  }
+  threadPane.value?.insert(text)
+  panelOpen.value = false
+}
+
 async function loadThreads() {
   const res = await adminFetch<ChatThread[]>('/admin/inbox/threads')
   threads.value = res.data
@@ -317,7 +332,9 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           All conversations
         </button>
         <InboxMessageThread
+          ref="threadPane"
           :thread="activeThread"
+          :live="source === 'live'"
           :messages="activeMessages"
           :templates="templates"
           :sending="sending"
@@ -331,9 +348,32 @@ const templateTone = { approved: 'success', pending: 'warning', rejected: 'dange
           @unassign="threadActions.unassign"
           @link-order="threadActions.linkOrder"
           @set-topic="threadActions.setTopic"
+          @toggle-panel="panelOpen = !panelOpen"
         />
       </div>
+
+      <InboxContextPanel
+        v-if="activeThread"
+        class="hidden w-[320px] shrink-0 border-l border-border xl:flex"
+        :thread="activeThread" :live="source === 'live'"
+        @insert="insertIntoReply"
+      />
     </div>
+
+    <!-- Below xl the panel slides over the thread -->
+    <Transition
+      enter-active-class="transition duration-200" enter-from-class="translate-x-full opacity-0"
+      leave-active-class="transition duration-150" leave-to-class="translate-x-full opacity-0"
+    >
+      <div v-if="panelOpen && activeThread" class="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col border-l border-border bg-bg-elevated shadow-xl xl:hidden">
+        <InboxContextPanel
+          class="flex min-h-0 flex-1"
+          :thread="activeThread" :live="source === 'live'"
+          @insert="insertIntoReply" @close="panelOpen = false"
+        />
+      </div>
+    </Transition>
+    <div v-if="panelOpen && activeThread" class="fixed inset-0 z-30 bg-black/30 xl:hidden" aria-hidden="true" @click="panelOpen = false" />
 
     <!-- Templates -->
     <div v-else class="admin-stack">
