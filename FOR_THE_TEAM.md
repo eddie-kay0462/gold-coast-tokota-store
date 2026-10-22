@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 19 October 2026 (WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 22 October 2026 (WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,74 @@ inert at their last step.
 
 ## Recent changes
 
-### 19 October 2026 (latest): WhatsApp phase 4 — semi-automated messaging
+### 22 October 2026 (latest): WhatsApp checks before going live
+
+**Where it stands.** Phases 0–4 are merged into `dev` (PR #45) and `main`
+(PR #46). Production serves the new routes: from outside,
+`/webhooks/whatsapp` answers 403 and `/whatsapp-orders` 405, where they used
+to 404. **Whether the five 19 Oct migrations ran on production Neon can't be
+seen from outside.** Check with
+`docker compose -f docker-compose.prod.yml run --rm app php artisan migrate:status --database=pgsql_direct`
+on the box, or by opening the inbox in the production admin. They ran
+locally (batch 2).
+
+**Local walkthrough: 18 of 18 inbox calls pass.** No browser was available,
+so a script replayed the admin app's exact calls against the running local
+API (cookie sign-in, CSRF), on two conversations seeded through the real
+webhook processor. It covered:
+- thread list, unread counts and the cart-code flag;
+- opening a chat and marking it read;
+- the four context-panel lookups;
+- quick-reply filling;
+- a reply inside the window, and the refusal outside it;
+- automation settings;
+- the order builder and the delivery quote;
+- a real **Paystack test** order;
+- a resent link.
+
+The queued sends then went `queued` → `sent` through the logging client, and
+the order held its pair as a `whatsapp`-channel hold for 24 hours. Screens
+still to be clicked through by a person.
+
+**Fixed: the order builder had no delivery pin.** An Accra address in the
+builder therefore always took the flat Ghana rate, and Yango (which needs
+coordinates) couldn't be booked for it. Customers share their location on
+WhatsApp, and the inbox already stores its latitude and longitude, so:
+- the builder now pre-fills the pin from the newest location shared in the
+  chat (`prefill.location`), says where it came from, and lets staff clear
+  it;
+- with no shared location, it says how to get one.
+
+**Distance pricing still needs the Accra polygon** (checklist item "Confirm
+the Accra delivery area"). Until one is uploaded, every Ghana address takes
+the regional rate, pin or not. A test proves an order with a shared pin
+lands in the Accra zone once the polygon exists.
+
+**Paystack link lifetime: being measured.** Two test links were made at
+11:20 UTC on 22 Oct (`GCT-HHA4AXUTFLHH` and `-2`). Paystack's verify API
+reports both as `abandoned`, its word for unpaid. Paystack blocks scripted
+requests to checkout pages, so a person opens both links in a browser after
+11:00 UTC on 23 Oct. If they no longer open, a 24-hour hold outlives its
+link, and Resend link (or Paystack's Payment Requests) is the answer.
+
+**Rehearsal guide: `docs/deploy/whatsapp-rehearsal.md`.** It runs against
+the local API through a tunnel, so test chats never reach production. It has
+two rounds:
+- **A, Meta's free test number:** inbound messages, ticks, replies, the
+  window, templates, the Pay button and STOP.
+- **B, a spare SIM in the WhatsApp Business app with coexistence:** phone
+  replies, history import and contact names. The test number is API-only, so
+  it can never produce coexistence events. Round B is the only way to confirm
+  those payload shapes before the brand number.
+
+To support it, `WHATSAPP_LOG_PAYLOADS=true` (off by default; never in
+production) records each verified raw webhook body to
+`storage/logs/whatsapp-payloads.log`, kept for 7 days. The guide has a table
+of every field path the processor reads, to check against those bodies.
+
+**Tests:** 611, on SQLite and Postgres 16.
+
+### 19 October 2026: WhatsApp phase 4 — semi-automated messaging
 
 This completes the WhatsApp plan (phases 0–4). What's left for it is in
 "What is left to do → WhatsApp" below and in decision 49.
@@ -4083,17 +4150,20 @@ API, per the folder structure in `README.md`.
    Meta app, the official number confirmed (§12) and connected with
    coexistence, the five templates approved, and a per-message budget. Then
    set the six `WHATSAPP_*` variables and the webhook (`docs/deploy/contabo.md`).
-2. **Rehearse on Meta's test number first.** The coexistence payloads
-   (`smb_message_echoes`, `history`, `smb_app_state_sync`) were written from
-   partner documentation. Confirm the field names against real deliveries,
-   along with delivery ticks, a template, the Pay button and a phone-app reply
-   echoing into the inbox.
+2. **Run the rehearsal in `docs/deploy/whatsapp-rehearsal.md`.** Round A on
+   Meta's test number, round B on a spare Business-app SIM (the only way to
+   confirm the coexistence payloads). Turn on `WHATSAPP_LOG_PAYLOADS` locally
+   while doing it.
 3. **Click through the inbox in a browser** against a running API. Every
-   endpoint is tested and the admin builds, but nobody has used `/inbox`, the
-   context panel, the order builder or the two new tabs against live data yet.
-4. **Paystack link lifetime.** Paystack documents none. Resend link covers a
-   stale one; if links turn out to die well inside the hold, consider
-   Paystack's Payment Requests API inside `PaystackService`.
+   call the screens make passed a scripted walkthrough on 22 Oct, but the
+   screens themselves still need a person: `/inbox`, the context panel, the
+   order builder and the two new tabs. Local data from that walkthrough (Ama
+   and Kofi) is there to click through.
+4. **Paystack link lifetime.** Open the two test links from the 22 Oct entry
+   after 11:00 UTC on 23 Oct. If they've died inside the 24-hour hold,
+   consider Paystack's Payment Requests API inside `PaystackService`.
+4b. **Production migrations.** Confirm the five 19 Oct migrations ran on
+   Neon (`migrate:status` on the box).
 5. **Not built, by decision:** AI-drafted replies, and product slots in quick
    replies (see the phase 4 entry).
 

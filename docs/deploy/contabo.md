@@ -183,6 +183,8 @@ WHATSAPP_WABA_ID=
 WHATSAPP_ACCESS_TOKEN=
 WHATSAPP_APP_SECRET=
 WHATSAPP_VERIFY_TOKEN=
+# Rehearsal only (docs/deploy/whatsapp-rehearsal.md). Never on in production.
+WHATSAPP_LOG_PAYLOADS=false
 
 # Couriers stay off until the business accounts exist (see .env.example for
 # the full list of SHIPPING_*, YANGO_* and DHL_* settings)

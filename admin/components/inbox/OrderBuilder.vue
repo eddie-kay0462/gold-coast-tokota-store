@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhCopy, PhMinus, PhPlus, PhTrash, PhWarningCircle, PhCheckCircle } from '@phosphor-icons/vue'
+import { PhCopy, PhMapPin, PhMinus, PhPlus, PhTrash, PhWarningCircle, PhCheckCircle } from '@phosphor-icons/vue'
 import type { ChatThread, OrderBuilderData, OrderLineDraft, PlacedWhatsAppOrder, ShippingQuoteOption } from '~/types'
 import { formatMoney } from '~/utils/currency'
 
@@ -29,6 +29,11 @@ const loading = ref(false)
 const lines = ref<OrderLineDraft[]>([])
 const currency = ref<'GHS' | 'USD'>('GHS')
 const address = reactive({ full_name: '', email: '', phone: '', line1: '', city: '', region: '', postcode: '', country: 'GH' })
+/**
+ * The delivery pin. Accra is priced by distance from it and Yango needs it,
+ * so a location the customer shared in the chat is used when there is one.
+ */
+const pin = ref<{ lat: number; lng: number; label: string | null } | null>(null)
 
 const quote = ref<{ quoteId: string; options: ShippingQuoteOption[] } | null>(null)
 const optionId = ref<string | null>(null)
@@ -50,6 +55,7 @@ async function load() {
       full_name: p.fullName ?? '', email: p.email ?? '', phone: p.phone ?? '',
       line1: p.line1 ?? '', city: p.city ?? '', region: p.region ?? '', postcode: p.postcode ?? '', country: p.country || 'GH',
     })
+    pin.value = p.location ? { lat: p.location.lat, lng: p.location.lng, label: p.location.label } : null
     currency.value = data.value.currency
     lines.value = (data.value.draft?.lines ?? []).map((l) => ({ ...l, quantity: Math.min(l.quantity, Math.max(l.sellable, 1)) }))
     mergeExtra()
@@ -73,7 +79,7 @@ watch(open, (isOpen) => { if (isOpen) load() })
 watch(() => props.extraLines.length, (n) => { if (n && open.value && data.value) mergeExtra() })
 
 // Anything that changes the price makes the old delivery quote stale.
-watch([lines, currency, () => address.country, () => address.region, () => address.city, () => address.line1], () => {
+watch([lines, currency, pin, () => address.country, () => address.region, () => address.city, () => address.line1], () => {
   quote.value = null
   optionId.value = null
 }, { deep: true })
@@ -104,7 +110,13 @@ function body() {
   return {
     items: items.value,
     currency: currency.value,
-    shipping_address: { ...address, country: address.country.toUpperCase(), region: address.region || null, postcode: address.postcode || null },
+    shipping_address: {
+      ...address,
+      country: address.country.toUpperCase(),
+      region: address.region || null,
+      postcode: address.postcode || null,
+      ...(pin.value && address.country.toUpperCase() === 'GH' ? { lat: pin.value.lat, lng: pin.value.lng } : {}),
+    },
   }
 }
 
@@ -251,6 +263,17 @@ const canPlace = computed(() => lines.value.length && !lineProblems.value && con
           <UiField v-model="address.country" label="Country code" hint="GH for Ghana; GB, US, NG…" />
           <UiField v-model="address.postcode" label="Postcode (optional)" />
         </div>
+        <p v-if="pin" class="mt-3 flex items-start gap-2 rounded-lg bg-bg-sunken px-3 py-2 text-meta text-fg-muted">
+          <PhMapPin :size="15" class="mt-px shrink-0 text-accent" />
+          <span class="min-w-0 flex-1">
+            Delivery is priced from the location {{ thread?.contactName ?? 'the customer' }} shared
+            <template v-if="pin.label">({{ pin.label }})</template>.
+          </span>
+          <button type="button" class="shrink-0 text-fg-faint hover:text-fg-strong hover:underline" @click="pin = null">Don’t use it</button>
+        </p>
+        <p v-else-if="address.country.toUpperCase() === 'GH'" class="mt-3 text-meta text-fg-faint">
+          No map pin, so Accra addresses get the flat regional rate. Ask the customer to share their location in WhatsApp for distance pricing.
+        </p>
       </section>
 
       <!-- Delivery -->

@@ -11,6 +11,7 @@ use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Shipment;
+use App\Models\ShippingSetting;
 use App\Models\SiteSetting;
 use App\Models\StockHold;
 use App\Models\WhatsAppConversation;
@@ -193,6 +194,58 @@ class WhatsAppOrderTest extends TestCase
             ->assertJsonPath('data.prefill.full_name', 'Ama Serwaa')
             ->assertJsonPath('data.prefill.email', 'ama@example.com')
             ->assertJsonPath('data.prefill.line1', '4 Osu Avenue');
+    }
+
+    public function test_a_location_the_customer_shared_becomes_the_delivery_pin(): void
+    {
+        $this->inbound('Hello');
+        $body = json_encode([
+            'object' => 'whatsapp_business_account',
+            'entry' => [['id' => 'WABA', 'changes' => [['field' => 'messages', 'value' => [
+                'metadata' => ['phone_number_id' => 'PNID'],
+                'contacts' => [['profile' => ['name' => 'Ama'], 'wa_id' => self::CUSTOMER]],
+                'messages' => [[
+                    'from' => self::CUSTOMER, 'id' => 'wamid.LOC', 'timestamp' => (string) now()->timestamp, 'type' => 'location',
+                    'location' => ['latitude' => 5.6372, 'longitude' => -0.1665, 'name' => 'A&C Mall', 'address' => 'East Legon, Accra'],
+                ]],
+            ]]]]],
+        ]);
+        $this->call('POST', '/api/v1/webhooks/whatsapp', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_HUB_SIGNATURE_256' => 'sha256='.hash_hmac('sha256', $body, self::APP_SECRET),
+        ], $body)->assertOk();
+
+        $this->actingAs($this->staff(), 'admin')
+            ->getJson("/api/v1/admin/inbox/threads/{$this->thread()->id}/order-builder")
+            ->assertOk()
+            ->assertJsonPath('data.prefill.location.lat', 5.6372)
+            ->assertJsonPath('data.prefill.location.lng', -0.1665)
+            ->assertJsonPath('data.prefill.location.label', 'A&C Mall, East Legon, Accra');
+    }
+
+    public function test_an_order_placed_with_the_shared_pin_is_priced_in_the_accra_zone(): void
+    {
+        ShippingSetting::current()->update(['accra_polygon' => [
+            'type' => 'Polygon',
+            'coordinates' => [[[-0.30, 5.50], [-0.10, 5.50], [-0.10, 5.70], [-0.30, 5.70], [-0.30, 5.50]]],
+        ]]);
+        $item = $this->stocked();
+        $this->inbound('Hello');
+
+        $this->placeOrder($item, overrides: ['shipping_address' => [...self::ADDRESS, 'lat' => 5.6372, 'lng' => -0.1665]])
+            ->assertCreated();
+
+        $this->assertSame('accra', Order::query()->sole()->shipping_zone->value);
+    }
+
+    public function test_with_no_shared_location_there_is_no_pin(): void
+    {
+        $this->inbound('Hello');
+
+        $this->actingAs($this->staff(), 'admin')
+            ->getJson("/api/v1/admin/inbox/threads/{$this->thread()->id}/order-builder")
+            ->assertOk()
+            ->assertJsonPath('data.prefill.location', null);
     }
 
     // --- placing the order ------------------------------------------------

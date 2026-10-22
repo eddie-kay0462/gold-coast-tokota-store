@@ -13,7 +13,9 @@ use App\Services\WhatsApp\WhatsAppClient;
 use App\Support\AdminCapability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Psr\Log\LoggerInterface;
 use Tests\TestCase;
 
 class WhatsAppInboxTest extends TestCase
@@ -145,6 +147,21 @@ class WhatsAppInboxTest extends TestCase
         config(['whatsapp.app_secret' => null]);
 
         $this->deliver($this->inbound('Hello'), signature: 'sha256='.hash_hmac('sha256', '{}', ''))->assertUnauthorized();
+    }
+
+    public function test_raw_bodies_are_recorded_only_when_payload_logging_is_on(): void
+    {
+        $channel = \Mockery::spy(LoggerInterface::class);
+        Log::shouldReceive('channel')->with('whatsapp_payloads')->andReturn($channel);
+
+        $this->deliver($this->inbound('Hello', 'wamid.off'));
+        $channel->shouldNotHaveReceived('info');
+
+        config(['whatsapp.log_payloads' => true]);
+        $payload = $this->inbound('Hello again', 'wamid.on');
+        $this->deliver($payload);
+
+        $channel->shouldHaveReceived('info')->once()->with('webhook', ['body' => json_encode($payload)]);
     }
 
     // --- inbound ------------------------------------------------------------

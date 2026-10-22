@@ -62,6 +62,11 @@ class WhatsAppWebhookController extends Controller
         }
 
         Cache::forever(self::LAST_RECEIVED_KEY, now()->toIso8601String());
+
+        if (config('whatsapp.log_payloads')) {
+            // The raw body, so field names and nesting are exactly Meta's.
+            Log::channel('whatsapp_payloads')->info('webhook', ['body' => $request->getContent()]);
+        }
         ProcessWhatsAppWebhook::dispatch($payload);
 
         return response('OK', 200);
