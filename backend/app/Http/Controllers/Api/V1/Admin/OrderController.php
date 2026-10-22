@@ -27,6 +27,10 @@ class OrderController extends Controller
                 $request->filled('status'),
                 fn ($query) => $query->where('status', $request->string('status')),
             )
+            ->when(
+                in_array($request->query('channel'), ['web', 'whatsapp'], true),
+                fn ($query) => $query->where('channel', $request->query('channel')),
+            )
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.mb_strtolower(trim((string) $request->string('q'))).'%';
 

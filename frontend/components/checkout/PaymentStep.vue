@@ -42,6 +42,9 @@ const api = useApi()
  * drawer's, the fallback for anyone who would rather order by message, or
  * whose payment cannot go through.
  */
+/** The cart itself, saved under a code the team can open in the inbox. */
+const whatsappOrderDraft = computed(() => ({ items: cart.items.map(cartLine), currency: props.currency }))
+
 const whatsappOrderMessage = computed(() =>
   whatsappMessage.cart(
     cart.items.map((item) => {
@@ -165,7 +168,7 @@ async function placeOrder() {
       <p class="w-full text-caption text-muted">
         Prefer to order the way you always have?
       </p>
-      <CommonWhatsAppLink source="checkout" full :message="whatsappOrderMessage">
+      <CommonWhatsAppLink source="checkout" full :message="whatsappOrderMessage" :order-draft="whatsappOrderDraft">
         Continue on WhatsApp
       </CommonWhatsAppLink>
     </div>

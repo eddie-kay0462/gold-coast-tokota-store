@@ -131,3 +131,13 @@ export const whatsappMessage = {
   discountCode: (code?: string) =>
     `${opening} I have a discount code${code ? ` (${code})` : ''}. Could you apply it to my order?`,
 } as const
+
+/**
+ * A cart message with its "Order on WhatsApp" code appended. The code is how
+ * the team finds the cart the customer came with (`POST /whatsapp-orders`),
+ * so it goes last, on its own line, where it survives a customer editing the
+ * message above it.
+ */
+export function withOrderCode(message: string, code: string): string {
+  return `${message.trimEnd()}\nOrder code: ${code}`
+}

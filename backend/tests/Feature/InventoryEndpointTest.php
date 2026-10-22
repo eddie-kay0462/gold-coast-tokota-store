@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\InventoryItem;
+use App\Models\InventoryMovement;
+use App\Models\Order;
 use App\Models\Product;
+use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -262,5 +265,61 @@ class InventoryEndpointTest extends TestCase
         $this->actingAs($admin, 'admin')
             ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => -1])
             ->assertUnprocessable();
+    }
+
+    public function test_a_recount_is_logged_with_who_made_it_and_why(): void
+    {
+        $staff = AdminUser::factory()->create(['role' => 'staff']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 10]);
+
+        $this->actingAs($staff, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => 7, 'note' => 'Three pairs damaged'])
+            ->assertOk();
+
+        $movement = InventoryMovement::query()->sole();
+        $this->assertSame('adjustment', $movement->reason);
+        $this->assertSame(-3, $movement->delta_available);
+        $this->assertSame(7, $movement->quantity_available_after);
+        $this->assertSame($staff->id, $movement->admin_user_id);
+        $this->assertSame('Three pairs damaged', $movement->note);
+    }
+
+    public function test_a_threshold_change_alone_is_not_a_stock_movement(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $item = InventoryItem::factory()->create(['quantity_available' => 10]);
+
+        $this->actingAs($admin, 'admin')
+            ->patchJson("/api/v1/admin/inventory/{$item->id}", ['low_stock_threshold' => 2])
+            ->assertOk();
+
+        $this->assertSame(0, InventoryMovement::query()->count());
+    }
+
+    public function test_an_intern_can_read_a_variants_history_newest_first(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'admin']);
+        $intern = AdminUser::factory()->create(['role' => 'intern', 'access_expires_at' => now()->addMonth()]);
+        $item = InventoryItem::factory()->create(['quantity_available' => 10]);
+        $order = Order::factory()->create(['channel' => 'whatsapp']);
+
+        $this->actingAs($admin, 'admin')->patchJson("/api/v1/admin/inventory/{$item->id}", ['quantity_available' => 12]);
+        app(InventoryReservationService::class)->reserve($item, 2, now()->addDay(), $order);
+
+        $this->actingAs($intern, 'admin')
+            ->getJson("/api/v1/admin/inventory/{$item->id}/movements")
+            ->assertOk()
+            ->assertJsonPath('data.0.reason', 'hold')
+            ->assertJsonPath('data.0.channel', 'whatsapp')
+            ->assertJsonPath('data.0.order_reference', $order->reference)
+            ->assertJsonPath('data.1.reason', 'adjustment')
+            ->assertJsonPath('data.1.admin_name', $admin->name);
+    }
+
+    public function test_history_is_closed_to_guests(): void
+    {
+        $item = InventoryItem::factory()->create();
+
+        $this->getJson("/api/v1/admin/inventory/{$item->id}/movements")->assertUnauthorized();
     }
 }

@@ -68,6 +68,24 @@ export interface InventoryItem {
   updatedAt: Timestamp
 }
 
+/** One line of a variant's stock history, `GET /admin/inventory/{id}/movements`. */
+export type InventoryMovementReason = 'hold' | 'hold_released' | 'hold_expired' | 'sale' | 'adjustment'
+
+export interface InventoryMovement {
+  id: number
+  inventoryItemId: number
+  reason: InventoryMovementReason
+  deltaAvailable: number
+  deltaReserved: number
+  quantityAvailableAfter: number
+  quantityReservedAfter: number
+  channel: 'web' | 'whatsapp' | null
+  orderReference: string | null
+  adminName: string | null
+  note: string | null
+  createdAt: Timestamp
+}
+
 export interface FxRate {
   baseCurrency: 'GHS'
   quoteCurrency: 'USD'

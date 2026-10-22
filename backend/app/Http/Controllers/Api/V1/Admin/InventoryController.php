@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateInventoryItemRequest;
 use App\Http\Resources\InventoryItemResource;
+use App\Http\Resources\InventoryMovementResource;
 use App\Models\InventoryItem;
+use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +19,8 @@ use Illuminate\Validation\ValidationException;
  */
 class InventoryController extends Controller
 {
+    public function __construct(private readonly InventoryReservationService $reservations) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $items = InventoryItem::query()
@@ -62,23 +66,44 @@ class InventoryController extends Controller
     public function update(UpdateInventoryItemRequest $request, InventoryItem $inventoryItem): InventoryItemResource
     {
         $data = $request->validated();
+        $note = $data['note'] ?? null;
+        unset($data['note']);
+        $adminId = $request->user('admin')?->id;
 
-        $item = DB::transaction(function () use ($data, $inventoryItem) {
+        $item = DB::transaction(function () use ($data, $inventoryItem, $note, $adminId) {
             $locked = InventoryItem::query()->lockForUpdate()->findOrFail($inventoryItem->id);
 
             // A count below what pending checkouts already hold would let a
             // paid order find nothing on the shelf.
             if (isset($data['quantity_available']) && $data['quantity_available'] < $locked->quantity_reserved) {
                 throw ValidationException::withMessages([
-                    'quantity_available' => "{$locked->quantity_reserved} of these are held by checkouts in progress, so the count cannot go below that.",
+                    'quantity_available' => "{$locked->quantity_reserved} of these are held for orders awaiting payment, so the count cannot go below that.",
                 ]);
             }
 
+            $previousAvailable = $locked->quantity_available;
             $locked->update($data);
+            $this->reservations->recordAdjustment($locked, $previousAvailable, $adminId, $note);
 
             return $locked;
         });
 
         return new InventoryItemResource($item->load('product:id,name,sku'));
+    }
+
+    /**
+     * One variant's stock history, newest first: holds, releases, expiries,
+     * sales and recounts, each with who or what caused it.
+     */
+    public function movements(Request $request, InventoryItem $inventoryItem): AnonymousResourceCollection
+    {
+        $movements = $inventoryItem->movements()
+            ->with(['order:id,reference,channel', 'adminUser:id,name'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(max(1, min($request->integer('per_page', 50), 200)))
+            ->withQueryString();
+
+        return InventoryMovementResource::collection($movements);
     }
 }

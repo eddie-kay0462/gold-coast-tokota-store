@@ -6,6 +6,9 @@ use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryControl
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\Api\V1\Admin\InboxAutomationController as AdminInboxAutomationController;
+use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
+use App\Http\Controllers\Api\V1\Admin\InboxLookupController as AdminInboxLookupController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\MediaController as AdminMediaController;
 use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
@@ -20,6 +23,7 @@ use App\Http\Controllers\Api\V1\Admin\ShippingSettingController as AdminShipping
 use App\Http\Controllers\Api\V1\Admin\ShippingZoneRateController as AdminShippingZoneRateController;
 use App\Http\Controllers\Api\V1\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Api\V1\Admin\TeamController as AdminTeamController;
+use App\Http\Controllers\Api\V1\Admin\WhatsAppOrderController as AdminWhatsAppOrderController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopSessionController as AdminWorkshopSessionController;
 use App\Http\Controllers\Api\V1\Admin\WorkshopTypeController as AdminWorkshopTypeController;
 use App\Http\Controllers\Api\V1\AdminAuthController;
@@ -40,6 +44,8 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProductStockController;
 use App\Http\Controllers\Api\V1\ShippingQuoteController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
+use App\Http\Controllers\Api\V1\WhatsAppOrderDraftController;
+use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use App\Http\Controllers\Api\V1\WorkshopSessionController;
 use App\Http\Controllers\Api\V1\WorkshopTypeController;
 use Illuminate\Support\Facades\Route;
@@ -117,6 +123,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('/checkout/session', [CheckoutController::class, 'store'])->name('checkout.session');
     });
 
+    // "Order on WhatsApp": saves the cart under a short code for the chat.
+    // Holds no stock (see WhatsAppOrderDraftController), so throttled like
+    // feedback rather than like checkout.
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/whatsapp-orders', [WhatsAppOrderDraftController::class, 'store'])->name('whatsapp-orders.store');
+    });
+
     // Delivery quotes, asked for at checkout's delivery step. Throttled on
     // their own: each one can be a live call to a courier's API, which is
     // metered, and nothing is reserved so the checkout throttle does not
@@ -137,6 +150,16 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('/webhooks/paystack', PaystackWebhookController::class)
         ->middleware('throttle:300,1')
         ->name('webhooks.paystack');
+
+    // WhatsApp Cloud API. GET is Meta's one-off ownership check; POST carries
+    // messages, delivery statuses and coexistence echoes, signed with the app
+    // secret. Same generous throttle as Paystack: Meta batches and retries.
+    Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])
+        ->middleware('throttle:60,1')
+        ->name('webhooks.whatsapp.verify');
+    Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'receive'])
+        ->middleware('throttle:300,1')
+        ->name('webhooks.whatsapp.receive');
 
     // Booking system (Feature 7) — Workshop (capacity/waitlist) + DIY orders
     // (unlimited/queue-based). No auth required: guest bookings are supported,
@@ -189,6 +212,77 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:inventory.view')->name('inventory.index');
             Route::patch('/inventory/{inventoryItem}', [AdminInventoryController::class, 'update'])
                 ->middleware('capability:inventory.adjust')->name('inventory.update');
+            Route::get('/inventory/{inventoryItem}/movements', [AdminInventoryController::class, 'movements'])
+                ->middleware('capability:inventory.view')->name('inventory.movements');
+
+            // The WhatsApp inbox. Interns read and draft; Staff and up send.
+            Route::prefix('inbox')->name('inbox.')->group(function () {
+                Route::get('/threads', [AdminInboxController::class, 'threads'])
+                    ->middleware('capability:inbox.view')->name('threads.index');
+                Route::patch('/threads/{thread}', [AdminInboxController::class, 'update'])
+                    ->middleware('capability:inbox.reply')->name('threads.update');
+                Route::post('/threads/{thread}/read', [AdminInboxController::class, 'markRead'])
+                    ->middleware('capability:inbox.view')->name('threads.read');
+                Route::post('/threads/{thread}/messages', [AdminInboxController::class, 'send'])
+                    ->middleware('capability:inbox.reply')->name('threads.send');
+                Route::post('/threads/{thread}/drafts', [AdminInboxController::class, 'storeDraft'])
+                    ->middleware('capability:inbox.draft')->name('threads.drafts.store');
+
+                // The context panel. Each lookup also needs the capability its
+                // data needs anywhere else in the admin: the panel is not a way
+                // round a permission.
+                Route::get('/threads/{thread}/context', [AdminInboxLookupController::class, 'context'])
+                    ->middleware('capability:inbox.view,customers.view')->name('threads.context');
+                Route::get('/lookup/stock', [AdminInboxLookupController::class, 'stock'])
+                    ->middleware('capability:inbox.view,inventory.view')->name('lookup.stock');
+                Route::get('/lookup/events', [AdminInboxLookupController::class, 'events'])
+                    ->middleware('capability:inbox.view,bookings.view')->name('lookup.events');
+                Route::get('/lookup/info', [AdminInboxLookupController::class, 'info'])
+                    ->middleware('capability:inbox.view')->name('lookup.info');
+
+                // Order on WhatsApp. Building an order needs orders.create;
+                // sending its payment link into the chat needs inbox.reply too.
+                Route::get('/threads/{thread}/order-builder', [AdminWhatsAppOrderController::class, 'builder'])
+                    ->middleware('capability:inbox.view,orders.create')->name('orders.builder');
+                Route::post('/threads/{thread}/orders', [AdminWhatsAppOrderController::class, 'store'])
+                    ->middleware('capability:inbox.reply,orders.create')->name('orders.store');
+                Route::post('/orders/{order:reference}/resend-link', [AdminWhatsAppOrderController::class, 'resendLink'])
+                    ->middleware('capability:inbox.reply,orders.create')->name('orders.resend-link');
+                Route::post('/orders/{order:reference}/cancel', [AdminWhatsAppOrderController::class, 'cancel'])
+                    ->middleware('capability:orders.create')->name('orders.cancel');
+
+                Route::get('/messages', [AdminInboxController::class, 'messages'])
+                    ->middleware('capability:inbox.view')->name('messages.index');
+                Route::post('/messages/{message}/send', [AdminInboxController::class, 'sendDraft'])
+                    ->middleware('capability:inbox.reply')->name('messages.send-draft');
+                Route::delete('/messages/{message}', [AdminInboxController::class, 'destroyDraft'])
+                    ->middleware('capability:inbox.draft')->name('messages.destroy');
+                Route::get('/media/{message}', [AdminInboxController::class, 'media'])
+                    ->middleware('capability:inbox.view')->name('media');
+
+                // Semi-automation. Everyone at the inbox can use quick replies;
+                // writing them is template work, and the automatic replies are
+                // an Admin's to switch on.
+                Route::get('/automation', [AdminInboxAutomationController::class, 'show'])
+                    ->middleware('capability:inbox.view')->name('automation.show');
+                Route::put('/automation', [AdminInboxAutomationController::class, 'update'])
+                    ->middleware('capability:inbox.automation')->name('automation.update');
+                Route::get('/quick-replies', [AdminInboxAutomationController::class, 'quickReplies'])
+                    ->middleware('capability:inbox.view')->name('quick-replies.index');
+                Route::post('/quick-replies', [AdminInboxAutomationController::class, 'storeQuickReply'])
+                    ->middleware('capability:inbox.templates')->name('quick-replies.store');
+                Route::put('/quick-replies/{quickReply}', [AdminInboxAutomationController::class, 'updateQuickReply'])
+                    ->middleware('capability:inbox.templates')->name('quick-replies.update');
+                Route::delete('/quick-replies/{quickReply}', [AdminInboxAutomationController::class, 'destroyQuickReply'])
+                    ->middleware('capability:inbox.templates')->name('quick-replies.destroy');
+                Route::post('/quick-replies/{quickReply}/render', [AdminInboxAutomationController::class, 'render'])
+                    ->middleware('capability:inbox.view')->name('quick-replies.render');
+
+                Route::get('/templates', [AdminInboxController::class, 'templates'])
+                    ->middleware('capability:inbox.view')->name('templates.index');
+                Route::post('/templates/sync', [AdminInboxController::class, 'syncTemplates'])
+                    ->middleware('capability:inbox.templates')->name('templates.sync');
+            });
 
             Route::get('/feedback', [AdminFeedbackController::class, 'index'])
                 ->middleware('capability:customers.view')->name('feedback.index');

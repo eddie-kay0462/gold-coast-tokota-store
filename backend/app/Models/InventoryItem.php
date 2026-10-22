@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryItem extends Model
 {
@@ -16,7 +17,6 @@ class InventoryItem extends Model
         'quantity_available',
         'quantity_reserved',
         'reservation_expires_at',
-        'reservations_cleared_at',
         'low_stock_threshold',
     ];
 
@@ -25,13 +25,22 @@ class InventoryItem extends Model
         'quantity_available' => 'integer',
         'quantity_reserved' => 'integer',
         'reservation_expires_at' => 'datetime',
-        'reservations_cleared_at' => 'datetime',
         'low_stock_threshold' => 'integer',
     ];
 
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function stockHolds(): HasMany
+    {
+        return $this->hasMany(StockHold::class);
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class);
     }
 
     /** What's actually purchasable right now — physical stock minus units already held by pending checkouts. */

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PhX } from '@phosphor-icons/vue'
 import { useCartStore } from '~/stores/cart'
+import { cartLine } from '~/composables/useShippingQuote'
 import { formatMoney } from '~/utils/formatters'
 import { whatsappMessage } from '~/utils/whatsapp'
 import type { ApiProduct } from '~/utils/catalog'
@@ -62,6 +63,10 @@ const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
  * conversation ends in a real order, and USD on the storefront is a derived
  * display figure, not a price anyone is committing to.
  */
+/** The cart itself, saved under a code the team can open in the inbox. */
+const { active: activeCurrency } = useCurrency()
+const whatsappOrderDraft = computed(() => ({ items: cart.items.map(cartLine), currency: activeCurrency.value }))
+
 const whatsappOrderMessage = computed(() =>
   whatsappMessage.cart(
     cart.items.map((item) => {
@@ -261,7 +266,7 @@ onBeforeUnmount(() => {
               Continue to Checkout
             </CommonBrandButton>
 
-            <CommonWhatsAppLink source="cart" full :message="whatsappOrderMessage">
+            <CommonWhatsAppLink source="cart" full :message="whatsappOrderMessage" :order-draft="whatsappOrderDraft">
               Order on WhatsApp instead
             </CommonWhatsAppLink>
 

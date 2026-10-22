@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\InventoryItem;
 use App\Models\Order;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Dashboard metrics (README Feature 9).
@@ -39,6 +42,19 @@ class DashboardController extends Controller
             'orders_this_week' => Order::query()
                 ->where('created_at', '>=', $today->copy()->startOfWeek())
                 ->count(),
+            // The same week, by where it was placed, so the owner can see how
+            // much of the business arrives through WhatsApp.
+            'orders_this_week_by_channel' => [
+                'web' => 0,
+                'whatsapp' => 0,
+                ...Order::query()
+                    ->where('created_at', '>=', $today->copy()->startOfWeek())
+                    ->selectRaw('channel, COUNT(*) as total')
+                    ->groupBy('channel')
+                    ->pluck('total', 'channel')
+                    ->map(fn ($count) => (int) $count)
+                    ->all(),
+            ],
 
             // Split by currency rather than summed: a GHS total and a USD total
             // are different quantities, and adding them would need a rate that
@@ -69,7 +85,7 @@ class DashboardController extends Controller
     }
 
     /** @return array{GHS: int, USD: int} */
-    private function revenueSince(\Carbon\CarbonInterface $from): array
+    private function revenueSince(CarbonInterface $from): array
     {
         return $this->sumByCurrency(
             Order::query()->whereIn('status', self::REVENUE_STATUSES)->where('created_at', '>=', $from)
@@ -77,7 +93,7 @@ class DashboardController extends Controller
     }
 
     /** @return array{GHS: int, USD: int} */
-    private function revenueBetween(\Carbon\CarbonInterface $from, \Carbon\CarbonInterface $to): array
+    private function revenueBetween(CarbonInterface $from, CarbonInterface $to): array
     {
         return $this->sumByCurrency(
             Order::query()->whereIn('status', self::REVENUE_STATUSES)->whereBetween('created_at', [$from, $to])
@@ -164,7 +180,7 @@ class DashboardController extends Controller
 
         for ($month = 1; $month <= 12; $month++) {
             $series[] = [
-                'label' => \Carbon\Carbon::create($year, $month, 1)->format('M'),
+                'label' => Carbon::create($year, $month, 1)->format('M'),
                 'value' => (int) ($rows[$month] ?? $rows[(string) $month] ?? $rows[sprintf('%02d', $month)] ?? 0),
             ];
         }
@@ -175,7 +191,7 @@ class DashboardController extends Controller
     /** Month extraction differs by driver — Postgres is EXTRACT, SQLite is strftime. */
     private function monthExpression(): string
     {
-        return \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql'
+        return DB::connection()->getDriverName() === 'pgsql'
             ? 'EXTRACT(MONTH FROM created_at)'
             : "CAST(strftime('%m', created_at) AS INTEGER)";
     }

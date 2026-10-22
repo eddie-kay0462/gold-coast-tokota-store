@@ -174,6 +174,16 @@ PAYSTACK_PUBLIC_KEY=
 PAYSTACK_SECRET_KEY=
 PAYSTACK_WEBHOOK_SECRET=
 
+# WhatsApp Cloud API (the admin inbox). Leave empty until the brand number is
+# connected through Meta's Embedded Signup with coexistence; the inbox then
+# records replies as "not delivered" instead of sending them.
+WHATSAPP_GRAPH_VERSION=v23.0
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_WABA_ID=
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_APP_SECRET=
+WHATSAPP_VERIFY_TOKEN=
+
 # Couriers stay off until the business accounts exist (see .env.example for
 # the full list of SHIPPING_*, YANGO_* and DHL_* settings)
 YANGO_ENABLED=false
@@ -332,6 +342,15 @@ rate limiting.
 **Paystack:** set the webhook URL in the Paystack dashboard to
 `https://api.goldcoasttokota.store/api/v1/webhooks/paystack`.
 
+**WhatsApp:** in the Meta app, set the WhatsApp webhook callback URL to
+`https://api.goldcoasttokota.store/api/v1/webhooks/whatsapp` with
+`WHATSAPP_VERIFY_TOKEN` as the verify token, and subscribe to `messages`,
+`smb_message_echoes`, `history`, `smb_app_state_sync` and
+`message_template_status_update`. Meta's servers must reach that URL without a
+Cloudflare challenge: if Bot Fight Mode or a WAF rule challenges the request,
+verification fails and messages never arrive. Without `WHATSAPP_APP_SECRET`
+every delivery is refused (401).
+
 ## 7. Deploying
 
 Every deploy after the first:
@@ -384,6 +403,7 @@ development, which still runs `php artisan serve` (CLAUDE.md, Commands).
 - [ ] `/up` returns 200 through `https://api.goldcoasttokota.store`
 - [ ] R2 buckets, custom domain, token
 - [ ] Paystack webhook URL updated
+- [ ] WhatsApp webhook URL verified in the Meta app (once the number is connected); `/settings/whatsapp` shows a recent "last update from WhatsApp"
 - [ ] Storefront and admin on Vercel have
       `NUXT_PUBLIC_API_BASE=https://api.goldcoasttokota.store/api/v1`
 - [ ] Smoke test: admin sign-in, a product page, a test checkout

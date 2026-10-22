@@ -42,6 +42,11 @@ class AdminOrderResource extends JsonResource
             'total' => $this->money($this->total),
 
             'status' => $this->status,
+            // `web` or `whatsapp`: where the order was placed. A WhatsApp order
+            // was built by a team member in the inbox and paid by link.
+            'channel' => $this->channel ?? 'web',
+            'whatsapp_conversation_id' => $this->whatsapp_conversation_id,
+            'created_by_admin_id' => $this->created_by_admin_id,
             'payment_gateway' => $this->payment_gateway,
             'payment_reference' => $this->payment_reference,
             'delivery_provider' => $this->delivery_provider,

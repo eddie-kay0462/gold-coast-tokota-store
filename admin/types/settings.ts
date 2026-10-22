@@ -8,6 +8,8 @@ export interface SiteSettings {
   /** The PDF's full "Default Greeting Message". */
   whatsappGreeting: string
   businessHours: string
+  /** How long a WhatsApp order holds its stock while the customer pays (1–72). */
+  whatsappHoldHours?: number
   contactEmail: string
   contactPhone: string
   addressLine: string
@@ -74,13 +76,22 @@ export interface NotificationSettings {
 }
 
 export interface WhatsappSettings {
-  /** All false/blank until the Cloud API is actually wired up. */
+  /** True once the Cloud API credentials are set on the API's environment. */
   connected: boolean
-  phoneNumberId: string
-  wabaId: string
-  webhookUrl: string
-  verifyTokenMasked: string
+  integration: 'cloud_api' | 'wa_me_link'
+  /** Masked: last four characters only. */
+  phoneNumberId: string | null
+  wabaId: string | null
+  /** Where Meta delivers messages and status updates. */
+  webhookUrl: string | null
+  /** Whether the app secret and verify token are set; never the values. */
+  webhookSigningConfigured?: boolean
+  webhookVerifyTokenConfigured?: boolean
+  lastWebhookAt?: string | null
+  graphVersion?: string
   displayNumber: string
+  /** Older fixture shape. */
+  verifyTokenMasked?: string
 }
 
 export interface AuditEntry {

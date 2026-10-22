@@ -122,6 +122,8 @@ export const orders: Order[] = Array.from({ length: 72 }, (_, i) => {
     tax: mk(taxMinor),
     total: mk(subtotalMinor + shippingMinor + taxMinor),
     status,
+    channel: 'web',
+    whatsappConversationId: null,
     paymentGateway: isGh ? 'paystack' : 'stripe',
     paymentMethod: isGh ? pick(ghMethods) : 'card',
     paymentReference: isGh ? `ps_${int(10 ** 9, 9 * 10 ** 9)}` : `pi_${int(10 ** 9, 9 * 10 ** 9)}`,

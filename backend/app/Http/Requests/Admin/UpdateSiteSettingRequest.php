@@ -28,6 +28,9 @@ class UpdateSiteSettingRequest extends FormRequest
             'contact_phone' => ['sometimes', 'nullable', 'string', 'max:32'],
             'address' => ['sometimes', 'nullable', 'string', 'max:255'],
             'business_hours' => ['sometimes', 'nullable', 'string', 'max:255'],
+            // Hours a WhatsApp order holds stock awaiting payment. Capped at
+            // three days: beyond that, held pairs are pairs nobody else can buy.
+            'whatsapp_hold_hours' => ['sometimes', 'integer', 'min:1', 'max:72'],
             // §14's greeting runs to a dozen lines, so it is not held to the
             // 500 characters the customer's prefilled message is.
             'whatsapp_greeting' => ['sometimes', 'nullable', 'string', 'max:2000'],

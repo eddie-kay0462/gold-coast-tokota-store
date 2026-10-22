@@ -15,6 +15,7 @@ use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\PaymentGatewayFactory;
 use App\Services\Payment\PaymentSession;
 use App\Services\Shipping\CheckoutShipping;
+use App\Support\OrderReference;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -49,9 +50,6 @@ class CheckoutSessionService
     /** How long stock is held for a checkout in progress (README Feature 3). */
     private const RESERVATION_TTL_MINUTES = 15;
 
-    /** Unambiguous alphabet — no O/0 or I/1, since customers read these aloud. */
-    private const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
     public function __construct(
         private readonly FxRateService $fxRates,
         private readonly InventoryReservationService $reservations,
@@ -60,16 +58,22 @@ class CheckoutSessionService
     ) {}
 
     /**
+     * `$options` is how an order built by a team member in the WhatsApp
+     * inbox goes through the same path as a web checkout: same re-pricing,
+     * FX lock, stock holds and payment session, with its own channel and a
+     * longer hold (the customer pays from a link in the chat).
+     *
      * @param  array{items: array<int, array{inventory_item_id: int, quantity: int}>, currency: string, shipping_address: array<string, mixed>, shipping_quote_id?: string|null, shipping_option_id?: string|null, customer_id?: int|null}  $data
+     * @param  array{channel?: string, hold_minutes?: int, created_by_admin_id?: int|null, whatsapp_conversation_id?: int|null}  $options
      * @return array{order: Order, session: PaymentSession}
      *
      * @throws InsufficientStockException
      * @throws RegionNotServedException
      * @throws ShippingOptionChangedException
      */
-    public function create(array $data): array
+    public function create(array $data, array $options = []): array
     {
-        $expiresAt = now()->addMinutes(self::RESERVATION_TTL_MINUTES);
+        $expiresAt = now()->addMinutes($options['hold_minutes'] ?? self::RESERVATION_TTL_MINUTES);
 
         // Resolved before anything is reserved: a production API with no
         // Paystack key refuses here, holding nothing.
@@ -88,7 +92,7 @@ class CheckoutSessionService
             $data['shipping_option_id'] ?? null,
         );
 
-        $order = DB::transaction(function () use ($data, $expiresAt, $lines, $subtotal, $quoteRequest, $delivery) {
+        $order = DB::transaction(function () use ($data, $options, $expiresAt, $lines, $subtotal, $quoteRequest, $delivery) {
             $shippingCost = $delivery->amountGhs;
 
             // One rate read for the whole order. Two reads could straddle the
@@ -102,7 +106,7 @@ class CheckoutSessionService
                 : null;
 
             $order = Order::create([
-                'reference' => $this->generateReference(),
+                'reference' => OrderReference::forOrder(),
                 'customer_id' => $data['customer_id'] ?? null,
                 'currency' => $data['currency'],
                 'fx_rate_applied' => $fxRate,
@@ -120,13 +124,16 @@ class CheckoutSessionService
                 'shipping_option' => $delivery->snapshot(),
                 'shipping_address' => $data['shipping_address'],
                 'reservation_expires_at' => $expiresAt,
+                'channel' => $options['channel'] ?? 'web',
+                'created_by_admin_id' => $options['created_by_admin_id'] ?? null,
+                'whatsapp_conversation_id' => $options['whatsapp_conversation_id'] ?? null,
             ]);
 
             foreach ($lines as $line) {
                 // Reserve before writing the line, so a stock failure aborts
                 // the whole transaction rather than leaving a paid-for order
                 // item with nothing behind it.
-                $this->reservations->reserve($line['inventory_item'], $line['quantity'], $expiresAt);
+                $this->reservations->reserve($line['inventory_item'], $line['quantity'], $expiresAt, $order);
 
                 OrderItem::create([
                     'order_id' => $order->id,
@@ -159,17 +166,39 @@ class CheckoutSessionService
         return ['order' => $order->fresh('items'), 'session' => $session];
     }
 
+    /**
+     * A fresh payment session for an order still awaiting payment, under a
+     * new transaction reference (`GCT-…-2`, `-3`, …), since a gateway takes
+     * each reference once. Used when a WhatsApp payment link is resent. The
+     * hold, prices and FX rate are untouched: this is the same order.
+     */
+    public function reopenPayment(Order $order): PaymentSession
+    {
+        $gateway = $this->gateways->for($order->currency);
+
+        $attempt = 2;
+        $last = (string) $order->payment_reference;
+        if (preg_match('/^'.preg_quote($order->reference, '/').'-(\d+)$/', $last, $m)) {
+            $attempt = (int) $m[1] + 1;
+        }
+
+        $session = $gateway->createSession($order, "{$order->reference}-{$attempt}");
+
+        $order->update([
+            'payment_gateway' => $session->gateway,
+            'payment_reference' => $session->reference,
+        ]);
+
+        return $session;
+    }
+
     /** Undoes a committed checkout whose payment session never opened. */
     private function abandon(Order $order): void
     {
         DB::transaction(function () use ($order) {
-            foreach ($order->items()->with('inventoryItem')->get() as $item) {
-                if ($item->inventoryItem) {
-                    $this->reservations->release($item->inventoryItem, $item->quantity);
-                }
-            }
+            $this->reservations->releaseOrder($order, 'Payment session failed to open');
 
-            // order_items cascade.
+            // order_items and stock_holds cascade.
             $order->delete();
         });
     }
@@ -231,18 +260,5 @@ class CheckoutSessionService
     private function convert(int $amountGhs, ?string $fxRate): int
     {
         return $fxRate === null ? $amountGhs : (int) round($amountGhs * (float) $fxRate);
-    }
-
-    private function generateReference(): string
-    {
-        $max = strlen(self::REFERENCE_ALPHABET) - 1;
-
-        do {
-            $reference = 'GCT-'.collect(range(1, 12))
-                ->map(fn () => self::REFERENCE_ALPHABET[random_int(0, $max)])
-                ->implode('');
-        } while (Order::query()->where('reference', $reference)->exists());
-
-        return $reference;
     }
 }
