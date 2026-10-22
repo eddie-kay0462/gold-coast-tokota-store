@@ -13,3 +13,6 @@ scripts/catalogue/
 __pycache__/
 tokota-drive/
 tokota-cutout/
+
+# A saved copy of the site (3.6 MB) kept for reference, not part of the build.
+/Gold Coast Tokota.html
