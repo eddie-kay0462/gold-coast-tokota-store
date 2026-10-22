@@ -19,7 +19,17 @@ const colorMap: Record<string, string> = {
   completed: 'bg-green-100 text-green-700',
 }
 
-const label = computed(() => formatStatus(props.status))
+/**
+ * Statuses whose code means nothing to a customer get their own words.
+ * `inventory_conflict` is a paid order whose pair was sold before the payment
+ * landed: the team is checking stock and will be in touch (§21 offers a
+ * replacement, store credit or a refund). Everything else is its code in words.
+ */
+const customerLabels: Record<string, string> = {
+  inventory_conflict: 'Being Checked',
+}
+
+const label = computed(() => customerLabels[props.status] ?? formatStatus(props.status))
 </script>
 
 <template>
