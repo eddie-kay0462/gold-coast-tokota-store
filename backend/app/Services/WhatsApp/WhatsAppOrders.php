@@ -115,6 +115,10 @@ class WhatsAppOrders
                 'postcode' => $address['postcode'] ?? null,
                 'country' => $address['country'] ?? 'GH',
                 'from_last_order' => $lastOrder?->reference,
+                // A location the customer shared in the chat is the best pin
+                // there is: Accra is priced by distance from it, and Yango
+                // cannot be booked without one.
+                'location' => $this->sharedLocation($conversation),
             ],
             'currency' => $draft?->currency ?? ($contact->customer?->preferred_currency ?: 'GHS'),
             // For the address form: Ghana is priced by region off the Accra pin zone.
@@ -350,6 +354,34 @@ class WhatsAppOrders
                 },
             ];
         })->values()->all();
+    }
+
+    /**
+     * The newest location the customer shared in this chat.
+     *
+     * @return array{lat: float, lng: float, label: ?string, shared_at: mixed}|null
+     */
+    private function sharedLocation(WhatsAppConversation $conversation): ?array
+    {
+        $message = WhatsAppMessage::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('direction', 'inbound')
+            ->where('kind', 'location')
+            ->latest('sent_at')
+            ->first();
+
+        $location = $message?->meta['location'] ?? null;
+
+        if (! is_numeric($location['latitude'] ?? null) || ! is_numeric($location['longitude'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'lat' => (float) $location['latitude'],
+            'lng' => (float) $location['longitude'],
+            'label' => $message->body ?: null,
+            'shared_at' => $message->sent_at,
+        ];
     }
 
     private function lastOrderFor(string $waId, ?int $customerId): ?Order

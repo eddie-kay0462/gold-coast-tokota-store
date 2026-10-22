@@ -73,6 +73,17 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Raw WhatsApp webhook bodies, written only while WHATSAPP_LOG_PAYLOADS
+        // is on (config/whatsapp.php). They hold customers' numbers and
+        // messages, so they live in their own file and age out after a week.
+        'whatsapp_payloads' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/whatsapp-payloads.log'),
+            'level' => 'info',
+            'days' => 7,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
