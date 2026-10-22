@@ -1,70 +1,139 @@
-import { useAuthStore } from '~/stores/auth'
+import { useAuthStore, type CustomerSession } from '~/stores/auth'
 
 /**
- * Customer session: BUILT BUT DELIBERATELY INACTIVE.
+ * Customer accounts, on the API's `web` guard (Sanctum SPA cookie auth).
  *
- * The account pages are complete and validate, but submitting does not
- * authenticate. The Laravel side is most of the way there already: `Customer`
- * extends Authenticatable with hashed-password casting, the `web` guard is
- * configured against a `customers` provider, `passwords.customers` is wired to
- * `password_reset_tokens`, Sanctum's `guard` array lists `web`, and
- * `statefulApi()` is on globally, but there is no CustomerAuthController and
- * no routes in `backend/routes/api.php`, so calling one would just produce a
- * confusing 404.
+ * `useApi()` does the CSRF handshake and sends `credentials: 'include'`, so
+ * every call here carries the session. Accounts are optional throughout:
+ * guest checkout stays the default (README Feature 4), and a signed-in
+ * customer's checkout is attached to their account by the session alone.
  *
- * When those routes land, turning this on is:
- *   1. flip `AUTH_ENABLED` to true (the account pages' notices read it);
- *   2. replace the three `simulate()` bodies below with
- *      `GET /sanctum/csrf-cookie` then `POST /login` | `/register` | `/logout`,
- *      passing `credentials: 'include'` (no storefront call does today);
- *   3. `store.setSession(response.data)` on success, honour a `redirect` query;
- *   4. add `middleware/auth.ts` and `definePageMeta({ middleware: 'auth' })` to
- *      `pages/account/orders.vue` and `pages/account/settings.vue`.
- *
- * No middleware is registered until then, deliberately: nothing can
- * authenticate, so a guard would make those two pages permanently unreachable.
- * `admin/` sets the same precedent for the same reason.
+ * The session is restored once per visit by `plugins/auth.client.ts`
+ * (`GET /me`), and `middleware/auth.ts` keeps the order history and settings
+ * pages for signed-in customers.
  */
+
+/** Kept for the pages that read it; accounts are live. */
+export const AUTH_ENABLED = true
 
 /**
- * The single switch. Grep it to find every place that has to change when
- * customer auth goes live.
+ * Every account action answers the same way: `ok`, or field errors keyed by
+ * the form's field names, plus one line for a notice.
  */
-export const AUTH_ENABLED = false
+export type AuthResult =
+  | { ok: true, message?: string }
+  | { ok: false, notice: string, errors: Record<string, string> }
 
-export const AUTH_DISABLED_NOTICE =
-  'Accounts aren’t available yet, so this form doesn’t work for now. You can still order as a ' +
-  'guest and we’ll email your confirmation.'
+interface ApiError {
+  statusCode?: number
+  data?: { message?: string, errors?: Record<string, string[]> }
+}
 
-export type AuthResult = { ok: false, notice: string }
+/** Laravel's 422 and 429 bodies, turned into what a form shows. */
+function failure(err: unknown, fallback: string): AuthResult {
+  const e = err as ApiError
+  const errors: Record<string, string> = {}
 
-/**
- * Shows the loading state the real call will have, then explains why nothing
- * happened instead of failing with a raw network error. There is no `$fetch`
- * anywhere in this file, and there should not be one until step 2 above.
- */
-async function simulate(): Promise<AuthResult> {
-  await new Promise((resolve) => setTimeout(resolve, 600))
-  return { ok: false, notice: AUTH_DISABLED_NOTICE }
+  for (const [field, messages] of Object.entries(e.data?.errors ?? {})) {
+    if (messages?.[0]) errors[field] = messages[0]
+  }
+
+  const notice = e.statusCode === 429
+    ? 'Too many attempts. Wait a minute, then try again.'
+    : !e.statusCode
+      ? 'We couldn’t reach our server. Check your connection and try again.'
+      : (Object.values(errors)[0] ?? e.data?.message ?? fallback)
+
+  return { ok: false, notice, errors }
 }
 
 export function useAuth() {
   const store = useAuthStore()
+  const api = useApi()
+
+  async function signIn(credentials: { email: string, password: string, remember?: boolean }): Promise<AuthResult> {
+    try {
+      const res = await api<{ data: CustomerSession }>('/login', { method: 'POST', body: credentials })
+      store.setSession(res.data)
+      return { ok: true }
+    } catch (err) {
+      return failure(err, 'We couldn’t sign you in. Check your details and try again.')
+    }
+  }
+
+  async function register(payload: {
+    name: string
+    email: string
+    phone?: string | null
+    preferred_currency?: 'GHS' | 'USD'
+    password: string
+    password_confirmation: string
+  }): Promise<AuthResult> {
+    try {
+      const res = await api<{ data: CustomerSession }>('/register', { method: 'POST', body: payload })
+      // The API signs a new customer straight in.
+      store.setSession(res.data)
+      return { ok: true }
+    } catch (err) {
+      return failure(err, 'We couldn’t create your account. Check the form and try again.')
+    }
+  }
+
+  async function signOut() {
+    try {
+      await api('/logout', { method: 'POST' })
+    } catch {
+      // Already gone on the server; clearing here is all that is left.
+    }
+    store.clearSession()
+    await navigateTo('/')
+  }
+
+  /** Asks the API who is signed in. Called once per visit by the auth plugin. */
+  async function restore() {
+    try {
+      const res = await api<{ data: CustomerSession }>('/me')
+      store.setSession(res.data)
+    } catch {
+      store.clearSession()
+    } finally {
+      store.markRestored()
+    }
+  }
+
+  async function forgotPassword(email: string): Promise<AuthResult> {
+    try {
+      // The API answers the same whether or not the email has an account.
+      const res = await api<{ message: string }>('/forgot-password', { method: 'POST', body: { email } })
+      return { ok: true, message: res.message }
+    } catch (err) {
+      return failure(err, 'We couldn’t send the link. Try again in a moment.')
+    }
+  }
+
+  async function resetPassword(payload: {
+    token: string
+    email: string
+    password: string
+    password_confirmation: string
+  }): Promise<AuthResult> {
+    try {
+      const res = await api<{ message?: string }>('/reset-password', { method: 'POST', body: payload })
+      return { ok: true, message: res.message }
+    } catch (err) {
+      return failure(err, 'We couldn’t reset your password. The link may have expired.')
+    }
+  }
 
   return {
     user: computed(() => store.user),
     isAuthenticated: computed(() => store.isAuthenticated),
-
-    signIn: (_credentials: { email: string, password: string }) => simulate(),
-    register: (_payload: { name: string, email: string, password: string }) => simulate(),
-
-    /**
-     * Local-only today. Once sessions exist this must also POST /logout, or the
-     * server session outlives the client one.
-     */
-    async signOut() {
-      store.clearSession()
-      await navigateTo('/')
-    },
+    restored: computed(() => store.restored),
+    signIn,
+    register,
+    signOut,
+    restore,
+    forgotPassword,
+    resetPassword,
   }
 }

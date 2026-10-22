@@ -1,81 +1,76 @@
 <script setup lang="ts">
-import { AUTH_DISABLED_NOTICE, AUTH_ENABLED } from '~/composables/useAuth'
-import { CURRENCIES } from '~/utils/constants'
-
 /**
- * Account settings.
+ * Account settings: the signed-in customer's details, from the session
+ * (`GET /me`).
  *
- * The fields are real and mirror the `customers` table, but every control is
- * disabled: there is no session to load them from and no endpoint to save them
- * to. Rendering them disabled rather than hiding them means the design can be
- * reviewed now without faking a signed-in user.
- *
- * Gets `definePageMeta({ middleware: 'auth' })` when auth lands. See
- * `pages/account/orders.vue` for why it has none today.
+ * Read-only for now. The API has no endpoint for editing a profile yet, so
+ * the fields show what's on file and say where to go to change it. Delivery
+ * addresses aren't stored on the account (`customers` has no address); each
+ * order takes its own at checkout. A password is changed through the reset
+ * flow, which already works end to end.
  */
+definePageMeta({ middleware: 'auth' })
 
-// Empty, and stays empty; there is nothing to hydrate these from.
-const profile = reactive({ name: '', email: '', phone: '', currency: 'GHS' })
-const address = reactive({ line1: '', city: '', region: '', country: '' })
-const password = reactive({ current: '', next: '', confirm: '' })
+const { user } = useAuth()
 
-const currencyOptions = CURRENCIES.map((value) => ({
-  value,
-  label: value === 'GHS' ? 'Ghana cedi (₵)' : 'US dollar ($)',
-}))
+const currencyLabel = computed(() =>
+  user.value?.preferred_currency === 'USD' ? 'US dollar ($)' : 'Ghana cedi (₵)',
+)
 
 useSeoMeta({
   title: 'Account settings | Gold Coast Tokota',
-  description: 'Manage your Gold Coast Tokota profile, address and preferences.',
+  description: 'Your Gold Coast Tokota profile and preferences.',
   robots: 'noindex, nofollow',
 })
 </script>
 
 <template>
   <div class="w-full bg-white">
-    <AccountShell heading="Settings" description="Your profile, delivery address and preferences.">
-      <CommonInlineNotice v-if="!AUTH_ENABLED" variant="warning" title="Sign-in isn’t enabled yet">
-        {{ AUTH_DISABLED_NOTICE }} These fields are shown for reference and can’t be saved.
+    <AccountShell heading="Settings" description="Your profile and preferences.">
+      <CommonInlineNotice title="Editing your details isn’t available yet">
+        To change your name, email or phone number, message us and we’ll update it for you.
       </CommonInlineNotice>
 
-      <fieldset disabled class="flex w-full flex-col items-start gap-8">
-        <section class="flex w-full max-w-[520px] flex-col items-start gap-5">
-          <h2 class="caps-title w-full">Profile</h2>
-          <FormsFormField v-model="profile.name" label="Name" name="profile-name" disabled />
-          <FormsFormField v-model="profile.email" label="Email" name="profile-email" type="email" disabled />
-          <FormsFormField v-model="profile.phone" label="Phone" name="profile-phone" type="tel" disabled />
-        </section>
+      <section class="flex w-full max-w-[520px] flex-col items-start gap-4">
+        <h2 class="caps-title w-full">Profile</h2>
+        <dl class="flex w-full flex-col gap-3 text-label">
+          <div class="flex w-full flex-col gap-0.5">
+            <dt class="text-caption text-muted">Name</dt>
+            <dd class="text-ink">{{ user?.name }}</dd>
+          </div>
+          <div class="flex w-full flex-col gap-0.5">
+            <dt class="text-caption text-muted">Email</dt>
+            <dd class="break-all text-ink">{{ user?.email }}</dd>
+          </div>
+          <div class="flex w-full flex-col gap-0.5">
+            <dt class="text-caption text-muted">Phone</dt>
+            <dd class="text-ink">{{ user?.phone || 'Not given' }}</dd>
+          </div>
+        </dl>
+      </section>
 
-        <section class="flex w-full max-w-[520px] flex-col items-start gap-5 border-t border-line pt-8">
-          <h2 class="caps-title w-full">Delivery address</h2>
-          <FormsFormField v-model="address.line1" label="Street address" name="address-line1" disabled />
-          <FormsFormField v-model="address.city" label="City" name="address-city" disabled />
-          <FormsFormField v-model="address.region" label="Region" name="address-region" disabled />
-          <FormsFormField v-model="address.country" label="Country" name="address-country" disabled />
-        </section>
+      <section class="flex w-full max-w-[520px] flex-col items-start gap-3 border-t border-line pt-8">
+        <h2 class="caps-title w-full">Preferences</h2>
+        <p class="text-label text-ink">Preferred currency: {{ currencyLabel }}</p>
+        <p class="text-caption text-muted">
+          Prices are always set in cedis. You can switch the currency you see at any time from the
+          menu at the top of the page.
+        </p>
+      </section>
 
-        <section class="flex w-full max-w-[520px] flex-col items-start gap-5 border-t border-line pt-8">
-          <h2 class="caps-title w-full">Preferences</h2>
-          <FormsFormField
-            v-model="profile.currency"
-            label="Preferred currency"
-            name="profile-currency"
-            type="select"
-            :options="currencyOptions"
-            hint="Prices are always set in cedis; this changes what you see by default."
-            disabled
-          />
-        </section>
+      <section class="flex w-full max-w-[520px] flex-col items-start gap-3 border-t border-line pt-8">
+        <h2 class="caps-title w-full">Delivery address</h2>
+        <p class="text-label text-subtle">
+          You enter the delivery address for each order at checkout, so a gift can go somewhere
+          other than home.
+        </p>
+      </section>
 
-        <section class="flex w-full max-w-[520px] flex-col items-start gap-5 border-t border-line pt-8">
-          <h2 class="caps-title w-full">Password</h2>
-          <FormsFormField v-model="password.current" label="Current password" name="password-current" type="password" disabled />
-          <FormsFormField v-model="password.next" label="New password" name="password-next" type="password" disabled />
-          <FormsFormField v-model="password.confirm" label="Confirm new password" name="password-confirm" type="password" disabled />
-        </section>
-
-        <CommonBrandButton disabled>Save changes</CommonBrandButton>
-      </fieldset>
+      <section class="flex w-full max-w-[520px] flex-col items-start gap-3 border-t border-line pt-8">
+        <h2 class="caps-title w-full">Password</h2>
+        <p class="text-label text-subtle">We’ll email you a link to choose a new one.</p>
+        <CommonBrandButton to="/account/forgot-password" variant="white">Change password</CommonBrandButton>
+      </section>
     </AccountShell>
   </div>
 </template>
