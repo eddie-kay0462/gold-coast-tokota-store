@@ -52,6 +52,7 @@ export type ApiOrder = {
   } | null
   shipping_address: {
     full_name?: string
+    email?: string
     line1?: string
     city?: string
     region?: string

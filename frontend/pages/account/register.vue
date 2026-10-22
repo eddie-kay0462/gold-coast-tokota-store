@@ -3,13 +3,17 @@ import { isValidEmail, isValidGhanaPhone } from '~/utils/validators'
 import { CURRENCIES } from '~/utils/constants'
 
 /**
- * Customer sign-up: BUILT BUT DELIBERATELY INACTIVE.
- *
- * The fields deliberately mirror the `customers` table (name, email, phone,
- * preferred_currency, password) so that wiring this to a real
- * POST /register is a straight map rather than a redesign.
+ * Customer sign-up (`POST /register`). The fields mirror the `customers` table
+ * (name, email, phone, preferred_currency, password). The API signs the new
+ * customer straight in, so they land on their account, or back where they
+ * came from (`?redirect=`).
  */
 const { register } = useAuth()
+const route = useRoute()
+const redirectTo = computed(() => {
+  const r = String(route.query.redirect ?? '')
+  return r.startsWith('/') && !r.startsWith('//') ? r : '/account'
+})
 
 const form = reactive({
   name: '',
@@ -64,9 +68,27 @@ async function onSubmit() {
   if (!validate()) return
 
   submitting.value = true
-  const result = await register({ name: form.name, email: form.email, password: form.password })
+  const result = await register({
+    name: form.name.trim(),
+    email: form.email.trim(),
+    phone: form.phone.trim() || null,
+    preferred_currency: form.currency as 'GHS' | 'USD',
+    password: form.password,
+    password_confirmation: form.confirm,
+  })
   submitting.value = false
-  notice.value = result.notice
+
+  if (result.ok) {
+    await navigateTo(redirectTo.value)
+    return
+  }
+
+  // The API's field names, mapped onto this form's.
+  errors.name = result.errors.name
+  errors.email = result.errors.email
+  errors.phone = result.errors.phone
+  errors.password = result.errors.password
+  notice.value = Object.keys(result.errors).length ? null : result.notice
 }
 
 useSeoMeta({
@@ -82,7 +104,7 @@ useSeoMeta({
       Save your delivery details and keep every order in one place.
     </template>
 
-    <CommonInlineNotice v-if="notice" variant="warning" title="Accounts aren’t enabled yet">
+    <CommonInlineNotice v-if="notice" variant="warning" title="We couldn’t create your account">
       {{ notice }}
     </CommonInlineNotice>
 
