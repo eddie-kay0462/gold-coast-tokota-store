@@ -48,7 +48,12 @@ inert at their last step.
 
 ## Recent changes
 
-### 22 October 2026 (latest): storefront status badge shows words, not codes
+### 22 October 2026 (latest): search box placeholder
+
+The header search box now reads "Find your next pair of ahenema..." instead
+of "Search" (`frontend/components/layout/SearchPanel.vue`).
+
+### 22 October 2026: storefront status badge shows words, not codes
 
 `CommonStatusBadge` printed the API's raw value, so the order confirmation
 page showed `pending`, `paid` and `inventory_conflict`. It now shows each word
