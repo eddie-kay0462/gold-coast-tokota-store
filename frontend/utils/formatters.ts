@@ -26,3 +26,16 @@ export function formatMoney(
       : {}),
   }).format(major)
 }
+
+/**
+ * A status as a customer reads it: `inventory_conflict` → "Inventory Conflict",
+ * `pending` → "Pending". The API sends machine values; this is the one place
+ * they become words, so every badge reads the same.
+ */
+export function formatStatus(status: string): string {
+  return status
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}

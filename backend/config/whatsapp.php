@@ -33,6 +33,13 @@ return [
 
     'timeout' => (int) env('WHATSAPP_TIMEOUT', 15),
 
+    // Record every verified webhook body, unchanged, to
+    // storage/logs/whatsapp-payloads.log. For the test-number rehearsal
+    // (docs/deploy/whatsapp-rehearsal.md): it shows exactly what Meta sends, so
+    // the coexistence field names can be checked against the processor. The
+    // bodies hold customers' numbers and messages: switch it off afterwards.
+    'log_payloads' => (bool) env('WHATSAPP_LOG_PAYLOADS', false),
+
     // Templates the system sends by name. They are written and approved in
     // WhatsApp Manager by the business; these are the names it looks for.
     'templates' => [

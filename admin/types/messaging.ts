@@ -182,6 +182,8 @@ export interface OrderBuilderData {
     fullName: string | null; email: string | null; phone: string
     line1: string | null; city: string | null; region: string | null; postcode: string | null; country: string
     fromLastOrder: string | null
+    /** The newest location the customer shared in the chat: the delivery pin. */
+    location: { lat: number; lng: number; label: string | null; sharedAt: Timestamp } | null
   }
   currency: 'GHS' | 'USD'
   regions: string[]

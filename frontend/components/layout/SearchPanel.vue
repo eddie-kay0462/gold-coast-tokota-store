@@ -67,7 +67,7 @@ watch(
           v-model="query"
           type="search"
           name="q"
-          placeholder="Search"
+          placeholder="Find your next pair of ahenema..."
           aria-label="Search products"
           class="min-w-0 flex-1 rounded bg-surface p-4 text-caption text-graphite outline-none placeholder:text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite"
         >

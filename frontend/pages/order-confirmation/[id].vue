@@ -28,11 +28,18 @@ const config = useRuntimeConfig()
 
 const orderUrl = `${config.public.apiBase}/orders/${route.params.id}`
 
-const { data, pending, refresh } = await useAsyncData(`order-${route.params.id}`, () =>
+const { data, pending } = await useAsyncData(`order-${route.params.id}`, () =>
   $fetch<{ data: ApiOrder }>(orderUrl).catch(() => null),
 )
 
 const order = computed(() => data.value?.data ?? null)
+
+/**
+ * The skeleton is for the first load only. `pending` turns true again on
+ * every refetch, and keying the template on it swapped the receipt for the
+ * skeleton and back every five seconds while the page waited for payment.
+ */
+const firstLoad = computed(() => pending.value && !data.value)
 const unavailable = computed(() => !pending.value && !order.value)
 
 const money = (minorUnits: number) =>
@@ -49,20 +56,33 @@ const stillConfirming = computed(
   () => !!order.value && isAwaitingPayment(order.value.status) && attempts.value < ORDER_POLL_MAX_ATTEMPTS,
 )
 
-let timer: ReturnType<typeof setInterval> | undefined
+let timer: ReturnType<typeof setTimeout> | undefined
+
+/**
+ * One poll. The server asks Paystack directly while the order reads pending,
+ * so this settles as soon as the payment does, without waiting on the webhook.
+ *
+ * It writes the result only when the request succeeds: a dropped request
+ * keeps the receipt on screen and tries again next time, rather than
+ * flipping to "We can't show this order" for one interval. The next poll is
+ * scheduled after this one finishes, so slow answers never stack up.
+ */
+async function poll() {
+  if (!stillConfirming.value) return
+  attempts.value += 1
+  try {
+    data.value = await $fetch<{ data: ApiOrder }>(orderUrl)
+  } catch {
+    // Keep what is on screen.
+  }
+  if (stillConfirming.value) timer = setTimeout(poll, ORDER_POLL_INTERVAL_MS)
+}
 
 onMounted(() => {
-  timer = setInterval(async () => {
-    if (!stillConfirming.value) {
-      clearInterval(timer)
-      return
-    }
-    attempts.value += 1
-    await refresh()
-  }, ORDER_POLL_INTERVAL_MS)
+  timer = setTimeout(poll, ORDER_POLL_INTERVAL_MS)
 })
 
-onBeforeUnmount(() => clearInterval(timer))
+onBeforeUnmount(() => clearTimeout(timer))
 
 const cart = useCartStore()
 watch(order, (o) => {
@@ -81,7 +101,7 @@ useSeoMeta({
 <template>
   <div class="page-gutter section-y mx-auto w-full max-w-[calc(48rem+120px)]">
     <!-- Loading -->
-    <div v-if="pending" class="flex w-full flex-col items-start gap-4">
+    <div v-if="firstLoad" class="flex w-full flex-col items-start gap-4">
       <CommonSkeletonLoader height="2.5rem" width="60%" />
       <CommonSkeletonLoader height="1rem" width="40%" />
       <CommonSkeletonLoader height="12rem" width="100%" />
