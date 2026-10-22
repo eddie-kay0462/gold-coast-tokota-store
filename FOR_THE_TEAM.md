@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 22 October 2026 (product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 22 October 2026 (booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,37 @@ inert at their last step.
 
 ## Recent changes
 
-### 22 October 2026 (latest): product page stock stays live while it's open
+### 22 October 2026 (latest): booking page names each workshop; DIY photos upload
+
+**Sessions say which workshop they are.** `SessionPicker` showed only a date,
+time and seats, so a customer couldn't tell a Sandal Sip & Paint from a Be a
+Shoemaker for a Day. Each card now leads with the workshop's name from the
+session's `workshop_type` (already in `GET /workshop-sessions`), with its
+duration beside the time.
+
+**DIY reference photos upload instead of going to WhatsApp.**
+- The DIY form recorded only the photo's file name and asked the customer
+  to send the photo on WhatsApp, though `POST /booking-uploads` has existed
+  since 8 Sep.
+- It now uploads the photo the moment it's chosen. The checks mirror
+  `StoreBookingUploadRequest` (JPG, PNG, WebP or HEIC, up to 5MB), so a wrong
+  file is caught at once.
+- It shows a thumbnail (or the file name for HEIC, which browsers can't
+  display), with **Remove**, and sends the stored `path` as
+  `details.reference_image`. The admin's bookings screen already turns that
+  into a viewable photo.
+- Submit waits for an upload in progress. WhatsApp stays as the fallback when
+  an upload fails or the hourly upload limit is hit.
+
+**Checked against the local API:**
+- a PNG uploaded and returned a path;
+- a text file was refused with the server's message;
+- a DIY booking saved with that path.
+
+No upcoming sessions exist locally, so a session card with its name wasn't
+seen.
+
+### 22 October 2026: product page stock stays live while it's open
 
 `useInventoryPolling` existed, but nothing used it, and it read only the
 single `quantity_available` total, while the purchase panel needs stock per
@@ -4379,7 +4409,7 @@ In dependency order:
    experiences, `GET /workshop-types` public and admin). ~~*What is left:* an
    upload endpoint for DIY reference images.~~ — **the upload endpoint landed
    8 Sep** (`POST /booking-uploads`, with a daily prune of abandoned files);
-   the storefront form still has to use it. *What is left is the
+   the storefront form uses it since 22 Oct. *What is left is the
    by-appointment enquiry path*, since three of the six experiences have no
    bookable date to attach a booking to — open decision 35, a business
    question.
@@ -4413,7 +4443,7 @@ In dependency order:
 - ~~**Drop the USD branch at the payment step.**~~ — **closed 1 Oct** with the
   checkout wiring. `PaymentStep` redirects to `authorization_url` for both
   currencies and no longer mentions Stripe.
-- **Name the workshop on the booking page.** Sessions now carry
+- ~~**Name the workshop on the booking page.**~~ **Closed 22 Oct** (see that entry). Original note: Sessions now carry
   `workshop_type` (`GET /workshop-sessions`), and `GET /workshop-types` lists
   all six experiences including the three that run by appointment and never
   appear in the session list.
