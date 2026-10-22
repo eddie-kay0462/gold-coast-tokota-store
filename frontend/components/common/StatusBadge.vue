@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatStatus } from '~/utils/formatters'
+
 const props = defineProps<{
   status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded' | 'inventory_conflict' | 'confirmed' | 'waitlisted' | 'completed'
 }>()
@@ -16,10 +18,12 @@ const colorMap: Record<string, string> = {
   waitlisted: 'bg-amber-100 text-amber-700',
   completed: 'bg-green-100 text-green-700',
 }
+
+const label = computed(() => formatStatus(props.status))
 </script>
 
 <template>
   <span class="rounded-full px-2 py-1 text-xs font-medium" :class="colorMap[props.status]">
-    {{ props.status }}
+    {{ label }}
   </span>
 </template>
