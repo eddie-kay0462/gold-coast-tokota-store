@@ -2,6 +2,7 @@
 
 use App\Jobs\PollActiveShipments;
 use App\Jobs\PruneOrphanedBookingUploads;
+use App\Jobs\PruneWhatsAppOrderDrafts;
 use App\Jobs\RefreshFxRate;
 use App\Jobs\ReleaseExpiredReservations;
 use Illuminate\Foundation\Inspiring;
@@ -25,6 +26,10 @@ Schedule::job(new ReleaseExpiredReservations)->everyFiveMinutes();
 // removes uploads older than its own 24-hour grace window, so running it more
 // often would delete nothing extra.
 Schedule::job(new PruneOrphanedBookingUploads)->dailyAt('03:30');
+
+// "Order on WhatsApp" carts that never became an order. They hold no stock,
+// so this is housekeeping only.
+Schedule::job(new PruneWhatsAppOrderDrafts)->dailyAt('03:45');
 
 // Courier bookings and parcels in flight. Every minute, but each shipment has
 // its own next_poll_at, so this only refreshes the ones that are due: a Yango

@@ -6,6 +6,7 @@ use App\Events\OrderPaid;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ProcessedWebhookEvent;
+use App\Services\Notifications\OpsAlert;
 use App\Services\Payment\PaystackService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -98,7 +99,7 @@ class PaystackWebhookController extends Controller
     /** Returns the order it marked paid, or null when it marked nothing. */
     private function recordPayment(Request $request, string $reference): ?Order
     {
-        $order = Order::query()->with('items')->where('reference', $reference)->first();
+        $order = $this->orderFor($reference)?->load('items');
 
         if (! $order) {
             Log::warning('Paystack reported a payment for an unknown order.', ['reference' => $reference]);
@@ -109,6 +110,29 @@ class PaystackWebhookController extends Controller
         // Already paid — a duplicate that slipped past the event key because
         // Paystack sent it under a different event name.
         if ($order->status !== 'pending') {
+            // Paid already, and now paid again through its other link (a
+            // WhatsApp order whose link was resent). Both charges are real;
+            // nothing here can undo one, so a person has to refund it.
+            if ($order->payment_reference && $order->payment_reference !== $reference && $order->status === 'paid') {
+                Log::error('Order paid twice through two payment links. Refund the second charge.', [
+                    'order_reference' => $order->reference,
+                    'recorded_payment' => $order->payment_reference,
+                    'second_payment' => $reference,
+                ]);
+                app(OpsAlert::class)->paymentNeedsRefund($order, $reference, 'the order was already paid through its other payment link');
+            }
+
+            // A cancelled order (a WhatsApp order the team called off) paid
+            // through a link the customer still had. The money arrived for an
+            // order that holds no stock.
+            if ($order->status === 'cancelled') {
+                Log::error('Payment received for a cancelled order. Refund it, or reinstate the order.', [
+                    'order_reference' => $order->reference,
+                    'payment_reference' => $reference,
+                ]);
+                app(OpsAlert::class)->paymentNeedsRefund($order, $reference, 'the order had been cancelled');
+            }
+
             return null;
         }
 
@@ -141,11 +165,21 @@ class PaystackWebhookController extends Controller
     private function recordFailure(string $reference): void
     {
         Order::query()
-            ->where('reference', $reference)
+            ->where(fn ($q) => $q->where('reference', $reference)->orWhere('payment_reference', $reference))
             ->where('status', 'pending')
             // Not cancelled: the customer may retry with another card, and the
             // reservation holds until it expires on its own. `ReleaseExpired
             // Reservations` is what eventually gives the stock back.
             ->update(['payment_reference' => $reference]);
+    }
+
+    /**
+     * The order a Paystack reference belongs to: its own reference, or the
+     * fresh one a resent payment link was opened under.
+     */
+    private function orderFor(string $reference): ?Order
+    {
+        return Order::query()->where('reference', $reference)->first()
+            ?? Order::query()->where('payment_reference', $reference)->first();
     }
 }

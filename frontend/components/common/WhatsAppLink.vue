@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhWhatsappLogo as WhatsappLogo } from '@phosphor-icons/vue'
-import type { WhatsAppSource } from '~/utils/whatsapp'
+import { withOrderCode, type WhatsAppSource } from '~/utils/whatsapp'
 
 /**
  * Every WhatsApp call-to-action on the storefront, except the floating button.
@@ -18,6 +18,14 @@ import type { WhatsAppSource } from '~/utils/whatsapp'
  *              at rest and black only when engaged, at the client's request
  *   gold:     `.btn-outline-on-dark`, for the black About band (it was gold)
  *   quiet:    an inline text link, for prose and helper text
+ *
+ * With `orderDraft` it is "Order on WhatsApp": on click the cart is saved
+ * (`POST /whatsapp-orders`, which holds no stock) and its code is added to
+ * the message, so the team opens the chat with the cart already there. The
+ * WhatsApp tab is opened at once, inside the click, so popup blockers allow
+ * it, and pointed at WhatsApp once the code is back. If saving fails or takes
+ * too long, the customer still lands in WhatsApp with today's message: this
+ * is the brand's main ordering channel and must never break on our account.
  */
 const props = withDefaults(
   defineProps<{
@@ -30,12 +38,59 @@ const props = withDefaults(
     full?: boolean
     /** `quiet` has no glyph by default; the others do. */
     icon?: boolean
+    /** The cart to carry into the chat, as checkout lines. */
+    orderDraft?: {
+      items: { slug: string, size: string | null, colour: string | null, quantity: number }[]
+      currency: 'GHS' | 'USD'
+    } | null
   }>(),
   { variant: 'outlined', full: false },
 )
 
-const { href } = useWhatsApp(() => props.message)
+const codedMessage = ref<string | null>(null)
+const { href } = useWhatsApp(() => codedMessage.value ?? props.message)
 const { whatsappClick } = useAnalytics()
+const api = useApi()
+
+/** How long the customer waits for the code before WhatsApp opens without it. */
+const DRAFT_TIMEOUT_MS = 2500
+
+async function onClick(event: MouseEvent) {
+  whatsappClick({ source: props.source })
+
+  const items = props.orderDraft?.items ?? []
+  // A modified click (new tab, new window) keeps the browser's own behaviour.
+  if (!items.length || !href.value || event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
+
+  event.preventDefault()
+  const plain = href.value
+  const tab = window.open('', '_blank')
+  let target = plain
+
+  try {
+    const saved = await Promise.race([
+      api<{ data: { reference: string } }>('/whatsapp-orders', {
+        method: 'POST',
+        body: { items, currency: props.orderDraft!.currency },
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), DRAFT_TIMEOUT_MS)),
+    ])
+    codedMessage.value = withOrderCode(props.message ?? '', saved.data.reference)
+    await nextTick()
+    target = href.value ?? plain
+  } catch {
+    // Open WhatsApp anyway, with the message as it always was.
+  } finally {
+    codedMessage.value = null
+  }
+
+  if (tab) {
+    tab.opener = null
+    tab.location.href = target
+  } else {
+    window.location.href = target
+  }
+}
 
 const showIcon = computed(() => props.icon ?? props.variant !== 'quiet')
 
@@ -64,7 +119,7 @@ const variantClass = computed(
     rel="noopener noreferrer"
     class="inline-flex items-center gap-2"
     :class="[variantClass, full ? 'flex w-full' : '']"
-    @click="whatsappClick({ source })"
+    @click="onClick"
   >
     <WhatsappLogo v-if="showIcon" :size="variant === 'quiet' ? 14 : 18" weight="fill" aria-hidden="true" />
     <slot />

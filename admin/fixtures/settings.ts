@@ -32,6 +32,7 @@ export const siteSettings: SiteSettings = {
   whatsappDefaultMessage: 'Hi! I have a question about your sandals.',
   whatsappGreeting: WHATSAPP_GREETING,
   businessHours: 'Monday – Saturday, 9:00 AM – 5:00 PM (GMT)',
+  whatsappHoldHours: 24,
   contactEmail: 'hello@goldcoasttokota.store',
   contactPhone: '+233257534297',
   addressLine: 'Haatso, Accra, Ghana',
@@ -114,10 +115,13 @@ export const notificationSettings: NotificationSettings = {
  */
 export const whatsappSettings: WhatsappSettings = {
   connected: false,
+  integration: 'wa_me_link',
   phoneNumberId: '',
   wabaId: '',
   webhookUrl: 'https://api.goldcoasttokota.store/api/v1/webhooks/whatsapp',
-  verifyTokenMasked: '',
+  webhookSigningConfigured: false,
+  webhookVerifyTokenConfigured: false,
+  lastWebhookAt: null,
   displayNumber: '+233 25 753 4297',
 }
 

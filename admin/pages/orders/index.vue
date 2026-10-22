@@ -33,6 +33,12 @@ const currencyOptions = [
   { value: 'USD', label: 'USD · Stripe' },
 ]
 
+const channelOptions = [
+  { value: 'all', label: 'Web and WhatsApp' },
+  { value: 'web', label: 'Web checkout' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+]
+
 const columns: Column<Order>[] = [
   { key: 'reference', label: 'Order', sortable: true },
   { key: 'customerName', label: 'Customer', sortable: true },
@@ -76,6 +82,10 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
           :model-value="r.filters.value.currency ?? 'all'" :options="currencyOptions" class="w-44"
           @update:model-value="r.setFilter('currency', $event)"
         />
+        <UiSelect
+          :model-value="r.filters.value.channel ?? 'all'" :options="channelOptions" class="w-44"
+          @update:model-value="r.setFilter('channel', $event)"
+        />
       </template>
     </UiToolbar>
 
@@ -90,6 +100,7 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
         <button type="button" class="font-mono text-fg-strong underline-offset-4 hover:underline" @click="openOrder(row)">
           {{ row.reference }}
         </button>
+        <UiBadge v-if="row.channel === 'whatsapp'" tone="success" size="sm" class="ml-1.5">WhatsApp</UiBadge>
       </template>
       <template #cell-customerName="{ row }">
         <span class="block truncate text-fg">{{ row.customerName }}</span>

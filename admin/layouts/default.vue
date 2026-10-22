@@ -18,8 +18,32 @@ const searchOpen = ref(false)
 
 // Counts shown against nav items, so the sidebar carries a little operational
 // signal rather than being purely navigational.
+//
+// Unread messages are live: the inbox page keeps this shared count current,
+// and between visits it is refreshed every 30 s for anyone who can see the
+// inbox. The sample figure shows only until a live answer has arrived.
+const { adminFetch } = useAdminApi()
+const { can } = useAuth()
+const unreadMessages = useState<number | null>('inbox-unread', () => null)
+
+usePolling(async () => {
+  if (!can('inbox.view')) return
+  const res = await adminFetch<unknown[]>('/admin/inbox/threads', { query: { unread: 1 } })
+  if (res.source === 'live') unreadMessages.value = Number(res.meta?.unreadTotal ?? 0)
+}, 30_000)
+
+onMounted(async () => {
+  if (!can('inbox.view')) return
+  try {
+    const res = await adminFetch<unknown[]>('/admin/inbox/threads', { query: { unread: 1 } })
+    if (res.source === 'live') unreadMessages.value = Number(res.meta?.unreadTotal ?? 0)
+  } catch {
+    // The badge is a convenience; the inbox itself reports any problem.
+  }
+})
+
 const badges = computed(() => ({
-  unreadMessages: dashboardMetrics.unreadMessages,
+  unreadMessages: unreadMessages.value ?? dashboardMetrics.unreadMessages,
   pendingBookings: dashboardMetrics.pendingBookings,
   openOrders: dashboardMetrics.openReturns,
 }))

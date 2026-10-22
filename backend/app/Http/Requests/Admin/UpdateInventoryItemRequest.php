@@ -18,6 +18,9 @@ class UpdateInventoryItemRequest extends FormRequest
             // counted the shelf, and "there are 12" is what they know.
             'quantity_available' => ['sometimes', 'required', 'integer', 'min:0', 'max:100000'],
             'low_stock_threshold' => ['sometimes', 'required', 'integer', 'min:0', 'max:100000'],
+            // Why the count changed ("restock from workshop", "two pairs damaged").
+            // Kept on the movement, so the history explains itself.
+            'note' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 }

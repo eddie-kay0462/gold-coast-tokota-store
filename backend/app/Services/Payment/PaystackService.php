@@ -32,7 +32,7 @@ class PaystackService implements PaymentGateway
         return filled(config('services.paystack.secret'));
     }
 
-    public function createSession(Order $order): PaymentSession
+    public function createSession(Order $order, ?string $reference = null): PaymentSession
     {
         $address = $order->shipping_address ?? [];
 
@@ -52,7 +52,7 @@ class PaystackService implements PaymentGateway
                 // Our reference, not theirs: it is what the customer quotes,
                 // what the confirmation page looks up, and what the webhook
                 // is matched back to.
-                'reference' => $order->reference,
+                'reference' => $reference ?? $order->reference,
                 'callback_url' => $this->callbackUrl($order),
                 'metadata' => [
                     'order_reference' => $order->reference,
@@ -68,7 +68,7 @@ class PaystackService implements PaymentGateway
 
         return new PaymentSession(
             gateway: $this->name(),
-            reference: $response->json('data.reference') ?? $order->reference,
+            reference: $response->json('data.reference') ?? $reference ?? $order->reference,
             authorizationUrl: $response->json('data.authorization_url'),
             // Paystack redirects; there is nothing to confirm in the browser.
             clientSecret: null,

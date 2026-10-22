@@ -32,6 +32,9 @@ class Order extends Model
         'shipping_option',
         'shipping_address',
         'reservation_expires_at',
+        'channel',
+        'whatsapp_conversation_id',
+        'created_by_admin_id',
     ];
 
     protected $casts = [
@@ -55,6 +58,17 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /** Every stock hold this order has taken, active or not. */
+    public function stockHolds(): HasMany
+    {
+        return $this->hasMany(StockHold::class);
+    }
+
+    public function createdByAdmin(): BelongsTo
+    {
+        return $this->belongsTo(AdminUser::class, 'created_by_admin_id');
     }
 
     public function returnRequests(): HasMany

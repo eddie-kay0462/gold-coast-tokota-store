@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Enums\ShippingZone;
+use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use App\Http\Controllers\Controller;
 use App\Models\SiteSetting;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Notifications\FishAfricaSmsService;
 use App\Services\Returns\ReturnPolicy;
 use App\Services\Shipping\ShippingManager;
+use App\Services\WhatsApp\CloudApiClient;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * The settings panels that describe how the system is *configured*, as opposed
@@ -143,17 +146,23 @@ class SettingsController extends Controller
     public function whatsapp(): JsonResponse
     {
         $settings = SiteSetting::current();
+        $connected = CloudApiClient::isConfigured();
 
         return response()->json(['data' => [
-            // The admin screen is built for the WhatsApp Cloud API. The README
-            // specifies wa.me deep links (Feature 6) and nothing else, so there
-            // is no Cloud API connection to report — `connected: false` is the
-            // truthful answer, not a placeholder.
-            'connected' => false,
-            'integration' => 'wa_me_link',
-            'phone_number_id' => null,
-            'waba_id' => null,
-            'webhook_url' => null,
+            // True once the Cloud API credentials are set in the environment.
+            // Until then the inbox runs on LogWhatsAppClient and every "sent"
+            // message is marked simulated.
+            'connected' => $connected,
+            'integration' => $connected ? 'cloud_api' : 'wa_me_link',
+            'phone_number_id' => $this->mask(config('whatsapp.phone_number_id')),
+            'waba_id' => $this->mask(config('whatsapp.waba_id')),
+            'webhook_url' => route('api.v1.webhooks.whatsapp.receive'),
+            // Whether the two values Meta needs for the webhook are set, never
+            // the values themselves.
+            'webhook_signing_configured' => filled(config('whatsapp.app_secret')),
+            'webhook_verify_token_configured' => filled(config('whatsapp.verify_token')),
+            'last_webhook_at' => Cache::get(WhatsAppWebhookController::LAST_RECEIVED_KEY),
+            'graph_version' => config('whatsapp.graph_version'),
             'display_number' => $settings->whatsapp_number,
             'default_message' => $settings->whatsapp_default_message,
         ]]);

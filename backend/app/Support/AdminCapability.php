@@ -32,6 +32,9 @@ final class AdminCapability
         // Commerce
         'orders.view',
         'orders.update_status',
+        // Build an order for a customer in the WhatsApp inbox. Prices always
+        // come from the database, so this is not a pricing power.
+        'orders.create',
         'orders.refund',
         'returns.view',
         'returns.resolve',
@@ -67,6 +70,8 @@ final class AdminCapability
         'inbox.draft',
         'inbox.reply',
         'inbox.templates',
+        // The greeting and after-hours auto-replies.
+        'inbox.automation',
 
         // Platform
         'analytics.view',
@@ -78,6 +83,9 @@ final class AdminCapability
         'settings.write',
         'settings.payments',
         'settings.fx',
+        // Connecting third-party accounts such as the WhatsApp Business
+        // number. §18 lists Integrations under Super Admin only.
+        'settings.integrations',
         'team.view',
         'team.manage',
         'audit.view',
@@ -91,7 +99,7 @@ final class AdminCapability
      *
      * @var list<string>
      */
-    private const ADMIN_DENIED = ['settings.payments', 'settings.fx', 'team.manage'];
+    private const ADMIN_DENIED = ['settings.payments', 'settings.fx', 'settings.integrations', 'team.manage'];
 
     /**
      * Staff: operational access only. §18 — "production updates, inventory
@@ -100,7 +108,7 @@ final class AdminCapability
      * @var list<string>
      */
     private const STAFF = [
-        'orders.view', 'orders.update_status',
+        'orders.view', 'orders.update_status', 'orders.create',
         'returns.view',
         'shipments.view', 'shipments.update',
         'customers.view',
@@ -174,6 +182,9 @@ final class AdminCapability
             'team.manage' => 'Only the Super Admin can add or change team members.',
             'content.publish' => 'Publishing is restricted — you can save a draft and ask an Admin to publish it.',
             'inbox.reply' => 'You can draft a reply, but sending it needs a Staff or Admin account.',
+            'inbox.automation' => 'Automatic replies are managed by an Admin.',
+            'orders.create' => 'Creating an order needs a Staff or Admin account.',
+            'settings.integrations' => 'Connecting integrations such as WhatsApp is restricted to the Super Admin.',
             'analytics.revenue' => 'Revenue figures are visible to Admins only.',
         ];
 

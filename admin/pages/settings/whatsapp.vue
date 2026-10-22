@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { PhPlugsConnected, PhWarningCircle } from '@phosphor-icons/vue'
+import { PhCheckCircle, PhPlugsConnected, PhWarningCircle } from '@phosphor-icons/vue'
 import type { SiteSettings, WhatsappSettings } from '~/types'
 
 /**
  * WhatsApp configuration.
  *
- * Two different things live here, and the distinction matters:
- *
- *  1. The deep link. Real, working, and all README Feature 6 actually
- *     specifies: a `wa.me` link driven by an owner-editable number and
- *     prefilled message.
- *  2. The Business Cloud API. Not connected. The Inbox needs it to send or
- *     receive anything, and it is new backend scope (a webhook receiver, a
- *     verified WABA, approved templates) that has not been costed.
- *
- * The fields for (2) are laid out so the eventual wiring is mechanical, but
- * nothing here pretends a connection exists.
+ *  1. The deep link: the number and prefilled message behind every
+ *     "Chat on WhatsApp" button on the storefront (README Feature 6).
+ *  2. The greeting and business hours, which the inbox's automatic replies
+ *     use (§14).
+ *  3. The Business Cloud API connection behind the live inbox. Read-only:
+ *     the credentials are environment secrets on the API, set once when the
+ *     Super Admin connects the brand number through Meta (coexistence, so
+ *     the phone app keeps working). This page reports whether that is done
+ *     and whether Meta's webhook is arriving.
  */
 useHead({ title: 'WhatsApp' })
 
@@ -23,7 +21,7 @@ const { useAdminItem } = useAdminApi()
 const { item: wa } = useAdminItem<WhatsappSettings>('whatsapp-settings', '/admin/settings/whatsapp')
 const { item: site } = useAdminItem<SiteSettings>('whatsapp-site-settings', '/admin/site-settings')
 
-const form = reactive({ number: '', message: '', greeting: '', hours: '' })
+const form = reactive({ number: '', message: '', greeting: '', hours: '', holdHours: 24 })
 watchEffect(() => {
   if (!site.value) return
   Object.assign(form, {
@@ -31,8 +29,38 @@ watchEffect(() => {
     message: site.value.whatsappDefaultMessage,
     greeting: site.value.whatsappGreeting,
     hours: site.value.businessHours,
+    holdHours: site.value.whatsappHoldHours ?? 24,
   })
 })
+
+const { adminFetch } = useAdminApi()
+const toast = useToast()
+const saving = ref<'link' | 'greeting' | 'orders' | null>(null)
+
+/** Partial update: each section saves only its own fields. */
+async function save(section: 'link' | 'greeting' | 'orders') {
+  const body = {
+    link: { whatsapp_number: form.number.replace(/\D/g, ''), whatsapp_default_message: form.message, business_hours: form.hours },
+    greeting: { whatsapp_greeting: form.greeting },
+    orders: { whatsapp_hold_hours: Number(form.holdHours) },
+  }[section]
+  saving.value = section
+  try {
+    await adminFetch('/admin/site-settings', { method: 'PUT', body })
+    toast.success(
+      { link: 'WhatsApp link saved', greeting: 'Greeting saved', orders: 'Hold time saved' }[section],
+      section === 'orders' ? 'New WhatsApp orders use it from now on.' : 'Live on the storefront now.',
+    )
+  } catch (err) {
+    const e = err as { statusCode?: number; data?: { message?: string; errors?: Record<string, string[]> } }
+    if (e.statusCode === 401 || e.statusCode === 419) return
+    toast.error('Not saved', Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Try again in a moment.')
+  } finally {
+    saving.value = null
+  }
+}
+
+const { formatRelative } = useFormatters()
 
 const deepLink = computed(
   () => `https://wa.me/${form.number.replace(/\D/g, '')}?text=${encodeURIComponent(form.message)}`,
@@ -73,7 +101,7 @@ const deepLink = computed(
 
           <template #footer>
             <UiPermissionGate capability="settings.write" quiet>
-              <UiButton size="sm">Save</UiButton>
+              <UiButton size="sm" :loading="saving === 'link'" @click="save('link')">Save</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>
@@ -88,25 +116,52 @@ const deepLink = computed(
           />
           <template #footer>
             <UiPermissionGate capability="settings.write" quiet>
-              <UiButton size="sm">Save</UiButton>
+              <UiButton size="sm" :loading="saving === 'greeting'" @click="save('greeting')">Save</UiButton>
+            </UiPermissionGate>
+          </template>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Orders on WhatsApp"
+          description="How long an order built in the Inbox holds its stock while the customer pays from the link. Web checkout holds for 15 minutes."
+        >
+          <div class="max-w-xs">
+            <UiField
+              v-model="form.holdHours" type="number" label="Hold stock for (hours)"
+              hint="Between 1 and 72. Held pairs can't be sold to anyone else, so keep it as short as customers need."
+            />
+          </div>
+          <template #footer>
+            <UiPermissionGate capability="settings.write" quiet>
+              <UiButton size="sm" :loading="saving === 'orders'" @click="save('orders')">Save</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>
 
         <SettingsSection
           title="Business Cloud API"
-          description="Required for the two-way Inbox. Not connected."
+          :description="wa?.connected ? 'Connected. The inbox sends and receives real messages.' : 'Not connected yet. The inbox works, but replies are not delivered.'"
         >
-          <div class="flex items-start gap-3 rounded-lg border border-border bg-bg-sunken px-4 py-3.5">
-            <PhPlugsConnected :size="20" class="mt-px shrink-0 text-fg-faint" />
+          <div
+            class="flex items-start gap-3 rounded-lg border px-4 py-3.5"
+            :class="wa?.connected ? 'border-success/30 bg-success-soft' : 'border-border bg-bg-sunken'"
+          >
+            <PhPlugsConnected :size="20" class="mt-px shrink-0" :class="wa?.connected ? 'text-success' : 'text-fg-faint'" />
             <div class="min-w-0">
-              <p class="text-ui font-medium text-fg-strong">Not connected</p>
+              <p class="text-ui font-medium text-fg-strong">{{ wa?.connected ? 'Connected' : 'Not connected' }}</p>
               <p class="mt-1 text-meta text-fg-muted">
-                The Inbox currently shows a simulation. Sending or receiving real messages needs
-                a verified WhatsApp Business account, the Cloud API credentials below, and a
-                webhook receiver on the API side. None of these exist yet. The original scope
-                specified a deep link only, so this is additional work rather than a
-                configuration step.
+                <template v-if="wa?.connected">
+                  Messages to the brand number arrive in the Inbox, and replies typed on the
+                  brand phone appear there too.
+                  <template v-if="wa?.lastWebhookAt">Last update from WhatsApp {{ formatRelative(wa.lastWebhookAt) }}.</template>
+                  <template v-else>No update from WhatsApp has arrived yet. Check the webhook below in the Meta app.</template>
+                </template>
+                <template v-else>
+                  A Super Admin connects the brand number through Meta’s Embedded Signup
+                  (coexistence, so the WhatsApp Business app on the phone keeps working), then
+                  the credentials are set on the API server. Until then, replies sent from the
+                  Inbox are recorded and marked “not delivered”.
+                </template>
               </p>
             </div>
           </div>
@@ -123,13 +178,22 @@ const deepLink = computed(
             <UiField
               :model-value="wa?.webhookUrl ?? ''" label="Webhook callback URL"
               class="md:col-span-2" disabled
-              hint="Where Meta would deliver inbound messages and status updates. The endpoint does not exist yet."
-            />
-            <UiField
-              :model-value="wa?.verifyTokenMasked ?? ''" label="Verify token"
-              placeholder="Not set" disabled class="md:col-span-2"
+              hint="Paste this into the Meta app’s WhatsApp webhook settings. Subscribe to messages, smb_message_echoes, history, smb_app_state_sync and message_template_status_update."
             />
           </div>
+
+          <ul class="mt-4 flex flex-col gap-1.5 text-meta">
+            <li class="flex items-center gap-2" :class="wa?.webhookSigningConfigured ? 'text-success' : 'text-warning'">
+              <PhWarningCircle v-if="!wa?.webhookSigningConfigured" :size="14" />
+              <PhCheckCircle v-else :size="14" />
+              App secret {{ wa?.webhookSigningConfigured ? 'set: webhook deliveries are verified' : 'not set: every webhook delivery is refused' }}
+            </li>
+            <li class="flex items-center gap-2" :class="wa?.webhookVerifyTokenConfigured ? 'text-success' : 'text-warning'">
+              <PhWarningCircle v-if="!wa?.webhookVerifyTokenConfigured" :size="14" />
+              <PhCheckCircle v-else :size="14" />
+              Verify token {{ wa?.webhookVerifyTokenConfigured ? 'set' : 'not set: Meta cannot verify the webhook URL' }}
+            </li>
+          </ul>
         </SettingsSection>
       </div>
     </UiPermissionGate>

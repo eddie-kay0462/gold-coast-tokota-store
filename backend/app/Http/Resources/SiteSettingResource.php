@@ -16,6 +16,8 @@ class SiteSettingResource extends JsonResource
             // here; the storefront stores it but does not render it.
             'whatsapp_greeting' => $this->whatsapp_greeting,
             'business_hours' => $this->business_hours,
+            // How long a WhatsApp order holds its stock while the customer pays.
+            'whatsapp_hold_hours' => (int) ($this->whatsapp_hold_hours ?? 24),
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
             // §12, §14 and §24 — the brand facts the storefront was

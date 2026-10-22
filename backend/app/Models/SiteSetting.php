@@ -11,6 +11,11 @@ class SiteSetting extends Model
         'whatsapp_default_message',
         'whatsapp_greeting',
         'business_hours',
+        'whatsapp_hold_hours',
+        'whatsapp_auto_greeting',
+        'whatsapp_after_hours_enabled',
+        'whatsapp_after_hours_message',
+        'whatsapp_hours',
         'contact_email',
         'contact_phone',
         'address',
@@ -26,6 +31,9 @@ class SiteSetting extends Model
     protected $casts = [
         'announcements' => 'array',
         'diy_turnaround_tiers' => 'array',
+        'whatsapp_auto_greeting' => 'boolean',
+        'whatsapp_after_hours_enabled' => 'boolean',
+        'whatsapp_hours' => 'array',
     ];
 
     /** Single-row resource — creates the row on first access if missing. */
