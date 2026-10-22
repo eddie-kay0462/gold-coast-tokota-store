@@ -88,7 +88,7 @@ Anything that writes them directly is a bug.
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
 | GET | `/blog-posts/{slug}` | |
 | POST | `/checkout/session` | Guest-friendly. Throttled 20/min — see below |
-| GET | `/orders/{reference}` | Throttled 60/min. **Reference, never the numeric id** |
+| GET | `/orders/{reference}` | Throttled 60/min. **Reference, never the numeric id**. While the order is `pending` on Paystack, the call asks Paystack for its status (at most once per 8 s per order) and records a successful payment, so it can return `paid` before the webhook arrives |
 | POST | `/register` · `/login` | Customer sessions, `web` guard |
 | POST | `/logout` · GET `/me` · GET `/orders` | `auth:web`. `/orders` is the signed-in customer's own history |
 | POST | `/feedback` | Guest-friendly. Throttled 10/min |

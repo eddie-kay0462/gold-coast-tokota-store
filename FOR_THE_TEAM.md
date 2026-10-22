@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 22 October 2026 (WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 22 October 2026 (order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,68 @@ inert at their last step.
 
 ## Recent changes
 
-### 22 October 2026 (latest): WhatsApp checks before going live
+### 22 October 2026 (latest): order confirmation confirms payment itself, without flicker
+
+**Reported:** the order confirmation page "glitches" while it waits for a
+Paystack payment to confirm. Three causes:
+
+1. **The flicker.** Every 5-second poll called `useAsyncData`'s `refresh()`,
+   which sets `pending` to true again, and the template's first branch was
+   `v-if="pending"`. The receipt was replaced by the loading skeleton and back
+   on every poll. Now the skeleton shows only on the first load (`firstLoad`).
+2. **A dropped poll said the order didn't exist.** The fetcher turned any
+   error into `null`, so one failed request showed "We can't show this order"
+   until the next poll. The poll now writes the result only when the request
+   succeeds, and schedules the next one after it finishes, so slow answers
+   can't stack up.
+3. **The real one: confirmation waited only for the webhook.**
+   - `GET /orders/{reference}` only read the database.
+   - `PaystackService::verify()` was written for exactly this case and was
+     never called.
+   - Locally, Paystack's webhook can't reach `localhost`, so a paid test
+     order sat pending for the two minutes the page polls, then said "Your
+     payment didn't go through".
+   - In production, a webhook later than two minutes did the same to a
+     paying customer.
+
+   Now, while an order is pending on Paystack, that endpoint asks Paystack
+   (at most once per 8 s per order, the current link's reference first, then
+   the order's own) and records a successful payment.
+
+**One recording path for both.** The webhook's recording moved from
+`PaystackWebhookController` into `App\Services\Payment\PaystackPayments`.
+- Both paths write the same `processed_webhook_events` key
+  (`charge.success:<ref>`) in the same transaction as the order change.
+  Whichever arrives first records the payment, and the other is a no-op, so
+  `OrderPaid` still fires exactly once.
+- The amount check, and the "paid twice" and "paid while cancelled" refund
+  alerts, apply to both.
+- The webhook controller is now the signature check plus a call into it.
+
+**Seen working locally.** The 22 Oct test order `GCT-HHA4AXUTFLHH` was paid
+in a browser and turned Paid at 11:41 UTC with no webhook (the processed
+event was written by the poll). After a queue run, its pair moved from held
+to sold, a shipment opened, the confirmation email was written, and a
+WhatsApp "payment received" message went into the chat.
+
+**Local development needs a queue worker** for any of that to follow a
+payment: run `php artisan queue:work` beside `php artisan serve`.
+
+**Paystack link lifetime:** the first test link is now paid, so only the
+resent one (`…-2`, https://checkout.paystack.com/nu0ypod7tsss1an) is left to
+check after 11:00 UTC on 23 Oct. **Open it, don't pay it:** paying it would
+be a second charge for a paid order, and raises the refund alert by design.
+
+**Tests:** 617, on SQLite and Postgres 16. The 6 new cases in
+`OrderConfirmationVerifyTest` cover:
+- confirming on the poll with no webhook;
+- the 8-second limit;
+- a later webhook changing nothing (one `OrderPaid`);
+- a resent link's reference checked first;
+- a short payment staying pending;
+- non-Paystack orders never checked.
+
+### 22 October 2026: WhatsApp checks before going live
 
 **Where it stands.** Phases 0–4 are merged into `dev` (PR #45) and `main`
 (PR #46). Production serves the new routes: from outside,
@@ -4159,8 +4220,8 @@ API, per the folder structure in `README.md`.
    screens themselves still need a person: `/inbox`, the context panel, the
    order builder and the two new tabs. Local data from that walkthrough (Ama
    and Kofi) is there to click through.
-4. **Paystack link lifetime.** Open the two test links from the 22 Oct entry
-   after 11:00 UTC on 23 Oct. If they've died inside the 24-hour hold,
+4. **Paystack link lifetime.** Open (don't pay) the resent test link from the
+   22 Oct entries after 11:00 UTC on 23 Oct. If they've died inside the 24-hour hold,
    consider Paystack's Payment Requests API inside `PaystackService`.
 4b. **Production migrations.** Confirm the five 19 Oct migrations ran on
    Neon (`migrate:status` on the box).
