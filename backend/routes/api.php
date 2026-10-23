@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AboutPageController as AdminAboutPageController;
 use App\Http\Controllers\Api\V1\Admin\BlogPostController as AdminBlogPostController;
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
 use App\Http\Controllers\Api\V1\Admin\InboxLookupController as AdminInboxLookupController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\MediaController as AdminMediaController;
+use App\Http\Controllers\Api\V1\Admin\MegaMenuController as AdminMegaMenuController;
 use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\PageController as AdminPageController;
@@ -36,11 +38,13 @@ use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\CustomerAuthController;
 use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\FxRateController;
+use App\Http\Controllers\Api\V1\NavigationController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductFacetController;
 use App\Http\Controllers\Api\V1\ProductStockController;
 use App\Http\Controllers\Api\V1\ShippingQuoteController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
@@ -60,6 +64,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public catalogue + live FX rate (Feature 2). Admin-only write endpoints
     // for products live under the /admin prefix below.
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    // The shop sidebar's filter options. Before /products/{slug}, like the next one.
+    Route::get('/products/facets', [ProductFacetController::class, 'index'])->name('products.facets');
     // Before /products/{slug}, or "recommendations" would be read as a slug.
     Route::get('/products/recommendations', [ProductController::class, 'recommendations'])->name('products.recommendations');
     Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
@@ -69,6 +75,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // correctness one.
     Route::get('/products/{slug}/stock', [ProductStockController::class, 'show'])->name('products.stock');
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    // The header's mega menus: links from the catalogue, tiles from Content › Menus.
+    Route::get('/navigation/menus', [NavigationController::class, 'menus'])->name('navigation.menus');
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/fx-rate', [FxRateController::class, 'show'])->name('fx-rate.show');
 
@@ -355,6 +363,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Pages are edited, never created or deleted: their slugs are
             // storefront routes, so inventing one publishes a page nothing
             // links to and removing one breaks a live URL.
+            // The About page's structured content (Content › Pages › About).
+            // Before /pages/{page}, or "about" would be read as a page id.
+            Route::get('/pages/about', [AdminAboutPageController::class, 'show'])
+                ->middleware('capability:content.view')->name('pages.about.show');
+            Route::put('/pages/about', [AdminAboutPageController::class, 'update'])
+                ->middleware('capability:content.write')->name('pages.about.update');
             Route::get('/pages', [AdminPageController::class, 'index'])
                 ->middleware('capability:content.view')->name('pages.index');
             Route::get('/pages/{page}', [AdminPageController::class, 'show'])
@@ -411,6 +425,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     ->middleware('capability:settings.view')->name('settings.show');
                 Route::put('/settings', [AdminShippingSettingController::class, 'update'])
                     ->middleware('capability:settings.write')->name('settings.update');
+                // What's charged when no courier can quote: a price, so pricing.write.
+                Route::put('/fallback-rates', [AdminShippingSettingController::class, 'updateFallbackRates'])
+                    ->middleware('capability:pricing.write')->name('fallback-rates.update');
             });
 
             // Media library. This is what makes products.images fillable.
@@ -420,6 +437,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:media.upload')->name('media.store');
             Route::delete('/media/{mediaAsset}', [AdminMediaController::class, 'destroy'])
                 ->middleware('capability:media.delete')->name('media.destroy');
+
+            // The storefront mega menus' image tiles (Content › Menus).
+            Route::get('/menus', [AdminMegaMenuController::class, 'index'])
+                ->middleware('capability:content.view')->name('menus.index');
+            Route::put('/menus/{menu}', [AdminMegaMenuController::class, 'update'])
+                ->middleware('capability:content.write')->name('menus.update');
 
             // Site Settings is readable by Staff (the WhatsApp number shows on
             // screens they use) but writable only by Admin.

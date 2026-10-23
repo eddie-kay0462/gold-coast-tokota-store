@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PhFunnelSimple as FunnelSimple, PhX as X } from '@phosphor-icons/vue'
-import type { ApiProduct } from '~/utils/catalog'
-import { COLOR_FACETS } from '~/utils/catalog'
+import type { ApiProduct, ColorFacet, Facet } from '~/utils/catalog'
+import { COLOR_FACETS, TYPE_FACETS } from '~/utils/catalog'
 import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 const config = useRuntimeConfig()
@@ -49,11 +49,19 @@ function toggleFacet(facet: FacetKey, value: string) {
 // The catalogue endpoint arrives with Feature 2. Until then a failed/absent
 // endpoint resolves to an empty list rather than throwing, and the design's own
 // six products stand in, the same fallback pattern the home page uses.
+//
+// 48 a page, the API's cap: the catalogue (40 today) fits on one, and "Load
+// more" appends the next page when it outgrows it. Before this the page asked
+// for the API's default 12 and stopped, so most of the catalogue never showed.
+const PAGE_SIZE = 48
+type ProductPage = { data: ApiProduct[], meta?: { total?: number, last_page?: number } }
+
 const { data: apiProducts, pending } = await useAsyncData(
   'shop-products',
   () =>
-    $fetch<{ data: ApiProduct[] }>(`${config.public.apiBase}/products`, {
+    $fetch<ProductPage>(`${config.public.apiBase}/products`, {
       query: {
+        per_page: PAGE_SIZE,
         ...Object.fromEntries(
           FACET_KEYS.map((key) => [key, selected.value[key].join(',') || undefined]),
         ),
@@ -62,12 +70,54 @@ const { data: apiProducts, pending } = await useAsyncData(
         sale: route.query.sale,
         sort: route.query.sort,
       },
-    }).catch(() => ({ data: [] as ApiProduct[] })),
+    }).catch((): ProductPage => ({ data: [] })),
   { watch: [() => route.query] },
 )
 
+/** Pages after the first, appended by "Load more"; cleared when the filters change. */
+const morePages = ref<ApiProduct[]>([])
+const nextPage = ref(2)
+const loadingMore = ref(false)
+watch(() => route.query, () => {
+  morePages.value = []
+  nextPage.value = 2
+})
+
+const lastPage = computed(() => apiProducts.value?.meta?.last_page ?? 1)
+const hasMore = computed(() => !usingFallback.value && nextPage.value <= lastPage.value)
+
+async function loadMore() {
+  if (loadingMore.value) return
+  loadingMore.value = true
+  try {
+    const res = await $fetch<ProductPage>(`${config.public.apiBase}/products`, {
+      query: { ...route.query, per_page: PAGE_SIZE, page: nextPage.value },
+    })
+    morePages.value = [...morePages.value, ...res.data]
+    nextPage.value += 1
+  } catch {
+    // The button stays; the next tap tries again.
+  } finally {
+    loadingMore.value = false
+  }
+}
+
+/**
+ * The sidebar's options, from the catalogue (`GET /products/facets`): only
+ * the types and colours products actually have, with the swatch each colour
+ * is entered with. The built-in lists stand in if the API can't be reached.
+ */
+const { data: facets } = await useAsyncData(
+  'product-facets',
+  () => $fetch<{ data: { types: (Facet & { count: number })[], colors: ColorFacet[] } }>(`${config.public.apiBase}/products/facets`)
+    .then((res) => res.data)
+    .catch(() => null),
+)
+const typeFacets = computed<Facet[]>(() => facets.value?.types.length ? facets.value.types : TYPE_FACETS)
+const colorFacets = computed<ColorFacet[]>(() => facets.value?.colors.length ? facets.value.colors : COLOR_FACETS)
+
 const usingFallback = computed(() => !(apiProducts.value?.data?.length))
-const sourceProducts = computed(() => apiProducts.value?.data ?? [])
+const sourceProducts = computed(() => [...(apiProducts.value?.data ?? []), ...morePages.value])
 
 /** Maps a product's colourway names onto the sidebar's colour facet values. */
 function colorValues(product: ApiProduct): string[] {
@@ -114,6 +164,11 @@ const products = computed(() =>
   usingFallback.value ? DESIGN_PRODUCTS.filter(matchesFilters) : sourceProducts.value,
 )
 
+/** Everything the filters match, not just what's loaded so far. */
+const resultCount = computed(() =>
+  usingFallback.value ? products.value.length : (apiProducts.value?.meta?.total ?? products.value.length),
+)
+
 /** Heading and breadcrumb follow the category the header nav linked in with. */
 const CATEGORY_LABELS: Record<string, { crumb: string, heading: string }> = {
   mens: { crumb: 'Men', heading: 'Men’s Sandals' },
@@ -139,7 +194,7 @@ const breadcrumb = computed(() =>
 )
 
 const subheading = computed(() => {
-  if (searchTerm.value) return `${products.value.length} matching`
+  if (searchTerm.value) return `${resultCount.value} matching`
   if (route.query.sort === 'best-selling') return 'Best Sellers'
   if (route.query.sort === 'top-rated') return 'Top Rated'
   return 'Featured'
@@ -236,15 +291,17 @@ useSeoMeta({
 
       <div class="min-h-0 flex-1 overflow-y-auto" :class="filtersOpen ? 'px-5 py-4 md:p-0' : ''">
         <ShopProductFilter
-          :product-count="products.length"
+          :product-count="resultCount"
           :selected="selected"
+          :types="typeFacets"
+          :colors="colorFacets"
           @toggle="toggleFacet"
         />
       </div>
 
       <div v-if="filtersOpen" class="shrink-0 border-t border-line p-4 md:hidden">
         <CommonBrandButton full @click="filtersOpen = false">
-          Show {{ products.length }} result{{ products.length === 1 ? '' : 's' }}
+          Show {{ resultCount }} result{{ resultCount === 1 ? '' : 's' }}
         </CommonBrandButton>
       </div>
     </div>
@@ -257,6 +314,13 @@ useSeoMeta({
       </div>
 
       <ShopProductGrid :products="products" :pending="pending" />
+
+      <div v-if="hasMore" class="flex w-full flex-col items-center gap-2 pt-10">
+        <p class="text-caption text-muted">Showing {{ products.length }} of {{ resultCount }}</p>
+        <CommonBrandButton :disabled="loadingMore" @click="loadMore">
+          {{ loadingMore ? 'Loading…' : 'Load more' }}
+        </CommonBrandButton>
+      </div>
     </div>
   </div>
 </template>

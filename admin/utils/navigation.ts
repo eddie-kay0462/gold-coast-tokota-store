@@ -99,6 +99,7 @@ export const NAVIGATION: NavGroup[] = [
       { label: 'Blog', to: '/blog', icon: 'PhNotebook', capability: 'content.view' },
       { label: 'Pages', to: '/pages', icon: 'PhFolderNotch', capability: 'content.view' },
       { label: 'Media', to: '/media', icon: 'PhImagesSquare', capability: 'content.view' },
+      { label: 'Menus', to: '/menus', icon: 'PhSquaresFour', capability: 'content.view' },
     ],
   },
   {

@@ -234,5 +234,7 @@ export interface ShippingSettings {
     bounds: { south: number; north: number; west: number; east: number }
   } | null
   freeShippingThreshold: Money | null
+  /** Charged when no courier can quote; `ghana` also pays for an unpriced region. */
+  fallbackRates: { accra: Money; ghana: Money; international: Money }
   updatedAt: Timestamp | null
 }

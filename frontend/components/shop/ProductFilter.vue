@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { PhCaretUp as CaretUp } from '@phosphor-icons/vue'
+import type { ColorFacet, Facet } from '~/utils/catalog'
 import {
   COLOR_COLLAPSED_ROWS,
-  COLOR_FACETS,
   SIZE_GROUPS,
   TYPE_COLLAPSED_COUNT,
-  TYPE_FACETS,
   WIDTH_FACETS,
 } from '~/utils/catalog'
 
@@ -18,6 +17,10 @@ const props = defineProps<{
     size: string[]
     width: string[]
   }
+  /** Product types, from `GET /products/facets` (built-in list if unreachable). */
+  types: (Facet & { count?: number })[]
+  /** Colours with their own swatch, from the same endpoint. */
+  colors: ColorFacet[]
 }>()
 
 const emit = defineEmits<{
@@ -31,13 +34,21 @@ const showAllTypes = ref(false)
 const showAllColors = ref(false)
 
 const visibleTypes = computed(() =>
-  showAllTypes.value ? TYPE_FACETS : TYPE_FACETS.slice(0, TYPE_COLLAPSED_COUNT),
+  showAllTypes.value ? props.types : props.types.slice(0, TYPE_COLLAPSED_COUNT),
 )
 
 // Colours lay out three per row; "View More +" reveals the rows beyond the third.
 const visibleColors = computed(() =>
-  showAllColors.value ? COLOR_FACETS : COLOR_FACETS.slice(0, COLOR_COLLAPSED_ROWS * 3),
+  showAllColors.value ? props.colors : props.colors.slice(0, COLOR_COLLAPSED_ROWS * 3),
 )
+
+/** White and near-white swatches need a visible edge against the white panel. */
+function isLight(hex: string): boolean {
+  const n = Number.parseInt(hex.replace('#', ''), 16)
+  if (Number.isNaN(n)) return false
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  return (r * 299 + g * 587 + b * 114) / 1000 > 200
+}
 
 function isSelected(facet: keyof typeof props.selected, value: string) {
   return props.selected[facet].includes(value)
@@ -65,22 +76,25 @@ function isSelected(facet: keyof typeof props.selected, value: string) {
     </button>
 
     <div v-show="open.type" id="filter-type" class="flex w-full flex-col gap-1.5">
+      <!-- The box is 18px, square like the rest of the site's controls, with
+           a real tick when checked; the whole 44px row is the tap target. -->
       <label
         v-for="type in visibleTypes"
         :key="type.value"
-        class="flex min-h-[44px] w-full cursor-pointer items-center gap-2"
+        class="flex min-h-[44px] w-full cursor-pointer items-center gap-3"
       >
         <input
           type="checkbox"
-          class="size-8 shrink-0 cursor-pointer appearance-none rounded border-[0.5px] border-black bg-white checked:bg-graphite focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-graphite"
+          class="filter-check size-[18px] shrink-0 cursor-pointer appearance-none border border-graphite bg-white bg-center bg-no-repeat checked:bg-graphite"
           :checked="isSelected('type', type.value)"
           @change="emit('toggle', 'type', type.value)"
         >
         <span class="min-w-0 flex-1 text-caption text-black">{{ type.label }}</span>
+        <span v-if="type.count" class="shrink-0 text-caption text-muted">{{ type.count }}</span>
       </label>
 
       <button
-        v-if="TYPE_FACETS.length > TYPE_COLLAPSED_COUNT"
+        v-if="types.length > TYPE_COLLAPSED_COUNT"
         type="button"
         class="flex min-h-[44px] w-full items-center pb-5 pt-1 text-left text-caption text-subtle"
         @click="showAllTypes = !showAllTypes"
@@ -111,8 +125,11 @@ function isSelected(facet: keyof typeof props.selected, value: string) {
             @click="emit('toggle', 'color', color.value)"
           >
             <span
-              class="size-6 rounded-full border border-line"
-              :class="isSelected('color', color.value) ? 'ring-1 ring-graphite ring-offset-2' : ''"
+              class="size-6 rounded-full"
+              :class="[
+                isLight(color.hex) ? 'border border-line' : '',
+                isSelected('color', color.value) ? 'ring-1 ring-graphite ring-offset-2' : '',
+              ]"
               :style="{ backgroundColor: color.hex }"
             />
             <span class="text-center text-caption text-black">{{ color.label }}</span>
@@ -121,7 +138,7 @@ function isSelected(facet: keyof typeof props.selected, value: string) {
       </ul>
 
       <button
-        v-if="COLOR_FACETS.length > COLOR_COLLAPSED_ROWS * 3"
+        v-if="colors.length > COLOR_COLLAPSED_ROWS * 3"
         type="button"
         class="flex min-h-[44px] w-full items-center pb-5 pt-1 text-left text-caption text-subtle"
         @click="showAllColors = !showAllColors"
@@ -183,3 +200,11 @@ function isSelected(facet: keyof typeof props.selected, value: string) {
     </div>
   </aside>
 </template>
+
+<style scoped>
+/* The tick: a white check drawn over the graphite fill when checked. */
+.filter-check:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+}
+</style>

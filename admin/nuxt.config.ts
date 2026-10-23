@@ -58,6 +58,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8000/api/v1',
+      // For links that open a page on the storefront (Content › Menus).
+      storefrontUrl: process.env.NUXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000',
       // How the admin app sources data while the Laravel admin API is still
       // being built (README Feature 9; none of /api/v1/admin/* exists yet):
       //   auto:     try the real endpoint, fall back to fixtures (default)

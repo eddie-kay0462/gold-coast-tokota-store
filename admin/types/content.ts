@@ -53,3 +53,79 @@ export interface MediaAsset {
   uploadedByName: string | null
   uploadedAt: Timestamp
 }
+
+/** One image tile slot in a storefront mega menu (Content › Menus). */
+export interface MegaMenuSlot {
+  position: number
+  /** Null when nobody has chosen an image: the storefront shows a product photo. */
+  mediaAsset: { id: number, url: string, filename: string, altText: string } | null
+  caption: string
+  link: string
+}
+
+/** A tile as the storefront shows it right now. */
+export interface MegaMenuTile {
+  label: string
+  image: string
+  alt: string
+  to: string
+  /** False for a product photo filling an empty slot. */
+  chosen: boolean
+}
+
+/** `GET /admin/menus`: a header menu, its tiles, and its catalogue-built links. */
+export interface MegaMenuAdmin {
+  key: string
+  label: string
+  to: string
+  slots: MegaMenuSlot[]
+  showing: MegaMenuTile[]
+  columns: { heading: string, links: { label: string, to: string }[] }[]
+  linkOptions: { label: string, to: string }[]
+}
+
+// --- About page (Content › Pages › About; App\Support\AboutPage) -----------
+
+interface AboutSection { visible: boolean }
+interface AboutImageBlock {
+  /** The default, a storefront path. Not editable. */
+  image: string
+  /** A media library image chosen instead, or null for the default. */
+  imageId: number | null
+  imageAlt: string
+  /** Resolved by the API: the chosen image, else the default. */
+  imageUrl?: string
+}
+
+export interface AboutVideoPost {
+  platform: 'youtube' | 'instagram'
+  id: string
+  title: string
+  meta: string
+  shape: 'portrait' | 'landscape'
+  thumb: 'oardefault' | 'maxresdefault' | null
+}
+
+export interface AboutContent {
+  hero: AboutSection & AboutImageBlock & { eyebrow: string; heading: string; lede: string }
+  statement: AboutSection & { text: string }
+  story: AboutSection & { eyebrow: string; heading: string; paragraphs: string[]; quote: string; quoteBy: string; quoteSource: string; quoteUrl: string }
+  figures: AboutSection & { items: { value: string; label: string; source: string; href: string }[] }
+  materials: AboutSection & { eyebrow: string; heading: string; body: string; items: { name: string; body: string }[] }
+  people: AboutSection & AboutImageBlock & { eyebrow: string; heading: string; body: string; caption: string; team: { role: string; name: string }[] }
+  ahenema: AboutSection & AboutImageBlock & { eyebrow: string; heading: string; body: string }
+  experiences: AboutSection & { eyebrow: string; heading: string; body: string; items: { name: string; when: string; detail: string }[] }
+  watch: AboutSection & { eyebrow: string; heading: string; body: string; posts: AboutVideoPost[] }
+  slogans: AboutSection & { items: string[] }
+  recognition: AboutSection & { eyebrow: string; heading: string; items: { name: string; detail: string; date: string; href: string }[] }
+  mission: AboutSection & { heading: string; lede: string; mission: string; vision: string }
+  socials: { instagram: string; youtube: string }
+}
+
+/** `GET /admin/pages/about`. */
+export interface AboutPageAdmin {
+  content: AboutContent
+  images: { id: number; filename: string; altText: string }[]
+  updatedAt: Timestamp | null
+  updatedBy: string | null
+}

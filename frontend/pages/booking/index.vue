@@ -56,9 +56,12 @@ const APPOINTMENT_EXPERIENCES = [
     <BookingDiyOrderForm v-else />
 
     <p class="mt-8 text-center">
+      <!-- 20% above the quiet link's 12px: the page's closing links read as
+           links, not footnotes. -->
       <CommonWhatsAppLink
         source="booking"
         variant="quiet"
+        class="!text-[14.4px] !leading-5"
         :message="activeTab === 'workshop' ? whatsappMessage.workshop() : whatsappMessage.diyOrder()"
       >
         Prefer to arrange over WhatsApp?
@@ -87,6 +90,7 @@ const APPOINTMENT_EXPERIENCES = [
           <CommonWhatsAppLink
             source="booking-appointment"
             variant="quiet"
+            class="!text-[14.4px] !leading-5"
             :message="whatsappMessage.workshop(experience.name)"
           >
             Enquire on WhatsApp

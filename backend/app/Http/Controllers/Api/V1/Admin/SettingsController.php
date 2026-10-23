@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Enums\ShippingZone;
 use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use App\Http\Controllers\Controller;
+use App\Models\ShippingSetting;
 use App\Models\SiteSetting;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Notifications\FishAfricaSmsService;
@@ -105,9 +106,9 @@ class SettingsController extends Controller
             // refused and sent to WhatsApp.
             'unpriced_regions' => config('shipping.unpriced_regions') === 'refuse' ? 'refuse' : 'fallback',
             'fallback_rates' => [
-                'accra' => ['amount' => (int) config('shipping.fallback_rates.accra'), 'currency' => 'GHS'],
-                'ghana' => ['amount' => (int) config('shipping.fallback_rates.ghana'), 'currency' => 'GHS'],
-                'international' => ['amount' => (int) config('shipping.fallback_rates.international'), 'currency' => 'GHS'],
+                'accra' => ['amount' => ShippingSetting::fallbackRate('accra'), 'currency' => 'GHS'],
+                'ghana' => ['amount' => ShippingSetting::fallbackRate('ghana'), 'currency' => 'GHS'],
+                'international' => ['amount' => ShippingSetting::fallbackRate('international'), 'currency' => 'GHS'],
             ],
             'ops_alerts' => [
                 'email' => (bool) config('shipping.ops.email'),

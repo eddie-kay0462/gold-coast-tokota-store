@@ -13,6 +13,7 @@ class Page extends Model
         'slug',
         'title',
         'body',
+        'content',
         'is_draft',
         'updated_by_admin_id',
     ];
@@ -21,7 +22,24 @@ class Page extends Model
     {
         return [
             'is_draft' => 'boolean',
+            // Structured sections; only About uses it (App\Support\AboutPage).
+            'content' => 'array',
         ];
+    }
+
+    /**
+     * Admin routes take a page by id or by slug: the editor links by slug
+     * (/pages/privacy), and the API's tests and older callers use the id.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field !== null) {
+            return parent::resolveRouteBinding($value, $field);
+        }
+
+        return ctype_digit((string) $value)
+            ? static::query()->whereKey($value)->first()
+            : static::query()->where('slug', $value)->first();
     }
 
     public function updatedByAdmin()

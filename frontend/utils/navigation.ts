@@ -5,6 +5,8 @@ export type MegaMenuPromo = {
   image: string
   alt: string
   to: string
+  /** From the API: true when picked in the admin, false for a product photo. */
+  chosen?: boolean
 }
 
 export type MegaMenu = {
@@ -12,7 +14,8 @@ export type MegaMenu = {
   promos: MegaMenuPromo[]
 }
 
-export type NavItem = NavLink & { accent?: boolean, menu?: MegaMenu }
+/** `key` matches the menu's key in `GET /navigation/menus` (App\\Support\\MegaMenus). */
+export type NavItem = NavLink & { key?: string, accent?: boolean, menu?: MegaMenu }
 
 // Row 2 of the header: the non-shopping destinations.
 //
@@ -39,104 +42,90 @@ function withParams(baseTo: string, params: Record<string, string>): string {
   return query ? `${path}?${query}` : path!
 }
 
-// Both promo tiles come from the Figma Mens panel; they are the only two pieces
-// of menu artwork that exist. Swap them per category once real photography does.
+// Both promo tiles come from the Figma Mens panel. They only show if the API
+// can't be reached: normally each menu's tiles are chosen in the admin
+// (Content › Menus), or are that menu's own product photos.
 const promoArtwork = {
   ahenema: { image: '/design/menu-ahenema.png', alt: 'Blue and black leather ahenema sandals' },
   closedToe: { image: '/design/menu-closed-toe.png', alt: 'Closed-toe leather shoes in tan and black' },
 }
 
 /**
- * Builds the two-column + two-promo panel drawn in Figma, rebased onto a given
- * shop route.
+ * The stand-in for a menu when `GET /navigation/menus` can't be reached
+ * (`composables/useMegaMenus.ts`). The live menus are built by the API from
+ * the catalogue, so they only offer styles and departments that have
+ * products; this one can't know that, so it keeps to the three styles the
+ * catalogue is made of and the sorts `/shop` honours. ("Top Rated" was
+ * dropped: there are no ratings, and the sort was ignored.)
  *
- * Every link here resolves to a filter `/shop` actually implements: `type`,
- * `sort` and `sale`, the keys `pages/shop/index.vue` reads. The previous
- * version pointed at `?collection=gift-guide`, `?collection=new-ahenema` and
- * friends, which nothing filters on: the panel looked complete and every link
- * in it silently returned the unfiltered catalogue. That is why these menus
- * were all flagged `placeholder`; they no longer need to be.
- *
- * Rebasing is what makes one template serve every item: opened from Sandals,
- * "New Arrivals" means new sandals; opened from Sale, it means new sale items.
+ * Rebasing onto the menu's own route is what makes one template serve every
+ * item: opened from Sale, "New Arrivals" means new sale items.
  */
-function createShopMenu(baseTo: string, label: string): MegaMenu {
+function createShopMenu(baseTo: string, allLabel: string): MegaMenu {
   return {
     columns: [
       {
-        heading: 'Shop All',
+        heading: 'Styles',
         links: [
-          { label: `All ${label}`, to: baseTo },
-          { label: 'Ahenema', to: withParams(baseTo, { type: 'ahenema' }) },
-          { label: 'Sandals', to: withParams(baseTo, { type: 'sandals' }) },
+          { label: allLabel, to: baseTo },
           { label: 'Slippers', to: withParams(baseTo, { type: 'slippers' }) },
+          { label: 'Ahenema', to: withParams(baseTo, { type: 'ahenema' }) },
           { label: 'Closed-Toe Shoes', to: withParams(baseTo, { type: 'closed-toe' }) },
-          { label: 'Merchandise', to: withParams(baseTo, { type: 'merchandise' }) },
         ],
       },
       {
-        heading: 'Featured Shops',
+        heading: 'Featured',
         links: [
           { label: 'New Arrivals', to: withParams(baseTo, { sort: 'newest' }) },
           { label: 'Best Sellers', to: withParams(baseTo, { sort: 'best-selling' }) },
-          { label: 'Top Rated', to: withParams(baseTo, { sort: 'top-rated' }) },
-          { label: 'On Sale', to: withParams(baseTo, { sale: 'true' }) },
           // Custom work is a booking, not a catalogue filter.
           { label: 'Customised Sandals', to: '/booking' },
         ],
       },
     ],
     promos: [
-      {
-        label: 'Latest and Greatest Ahenema',
-        ...promoArtwork.ahenema,
-        to: withParams(baseTo, { type: 'ahenema', sort: 'newest' }),
-      },
-      {
-        label: 'Closed-Toe Shoes',
-        ...promoArtwork.closedToe,
-        to: withParams(baseTo, { type: 'closed-toe' }),
-      },
+      { label: 'Ahenema', ...promoArtwork.ahenema, to: withParams(baseTo, { type: 'ahenema', sort: 'newest' }) },
+      { label: 'Closed-Toe Shoes', ...promoArtwork.closedToe, to: withParams(baseTo, { type: 'closed-toe' }) },
     ],
   }
 }
 
 /**
- * Row 3: the catalogue entry points, taken from the approved Template B
- * mockup's nav: Best Sellers, Sandals, Ahenema.
+ * Row 3: the catalogue entry points from the approved Template B mockup:
+ * Best Sellers, Sandals, Ahenema, plus Sale (sale pricing is built, and the
+ * `sale` colour token exists for this item).
  *
- * This replaces the seven department placeholders that used to live here
- * (Mens, Womens, Kids, New Arrivals, Best-Sellers, Merchandise, Custom Shoes).
- * They were flagged `placeholder: true` because `?category=mens` and friends
- * filter on a `departments` field only the design catalogue carries; the API's
- * `ProductResource` has never returned it, so those tabs would have shown the
- * whole catalogue on real data. `?type=` is a facet the shop genuinely filters.
+ * "Sandals" is the whole range. Everything the brand makes is a sandal, and
+ * no product is typed `sandals` (the catalogue's styles are slippers, ahenema
+ * and closed-toe), so `?type=sandals` was an empty page.
  *
- * `Sale` is not in the mockup and is kept deliberately: sale pricing is built
- * (`compare_at_ghs`, the discount badge, the struck compare-at price), and the
- * `sale` colour token exists for this one item.
+ * Each item's menu is replaced by the API's (`useMegaMenus`), matched on `key`.
  */
 export const categoryNav: NavItem[] = [
   {
+    key: 'best-sellers',
     label: 'Best Sellers',
     to: '/shop?sort=best-selling',
-    menu: createShopMenu('/shop?sort=best-selling', 'Best Sellers'),
+    menu: createShopMenu('/shop?sort=best-selling', 'All Best Sellers'),
   },
   {
+    key: 'sandals',
     label: 'Sandals',
-    to: '/shop?type=sandals',
-    menu: createShopMenu('/shop?type=sandals', 'Sandals'),
+    to: '/shop',
+    menu: createShopMenu('/shop', 'All Sandals'),
   },
   {
+    key: 'ahenema',
     label: 'Ahenema',
     to: '/shop?type=ahenema',
-    menu: createShopMenu('/shop?type=ahenema', 'Ahenema'),
+    menu: createShopMenu('/shop?type=ahenema', 'All Ahenema'),
   },
   {
+    key: 'sale',
     label: 'Sale',
     to: '/shop?sale=true',
     accent: true,
-    menu: createShopMenu('/shop?sale=true', 'Sale'),
+    menu: createShopMenu('/shop?sale=true', 'Everything on Sale'),
   },
 ]
 
@@ -159,16 +148,15 @@ export const categoryNav: NavItem[] = [
  * itself has never been designed.
  */
 export const aboutSectionNav: NavLink[] = [
-  { label: 'About', to: '/about' },
-  // "Cleaner Manufacturing" and "Workshop" were separate tabs pointing at the
-  // same subject from two directions: the factories section on this page, and
-  // the booking page. One tab now, on the section that explains the work.
-  // Booking is a top-level header item (`Bookings`), so nothing is lost.
-  { label: 'Our Workshop', to: '/about#factories' },
-  { label: 'Designed to Last', to: '/about#quality' },
-  { label: 'Sustainability', to: '/about#sustainability' },
+  // Since the 23 Oct redesign; the old tabs pointed at sections that are gone
+  // (Our Workshop → the "ethical factories" block, Designed to Last).
+  { label: 'Our Story', to: '/about#story' },
+  { label: 'Materials', to: '/about#sustainability' },
+  { label: 'People', to: '/about#people' },
+  { label: 'Experiences', to: '/about#experiences' },
+  { label: 'Watch', to: '/about#watch' },
+  { label: 'Recognition', to: '/about#recognition' },
   { label: 'The Latest', to: '/about#stories' },
-  { label: 'Partnerships', to: '/blog/partnerships-for-change' },
 ]
 
 /**

@@ -1,10 +1,25 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
+import { countryName, flagUrl } from '~/utils/geo'
 import { whatsappMessage } from '~/utils/whatsapp'
 
 /**
- * The rotating announcement strip, transcribed from the approved Template B
- * mockup: a short list of messages cross-fading in place on a slow loop.
+ * The announcement strip above the header: the whole black band, one line.
+ *
+ * Restyled 23 Oct to sit with the rest of the site: pure black (`ink`, #000),
+ * pure white type at weight 400 in the header nav's tracked capitals, and
+ * square controls. It used to be two lines of light-weight (300) type at
+ * 10 and 12px, which anti-aliasing turned grey on black, in mixed case on a
+ * phone, beside a rounded currency pill with a grey edge.
+ *
+ * - Desktop: support hours on the left, the rotating message centred, and
+ *   WhatsApp, flag and currency on the right. The middle is centred against
+ *   the bar, the same three-column grid the logo row uses.
+ * - Phone: the messages and the hours scroll in one marquee beside the flag
+ *   and currency. A centred line has no room to hold still on a 320px phone.
+ *
+ * The messages are a short list cross-fading in place on a slow loop, as in
+ * the approved Template B mockup.
  *
  * Copy comes from the admin-editable `SiteSetting.announcements` because these
  * are commercial claims (delivery terms, accepted payment methods) that the
@@ -37,6 +52,9 @@ const ROTATE_SECONDS = 4
 const FALLBACK_HOURS = 'Mon–Sat · 9am–5pm GMT'
 
 const siteSettings = useSiteSettingsStore()
+// The flag shows where the visitor is connecting from (resolved server-side,
+// refined with browser signals a VPN doesn't change).
+const { geo } = useVisitorCountry()
 
 const supportHours = computed(() => siteSettings.businessHours || FALLBACK_HOURS)
 
@@ -66,61 +84,85 @@ watch(messages, (list) => {
 </script>
 
 <template>
-  <div class="min-w-0 flex-1 py-1.5 text-center">
-    <!-- Line 1. Below `sm` the messages scroll instead of rotating: the flag and
-         currency cluster leave roughly 180px on a 320px phone, which is not
-         enough for a centred line to hold still in; that was a measured overlap
-         bug, and the marquee is the treatment that fixed it. -->
-    <div class="flex items-center text-caption text-white sm:hidden">
-      <CommonMarquee :copies="2" :duration="24">
-        <template v-for="message in messages" :key="message">
-          <span class="whitespace-nowrap pr-2">{{ message }}</span>
-          <span class="pr-2" aria-hidden="true">&middot;</span>
-        </template>
-      </CommonMarquee>
-    </div>
+  <!-- Dark, so it carries `chrome-dark` for a white focus ring. -->
+  <div class="chrome-dark w-full bg-ink text-white">
+    <div class="flex h-10 w-full items-center gap-3 px-5 sm:grid sm:grid-cols-[1fr_auto_1fr] lg:px-[30px]">
+      <!-- Left: when someone can expect a reply. From md; on a phone it rides
+           in the marquee instead. -->
+      <p class="bar-type hidden min-w-0 truncate sm:block">
+        <span class="hidden md:inline">{{ supportHours }}</span>
+      </p>
 
-    <!-- From `sm` up: one message at a time, cross-fading in place. The stack is
-         a grid rather than absolute positioning so the bar's height is set by
-         the tallest message and never collapses mid-transition. -->
-    <div class="hidden justify-center sm:flex">
-      <p class="sr-only">{{ messages.join('. ') }}.</p>
-      <span class="grid" aria-hidden="true">
-        <Transition
-          enter-active-class="motion-safe:transition motion-safe:duration-500"
-          leave-active-class="motion-safe:transition motion-safe:duration-500"
-          enter-from-class="opacity-0 motion-safe:translate-y-1.5"
-          leave-to-class="opacity-0 motion-safe:-translate-y-1.5"
-        >
-          <span
-            :key="index"
-            class="col-start-1 row-start-1 text-center text-tag uppercase text-white"
+      <!-- Phone: one scrolling line of every message plus the hours. -->
+      <div class="bar-type bar-fade flex min-w-0 flex-1 items-center sm:hidden">
+        <CommonMarquee :copies="2" :duration="26">
+          <template v-for="message in [...messages, supportHours]" :key="message">
+            <span class="whitespace-nowrap px-3">{{ message }}</span>
+            <span aria-hidden="true">·</span>
+          </template>
+        </CommonMarquee>
+      </div>
+
+      <!-- From sm: one message at a time, cross-fading in place. A grid, not
+           absolute positioning, so the line keeps its height mid-fade. -->
+      <div class="hidden justify-center sm:flex">
+        <p class="sr-only">{{ messages.join('. ') }}.</p>
+        <span class="grid" aria-hidden="true">
+          <Transition
+            enter-active-class="motion-safe:transition motion-safe:duration-500"
+            leave-active-class="motion-safe:transition motion-safe:duration-500"
+            enter-from-class="opacity-0 motion-safe:translate-y-1"
+            leave-to-class="opacity-0 motion-safe:-translate-y-1"
           >
-            {{ messages[index] }}
-          </span>
-        </Transition>
-      </span>
-    </div>
+            <span :key="index" class="bar-type col-start-1 row-start-1 whitespace-nowrap text-center">
+              {{ messages[index] }}
+            </span>
+          </Transition>
+        </span>
+      </div>
 
-    <!-- Line 2: when someone can expect a reply, and how to get one. Quieter
-         than the line above so the two read as message and footnote rather than
-         as two competing announcements. -->
-    <p class="mt-0.5 text-tag uppercase text-white">
-      {{ supportHours }}
-      <!-- Hidden below `sm`: the floating WhatsApp button is already on screen
-           there, and a second link to the same place is noise on a 320px bar.
-           `quiet` styling is overridden for the dark ground. -->
-      <span class="hidden sm:inline">
-        <span aria-hidden="true">&nbsp;&middot;&nbsp;</span>
+      <!-- Right: WhatsApp (from lg; the floating button covers smaller
+           screens), the visitor's flag, and the currency switch. -->
+      <div class="flex shrink-0 items-center justify-end gap-4">
         <CommonWhatsAppLink
           source="announcement"
           variant="quiet"
           :message="whatsappMessage.general()"
-          class="!text-white decoration-white/50 hover:decoration-white"
+          class="bar-type hidden !text-white decoration-white/60 hover:decoration-white lg:inline-flex"
         >
           Message us on WhatsApp
         </CommonWhatsAppLink>
-      </span>
-    </p>
+        <span class="flex items-center gap-1">
+          <img
+            :key="geo.country"
+            :src="flagUrl(geo.country)"
+            :alt="countryName(geo.country)"
+            :title="countryName(geo.country)"
+            class="h-3 w-[17px] shrink-0 object-cover"
+            width="17"
+            height="12"
+          >
+          <CommonCurrencyToggle tone="dark" />
+        </span>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* One type treatment for the whole bar: the header nav's tracked capitals,
+   at 400 so the strokes stay solid white on black. */
+.bar-type {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* The marquee fades out at both edges instead of being cut off. */
+.bar-fade {
+  mask-image: linear-gradient(to right, transparent, #000 14px, #000 calc(100% - 14px), transparent);
+}
+</style>

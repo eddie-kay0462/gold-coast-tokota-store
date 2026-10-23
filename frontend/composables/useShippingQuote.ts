@@ -1,5 +1,6 @@
 import type { ShippingAddress } from '~/components/checkout/CheckoutForm.vue'
 import { useCartStore } from '~/stores/cart'
+import { toE164 } from '~/utils/phone'
 
 /**
  * Delivery options and prices for the cart, from `POST /checkout/shipping-quote`.
@@ -36,9 +37,13 @@ export function cartLine(item: { inventoryItemId: string, slug: string, quantity
 
 export function addressPayload(address: ShippingAddress) {
   return {
-    full_name: address.fullName,
+    // The parts, and the whole name couriers, receipts and the admin read.
+    first_name: address.firstName.trim(),
+    last_name: address.lastName.trim(),
+    full_name: `${address.firstName.trim()} ${address.lastName.trim()}`.trim(),
     email: address.email,
-    phone: address.phone,
+    // E.164, e.g. +233241234567, from the calling-code box and the number.
+    phone: toE164(address.phoneCountry, address.phone) ?? '',
     line1: address.line1,
     city: address.city,
     region: address.region || null,
