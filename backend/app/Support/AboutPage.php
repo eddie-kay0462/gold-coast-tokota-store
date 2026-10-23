@@ -66,7 +66,7 @@ final class AboutPage
                 'items' => [
                     ['value' => '2,500+', 'label' => 'pairs made and sold across Africa, Europe and Asia', 'source' => 'Business Beat, Feb 2025', 'href' => $businessBeat],
                     ['value' => '5 tonnes', 'label' => 'of tyres and denim turned into footwear', 'source' => 'Business Beat, Feb 2025', 'href' => $businessBeat],
-                    ['value' => '5–25%', 'label' => 'of every pair is reclaimed fabric or tyre', 'source' => 'Ghana Climate Innovation Centre', 'href' => 'https://ghanacic.ashesi.edu.gh/ventures/gold-coast-tokota/'],
+                    ['value' => '5 to 25%', 'label' => 'of every pair is reclaimed fabric or tyre', 'source' => 'Ghana Climate Innovation Centre', 'href' => 'https://ghanacic.ashesi.edu.gh/ventures/gold-coast-tokota/'],
                     ['value' => '20', 'label' => 'pairs a day, each one made by hand', 'source' => 'Springboard, May 2026', 'href' => $springboard],
                 ],
             ],
@@ -111,9 +111,9 @@ final class AboutPage
                 'heading' => 'Come and make a pair with us.',
                 'body' => 'The workshop is open to everyone: paint your own sandals, spend a day at the bench, or bring a class to see how waste becomes footwear.',
                 'items' => [
-                    ['name' => 'Sandal Sip & Paint', 'when' => 'Every Saturday · 10:00 AM – 1:00 PM', 'detail' => 'Paint your own pair with Adinkra symbols. Up to 20 people.'],
-                    ['name' => 'Be a Shoemaker for a Day', 'when' => 'Every Friday · 9:00 AM – 4:00 PM', 'detail' => 'A full day at the bench with our artisans. Up to 10 people.'],
-                    ['name' => 'School Sustainability Tours', 'when' => 'Monday – Friday', 'detail' => 'How waste becomes footwear, for up to 40 students.'],
+                    ['name' => 'Sandal Sip & Paint', 'when' => 'Every Saturday · 10:00 AM to 1:00 PM', 'detail' => 'Paint your own pair with Adinkra symbols. Up to 20 people.'],
+                    ['name' => 'Be a Shoemaker for a Day', 'when' => 'Every Friday · 9:00 AM to 4:00 PM', 'detail' => 'A full day at the bench with our artisans. Up to 10 people.'],
+                    ['name' => 'School Sustainability Tours', 'when' => 'Monday to Friday', 'detail' => 'How waste becomes footwear, for up to 40 students.'],
                     ['name' => 'Corporate Team Building', 'when' => 'By appointment', 'detail' => 'Half or full day, up to 30 people.'],
                 ],
             ],
