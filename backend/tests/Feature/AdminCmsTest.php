@@ -307,4 +307,15 @@ class AdminCmsTest extends TestCase
             $this->getJson("/api/v1/admin{$path}")->assertUnauthorized();
         }
     }
+
+    public function test_the_page_editor_addresses_a_page_by_slug(): void
+    {
+        $page = Page::query()->create(['slug' => 'privacy', 'title' => 'Privacy Policy', 'body' => '<p>Old</p>', 'is_draft' => true]);
+
+        $this->actingAs($this->admin(), 'admin')->getJson('/api/v1/admin/pages/privacy')->assertOk()->assertJsonPath('data.id', $page->id);
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson('/api/v1/admin/pages/privacy', ['body' => '<p>New</p>'])
+            ->assertOk()
+            ->assertJsonPath('data.body', '<p>New</p>');
+    }
 }
