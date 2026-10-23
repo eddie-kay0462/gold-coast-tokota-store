@@ -17,7 +17,8 @@ const redirectTo = computed(() => {
 })
 
 const form = reactive({
-  name: '',
+  firstName: '',
+  lastName: '',
   email: '',
   phoneCountry: DEFAULT_PHONE_COUNTRY,
   phone: '',
@@ -35,7 +36,8 @@ const currencyOptions = CURRENCIES.map((value) => ({
 }))
 
 function validate(): boolean {
-  errors.name = !form.name.trim() ? 'Enter your name.' : undefined
+  errors.firstName = !form.firstName.trim() ? 'Enter your first name.' : undefined
+  errors.lastName = !form.lastName.trim() ? 'Enter your last name.' : undefined
 
   errors.email = !form.email.trim()
     ? 'Enter your email address.'
@@ -65,7 +67,9 @@ async function onSubmit() {
 
   submitting.value = true
   const result = await register({
-    name: form.name.trim(),
+    // The API keeps one `name`; the form asks for the two parts so nobody
+    // has to guess the order. The account greeting uses the first word.
+    name: `${form.firstName.trim()} ${form.lastName.trim()}`,
     email: form.email.trim(),
     // Saved as E.164, e.g. +233241234567.
     phone: toE164(form.phoneCountry, form.phone),
@@ -81,7 +85,8 @@ async function onSubmit() {
   }
 
   // The API's field names, mapped onto this form's.
-  errors.name = result.errors.name
+  // A `name` error (e.g. too long) belongs to the pair; shown under first name.
+  errors.firstName = result.errors.name
   errors.email = result.errors.email
   errors.phone = result.errors.phone
   errors.password = result.errors.password
@@ -106,10 +111,16 @@ useSeoMeta({
     </CommonInlineNotice>
 
     <form class="flex w-full flex-col items-start gap-5" novalidate @submit.prevent="onSubmit">
-      <FormsFormField
-        v-model="form.name"
-        label="Name" name="name" autocomplete="name" required :error="errors.name"
-      />
+      <div class="grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+        <FormsFormField
+          v-model="form.firstName"
+          label="First name" name="first_name" autocomplete="given-name" required :error="errors.firstName"
+        />
+        <FormsFormField
+          v-model="form.lastName"
+          label="Last name" name="last_name" autocomplete="family-name" required :error="errors.lastName"
+        />
+      </div>
       <FormsFormField
         v-model="form.email"
         label="Email" name="email" type="email" autocomplete="email" required :error="errors.email"

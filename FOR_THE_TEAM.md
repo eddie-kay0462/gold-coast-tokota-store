@@ -89,6 +89,14 @@ A new `field-group` class (`assets/css/main.css`) puts one border round both,
 makes the button full height with a hairline at the join, and draws one ring
 round the whole group while either part has keyboard focus.
 
+**First and last name on sign-up.** The single Name box is now First name and
+Last name, side by side from 640px and stacked on phones (`given-name` /
+`family-name` autofill). The API still keeps one `customers.name`, so the two
+are joined as "First Last" on submit, with no API or database change. An API
+error on `name` shows under First name. Splitting the stored name (for
+example, for courier labels) would need new columns, and nobody has asked
+for that.
+
 **Show/hide password on every account form.** The sign-in eye button is now
 the shared `FormsPasswordField`, used for both password boxes on sign-up and
 on password reset as well as sign-in. Each box toggles on its own.
