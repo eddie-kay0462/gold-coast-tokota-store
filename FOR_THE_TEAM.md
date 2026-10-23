@@ -79,6 +79,24 @@ currency picker didn't match the inputs around it. It's now `appearance-none`
 and `rounded-none` with the same chevron as the phone field. This is the
 shared field, so the checkout country picker matches too.
 
+**Text boxes with a button read as one control.** The newsletter's arrow and
+the sign-in password's eye were a box and a button side by side:
+- the eye button was 2px shorter than the box;
+- the newsletter button had a black border against the box's grey one;
+- the focus ring went around the box alone, in the browser's own blue.
+
+A new `field-group` class (`assets/css/main.css`) puts one border round both,
+makes the button full height with a hairline at the join, and draws one ring
+round the whole group while either part has keyboard focus.
+
+**The blue ring was site-wide.** The global `:focus-visible` rule set a ring
+width and colour but no style, so browsers used their own `auto` style, which
+is blue. It now sets `outline` as well, so keyboard focus everywhere shows the
+intended graphite ring (white in dark regions, as before).
+
+Checked in headless Chrome: both groups focused, with one solid graphite ring
+around each.
+
 **Not changed:** the checkout phone field still uses the old single box.
 `FormsPhoneField` can replace it whenever wanted.
 

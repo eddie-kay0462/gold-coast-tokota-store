@@ -82,23 +82,22 @@ useSeoMeta({
         <label for="password" class="text-caption font-normal text-graphite">
           Password <span aria-hidden="true">*</span>
         </label>
-        <div class="flex w-full min-w-0 items-stretch">
+        <div class="field-group" :class="{ 'border-sale': errors.password }">
           <input
             id="password"
             v-model="form.password"
             name="password"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="current-password"
-            class="min-h-[44px] w-full min-w-0 flex-1 border border-r-0 bg-white px-3 py-2.5 text-body text-graphite placeholder:text-muted"
-            :class="errors.password ? 'border-sale' : 'border-line'"
+            class="min-h-[44px] w-full min-w-0 flex-1 bg-transparent px-3 py-2.5 text-body text-graphite placeholder:text-muted"
             :aria-invalid="!!errors.password"
             :aria-describedby="errors.password ? 'password-error' : undefined"
           >
-          <!-- size-11 rather than a bare icon: the 44px tap floor applies to
+          <!-- w-11 and the group's full height: the 44px tap floor applies to
                the button, not the glyph inside it. -->
           <button
             type="button"
-            class="flex size-11 shrink-0 items-center justify-center border text-subtle"
+            class="flex w-11 shrink-0 items-center justify-center border-l text-subtle transition-colors hover:text-ink focus-visible:bg-surface focus-visible:text-ink"
             :class="errors.password ? 'border-sale' : 'border-line'"
             :aria-label="showPassword ? 'Hide password' : 'Show password'"
             :aria-pressed="showPassword"
