@@ -6,6 +6,7 @@ use App\Contracts\ShippingCarrier;
 use App\Enums\ShippingZone;
 use App\Exceptions\RegionNotServedException;
 use App\Models\Shipment;
+use App\Models\ShippingSetting;
 use App\Models\ShippingZoneRate;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Shipping\CancelResult;
@@ -51,7 +52,7 @@ class ManualCarrier implements ShippingCarrier
                 carrier: $this->name(),
                 serviceCode: null,
                 label: 'Delivery in Accra',
-                amountGhs: (int) config('shipping.fallback_rates.accra'),
+                amountGhs: ShippingSetting::fallbackRate('accra'),
                 source: QuoteOption::SOURCE_FLAT,
                 eta: $eta,
             ),
@@ -60,7 +61,7 @@ class ManualCarrier implements ShippingCarrier
                 carrier: $this->name(),
                 serviceCode: null,
                 label: 'International delivery',
-                amountGhs: (int) config('shipping.fallback_rates.international'),
+                amountGhs: ShippingSetting::fallbackRate('international'),
                 source: QuoteOption::SOURCE_FLAT,
                 eta: $eta,
             ),
@@ -84,7 +85,7 @@ class ManualCarrier implements ShippingCarrier
                 carrier: $this->name(),
                 serviceCode: null,
                 label: 'Delivery in Ghana',
-                amountGhs: (int) config('shipping.fallback_rates.ghana'),
+                amountGhs: ShippingSetting::fallbackRate('ghana'),
                 source: QuoteOption::SOURCE_FALLBACK,
                 eta: $eta,
             );

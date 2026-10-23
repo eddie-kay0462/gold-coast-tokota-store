@@ -149,6 +149,7 @@ Anything that writes them directly is a bug.
 | GET | `/admin/shipments` | A view over orders. `?provider=` `?status=` |
 | GET | `/admin/dashboard/charts` | Year-over-year series |
 | GET/POST | `/admin/media` · DELETE `/admin/media/{id}` | Image library |
+| PUT | `/admin/shipping/fallback-rates` | `pricing.write`. `{ accra_ghs, ghana_ghs, international_ghs }` in pesewas: what a zone is charged when no courier can quote (and, Ghana, an unpriced region). Returned as `fallback_rates` by `GET /admin/shipping/settings`. Defaults ₵35 / ₵35 / ₵350 (23 Oct) |
 | GET · PUT | `/admin/menus` · `/admin/menus/{menu}` | Mega menu image tiles: `content.view` to read, `content.write` to save `{ slots: [{ position, media_asset_id, caption, link }] }`; a slot with `media_asset_id: null` goes back to automatic. Links must be in-site paths |
 | GET | `/admin/settings/{commerce\|delivery\|notifications\|whatsapp}` | Read-only config reflections. `settings.view` |
 | GET | `/admin/settings/payments` | **`settings.payments` — Super Admin only** (§18) |

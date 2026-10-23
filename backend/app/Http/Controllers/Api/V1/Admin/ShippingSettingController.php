@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateFallbackRatesRequest;
 use App\Http\Requests\Admin\UpdateShippingSettingRequest;
 use App\Models\ShippingSetting;
 use App\Services\Shipping\PointInPolygon;
 use Illuminate\Http\JsonResponse;
 
 /**
- * The Accra service polygon and the free-shipping threshold — the two shipping
- * rules that change without a deploy.
+ * The shipping rules that change without a deploy: the Accra service polygon,
+ * the free-shipping threshold, and the fallback delivery rates.
  */
 class ShippingSettingController extends Controller
 {
@@ -27,6 +28,23 @@ class ShippingSettingController extends Controller
         return $this->respond($settings);
     }
 
+    /**
+     * The fallback delivery rates. Prices, so `pricing.write` on the route,
+     * like the regional rates; the polygon and threshold above stay
+     * `settings.write`.
+     */
+    public function updateFallbackRates(UpdateFallbackRatesRequest $request): JsonResponse
+    {
+        $settings = ShippingSetting::current();
+        $settings->update([
+            'fallback_accra_ghs' => $request->integer('accra_ghs'),
+            'fallback_ghana_ghs' => $request->integer('ghana_ghs'),
+            'fallback_international_ghs' => $request->integer('international_ghs'),
+        ]);
+
+        return $this->respond($settings->refresh());
+    }
+
     private function respond(ShippingSetting $settings): JsonResponse
     {
         $polygons = $settings->accra_polygon ? PointInPolygon::polygons($settings->accra_polygon) : [];
@@ -39,6 +57,9 @@ class ShippingSettingController extends Controller
             'free_shipping_threshold' => $settings->free_shipping_threshold_ghs === null
                 ? null
                 : ['amount' => $settings->free_shipping_threshold_ghs, 'currency' => 'GHS'],
+            'fallback_rates' => collect(ShippingSetting::FALLBACK_ZONES)
+                ->mapWithKeys(fn (string $zone) => [$zone => ['amount' => ShippingSetting::fallbackRate($zone), 'currency' => 'GHS']])
+                ->all(),
             'updated_at' => $settings->updated_at,
         ]]);
     }

@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 23 October 2026 (checkout asks for the recipient's first and last name, and the phone takes a country code that follows the delivery country; earlier the same day, announcement bar redesigned: one line, pure black and white; earlier the same day, booking page: WhatsApp links graphite and 20% larger, attendees can't go below 1; earlier the same day, mobile header row 25% taller; earlier the same day, product card colour swatches switch the photo, stock and links when tapped; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, shop page on mobile: centred WhatsApp button, smaller filter checkboxes, filters and swatches from the catalogue, and every product now loads; earlier the same day, home hero on phones shows one pair and pans across the other two; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 23 October 2026 (fallback delivery rate is ₵35, set in admin; checkout keeps the recipient's first and last name; earlier the same day, checkout asks for the recipient's first and last name, and the phone takes a country code that follows the delivery country; earlier the same day, announcement bar redesigned: one line, pure black and white; earlier the same day, booking page: WhatsApp links graphite and 20% larger, attendees can't go below 1; earlier the same day, mobile header row 25% taller; earlier the same day, product card colour swatches switch the photo, stock and links when tapped; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, shop page on mobile: centred WhatsApp button, smaller filter checkboxes, filters and swatches from the catalogue, and every product now loads; earlier the same day, home hero on phones shows one pair and pans across the other two; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,61 @@ inert at their last step.
 
 ## Recent changes
 
-### 23 October 2026 (latest): checkout recipient name in two parts; phone with country code (storefront)
+### 23 October 2026 (latest): fallback delivery rate is ₵35 and set in admin
+
+**What it is.** The rate checkout charges when no courier can give a live
+price, so a courier outage never blocks payment. The Ghana rate is also what a
+region with no rate of its own pays (`SHIPPING_UNPRICED_REGIONS=fallback`).
+It was ₵25 for Accra and Ghana, and env-only (`SHIPPING_FALLBACK_*`).
+
+**Now:**
+- **₵35 for Accra and the rest of Ghana**, at the client's request.
+  International stays ₵350.
+- **Set in admin:** Settings › Delivery › *Fallback delivery rates*, above
+  the regional rates. They're prices, so **`pricing.write`** (Admin and up)
+  via `PUT /admin/shipping/fallback-rates`, like the regional rates. Staff
+  see them read-only.
+- **Stored on `shipping_settings`** (`fallback_accra_ghs`,
+  `fallback_ghana_ghs`, `fallback_international_ghs`) and read through
+  `ShippingSetting::fallbackRate()` by `ManualCarrier`, the admin delivery
+  summary and the inbox context panel. Unset, a zone falls back to
+  `config('shipping.fallback_rates')`, whose defaults are now ₵35 / ₵35 / ₵350.
+- **The migration writes ₵35 to the row,** so an env var still set to 2500
+  (as `.env` had) doesn't keep charging ₵25. `.env.example` is updated. The
+  box's `.env` can keep or drop its `SHIPPING_FALLBACK_*` lines; the admin
+  value wins either way.
+
+**Checked:** 645 backend tests pass.
+- 9 tests that pinned ₵25 now expect ₵35. A USD order's shipping is $2.80 at
+  the test's 0.08 rate.
+- 4 new in `FallbackRatesTest`: defaults, an admin sets them, Staff can't,
+  validation.
+- 1 new in `ShippingQuoteTest`: an admin-set Ghana and international rate is
+  what the quote charges.
+
+Migrated locally: ₵35 / ₵35, international on config. The admin page builds
+but **wasn't clicked through in a browser**.
+
+**To deploy:** run the migration.
+
+### 23 October 2026: checkout keeps the recipient's first and last name (API)
+
+`POST /checkout/session` accepts `shipping_address.first_name` and
+`last_name` (each optional, up to 120 characters).
+- **With the parts,** `full_name` is built from them (`PersonName::join`).
+  Both parts are kept on the order's `shipping_address` next to it.
+- **Everything that reads the recipient,** Yango and DHL labels, receipts and
+  notifications, admin order screens, still reads `full_name`, unchanged.
+- **A lone `full_name`** (the WhatsApp order builder, an older storefront)
+  still works.
+- **Neither** is refused on `full_name`, as before.
+
+This is done in the request's `prepareForValidation`. The shared
+`ResolvesCheckoutItems` one is aliased (`normaliseDestination`) and still runs
+first. 640 backend tests pass: 3 new in `CheckoutSessionTest` for parts, a
+whole name, and neither. No migration (the address is JSON).
+
+### 23 October 2026: checkout recipient name in two parts; phone with country code (storefront)
 
 **Name.** The checkout's one Full name box is now **First name** and **Last
 name** (`shipping given-name` / `shipping family-name` autofill), side by side

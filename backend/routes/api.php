@@ -418,6 +418,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     ->middleware('capability:settings.view')->name('settings.show');
                 Route::put('/settings', [AdminShippingSettingController::class, 'update'])
                     ->middleware('capability:settings.write')->name('settings.update');
+                // What's charged when no courier can quote: a price, so pricing.write.
+                Route::put('/fallback-rates', [AdminShippingSettingController::class, 'updateFallbackRates'])
+                    ->middleware('capability:pricing.write')->name('fallback-rates.update');
             });
 
             // Media library. This is what makes products.images fillable.

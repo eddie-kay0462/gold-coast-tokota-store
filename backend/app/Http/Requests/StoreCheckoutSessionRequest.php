@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\ResolvesCheckoutItems;
+use App\Support\PersonName;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +23,27 @@ use Illuminate\Validation\Rule;
  */
 class StoreCheckoutSessionRequest extends FormRequest
 {
-    use ResolvesCheckoutItems;
+    use ResolvesCheckoutItems {
+        prepareForValidation as normaliseDestination;
+    }
+
+    /**
+     * The recipient can come as `first_name` + `last_name` (the storefront's
+     * form since 23 Oct) or as one `full_name` (the WhatsApp order builder, an
+     * older storefront). With the parts, `full_name` is built from them, so
+     * couriers, receipts and the admin, which all read `full_name`, are
+     * unchanged; the parts are kept on the order's address too.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->normaliseDestination();
+
+        $address = $this->input('shipping_address');
+        if (is_array($address) && filled($address['first_name'] ?? null)) {
+            $address['full_name'] = PersonName::join($address['first_name'], $address['last_name'] ?? null);
+            $this->merge(['shipping_address' => $address]);
+        }
+    }
 
     public function authorize(): bool
     {
@@ -43,6 +64,8 @@ class StoreCheckoutSessionRequest extends FormRequest
 
             ...$this->destinationRules(),
             'shipping_address.full_name' => ['required', 'string', 'max:255'],
+            'shipping_address.first_name' => ['nullable', 'string', 'max:120'],
+            'shipping_address.last_name' => ['nullable', 'string', 'max:120'],
             'shipping_address.email' => ['required', 'email', 'max:255'],
             'shipping_address.phone' => ['required', 'string', 'max:32'],
         ];

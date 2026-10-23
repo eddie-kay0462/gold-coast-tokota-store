@@ -175,12 +175,21 @@ class ShippingQuoteTest extends TestCase
 
     // --- regional rates -------------------------------------------------
 
+    /** The fallback rates are set in admin; checkout quotes whatever is set. */
+    public function test_a_fallback_rate_set_in_admin_is_what_checkout_quotes(): void
+    {
+        ShippingSetting::current()->update(['fallback_ghana_ghs' => 5_000, 'fallback_international_ghs' => 40_000]);
+
+        $this->quote($this->stocked(), self::KUMASI)->assertOk()->assertJsonPath('data.options.0.amount_ghs', 5_000);
+        $this->quote($this->stocked(), self::LONDON)->assertOk()->assertJsonPath('data.options.0.amount_ghs', 40_000);
+    }
+
     /** Deploying regional rates must not change a price until one is entered. */
     public function test_an_unpriced_region_is_charged_the_ghana_fallback(): void
     {
         $this->quote($this->stocked(), self::KUMASI)
             ->assertOk()
-            ->assertJsonPath('data.options.0.amount_ghs', 2_500);
+            ->assertJsonPath('data.options.0.amount_ghs', 3_500);
     }
 
     public function test_an_inactive_region_is_not_offered_its_rate(): void
@@ -189,7 +198,7 @@ class ShippingQuoteTest extends TestCase
 
         $this->quote($this->stocked(), self::KUMASI)
             ->assertOk()
-            ->assertJsonPath('data.options.0.amount_ghs', 2_500);
+            ->assertJsonPath('data.options.0.amount_ghs', 3_500);
     }
 
     public function test_unpriced_regions_can_be_refused_instead(): void
@@ -228,7 +237,7 @@ class ShippingQuoteTest extends TestCase
         $this->quote($this->stocked(), self::OSU)
             ->assertOk()
             ->assertJsonPath('data.options.0.carrier', 'yango')
-            ->assertJsonPath('data.options.0.amount_ghs', 2_500);
+            ->assertJsonPath('data.options.0.amount_ghs', 3_500);
 
         $item = $this->stocked();
         $this->checkout($item, self::OSU)->assertCreated();
