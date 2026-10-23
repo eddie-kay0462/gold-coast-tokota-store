@@ -3,7 +3,11 @@ import { defineStore } from 'pinia'
 /** `CustomerResource`, as `POST /login`, `POST /register` and `GET /me` return it. */
 export interface CustomerSession {
   id: string
+  /** The full name, always `first_name` + `last_name`. */
   name: string
+  first_name: string
+  /** Null only for some accounts from before sign-up asked for it. */
+  last_name: string | null
   email: string
   phone: string | null
   preferred_currency: 'GHS' | 'USD' | null

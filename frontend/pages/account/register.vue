@@ -67,9 +67,8 @@ async function onSubmit() {
 
   submitting.value = true
   const result = await register({
-    // The API keeps one `name`; the form asks for the two parts so nobody
-    // has to guess the order. The account greeting uses the first word.
-    name: `${form.firstName.trim()} ${form.lastName.trim()}`,
+    first_name: form.firstName.trim(),
+    last_name: form.lastName.trim(),
     email: form.email.trim(),
     // Saved as E.164, e.g. +233241234567.
     phone: toE164(form.phoneCountry, form.phone),
@@ -85,8 +84,8 @@ async function onSubmit() {
   }
 
   // The API's field names, mapped onto this form's.
-  // A `name` error (e.g. too long) belongs to the pair; shown under first name.
-  errors.firstName = result.errors.name
+  errors.firstName = result.errors.first_name
+  errors.lastName = result.errors.last_name
   errors.email = result.errors.email
   errors.phone = result.errors.phone
   errors.password = result.errors.password

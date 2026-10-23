@@ -91,11 +91,12 @@ round the whole group while either part has keyboard focus.
 
 **First and last name on sign-up.** The single Name box is now First name and
 Last name, side by side from 640px and stacked on phones (`given-name` /
-`family-name` autofill). The API still keeps one `customers.name`, so the two
-are joined as "First Last" on submit, with no API or database change. An API
-error on `name` shows under First name. Splitting the stored name (for
-example, for courier labels) would need new columns, and nobody has asked
-for that.
+`family-name` autofill). Since 23 Oct they are **stored separately too**: the
+storefront sends `first_name` and `last_name`, the session carries both, the
+account greeting uses `first_name`, and Settings shows the two. The API,
+database and admin side is on `feat/backend` (see its entry). **Merge both
+branches together:** this storefront needs that API, which also still
+accepts the old single `name`.
 
 **Show/hide password on every account form.** The sign-in eye button is now
 the shared `FormsPasswordField`, used for both password boxes on sign-up and
