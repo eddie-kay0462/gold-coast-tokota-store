@@ -241,6 +241,41 @@ class CheckoutSessionTest extends TestCase
             ->assertJsonValidationErrors('shipping_address.country');
     }
 
+    public function test_a_recipient_given_as_first_and_last_name_is_stored_whole_and_in_parts(): void
+    {
+        $item = $this->stockedProduct();
+        $address = self::ADDRESS_GH;
+        unset($address['full_name']);
+        $address += ['first_name' => ' Nana Ama ', 'last_name' => 'Serwaa'];
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item, ['shipping_address' => $address]))
+            ->assertCreated();
+
+        $stored = Order::query()->latest('id')->firstOrFail()->shipping_address;
+        $this->assertSame('Nana Ama Serwaa', $stored['full_name']);
+        $this->assertSame(['Nana Ama', 'Serwaa'], [$stored['first_name'], $stored['last_name']]);
+    }
+
+    public function test_a_recipient_given_as_one_full_name_still_checks_out(): void
+    {
+        $item = $this->stockedProduct();
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item))->assertCreated();
+
+        $this->assertSame('Ama Serwaa', Order::query()->latest('id')->firstOrFail()->shipping_address['full_name']);
+    }
+
+    public function test_a_recipient_needs_a_name_one_way_or_the_other(): void
+    {
+        $item = $this->stockedProduct();
+        $address = self::ADDRESS_GH;
+        unset($address['full_name']);
+
+        $this->postJson('/api/v1/checkout/session', $this->payload($item, ['shipping_address' => $address]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('shipping_address.full_name');
+    }
+
     // --- inventory ------------------------------------------------------
 
     public function test_checkout_reserves_stock_without_decrementing_it(): void
