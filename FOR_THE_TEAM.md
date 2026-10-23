@@ -57,9 +57,16 @@ inert at their last step.
 - Links must be http(s) URLs; post IDs pattern-checked; unknown keys dropped.
 - Admin: Content › Pages › About (`pages/pages/about.vue`): one card per section,
   show/hide, list editor (add/remove/reorder), media-library image picker.
-- Found: the generic page editor's Save button never had a handler; not fixed.
-- 651 backend tests pass (6 new in `AboutPageTest`). Admin page builds but
-  wasn't clicked through in a browser. **Run the migration.**
+- **Fixed the same day: the generic page editor saves.** Its Save button had
+  no handler, and the API bound pages by id while the editor asked by slug, so
+  Privacy, Terms, Returns and the rest could never be edited. `Page` now
+  resolves either an id or a slug, and Save sends title and body (sanitised
+  server-side). Test in `AdminCmsTest`.
+- **Clicked through in a browser** (admin dev server, local API, as Staff):
+  edited the hero heading, hid Recognition, added a team member, saved; the
+  API served all three. Local content was reset afterwards.
+- 652 backend tests pass (6 new in `AboutPageTest`, 1 in `AdminCmsTest`).
+  **Run the migration.**
 
 ### 23 October 2026: fallback delivery rate is ₵35 and set in admin
 
