@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 23 October 2026 (customers have a first and a last name in the database and API; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 23 October 2026 (customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -94,6 +94,71 @@ refuses.
 **Not split:** the checkout's *recipient* name (`shipping_address.full_name`)
 stays one box. It's who the parcel is for, which isn't always the account
 holder, and couriers take it whole.
+
+### 23 October 2026: sign-up phone is country code + number
+
+The phone box on `/account/register` was one free-text field that guessed
+Ghana from a leading 0 or +233. It's now two boxes, in the new
+`FormsPhoneField`:
+- **A narrow country-code picker** showing "GH +233". It is a native
+  `<select>` laid over the box, so the list reads "Ghana (+233)", Ghana first,
+  then every country A to Z.
+- **The rest of the number.** The placeholder is "e.g. 241234567" for Ghana
+  (written without the 0) and "Phone number" elsewhere.
+
+`utils/phone.ts` holds the calling codes and the rules:
+- If someone types the 0 anyway, or pastes "+233…", it's removed when they
+  leave the box.
+- The 0 is only dropped in countries that use it as a trunk prefix. In Italy
+  or Côte d'Ivoire it's part of the number and stays.
+- Ghana must be exactly 9 digits after +233. Other countries only get a
+  plausible-length check.
+- The number is saved as **E.164**, e.g. `+233241234567`. Earlier accounts
+  hold whatever was typed.
+
+Checked against nine inputs (Ghana with and without the 0 and pasted with
++233, too short, letters; UK, US, Italy, Nigeria). The form wasn't clicked
+through in a browser.
+
+**Dropdowns are square now.** `FormsFormField`'s select used the browser's
+own look, which on macOS and iOS has rounded corners and its own arrow, so the
+currency picker didn't match the inputs around it. It's now `appearance-none`
+and `rounded-none` with the same chevron as the phone field. This is the
+shared field, so the checkout country picker matches too.
+
+**Text boxes with a button read as one control.** The newsletter's arrow and
+the sign-in password's eye were a box and a button side by side:
+- the eye button was 2px shorter than the box;
+- the newsletter button had a black border against the box's grey one;
+- the focus ring went around the box alone, in the browser's own blue.
+
+A new `field-group` class (`assets/css/main.css`) puts one border round both,
+makes the button full height with a hairline at the join, and draws one ring
+round the whole group while either part has keyboard focus.
+
+**First and last name on sign-up.** The single Name box is now First name and
+Last name, side by side from 640px and stacked on phones (`given-name` /
+`family-name` autofill). Since 23 Oct they are **stored separately too**: the
+storefront sends `first_name` and `last_name`, the session carries both, the
+account greeting uses `first_name`, and Settings shows the two. The API,
+database and admin side is on `feat/backend` (see its entry). **Merge both
+branches together:** this storefront needs that API, which also still
+accepts the old single `name`.
+
+**Show/hide password on every account form.** The sign-in eye button is now
+the shared `FormsPasswordField`, used for both password boxes on sign-up and
+on password reset as well as sign-in. Each box toggles on its own.
+
+**The blue ring was site-wide.** The global `:focus-visible` rule set a ring
+width and colour but no style, so browsers used their own `auto` style, which
+is blue. It now sets `outline` as well, so keyboard focus everywhere shows the
+intended graphite ring (white in dark regions, as before).
+
+Checked in headless Chrome: both groups focused, with one solid graphite ring
+around each.
+
+**Not changed:** the checkout phone field still uses the old single box.
+`FormsPhoneField` can replace it whenever wanted.
 
 ### 22 October 2026: sitemap lists every product and blog post
 

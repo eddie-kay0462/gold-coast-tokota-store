@@ -29,8 +29,10 @@
   /* Keyboard focus must stay visible everywhere (Feature 1 acceptance
      criteria); the design has no focus treatment of its own, so this is a
      project-level addition rather than a transcription. */
+  /* `outline` sets the style as well as the width: without it the browser's
+     own `auto` style applied, which draws its blue ring, not this one. */
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-graphite;
+    @apply outline outline-2 outline-offset-2 outline-graphite;
   }
 }
 
@@ -48,6 +50,29 @@
 
   .chrome-dark .on-light :focus-visible {
     @apply outline-graphite;
+  }
+
+  /* A text box with a button joined to its right (the newsletter's arrow, the
+     password's show/hide eye) as one control: one border around both, the
+     button as tall as the box, and one focus ring around the whole group
+     while either part has keyboard focus, instead of a ring around the input
+     alone. Children carry no outer border of their own; the button marks the
+     join with `border-l`. An error turns the group's border red
+     (`border-sale` on the group). */
+  .field-group {
+    @apply flex w-full min-w-0 items-stretch border border-line bg-white;
+  }
+
+  .field-group:has(:focus-visible) {
+    @apply outline outline-2 outline-offset-2 outline-graphite;
+  }
+
+  .field-group :focus-visible {
+    outline: none;
+  }
+
+  .chrome-dark .field-group:has(:focus-visible) {
+    @apply outline-white;
   }
 
   /* The one horizontal page gutter. Before this existed every section invented
