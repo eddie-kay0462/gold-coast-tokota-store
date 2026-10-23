@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 
 /**
  * The storefront's mega menus (header row 3), built from the catalogue.
@@ -47,15 +46,6 @@ final class MegaMenus
         'sandals' => ['label' => 'Sandals', 'all' => 'All Sandals', 'to' => '/shop'],
         'ahenema' => ['label' => 'Ahenema', 'all' => 'All Ahenema', 'to' => '/shop?type=ahenema'],
         'sale' => ['label' => 'Sale', 'all' => 'Everything on Sale', 'to' => '/shop?sale=true'],
-    ];
-
-    /** Display names for `product_type`; anything else is title-cased. */
-    private const TYPE_LABELS = [
-        'slippers' => 'Slippers',
-        'ahenema' => 'Ahenema',
-        'closed-toe' => 'Closed-Toe Shoes',
-        'sandals' => 'Sandals',
-        'merchandise' => 'Merchandise',
     ];
 
     private const DEPARTMENT_LABELS = ['mens' => 'Men’s', 'womens' => 'Women’s', 'kids' => 'Kids'];
@@ -119,13 +109,12 @@ final class MegaMenus
     private function styles(array $menu, Collection $products): array
     {
         $types = $products->pluck('product_type')->filter()->countBy();
-        $known = array_keys(self::TYPE_LABELS);
-        $ordered = $types->keys()->sortBy(fn ($type) => [array_search($type, $known, true) === false ? 1 : 0, array_search($type, $known, true), $type]);
+        $ordered = $types->keys()->sortBy(fn ($type) => [ProductTypes::rank($type), $type]);
 
         $links = [['label' => $menu['all'], 'to' => $menu['to']]];
         if ($types->count() > 1) {
             foreach ($ordered as $type) {
-                $links[] = ['label' => self::TYPE_LABELS[$type] ?? Str::headline($type), 'to' => self::with($menu['to'], ['type' => $type])];
+                $links[] = ['label' => ProductTypes::label($type), 'to' => self::with($menu['to'], ['type' => $type])];
             }
         }
 

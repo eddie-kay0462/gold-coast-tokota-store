@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\PaystackWebhookController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\ProductFacetController;
 use App\Http\Controllers\Api\V1\ProductStockController;
 use App\Http\Controllers\Api\V1\ShippingQuoteController;
 use App\Http\Controllers\Api\V1\SiteSettingController;
@@ -62,6 +63,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public catalogue + live FX rate (Feature 2). Admin-only write endpoints
     // for products live under the /admin prefix below.
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    // The shop sidebar's filter options. Before /products/{slug}, like the next one.
+    Route::get('/products/facets', [ProductFacetController::class, 'index'])->name('products.facets');
     // Before /products/{slug}, or "recommendations" would be read as a slug.
     Route::get('/products/recommendations', [ProductController::class, 'recommendations'])->name('products.recommendations');
     Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');

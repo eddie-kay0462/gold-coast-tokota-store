@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\CatalogueFacets;
 use App\Support\MegaMenus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -94,11 +95,17 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    /** The header's mega menus are built from products; a change rebuilds them. */
+    /** The header's mega menus and the shop's filters are built from products; a change rebuilds them. */
     protected static function booted(): void
     {
-        static::saved(fn () => MegaMenus::forget());
-        static::deleted(fn () => MegaMenus::forget());
+        static::saved(function () {
+            MegaMenus::forget();
+            CatalogueFacets::forget();
+        });
+        static::deleted(function () {
+            MegaMenus::forget();
+            CatalogueFacets::forget();
+        });
     }
 
     public function scopeActive(Builder $query): Builder
