@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
 import { DESIGN_POSTS, SUSTAINABILITY_POSTS } from '~/utils/newsPosts'
+import { aboutImage, withAboutDefaults, type AboutContent } from '~/utils/aboutContent'
 
-type ApiPage = { title: string, body: string }
+type ApiPage = { title: string, body: string, content: Partial<AboutContent> | null }
 
 const config = useRuntimeConfig()
 
-// The About page is CMS-backed (Feature 9): the admin owns the opening
-// manifesto, everything else is the designed brand story. A missing or failing
-// endpoint falls back to the design's own copy rather than throwing, the same
+// Every section is edited in the admin (Content › Pages › About) and arrives
+// as `content`, already merged over its defaults by the API. If the endpoint
+// fails, the same defaults (utils/aboutContent.ts) render the page, the same
 // pattern the home, shop and blog pages use.
 const { data: page } = await useAsyncData('about-page', () =>
   $fetch<{ data: ApiPage }>(`${config.public.apiBase}/pages/about`)
     .catch(() => null),
 )
 
-const statementBody = computed(() => page.value?.data?.body ?? null)
+const content = computed(() => withAboutDefaults(page.value?.data?.content))
 
 /**
  * "The people, stories, and ideas that will help us get there", the programme
@@ -58,60 +59,60 @@ useSeoMeta({
 
 <template>
   <!--
-    Redesigned 23 Oct from the brand's own material: GOLD_COAST_TOKOTA.md, its
-    Instagram and YouTube, and press (sources in utils/aboutContent.ts). The
-    page it replaced was largely template copy (ethical factories "around the
-    world", compliance-audit scores, radically transparent pricing) over stock
-    photography; none of that was this brand.
-
-    Order: who we are, what we make it from, who makes it, the ahenema itself,
-    come and see, watch, who backs us, where we're going, the latest.
+    Redesigned 23 Oct from the brand's own material (sources in
+    AboutPage::defaults()), and editable section by section in the admin
+    since the same day: copy, lists, images, and a switch to hide any section.
     `/sustainability` still 301s to `#sustainability` (the materials section).
   -->
   <div class="w-full bg-white">
     <AboutSectionNav />
 
-    <AboutHeroSection />
+    <AboutHeroSection v-if="content.hero.visible" :content="content.hero" />
 
-    <MotionGsapScrollReveal>
-      <AboutStatementSection :body="statementBody" />
+    <MotionGsapScrollReveal v-if="content.statement.visible">
+      <AboutStatementSection :text="content.statement.text" />
     </MotionGsapScrollReveal>
 
-    <AboutStory />
+    <AboutStory v-if="content.story.visible" :content="content.story" />
 
-    <AboutStoryNumbers />
+    <AboutStoryNumbers v-if="content.figures.visible && content.figures.items.length" :content="content.figures" />
 
-    <AboutMaterials />
+    <AboutMaterials v-if="content.materials.visible" :content="content.materials" />
 
-    <AboutPeople />
+    <AboutPeople v-if="content.people.visible" :content="content.people" />
 
     <AboutFeatureSection
+      v-if="content.ahenema.visible"
       id="ahenema"
-      eyebrow="THE AHENEMA"
-      :heading="'Fit for royalty,\nmade for every day.'"
-      body="Ahenema have been worn by Ghanaian royalty for generations. We keep the shape, the crowns and the Adinkra symbols, and build them from reclaimed materials, leather and velvet. Now we’re making Orthopaedic Ahenema too, so the royal sandal can be worn all day."
-      image="/design/about-ahenema-kentehene.webp"
-      alt="The Kentehene ahenema: a blue suede footbed with a woven kente strap and leather crown"
+      :eyebrow="content.ahenema.eyebrow"
+      :heading="content.ahenema.heading"
+      :body="content.ahenema.body"
+      :image="aboutImage(content.ahenema)"
+      :alt="content.ahenema.imageAlt"
       :reverse="true"
       :height="620"
     />
 
-    <AboutExperiences />
+    <AboutExperiences v-if="content.experiences.visible" :content="content.experiences" />
 
-    <AboutSocialCarousel />
+    <AboutSocialCarousel
+      v-if="content.watch.visible && content.watch.posts.length"
+      :content="content.watch"
+      :socials="content.socials"
+    />
 
-    <AboutSloganTicker />
+    <AboutSloganTicker v-if="content.slogans.visible && content.slogans.items.length" :items="content.slogans.items" />
 
-    <AboutRecognition />
+    <AboutRecognition v-if="content.recognition.visible && content.recognition.items.length" :content="content.recognition" />
 
-    <MotionGsapScrollReveal>
-      <AboutSustainabilitySection />
+    <MotionGsapScrollReveal v-if="content.mission.visible">
+      <AboutSustainabilitySection :content="content.mission" />
     </MotionGsapScrollReveal>
 
     <MotionGsapScrollReveal>
       <AboutStoriesGrid :posts="programmePosts" />
     </MotionGsapScrollReveal>
 
-    <AboutSocialCta />
+    <AboutSocialCta :instagram="content.socials.instagram" />
   </div>
 </template>

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 import { whatsappMessage } from '~/utils/whatsapp'
-import { BRAND_SOCIALS } from '~/utils/aboutContent'
 
 const siteSettings = useSiteSettingsStore()
 
 // The Instagram destination is admin-editable (SiteSetting), the same source
 // the footer's Connect column uses, never hardcoded per component.
-// Falls back to the brand's own handle until the setting is filled in.
-const instagramUrl = computed(() => siteSettings.instagramUrl || BRAND_SOCIALS.instagram)
+/** The About page's Instagram link, the fallback until the site setting is filled in. */
+const props = defineProps<{ instagram?: string }>()
+const instagramUrl = computed(() => siteSettings.instagramUrl || props.instagram || 'https://www.instagram.com/goldcoasttokota/')
 const supportHours = computed(() => siteSettings.businessHours || 'Mon–Sat, 9am–5pm GMT')
 const isExternal = computed(() => !!siteSettings.instagramUrl)
 </script>

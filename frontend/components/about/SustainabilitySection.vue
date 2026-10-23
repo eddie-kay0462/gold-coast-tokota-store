@@ -1,3 +1,9 @@
+<script setup lang="ts">
+import type { AboutContent } from '~/utils/aboutContent'
+
+defineProps<{ content: AboutContent['mission'] }>()
+</script>
+
 <template>
   <!--
     Mission and vision. The heading was "We're on a mission to clean up a dirty
@@ -17,12 +23,8 @@
   >
     <div class="flex w-full flex-col items-start gap-2">
       <div class="h-[14px] w-full bg-ink" />
-      <h2 class="w-full font-normal text-display-heading text-black">
-        Where we’re going.
-      </h2>
-      <p class="w-full font-light text-lede text-subtle">
-        A future where African manufacturing creates value for people, culture and the planet.
-      </p>
+      <h2 class="w-full font-normal text-display-heading text-black">{{ content.heading }}</h2>
+      <p v-if="content.lede" class="w-full font-light text-lede text-subtle">{{ content.lede }}</p>
     </div>
 
     <!-- Mission and vision, verbatim from the brand guidelines. They had no home
@@ -31,23 +33,12 @@
     <div class="grid w-full gap-8 border-t border-line pt-8 md:grid-cols-2 md:gap-12">
       <div class="flex flex-col items-start gap-3">
         <h3 class="text-eyebrow uppercase tracking-[0.6px] text-muted">Our mission</h3>
-        <p class="text-body font-light text-graphite">
-          To reshape manufacturing in Africa by transforming waste into premium
-          handcrafted footwear, preserving Ghanaian craftsmanship, empowering
-          young people through skills development and creating sustainable
-          cultural experiences that generate lasting social, environmental and
-          economic impact.
-        </p>
+        <p class="text-body font-light text-graphite">{{ content.mission }}</p>
       </div>
 
       <div class="flex flex-col items-start gap-3">
         <h3 class="text-eyebrow uppercase tracking-[0.6px] text-muted">Our vision</h3>
-        <p class="text-body font-light text-graphite">
-          To become Africa's leading sustainable footwear and cultural tourism
-          enterprise, inspiring a future where African craftsmanship, circular
-          manufacturing and cultural heritage drive inclusive economic growth and
-          global recognition.
-        </p>
+        <p class="text-body font-light text-graphite">{{ content.vision }}</p>
       </div>
     </div>
   </section>

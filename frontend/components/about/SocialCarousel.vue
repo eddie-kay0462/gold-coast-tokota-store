@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { PhArrowLeft, PhArrowRight, PhInstagramLogo, PhPlay, PhX, PhYoutubeLogo } from '@phosphor-icons/vue'
-import { ABOUT_POSTS, BRAND_SOCIALS, type SocialPost } from '~/utils/aboutContent'
+import type { AboutContent, SocialPost } from '~/utils/aboutContent'
+
+const props = defineProps<{ content: AboutContent['watch'], socials: AboutContent['socials'] }>()
 
 /**
  * "From the workshop": the brand's Instagram reels and YouTube videos, and
@@ -68,12 +70,9 @@ function scrollBy(direction: 1 | -1) {
   <section id="watch" class="w-full scroll-mt-8 overflow-hidden py-12 md:py-16 lg:py-[90px]">
     <div class="page-gutter mx-auto flex w-full max-w-[1440px] flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div class="flex max-w-[640px] flex-col gap-4">
-        <p class="caps-label text-graphite">From the workshop</p>
-        <h2 class="text-display-section font-light text-ink">See the work for yourself.</h2>
-        <p class="text-body font-light text-graphite">
-          Pairs being made, classrooms on a visit, Sip &amp; Paint afternoons, and the founder in
-          conversation, from our Instagram and YouTube.
-        </p>
+        <p v-if="content.eyebrow" class="caps-label text-graphite">{{ content.eyebrow }}</p>
+        <h2 class="text-display-section font-light text-ink">{{ content.heading }}</h2>
+        <p v-if="content.body" class="text-body font-light text-graphite">{{ content.body }}</p>
       </div>
       <div class="hidden shrink-0 gap-2 sm:flex">
         <button type="button" class="btn-outline flex size-11 items-center justify-center" aria-label="Previous posts" @click="scrollBy(-1)">
@@ -92,7 +91,7 @@ function scrollBy(direction: 1 | -1) {
       class="carousel-track mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2"
       aria-label="Instagram and YouTube posts"
     >
-      <li v-for="post in ABOUT_POSTS" :key="post.id" class="w-[68vw] max-w-[300px] shrink-0 snap-start sm:w-[300px]">
+      <li v-for="post in props.content.posts" :key="post.platform + post.id" class="w-[68vw] max-w-[300px] shrink-0 snap-start sm:w-[300px]">
         <button
           type="button"
           class="group flex w-full flex-col gap-3 text-left"
@@ -132,10 +131,10 @@ function scrollBy(direction: 1 | -1) {
     </ul>
 
     <div class="page-gutter mx-auto mt-6 flex w-full max-w-[1440px] flex-wrap gap-x-6 gap-y-2">
-      <a :href="BRAND_SOCIALS.instagram" target="_blank" rel="noopener noreferrer" class="caps-label -my-3 flex min-h-[44px] items-center gap-2 py-3 text-ink underline underline-offset-4 hover:no-underline">
+      <a v-if="socials.instagram" :href="socials.instagram" target="_blank" rel="noopener noreferrer" class="caps-label -my-3 flex min-h-[44px] items-center gap-2 py-3 text-ink underline underline-offset-4 hover:no-underline">
         <PhInstagramLogo :size="16" aria-hidden="true" />@goldcoasttokota on Instagram
       </a>
-      <a :href="BRAND_SOCIALS.youtube" target="_blank" rel="noopener noreferrer" class="caps-label -my-3 flex min-h-[44px] items-center gap-2 py-3 text-ink underline underline-offset-4 hover:no-underline">
+      <a v-if="socials.youtube" :href="socials.youtube" target="_blank" rel="noopener noreferrer" class="caps-label -my-3 flex min-h-[44px] items-center gap-2 py-3 text-ink underline underline-offset-4 hover:no-underline">
         <PhYoutubeLogo :size="16" aria-hidden="true" />Gold Coast Tokota on YouTube
       </a>
     </div>
