@@ -2,13 +2,9 @@
 import { PhCaretDown as CaretDown, PhList as List, PhMagnifyingGlass as MagnifyingGlass, PhShoppingCartSimple as ShoppingCartSimple, PhUser as User, PhX as X } from '@phosphor-icons/vue'
 import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
-import { countryName, flagUrl } from '~/utils/geo'
 import { primaryNav } from '~/utils/navigation'
 
 const currency = useCurrencyStore()
-// Flag reflects where the visitor is actually connecting from; resolved
-// server-side and refined with browser signals a VPN doesn't change.
-const { geo } = useVisitorCountry()
 const cart = useCartStore()
 const route = useRoute()
 
@@ -173,38 +169,9 @@ function isCategoryActive(to: string) {
        header covers the top of the viewport for every anchor on the site, so
        the offset belongs in one place. -->
   <header class="sticky top-0 z-50 bg-white" @keydown.esc="closeMenu(true); searchOpen = false">
-    <!-- Announcement bar. The flag/currency cluster used to be absolutely
-         positioned, so it reserved no width and the centred message ran
-         underneath it on a phone (measured: the sign-up link overlapped it by
-         41px at both 320px and 375px). It is a normal flex child now, and below
-         `sm` the message scrolls through a marquee rather than wrapping.
-
-         `ink` (#000) with solid white type, the one dark band above the white
-         header. The client tried white and gold here and settled on black.
-         Being dark, it carries `chrome-dark` for a white focus ring. -->
-    <div class="chrome-dark flex w-full items-center gap-3 bg-ink px-5 text-white sm:grid sm:grid-cols-[1fr_auto_1fr] lg:px-[30px]">
-      <!-- Empty left flank. From `sm` this row is the same three-column grid the
-           logo row below uses: two equal `1fr` flanks with the content in an
-           `auto` track between them, so the message is centred against the *bar*
-           rather than against whatever space the flag and currency cluster leave
-           over. Below `sm` the flank collapses and the marquee takes the width. -->
-      <span class="hidden sm:block" aria-hidden="true" />
-
-      <LayoutAnnouncementBar />
-
-      <div class="flex shrink-0 items-center justify-end gap-2 sm:gap-2.5">
-        <img
-          :key="geo.country"
-          :src="flagUrl(geo.country)"
-          :alt="countryName(geo.country)"
-          :title="countryName(geo.country)"
-          class="h-3 w-[17px] shrink-0 object-cover sm:h-[15px] sm:w-[21px]"
-          width="21"
-          height="15"
-        >
-        <CommonCurrencyToggle tone="dark" />
-      </div>
-    </div>
+    <!-- Announcement bar: the one dark band above the white header, with the
+         flag and currency switch. Its layout lives in the component. -->
+    <LayoutAnnouncementBar />
 
     <!-- Primary nav. Three columns with equal 1fr flanks so the logo sits
          optically centred in the row regardless of how wide the nav or the
