@@ -42,6 +42,9 @@ class AboutPageTest extends TestCase
         $this->assertSame(AboutPage::SECTIONS, array_keys($content));
         $this->assertSame('/design/about-hero-ahotoso.webp', $content['hero']['imageUrl']);
         $this->assertCount(11, $content['watch']['posts']);
+        // Hidden at the client's request, but kept for the admin.
+        $this->assertFalse($content['slogans']['visible']);
+        $this->assertNotEmpty($content['slogans']['items']);
     }
 
     public function test_staff_save_the_page_and_the_storefront_shows_it(): void

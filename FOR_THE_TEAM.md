@@ -48,7 +48,16 @@ inert at their last step.
 
 ## Recent changes
 
-### 23 October 2026 (latest): About page slogan ticker off (storefront)
+### 23 October 2026 (latest): About page slogan ticker off (API)
+
+`AboutPage::defaults()` now has `slogans.visible = false`, at the client's
+request, so the "Crafted with Purpose · Inspired by Culture · Made in Ghana"
+band no longer shows. Its phrases are kept; it can be switched back on in
+Content › Pages › About. A page whose About content was already saved keeps
+its saved setting. Production has none saved yet, so it takes the new
+default. Pinned in `AboutPageTest`.
+
+### 23 October 2026: About page slogan ticker off (storefront)
 
 The scrolling "Crafted with Purpose · Inspired by Culture · Made in Ghana"
 band is hidden by default, at the client's request (`visible: false` in the
