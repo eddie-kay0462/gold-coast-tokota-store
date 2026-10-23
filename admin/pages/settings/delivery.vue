@@ -73,6 +73,49 @@ async function saveRates() {
   }
 }
 
+// --- Fallback rates -----------------------------------------------------
+// What a zone is charged when no courier can quote, and (Ghana) what a region
+// with no rate of its own pays. Prices, so pricing.write, like the regional
+// rates.
+
+const FALLBACK_ZONES = [
+  { key: 'accra', label: 'Accra', hint: 'When the on-demand courier can’t quote.' },
+  { key: 'ghana', label: 'Rest of Ghana', hint: 'A region with no rate below, or a courier that can’t quote.' },
+  { key: 'international', label: 'International', hint: 'When DHL can’t quote.' },
+] as const
+
+const fallbackDraft = reactive<Record<'accra' | 'ghana' | 'international', string>>({ accra: '', ghana: '', international: '' })
+watch(shippingSettings, (s) => {
+  if (!s?.fallbackRates) return
+  for (const zone of FALLBACK_ZONES) fallbackDraft[zone.key] = (s.fallbackRates[zone.key].amount / 100).toFixed(2)
+}, { immediate: true })
+
+const fallbackValid = computed(() => FALLBACK_ZONES.every(({ key }) => {
+  const n = Number(fallbackDraft[key])
+  return fallbackDraft[key] !== '' && Number.isFinite(n) && n >= 0
+}))
+const savingFallback = ref(false)
+const fallbackError = ref<string | null>(null)
+
+async function saveFallback() {
+  savingFallback.value = true
+  fallbackError.value = null
+  try {
+    await adminFetch('/admin/shipping/fallback-rates', {
+      method: 'PUT',
+      body: Object.fromEntries(FALLBACK_ZONES.map(({ key }) => [`${key}_ghs`, Math.round(Number(fallbackDraft[key]) * 100)])),
+    })
+    await refreshSettings()
+    toast.success('Fallback rates saved', 'Checkout charges them from the next quote.')
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
+    if (e.statusCode === 401 || e.statusCode === 419) return
+    fallbackError.value = Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Saving failed. Try again in a moment.'
+  } finally {
+    savingFallback.value = false
+  }
+}
+
 // --- Polygon and threshold -----------------------------------------------
 
 const canConfigure = computed(() => can('settings.write'))
@@ -178,6 +221,36 @@ async function saveSettings() {
               </dd>
             </div>
           </dl>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Fallback delivery rates"
+          description="Charged when a courier can’t give a live price, so checkout never stops for a courier outage."
+        >
+          <form @submit.prevent="saveFallback">
+            <ul class="divide-y divide-border">
+              <li v-for="zone in FALLBACK_ZONES" :key="zone.key" class="flex flex-wrap items-center justify-between gap-3 py-2 first:pt-0">
+                <span class="min-w-0">
+                  <span class="block text-ui text-fg-strong">{{ zone.label }}</span>
+                  <span class="block text-meta text-fg-faint">{{ zone.hint }}</span>
+                </span>
+                <label class="flex items-center gap-1.5 text-meta text-fg-muted">
+                  <span>GH₵</span>
+                  <input
+                    v-model="fallbackDraft[zone.key]" type="number" min="0" step="0.01" inputmode="decimal"
+                    class="field w-28" :disabled="!canPrice" :aria-label="`${zone.label} fallback rate in cedis`"
+                  >
+                </label>
+              </li>
+            </ul>
+            <p v-if="fallbackError" class="mt-3 rounded-lg bg-danger-soft px-3 py-2.5 text-meta text-danger" role="alert">
+              {{ fallbackError }}
+            </p>
+            <div v-if="canPrice" class="mt-4 flex justify-end">
+              <UiButton type="submit" size="sm" :loading="savingFallback" :disabled="!fallbackValid">Save fallback rates</UiButton>
+            </div>
+            <p v-else class="mt-4 text-meta text-fg-faint">Only an Admin can change delivery prices.</p>
+          </form>
         </SettingsSection>
 
         <SettingsSection

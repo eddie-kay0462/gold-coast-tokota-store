@@ -199,6 +199,11 @@ export const shippingSettings: ShippingSettings = {
   accraPolygon: null,
   accraPolygonSummary: null,
   freeShippingThreshold: null,
+  fallbackRates: {
+    accra: { amount: 3500, currency: 'GHS' },
+    ghana: { amount: 3500, currency: 'GHS' },
+    international: { amount: 35000, currency: 'GHS' },
+  },
   updatedAt: null,
 }
 

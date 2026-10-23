@@ -141,10 +141,10 @@ class CheckoutSessionTest extends TestCase
         $this->assertNotNull($response->json('payment.authorization_url'));
         $this->assertNull($response->json('payment.client_secret'));
         $response->assertJsonPath('data.fx_rate_applied', 0.08);
-        // 60000 goods + 2500 domestic standard shipping, converted once.
+        // 60000 goods + 3500 domestic fallback shipping, converted once.
         $response->assertJsonPath('data.subtotal', 4_800);
-        $response->assertJsonPath('data.shipping_cost', 200);
-        $response->assertJsonPath('data.total', 5_000);
+        $response->assertJsonPath('data.shipping_cost', 280);
+        $response->assertJsonPath('data.total', 5_080);
     }
 
     /**
@@ -187,7 +187,7 @@ class CheckoutSessionTest extends TestCase
         $this->postJson('/api/v1/checkout/session', $this->payload($item))
             ->assertCreated()
             ->assertJsonPath('data.delivery_provider', 'manual')
-            ->assertJsonPath('data.shipping_cost', 2_500);
+            ->assertJsonPath('data.shipping_cost', 3_500);
 
         $this->assertSame(ShippingZone::Ghana, Order::first()->shipping_zone);
     }
@@ -217,7 +217,7 @@ class CheckoutSessionTest extends TestCase
 
         $this->postJson('/api/v1/checkout/session', $this->payload($item))
             ->assertCreated()
-            ->assertJsonPath('data.shipping_cost', 2_500);
+            ->assertJsonPath('data.shipping_cost', 3_500);
     }
 
     public function test_domestic_shipping_is_free_above_a_configured_threshold(): void

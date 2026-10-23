@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ShippingSetting;
 use App\Models\ShippingZoneRate;
 use App\Models\SiteSetting;
 use App\Models\WhatsAppConversation;
@@ -199,7 +200,7 @@ class InboxLookupController extends Controller
                 ->map(fn (array $tier) => ['label' => $tier['label'] ?? '', 'estimate' => $tier['estimate'] ?? ''])
                 ->values(),
             'rates' => [
-                'accra' => $this->money((int) config('shipping.fallback_rates.accra'), 'GHS'),
+                'accra' => $this->money(ShippingSetting::fallbackRate('accra'), 'GHS'),
                 'regions' => ShippingZoneRate::query()->active()->orderBy('region')->get(['region', 'amount_ghs'])
                     ->map(fn (ShippingZoneRate $r) => ['region' => $r->region, 'rate' => $this->money($r->amount_ghs, 'GHS')])
                     ->values(),
