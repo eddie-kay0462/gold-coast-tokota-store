@@ -73,6 +73,12 @@ Checked against nine inputs (Ghana with and without the 0 and pasted with
 +233, too short, letters; UK, US, Italy, Nigeria). The form wasn't clicked
 through in a browser.
 
+**Dropdowns are square now.** `FormsFormField`'s select used the browser's
+own look, which on macOS and iOS has rounded corners and its own arrow, so the
+currency picker didn't match the inputs around it. It's now `appearance-none`
+and `rounded-none` with the same chevron as the phone field. This is the
+shared field, so the checkout country picker matches too.
+
 **Not changed:** the checkout phone field still uses the old single box.
 `FormsPhoneField` can replace it whenever wanted.
 
