@@ -3,7 +3,7 @@ import { PhCaretDown as CaretDown, PhList as List, PhMagnifyingGlass as Magnifyi
 import { useCartStore } from '~/stores/cart'
 import { useCurrencyStore } from '~/stores/currency'
 import { countryName, flagUrl } from '~/utils/geo'
-import { categoryNav, primaryNav } from '~/utils/navigation'
+import { primaryNav } from '~/utils/navigation'
 
 const currency = useCurrencyStore()
 // Flag reflects where the visitor is actually connecting from; resolved
@@ -11,6 +11,9 @@ const currency = useCurrencyStore()
 const { geo } = useVisitorCountry()
 const cart = useCartStore()
 const route = useRoute()
+
+// Row 3, with each mega menu built from the catalogue by the API.
+const categoryNav = useMegaMenus()
 
 const mobileNavOpen = ref(false)
 
@@ -27,7 +30,7 @@ const triggerEls = new Map<string, HTMLButtonElement>()
 let closeTimer: ReturnType<typeof setTimeout> | undefined
 
 const openMenuItem = computed(() =>
-  categoryNav.find((item) => item.label === openMenu.value),
+  categoryNav.value.find((item) => item.label === openMenu.value),
 )
 
 function openMenuFor(label: string) {
