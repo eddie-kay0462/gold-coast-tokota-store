@@ -97,12 +97,14 @@ const showIcon = computed(() => props.icon ?? props.variant !== 'quiet')
 const variantClass = computed(
   () =>
     ({
+      // `text-center` and `leading-tight`: in a narrow product card the label
+      // wraps to two lines, which should sit centred, not ragged-left.
       outlined:
-        'btn-outline min-h-[44px] justify-center px-4 text-label uppercase',
+        'btn-outline min-h-[44px] justify-center px-3 py-2 text-center text-label uppercase leading-tight',
       solid:
-        'btn-outline min-h-[44px] justify-center px-4 text-label uppercase',
+        'btn-outline min-h-[44px] justify-center px-3 py-2 text-center text-label uppercase leading-tight',
       gold:
-        'btn-outline-on-dark min-h-[44px] justify-center px-6 text-label font-normal uppercase',
+        'btn-outline-on-dark min-h-[44px] justify-center px-6 py-2 text-center text-label font-normal uppercase leading-tight',
       // `-my-2` keeps an inline link from adding height to the sentence it sits
       // in while its hit area still clears 44px.
       quiet:
