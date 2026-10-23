@@ -57,26 +57,35 @@ const model = defineModel<string>()
       :aria-describedby="error ? `${name}-error` : hint ? `${name}-hint` : undefined"
     />
 
-    <!-- `appearance-none` would strip the disclosure arrow and leave no
-         affordance, so the native control is kept as-is; only the box is
-         restyled to match the text inputs. -->
-    <select
-      v-else-if="type === 'select'"
-      :id="name"
-      v-model="model"
-      :name="name"
-      :required="required"
-      :disabled="disabled"
-      class="min-h-[44px] w-full min-w-0 border bg-white px-3 py-2.5 text-body text-graphite disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted"
-      :class="error ? 'border-sale' : 'border-line'"
-      :aria-invalid="!!error"
-      :aria-describedby="error ? `${name}-error` : hint ? `${name}-hint` : undefined"
-    >
-      <option v-if="placeholder" value="" disabled>{{ placeholder }}</option>
-      <option v-for="option in options" :key="option.value" :value="option.value">
-        {{ option.label }}
-      </option>
-    </select>
+    <!-- The browser's own select look (rounded corners, its own arrow on
+         macOS and iOS) is switched off with `appearance-none` so the box is
+         square like the text inputs. The arrow is drawn back in, the same
+         chevron as the phone field's country picker. -->
+    <div v-else-if="type === 'select'" class="relative w-full min-w-0">
+      <select
+        :id="name"
+        v-model="model"
+        :name="name"
+        :required="required"
+        :disabled="disabled"
+        class="min-h-[44px] w-full min-w-0 appearance-none rounded-none border bg-white py-2.5 pl-3 pr-9 text-body text-graphite disabled:cursor-not-allowed disabled:bg-surface disabled:text-muted"
+        :class="error ? 'border-sale' : 'border-line'"
+        :aria-invalid="!!error"
+        :aria-describedby="error ? `${name}-error` : hint ? `${name}-hint` : undefined"
+      >
+        <option v-if="placeholder" value="" disabled>{{ placeholder }}</option>
+        <option v-for="option in options" :key="option.value" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 12 12"
+        class="pointer-events-none absolute right-3 top-1/2 size-3 -translate-y-1/2 text-muted"
+      >
+        <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+      </svg>
+    </div>
 
     <input
       v-else
