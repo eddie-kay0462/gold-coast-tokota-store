@@ -168,7 +168,7 @@ class YangoCarrierTest extends TestCase
         $this->postJson('/api/v1/checkout/shipping-quote', [
             'items' => [['inventory_item_id' => $this->stocked()->id, 'quantity' => 1]],
             'shipping_address' => self::OSU,
-        ])->assertOk()->assertJsonPath('data.options.0.amount_ghs', 2_500);
+        ])->assertOk()->assertJsonPath('data.options.0.amount_ghs', 3_500);
     }
 
     public function test_a_quote_in_another_currency_is_not_trusted(): void
@@ -178,7 +178,7 @@ class YangoCarrierTest extends TestCase
         $this->postJson('/api/v1/checkout/shipping-quote', [
             'items' => [['inventory_item_id' => $this->stocked()->id, 'quantity' => 1]],
             'shipping_address' => self::OSU,
-        ])->assertOk()->assertJsonPath('data.options.0.amount_ghs', 2_500);
+        ])->assertOk()->assertJsonPath('data.options.0.amount_ghs', 3_500);
     }
 
     public function test_a_timeout_at_checkout_charges_the_fallback(): void
@@ -188,7 +188,7 @@ class YangoCarrierTest extends TestCase
         $this->postJson('/api/v1/checkout/shipping-quote', [
             'items' => [['inventory_item_id' => $this->stocked()->id, 'quantity' => 1]],
             'shipping_address' => self::OSU,
-        ])->assertOk()->assertJsonPath('data.options.0.amount_ghs', 2_500);
+        ])->assertOk()->assertJsonPath('data.options.0.amount_ghs', 3_500);
     }
 
     /** Switched off, Yango is skipped and Accra is dispatched by hand. */

@@ -126,7 +126,15 @@ export const TYPE_FACETS: Facet[] = [
   { value: 'sandals', label: 'Sandals' },
 ]
 
-export const COLOR_FACETS: (Facet & { hex: string })[] = [
+/** A colour option: `value` is what `?color=` takes, `hex` its swatch. */
+export type ColorFacet = Facet & { hex: string, count?: number }
+
+/**
+ * Stand-ins for when `GET /products/facets` can't be reached. Normally the
+ * sidebar's types and colours come from the catalogue, with each colour's
+ * own swatch, and these aren't used.
+ */
+export const COLOR_FACETS: ColorFacet[] = [
   { value: 'black', label: 'Black', hex: '#000000' },
   { value: 'blue', label: 'Blue', hex: '#1E4C8F' },
   { value: 'brown', label: 'Brown', hex: '#8B5A2B' },

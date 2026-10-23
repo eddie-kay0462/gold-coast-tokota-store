@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PhMinus as Minus, PhPlus as Plus } from '@phosphor-icons/vue'
 import type { WorkshopSession } from './SessionPicker.vue'
 import { useBookingStore } from '~/stores/bookings'
 import { whatsappMessage } from '~/utils/whatsapp'
@@ -35,7 +36,41 @@ const isWaitlisted = computed(
   () => !!selectedSession.value && selectedSession.value.remaining_capacity <= 0,
 )
 
-const form = reactive({ attendeeCount: '1', name: '', email: '', phone: '' })
+const form = reactive({ attendeeCount: 1, name: '', email: '', phone: '' })
+
+/**
+ * Attendees: at least 1, and no more than the seats left in the chosen
+ * session (its full capacity once it is waitlisted, since a waitlist place is
+ * still for the whole party). The server also refuses anything under 1.
+ */
+const maxAttendees = computed(() => {
+  const session = selectedSession.value
+  if (!session) return 99
+  return Math.max(1, session.remaining_capacity > 0 ? session.remaining_capacity : session.capacity)
+})
+
+function setAttendees(value: number) {
+  const whole = Number.isFinite(value) ? Math.round(value) : 1
+  form.attendeeCount = Math.min(maxAttendees.value, Math.max(1, whole))
+}
+
+function onAttendeesInput(event: Event) {
+  const raw = (event.target as HTMLInputElement).value
+  // Let the box be empty (or a stray "-") while typing; it's corrected on blur.
+  const n = Number(raw)
+  if (raw === '' || !Number.isFinite(n) || n < 1) return
+  setAttendees(n)
+}
+
+/** On leaving the box, show the corrected count, even if it didn't change. */
+function onAttendeesBlur(event: Event) {
+  const input = event.target as HTMLInputElement
+  setAttendees(Number(input.value))
+  input.value = String(form.attendeeCount)
+}
+
+// A smaller session can bring the count down; never leave it above the seats.
+watch(maxAttendees, () => setAttendees(form.attendeeCount))
 const submitted = ref(false)
 const pendingSubmit = ref(false)
 const error = ref('')
@@ -60,7 +95,7 @@ async function onSubmit() {
         type: 'workshop',
         workshop_session_id: Number(selectedSessionId.value),
         details: {
-          attendee_count: Number(form.attendeeCount) || 1,
+          attendee_count: form.attendeeCount,
           name: form.name,
           email: form.email,
           phone: form.phone,
@@ -103,13 +138,49 @@ async function onSubmit() {
 
         <!-- `attendee_count` was in the form state and submitted as a silent
              default of 1, with no control anywhere. The mockup designs it. -->
-        <FormsFormField
-          v-model="form.attendeeCount"
-          label="Attendees"
-          name="attendee_count"
-          type="number"
-          required
-        />
+        <div class="flex w-full min-w-0 flex-col gap-1.5">
+          <label for="attendee_count" class="text-caption font-normal text-graphite">
+            Attendees <span aria-hidden="true">*</span>
+          </label>
+          <div class="field-group max-w-[180px]">
+            <button
+              type="button"
+              class="flex w-11 shrink-0 items-center justify-center border-r border-line text-graphite transition-colors hover:text-ink disabled:cursor-not-allowed disabled:text-line focus-visible:bg-surface"
+              aria-label="One fewer attendee"
+              :disabled="form.attendeeCount <= 1"
+              @click="setAttendees(form.attendeeCount - 1)"
+            >
+              <Minus :size="16" />
+            </button>
+            <input
+              id="attendee_count"
+              name="attendee_count"
+              type="number"
+              inputmode="numeric"
+              :min="1"
+              :max="maxAttendees"
+              :value="form.attendeeCount"
+              required
+              class="min-h-[44px] w-full min-w-0 flex-1 bg-transparent text-center text-body text-graphite [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              aria-describedby="attendee_count-hint"
+              @input="onAttendeesInput"
+              @blur="onAttendeesBlur"
+            >
+            <button
+              type="button"
+              class="flex w-11 shrink-0 items-center justify-center border-l border-line text-graphite transition-colors hover:text-ink disabled:cursor-not-allowed disabled:text-line focus-visible:bg-surface"
+              aria-label="One more attendee"
+              :disabled="form.attendeeCount >= maxAttendees"
+              @click="setAttendees(form.attendeeCount + 1)"
+            >
+              <Plus :size="16" />
+            </button>
+          </div>
+          <p id="attendee_count-hint" class="text-caption text-muted">
+            <template v-if="selectedSession">Up to {{ maxAttendees }} for this session.</template>
+            <template v-else>At least 1.</template>
+          </p>
+        </div>
         <FormsFormField v-model="form.name" label="Full name" name="name" required autocomplete="name" />
         <FormsFormField v-model="form.email" label="Email address" name="email" type="email" required autocomplete="email" />
         <FormsFormField

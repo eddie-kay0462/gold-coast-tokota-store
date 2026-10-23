@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 23 October 2026 (customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 23 October 2026 (About page: closing buttons the same height, ranges read "to" instead of a dash; earlier the same day, About page slogan ticker off by default; earlier the same day, About page fully editable in Content › Pages › About; About page fully editable in admin; earlier the same day, About page redesigned from the brand's own story, with an Instagram and YouTube carousel; earlier the same day, contact form matches the other forms' width; earlier the same day, fallback delivery rate is ₵35, set in admin; checkout keeps the recipient's first and last name; earlier the same day, checkout asks for the recipient's first and last name, and the phone takes a country code that follows the delivery country; earlier the same day, announcement bar redesigned: one line, pure black and white; earlier the same day, booking page: WhatsApp links graphite and 20% larger, attendees can't go below 1; earlier the same day, mobile header row 25% taller; earlier the same day, product card colour swatches switch the photo, stock and links when tapped; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, shop page on mobile: centred WhatsApp button, smaller filter checkboxes, filters and swatches from the catalogue, and every product now loads; earlier the same day, home hero on phones shows one pair and pans across the other two; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,508 @@ inert at their last step.
 
 ## Recent changes
 
-### 23 October 2026 (latest): customers have a first and a last name
+### 23 October 2026 (latest): About page ranges read "to" (API)
+
+`AboutPage::defaults()` writes the page's ranges with "to" instead of a dash,
+at the client's request: "5 to 25%", "10:00 AM to 1:00 PM", "9:00 AM to
+4:00 PM", "Monday to Friday". Saved About content keeps whatever it was saved
+with; production has none saved, so it takes these.
+
+### 23 October 2026: About page closing buttons; no dashes in ranges (storefront)
+
+- **Buttons:** "@goldcoasttokota on Instagram" was held to the standard 240px
+  width, so it wrapped to two lines and stood 56px against WhatsApp's 44px.
+  It now sizes to its label, on one line, at the same 14px type. Both are 44px
+  at desktop and on a 375px phone. Under 360px the label is too long for one
+  line and still wraps.
+- **Dashes:** ranges on the page read "to": "5 to 25%", "10:00 AM to
+  1:00 PM", "Monday to Friday" (fallback defaults; the API defaults change on
+  `feat/backend`), and the closing band's hours read "Mon to Sat · 9am to
+  5pm". The hours setting itself is shared with the announcement bar, so it's
+  reworded on the About page only; the bar still shows "Mon–Sat".
+
+### 23 October 2026: About page slogan ticker off (API)
+
+`AboutPage::defaults()` now has `slogans.visible = false`, at the client's
+request, so the "Crafted with Purpose · Inspired by Culture · Made in Ghana"
+band no longer shows. Its phrases are kept; it can be switched back on in
+Content › Pages › About. A page whose About content was already saved keeps
+its saved setting. Production has none saved yet, so it takes the new
+default. Pinned in `AboutPageTest`.
+
+### 23 October 2026: About page slogan ticker off (storefront)
+
+The scrolling "Crafted with Purpose · Inspired by Culture · Made in Ghana"
+band is hidden by default, at the client's request (`visible: false` in the
+fallback defaults; the API default changes on `feat/backend`). Its phrases
+are kept, so it can be switched back on in Content › Pages › About.
+
+### 23 October 2026: About page fully editable in the admin (API, admin)
+
+- `pages.content` (jsonb, migration `2026_10_23_130000`). `App\Support\AboutPage`
+  holds defaults, validation and the merge; null content = all defaults.
+- `GET /pages/about` returns `content` with image URLs resolved.
+  `GET|PUT /admin/pages/about` (`content.view` / `content.write`).
+- Links must be http(s) URLs; post IDs pattern-checked; unknown keys dropped.
+- Admin: Content › Pages › About (`pages/pages/about.vue`): one card per section,
+  show/hide, list editor (add/remove/reorder), media-library image picker.
+- **Fixed the same day: the generic page editor saves.** Its Save button had
+  no handler, and the API bound pages by id while the editor asked by slug, so
+  Privacy, Terms, Returns and the rest could never be edited. `Page` now
+  resolves either an id or a slug, and Save sends title and body (sanitised
+  server-side). Test in `AdminCmsTest`.
+- **Clicked through in a browser** (admin dev server, local API, as Staff):
+  edited the hero heading, hid Recognition, added a team member, saved; the
+  API served all three. Local content was reset afterwards.
+- 652 backend tests pass (6 new in `AboutPageTest`, 1 in `AdminCmsTest`).
+  **Run the migration.**
+
+### 23 October 2026: About page is fully editable (storefront)
+
+Every About section now renders from `GET /pages/about` → `data.content`
+(API on `feat/backend`): hero, statement, story, figures, materials, people,
+ahenema, experiences, carousel posts, slogans, recognition, mission/vision,
+social links. Each section can be hidden. `utils/aboutContent.ts` is now the
+type plus fallback defaults (same copy as `AboutPage::defaults()`; change
+both). Checked: an admin save showed on the rendered page; a hidden section
+is not rendered.
+
+### 23 October 2026: About page redesigned from the brand's own story
+
+The old `/about` was mostly template copy over stock photography: "the best,
+ethical factories around the world… the same ones that produce your
+favorite designer labels", compliance-audit scores "of 90 or above",
+"Radically Transparent" pricing with a cost-breakdown graphic, and photos of
+a shirt, a washing drum and a recycling sign on tarmac. None of it was this
+brand. It's rebuilt from `GOLD_COAST_TOKOTA.md`, the brand's Instagram and
+YouTube, and Ghanaian business press. **Every fact, figure and post lives in
+`utils/aboutContent.ts` with its source**, so it's updated in one place.
+
+**The page, top to bottom:**
+1. **Hero:** "Crafted with purpose. Inspired by culture." (§24) on deep
+   black, beside the Ahotoso ahenema (black leather, gold crowns).
+2. **Statement:** still the CMS `about` body. The seeded line is now also the
+   fallback.
+3. **Our story:**
+   - Samuel's sandals gave way on the way to a mentor; in 2022 he decided to
+     build the brand, and it was established in 2023 (Business Beat, Feb 2025).
+   - Before the first pair he researched how customers abroad saw African
+     footwear (Springboard, May 2026).
+   - The quote, "We are changing the narrative about manufacturing in Africa",
+     is linked to its source.
+4. **Figures**, each dated and linked: 2,500+ pairs and 5 tonnes of tyres and
+   denim (Business Beat, **Feb 2025**), 5–25% reclaimed material per pair
+   (Ghana Climate Innovation Centre), about 20 pairs a day (Springboard, May
+   2026).
+5. **Materials** (`#sustainability`, which the home banner and the
+   `/sustainability` redirect still land on): car tyres via FITA Autotech,
+   water sachets, denim, leather and velvet.
+6. **People:** the brand's own team photo (1529px), captioned "The Gold Coast
+   Tokota team with FITA Autotech, who supply the tyres"; trains and employs
+   young people, women and people living with disabilities. Samuel Kumi-Gyau
+   (Founder & CEO) and Mary Seade (Operations Lead), per §17.
+   - **Changed the same day, at the client's request.** The first pick (an
+     artisan at the bench) was 544px and soft at that size.
+   - **Video stills didn't work either.** Frames from the brand's YouTube and
+     collaboration videos were 360p with burned-in subtitles, or shot outside
+     the gate, and Instagram needs a login to download.
+   - **So the team photo moved here,** and the hero took the **Ahotoso**
+     ahenema, black and gold, from the brand's own catalogue photography
+     (copied to `public/design/about-hero-ahotoso.webp`).
+7. **The ahenema:** royal heritage and Orthopaedic Ahenema, with the
+   Kentehene catalogue photo (copied to `public/design/`).
+8. **Experiences:** four of §15's workshops with their times as written there,
+   and Book an experience.
+9. **From the workshop:** the carousel (below).
+10. **Slogan ticker:** now the brand phrase plus "Made in Ghana" (was "Keep it
+    Clean / Do right by people / Keep It Local").
+11. **Recognition**, each linked to its source:
+    - Orange Corners Ghana (Cohort 9);
+    - Ghana Climate Innovation Centre (Cohort 10, Dec 2024);
+    - BlueInvest Africa Blue Economy Program award (Oct 2025);
+    - Africa Business Bureau, third place (Dec 2025);
+    - YEF Entrepreneurship Challenge, sixth place (Apr 2026).
+12. **Mission & vision** (§1), headed "Where we’re going." (was "We're on a
+    mission to clean up a dirty industry").
+13. **The latest:** falls back to the newest posts when none are in the
+    programme categories, instead of an empty row.
+14. **Closing band:** the Instagram button falls back to @goldcoasttokota, and
+    is square like the rest of the site.
+
+**The carousel (`AboutSocialCarousel`).** Eleven posts, the brand's own first:
+- **YouTube:** Trash to handcrafted ahenema, and Paint your story (both the
+  brand's channel); Adom TV's DIY shoemaking; Conrado TV's From trash to
+  treasure; Orange Corners/Joy Business; Springboard Hangout; The Next Africa.
+  All checked embeddable through YouTube's oEmbed.
+- **Instagram** (reels): the **Nubuke** collaboration (the tyre shoe, and the
+  4 Oct workshop event; added at the client's request); Edlys Montessori's
+  school visit; Africa Day Sip & Paint with MTN Ghana; ahenema with Wode Maya.
+
+How it behaves:
+- It swipes, with arrows on larger screens.
+- **Nothing third-party loads until a card is tapped.** YouTube cards use the
+  video's own thumbnail. Instagram's images expire, so its cards are black
+  tiles with the post's subject.
+- A tapped card opens a black lightbox at the post's shape: 9:16 for Shorts
+  and reels, 16:9 for interviews, Instagram's official embed. YouTube plays
+  from youtube-nocookie.com.
+- Escape closes it, focus returns to the card, and the page doesn't scroll
+  behind it.
+
+**Removed:** the factories, quality and prices blocks, the two wide stock
+images, and `AboutProgressGrid` / `AboutExploreGrid` (deleted). Section-nav
+tabs are now Our Story, Materials, People, Experiences, Watch, Recognition
+and The Latest.
+
+**Checked in headless Chrome at 1440 and 375px:**
+- no horizontal scroll;
+- the player opens a Short at 428×760 and an interview at 1100×619 on
+  desktop, and full width on a phone;
+- the Nubuke reel loads Instagram's embed;
+- the only console errors were the test port's CORS refusals on `/me`.
+
+**For the client to confirm:**
+- **The figures:** the 2,500 pairs, 5 tonnes and fifteen staff are from Feb
+  2025, so they're probably out of date.
+- **Staff names:** `GOLD_COAST_TOKOTA.md` says Isaaka is Production Lead;
+  VC4A lists Clinton Quesi. Only Samuel and Mary are named on the page.
+- **Instagram setting:** set **Instagram URL** in admin site settings; the
+  footer shows no Instagram link until it's filled.
+- **More photography:** the project has no sharp photo of artisans at work.
+  A few high-resolution workshop shots from the client would be the best
+  People and hero images; swap them in `People.vue` / `HeroSection.vue`.
+
+### 23 October 2026: contact form is the same width as the other forms
+
+The note form on `/contact` (`FormsFeedbackForm`) stretched across its column,
+about 650px on a laptop, while sign-in, sign-up and order tracking are 440px.
+It's now `max-w-[440px]` with the same 20px between fields, so every form on
+the site lines up.
+- **Message** is a five-row text box. It was a one-line input, for a note.
+- **Name and Email** autofill.
+- **The button** reads "Send message" (was "Send Feedback").
+- **The thank-you line** is "Thanks, your message is with us." It doesn't
+  promise an email reply, because nothing says one is sent.
+
+Checked in headless Chrome: every contact input measures 440px at 1280px,
+like sign-up's and order tracking's, and runs full width (335px) on a 375px
+phone.
+
+**Not changed:** the form still has no error message if the send fails.
+
+### 23 October 2026: fallback delivery rate is ₵35 and set in admin
+
+**What it is.** The rate checkout charges when no courier can give a live
+price, so a courier outage never blocks payment. The Ghana rate is also what a
+region with no rate of its own pays (`SHIPPING_UNPRICED_REGIONS=fallback`).
+It was ₵25 for Accra and Ghana, and env-only (`SHIPPING_FALLBACK_*`).
+
+**Now:**
+- **₵35 for Accra and the rest of Ghana**, at the client's request.
+  International stays ₵350.
+- **Set in admin:** Settings › Delivery › *Fallback delivery rates*, above
+  the regional rates. They're prices, so **`pricing.write`** (Admin and up)
+  via `PUT /admin/shipping/fallback-rates`, like the regional rates. Staff
+  see them read-only.
+- **Stored on `shipping_settings`** (`fallback_accra_ghs`,
+  `fallback_ghana_ghs`, `fallback_international_ghs`) and read through
+  `ShippingSetting::fallbackRate()` by `ManualCarrier`, the admin delivery
+  summary and the inbox context panel. Unset, a zone falls back to
+  `config('shipping.fallback_rates')`, whose defaults are now ₵35 / ₵35 / ₵350.
+- **The migration writes ₵35 to the row,** so an env var still set to 2500
+  (as `.env` had) doesn't keep charging ₵25. `.env.example` is updated. The
+  box's `.env` can keep or drop its `SHIPPING_FALLBACK_*` lines; the admin
+  value wins either way.
+
+**Checked:** 645 backend tests pass.
+- 9 tests that pinned ₵25 now expect ₵35. A USD order's shipping is $2.80 at
+  the test's 0.08 rate.
+- 4 new in `FallbackRatesTest`: defaults, an admin sets them, Staff can't,
+  validation.
+- 1 new in `ShippingQuoteTest`: an admin-set Ghana and international rate is
+  what the quote charges.
+
+Migrated locally: ₵35 / ₵35, international on config. The admin page builds
+but **wasn't clicked through in a browser**.
+
+**To deploy:** run the migration.
+
+### 23 October 2026: checkout keeps the recipient's first and last name (API)
+
+`POST /checkout/session` accepts `shipping_address.first_name` and
+`last_name` (each optional, up to 120 characters).
+- **With the parts,** `full_name` is built from them (`PersonName::join`).
+  Both parts are kept on the order's `shipping_address` next to it.
+- **Everything that reads the recipient,** Yango and DHL labels, receipts and
+  notifications, admin order screens, still reads `full_name`, unchanged.
+- **A lone `full_name`** (the WhatsApp order builder, an older storefront)
+  still works.
+- **Neither** is refused on `full_name`, as before.
+
+This is done in the request's `prepareForValidation`. The shared
+`ResolvesCheckoutItems` one is aliased (`normaliseDestination`) and still runs
+first. 640 backend tests pass: 3 new in `CheckoutSessionTest` for parts, a
+whole name, and neither. No migration (the address is JSON).
+
+### 23 October 2026: checkout recipient name in two parts; phone with country code (storefront)
+
+**Name.** The checkout's one Full name box is now **First name** and **Last
+name** (`shipping given-name` / `shipping family-name` autofill), side by side
+from 640px. It's the recipient, who isn't always the buyer.
+
+The address payload (`addressPayload`) sends `first_name`, `last_name` **and**
+`full_name` (the two joined):
+- couriers, receipts and the admin go on reading `full_name`;
+- the API on `feat/backend` stores the parts too;
+- an API without that change simply ignores them.
+
+**Phone.** The box is now the sign-up page's `FormsPhoneField`:
+- a country-code picker plus the number;
+- the code **follows the delivery country** (Ghana +233, UK +44, US +1, …);
+- it can still be changed by hand, for a Ghana number on a UK delivery;
+- it's validated against that code (9 digits for Ghana);
+- it's sent as **E.164** (`+447700900123`).
+
+The old rule ("Include your country code") is gone. Ghana numbers were
+already validated, now through the same rules as sign-up.
+
+Checked in headless Chrome against the dev server and local API:
+- choosing United Kingdom, then the US, moved the code to +44, then +1;
+- the shipping quote went out with `first_name` Jane, `last_name` Doe,
+  `full_name` "Jane Doe" and phone `+447700900123` (typed as 07700 900123).
+
+### 23 October 2026: announcement bar redesigned
+
+The black strip above the header was already `#000` with white type, but it
+read as grey and busy:
+- two lines of light (300) type at 10 and 12px, which anti-aliasing greys
+  on black;
+- mixed case on a phone and capitals elsewhere;
+- a currency pill with rounded corners and a 40%-white border.
+
+It's now **one 40px line** in a single type treatment: the header nav's
+tracked capitals (11px, 1.4px tracking) at **weight 400, pure white on pure
+black**.
+- **Desktop:** support hours on the left, the rotating message centred on the
+  bar, and Message us on WhatsApp (from `lg`), the flag and the currency
+  switch on the right.
+- **Phone:** the messages and the hours scroll in one marquee that fades at
+  its edges, beside the flag and currency.
+- **Currency switch:** square, with a solid white edge. The active currency is
+  filled white, the other is white type with a faint hover. That matches the
+  site's square controls.
+- The bar's layout (flag and currency included) moved from `Header.vue` into
+  `LayoutAnnouncementBar`.
+
+The header is 18px shorter on desktop and 6px shorter on a phone. Checked in
+headless Chrome at 1440, 1024, 768, 375 and 320px: every text node computes to
+`rgb(255,255,255)` at 400 on `rgb(0,0,0)`, and nothing overflows. Shop Now on
+the home hero still fits a 360×640 phone.
+
+### 23 October 2026: booking page links; attendees never below 1
+
+**The quiet WhatsApp links are graphite, not gold.** `CommonWhatsAppLink`'s
+`quiet` variant was still `text-gold-deep` from before the restyle. The
+footer had been overriding it to graphite, and the announcement bar to white.
+It's now graphite with a graphite underline everywhere: on the booking page
+("Prefer to arrange over WhatsApp?", "Enquire on WhatsApp", "Ask about the
+next session"), the DIY and workshop forms, checkout's order summary and the
+account page. The footer and announcement bar look the same as before.
+
+**The booking page's closing links are 20% larger** (14.4px, from the
+link's 12px): "Prefer to arrange over WhatsApp?" and the three "Enquire on
+WhatsApp" links under *By appointment*.
+
+**Attendees can't go below 1.** It was a plain number box, so 0 or −5 could
+be typed or arrowed in and were only refused on submit (the API's `min:1`).
+It's now a − / + stepper in a `field-group`:
+- − is disabled at 1. + stops at the seats left in the chosen session, or at
+  its full capacity once it's waitlisted.
+- A typed number is rounded and brought into range when the box is left.
+- Under the box it says "Up to N for this session".
+
+Checked in headless Chrome at 375px: − at 1 does nothing, typed −5 and 0
+become 1, 2.6 becomes 3, and + counts up. No upcoming sessions exist locally,
+so the per-session maximum wasn't seen.
+
+### 23 October 2026: mobile header row 25% taller
+
+Below `md`, the header's main row (menu, logo, search, account, cart) is now
+`min-h-[56px]`. It was 45px: the 44px tap targets plus the rule. The client
+asked for 15% and then another 10% of the original. The icons and logo are
+unchanged and stay centred. The whole phone header is 102px with the
+announcement bar (was 91). Desktop is unchanged at 186px.
+
+The home hero's Shop Now still lands on screen: its bottom edge is at 616px on
+a 360×640 phone and 644px on a 375×667 one. The hero window's height cap
+absorbs the difference.
+
+### 23 October 2026: product card colour swatches work
+
+The swatches on each `/shop` card were indicators only, so tapping one did
+nothing, on a phone or anywhere. They're now buttons, and the chosen colour
+drives the whole card:
+- **The photo** changes to that colour's first photo (`colour_images`), with
+  a short fade. The hover photo is that colour's second photo.
+- **The colour name** under the title and the image's alt text follow.
+- **Sizes** are checked against that colour's stock. A selected size it
+  doesn't have is cleared.
+- **Add to cart and Order on WhatsApp** use that colour. The WhatsApp message
+  now says it ("…the Odeneho Collection in Blue, size 42"), on the product
+  page too.
+- **The card links to `/shop/{slug}?color=Blue`**, and the product page opens
+  on that colour, with its photos.
+
+Each swatch is a 32px tap target, with the dot still 20px. Checked in headless
+Chrome at 375px with real touch events on Odeneho: Tan → Black → Blue each
+swapped the photo, label, link and WhatsApp text, and the link opened the
+product page on Blue. All 91 colour options in the catalogue have their own
+photos.
+
+### 23 October 2026: the shop's filter options come from the catalogue (API)
+
+**`GET /products/facets`** (`App\Support\CatalogueFacets`) returns
+`{ types: [{ value, label, count }], colors: [{ value, label, hex, count }] }`:
+- **Types and colours** are only the ones active products have, most-used
+  first.
+- **A colour's `hex`** is the swatch most products are entered with for that
+  name. A colour with no hex anywhere gets a neutral grey.
+- **Values are what `?type=` and `?color=` take, and every count equals what
+  that filter returns.** A test checks each one against the real filter.
+- **Caching:** cached for 10 minutes and dropped whenever a product changes,
+  alongside the mega menus.
+- **Type names** ("Closed-Toe Shoes") now come from one place,
+  `App\Support\ProductTypes`, shared with `MegaMenus`.
+
+Today's catalogue: Slippers 25, Ahenema 13, Closed-Toe Shoes 2. Colours:
+Black, Tan, Blue, Brown, Green, Red, Navy, White, Purple, Grey.
+
+**Checked:** 637 backend tests pass (5 new in `CatalogueFacetsTest`). Every
+facet count matched the filter against the local database. No migration.
+
+### 23 October 2026: shop page on mobile; filters from the catalogue (storefront)
+
+`/shop`, mostly as seen on a phone:
+- **"Order on WhatsApp" is centred.** In a narrow card it wraps to two lines,
+  which sat ragged-left. `CommonWhatsAppLink`'s boxed variants are now
+  `text-center leading-tight`, wherever they're used.
+- **Category checkboxes are 18px squares** (they were 32px with rounded
+  corners) with a white tick when checked, and a quiet product count on the
+  right. The row is still a 44px tap target.
+- **Types and colours come from the catalogue** (`GET /products/facets`, on
+  `feat/backend`). The fixed lists offered Accessories & Gift Cards,
+  Merchandise, "Everyone", Sandals, Orange, Pink and Olive, which match
+  nothing, and had no Purple. Four of their swatches were the wrong shade.
+  The sidebar now shows only what products have, in the colours the products
+  are entered with. A white swatch gets a hairline edge. The fixed lists stay
+  as the fallback if the API can't be reached.
+- **Every product loads.** The page asked the API for its default 12 per
+  page and had no pagination, so 28 of the 40 products never showed on
+  `/shop` (only through a filter). It now asks for 48, the API's cap, with
+  **Load more** once the catalogue outgrows that.
+- **The counts are now the real totals.** "N Products" in the sidebar and
+  "Show N results" were the length of the loaded page (12).
+
+Checked in headless Chrome at 375px: 40 cards load, the drawer says 40;
+Slippers + Purple gives 1. The sidebar's per-option counts are
+catalogue-wide, not narrowed by the other selected filters.
+
+### 23 October 2026: home hero on phones pans across the three pairs
+
+The hero photo is three pairs side by side. On a phone the full photo shrank
+to a thin strip. Below `sm` (640px), `HeroSection` now shows it through a
+window one pair wide, so the **white centre ahenema** fills the width. On
+opening, the view pans to the right-hand pair, across to the left-hand one,
+and back to the centre, **once** (about 6 s).
+- It's a CSS animation, so nothing runs during SSR and no GSAP is involved.
+- It's switched off under `prefers-reduced-motion`, which holds on the
+  centre pair.
+- The window's height is capped against the viewport, so **Shop Now stays
+  on screen**. Checked in headless Chrome at 360×640, 375×667 and 390×844:
+  the button's bottom edge is at 605, 633 and 670px.
+- Tablet and desktop are unchanged.
+- The crop assumes the hero is three equal pairs across. An admin-set
+  `hero_image` of another shape would be cropped the same way.
+
+### 23 October 2026: mega menus from the catalogue; tiles chosen in Content › Menus
+
+The storefront header's four menus (Best Sellers, Sandals, Ahenema, Sale)
+were one hard-coded template, with the same links and the same two Figma
+images in every menu. Several links led to empty pages: `?type=sandals` (no
+product has that type), Merchandise, and Top Rated (there are no ratings, so
+the sort was ignored). They're now built from the database.
+
+**Links: `App\Support\MegaMenus`, `GET /navigation/menus`.** Each menu is a
+scope on the catalogue, written as `/shop`'s own query string and run
+through `ProductFilter`, so a link only appears if it leads to products:
+- **Styles:** the product types with active products in that menu (Slippers,
+  Ahenema, Closed-Toe Shoes today). A one-style menu, like Ahenema, shows
+  just "All Ahenema".
+- **Shop for:** the departments present (Men's, Women's, Kids).
+- **Featured:** New Arrivals, Best Sellers and On Sale (only when something
+  is on sale), never repeating the menu itself, plus Customised Sandals
+  (`/booking`).
+- **"Sandals" is the whole range** (`/shop`), as agreed: everything the brand
+  makes is a sandal.
+
+**Images: Content › Menus (new admin page).**
+- Each menu has two tiles. An editor (`content.write`: Staff and up) picks
+  an image from the media library with the new `ContentMediaPicker`, then
+  gives it a caption and a link. The link must be a storefront path, and the
+  field suggests the menu's own links.
+- An empty slot is **automatic**: it shows that menu's own product photo,
+  best-selling for Best Sellers and newest otherwise, with different styles
+  first. Nobody has to choose anything for the menus to look right.
+- Interns can view the page but not save. Deleting an image from the media
+  library empties its tile.
+
+**Under it:**
+- A new `mega_menu_promos` table: `menu`, `position`, `media_asset_id` (null
+  on delete), `caption`, `link`.
+- The built menus are cached for 10 minutes, and dropped whenever a tile, a
+  product or a media asset changes.
+- `docs/api-contract.md` documents both endpoints.
+- Admin `.env`: `NUXT_PUBLIC_STOREFRONT_URL` (for the "view on storefront"
+  link).
+
+**Checked:**
+- 632 backend tests pass, including 9 new in `MegaMenuTest`: links follow the
+  catalogue, one-style menus, On Sale only when something is on sale,
+  automatic tiles, a chosen tile and its deleted image, clearing a slot,
+  in-site links only, a caption required, interns read-only, unknown menu 404.
+- Against the local database as a Staff user: chose an image for Sandals'
+  first tile, saw it on `/navigation/menus` with its caption and link, then
+  cleared it and the product photo came back.
+- The storefront header was checked in headless Chrome (storefront entry).
+- The admin page builds but **wasn't clicked through in a browser**.
+
+**To deploy:** run the migration. With nothing chosen, the storefront shows
+product photos, so choosing tiles can come later.
+
+### 23 October 2026: header mega menus come from the catalogue (storefront)
+
+The header's four menus (Best Sellers, Sandals, Ahenema, Sale) are now built
+by the API (`GET /navigation/menus`, on `feat/backend`, see that entry). They
+used to be one hard-coded template, with the same columns and the same two
+Figma images in every menu:
+- **"Sandals"** pointed at `?type=sandals`. No product has that type, so it
+  was an empty page.
+- **"Merchandise"** and **"Top Rated"** led nowhere useful. There are no
+  merchandise products and no ratings.
+- **Ahenema** offered links to the other styles.
+
+`composables/useMegaMenus.ts` fetches the menus once during SSR. The header's
+desktop panel and mobile drawer both use them. The old template stays in
+`utils/navigation.ts` as the fallback if the API can't be reached, with the
+dead links removed. **Sandals now opens `/shop`**, the whole range, in the
+header and the footer.
+
+Checked in headless Chrome against the local API: Sandals shows Styles
+(Slippers, Ahenema, Closed-Toe Shoes), Shop for (Men's, Women's) and
+Featured, with one ahenema and one slippers photo. Ahenema shows only "All
+Ahenema" under Styles, and its own photos.
+
+### 23 October 2026: customers have a first and a last name
 
 Sign-up asks for First name and Last name separately (storefront work on
 `feat/storefront-pages`), so they are now stored separately.

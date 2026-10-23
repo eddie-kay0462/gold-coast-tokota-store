@@ -6,8 +6,15 @@ const siteSettings = useSiteSettingsStore()
 
 // The Instagram destination is admin-editable (SiteSetting), the same source
 // the footer's Connect column uses, never hardcoded per component.
-const instagramUrl = computed(() => siteSettings.instagramUrl || '/')
-const supportHours = computed(() => siteSettings.businessHours || 'Mon–Sat, 9am–5pm GMT')
+/** The About page's Instagram link, the fallback until the site setting is filled in. */
+const props = defineProps<{ instagram?: string }>()
+const instagramUrl = computed(() => siteSettings.instagramUrl || props.instagram || 'https://www.instagram.com/goldcoasttokota/')
+// Ranges read "to", not a dash, on the About page ("Mon to Sat · 9am to 5pm
+// GMT"). The setting itself is shared with the announcement bar, so it's
+// reworded here only.
+const supportHours = computed(() =>
+  (siteSettings.businessHours || 'Mon–Sat, 9am–5pm GMT').replace(/\s*[–—]\s*/g, ' to '),
+)
 const isExternal = computed(() => !!siteSettings.instagramUrl)
 </script>
 
@@ -35,15 +42,19 @@ const isExternal = computed(() => !!siteSettings.instagramUrl)
           Chat on WhatsApp
         </CommonWhatsAppLink>
 
+        <!-- Sized to its label rather than the standard 240px, which wrapped it
+             onto two lines and made it taller than the WhatsApp button beside
+             it. Same type size; one line, the same 44px height (it may wrap
+             only on a phone under 360px, where one line would not fit). -->
         <CommonBrandButton
           :to="instagramUrl"
           variant="white"
-          shape="soft"
+          class="!w-auto px-6 min-[360px]:whitespace-nowrap"
           :external="isExternal"
           :target="isExternal ? '_blank' : undefined"
           :rel="isExternal ? 'noopener noreferrer' : undefined"
         >
-          @GoldCoastTokota Instagram
+          @goldcoasttokota on Instagram
         </CommonBrandButton>
       </div>
     </div>

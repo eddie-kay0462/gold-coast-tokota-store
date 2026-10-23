@@ -66,13 +66,14 @@ return [
 
     /*
     | What the customer is charged when a zone has no live carrier, or when a
-    | live quote fails at checkout. GHS minor units. The defaults are the static
-    | rates checkout charged before this module existed (₵25 domestic, ₵350
-    | international), kept so turning this on changes no price.
+    | live quote fails at checkout. GHS minor units. These are only the
+    | defaults: the rates are set in admin (Settings › Delivery, pricing.write)
+    | and stored on ShippingSetting, which wins when set. ₵35 domestic since
+    | 23 Oct (was ₵25), ₵350 international.
     */
     'fallback_rates' => [
-        'accra' => (int) env('SHIPPING_FALLBACK_ACCRA_GHS', 2_500),
-        'ghana' => (int) env('SHIPPING_FALLBACK_GHANA_GHS', 2_500),
+        'accra' => (int) env('SHIPPING_FALLBACK_ACCRA_GHS', 3_500),
+        'ghana' => (int) env('SHIPPING_FALLBACK_GHANA_GHS', 3_500),
         'international' => (int) env('SHIPPING_FALLBACK_INTERNATIONAL_GHS', 35_000),
     ],
 

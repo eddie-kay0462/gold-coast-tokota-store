@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
 import { DESIGN_POSTS, SUSTAINABILITY_POSTS } from '~/utils/newsPosts'
+import { aboutImage, withAboutDefaults, type AboutContent } from '~/utils/aboutContent'
 
-type ApiPage = { title: string, body: string }
+type ApiPage = { title: string, body: string, content: Partial<AboutContent> | null }
 
 const config = useRuntimeConfig()
 
-// The About page is CMS-backed (Feature 9): the admin owns the opening
-// manifesto, everything else is the designed brand story. A missing or failing
-// endpoint falls back to the design's own copy rather than throwing, the same
+// Every section is edited in the admin (Content › Pages › About) and arrives
+// as `content`, already merged over its defaults by the API. If the endpoint
+// fails, the same defaults (utils/aboutContent.ts) render the page, the same
 // pattern the home, shop and blog pages use.
 const { data: page } = await useAsyncData('about-page', () =>
   $fetch<{ data: ApiPage }>(`${config.public.apiBase}/pages/about`)
     .catch(() => null),
 )
 
-const statementBody = computed(() => page.value?.data?.body ?? null)
+const content = computed(() => withAboutDefaults(page.value?.data?.content))
 
 /**
  * "The people, stories, and ideas that will help us get there", the programme
@@ -38,112 +39,80 @@ const programmePosts = computed(() => {
     : [...SUSTAINABILITY_POSTS, ...DESIGN_POSTS]
 
   const seen = new Set<string>()
-  return pool
-    .filter((post) => {
-      if (seen.has(post.slug)) return false
-      if (!PROGRAMME_CATEGORIES.includes(post.category ?? '')) return false
-      seen.add(post.slug)
-      return true
-    })
-    .slice(0, 3)
+  const unique = pool.filter((post) => !seen.has(post.slug) && seen.add(post.slug))
+  const programme = unique.filter((post) => PROGRAMME_CATEGORIES.includes(post.category ?? ''))
+  // The newest posts of any kind when none are in the programme categories,
+  // rather than a heading over an empty row.
+  return (programme.length ? programme : unique).slice(0, 3)
 })
 
 useSeoMeta({
   title: 'About | Gold Coast Tokota',
   description:
-    'Exceptional quality, ethical factories and radical transparency. The story behind Gold Coast Tokota, and our mission to clean up a dirty industry.',
+    'Gold Coast Tokota turns discarded tyres, water sachets and denim into handcrafted ahenema and sandals in Accra, and opens its workshop to schools, companies and visitors.',
   ogTitle: 'About | Gold Coast Tokota',
-  ogDescription: 'Exceptional quality. Ethical factories. Radical Transparency.',
-  ogImage: '/brand/og-image.png',
+  ogDescription: 'Crafted with purpose. Inspired by culture. Handmade in Ghana from materials other people throw away.',
+  ogImage: '/design/post-tyred-hero.png',
   ogType: 'website',
 })
 </script>
 
 <template>
   <!--
-    About and Sustainability were two routes telling one story; they merged on
-    27 Aug. `/sustainability` is a 301 to this page (see `nuxt.config.ts`), and
-    the section nav at the top is now what moves between the parts of it,
-    which is what that tab row was always for.
+    Redesigned 23 Oct from the brand's own material (sources in
+    AboutPage::defaults()), and editable section by section in the admin
+    since the same day: copy, lists, images, and a switch to hide any section.
+    `/sustainability` still 301s to `#sustainability` (the materials section).
   -->
   <div class="w-full bg-white">
     <AboutSectionNav />
 
-    <AboutHeroSection />
+    <AboutHeroSection v-if="content.hero.visible" :content="content.hero" />
 
-    <MotionGsapScrollReveal>
-      <AboutStatementSection :body="statementBody" />
+    <MotionGsapScrollReveal v-if="content.statement.visible">
+      <AboutStatementSection :text="content.statement.text" />
     </MotionGsapScrollReveal>
 
-    <AboutFeatureSection
-      id="factories"
-      eyebrow="OUR FACTORIES"
-      heading="Our ethical approach."
-      body="We spend months finding the best factories around the world, the same ones that produce your favorite designer labels. We visit them often and build strong personal relationships with the owners. Each factory is given a compliance audit to evaluate factors like fair wages, reasonable hours, and environment. Our goal? A score of 90 or above for every factory."
-      image="/design/about-factories.png"
-      alt="An artisan hand-cutting leather at the workbench"
-      :height="733"
-    />
+    <AboutStory v-if="content.story.visible" :content="content.story" />
 
-    <img
-      src="/design/about-workshop-wide.png"
-      alt="Inside the Gold Coast Tokota workshop, tools and hides laid out at the bench"
-      class="aspect-[16/9] max-h-[637px] w-full object-cover"
-      loading="lazy"
-    >
+    <AboutStoryNumbers v-if="content.figures.visible && content.figures.items.length" :content="content.figures" />
 
-    <!-- `id="quality"`, not `id="sustainability"` as it used to be: this section
-         is about how long a pair lasts, and the anchor now belongs to the real
-         sustainability block further down. -->
+    <AboutMaterials v-if="content.materials.visible" :content="content.materials" />
+
+    <AboutPeople v-if="content.people.visible" :content="content.people" />
+
     <AboutFeatureSection
-      id="quality"
-      eyebrow="OUR QUALITY"
-      :heading="'Designed\nto last.'"
-      body="We're not big on trends. We want you to wear our pieces for years, even decades, to come. That's why we source the finest materials and the most skilled hands for our timeless products, like our full-grain leather ahenema, hand-stitched soles, and locally woven kente trims."
-      image="/design/about-quality.png"
-      alt="A pair of blue and black leather sandals photographed from above"
+      v-if="content.ahenema.visible"
+      id="ahenema"
+      :eyebrow="content.ahenema.eyebrow"
+      :heading="content.ahenema.heading"
+      :body="content.ahenema.body"
+      :image="aboutImage(content.ahenema)"
+      :alt="content.ahenema.imageAlt"
       :reverse="true"
-      :height="552"
+      :height="620"
     />
 
-    <img
-      src="/design/about-materials-wide.png"
-      alt="Woven material and finishing supplies arranged across the workshop floor"
-      class="aspect-[16/9] max-h-[560px] w-full object-cover"
-      loading="lazy"
-    >
+    <AboutExperiences v-if="content.experiences.visible" :content="content.experiences" />
 
-    <AboutFeatureSection
-      id="prices"
-      eyebrow="OUR PRICES"
-      heading="Radically Transparent."
-      body="We believe our customers have a right to know how much their shoes cost to make. We reveal the true costs behind all of our products, from materials to labor to transportation, then offer them to you, minus the traditional retail markup."
-      image="/design/about-price-breakdown.png"
-      alt="A cost breakdown comparing the Gold Coast Tokota price with traditional retail"
-      :tinted="false"
-      :contain="true"
-      :height="660"
+    <AboutSocialCarousel
+      v-if="content.watch.visible && content.watch.posts.length"
+      :content="content.watch"
+      :socials="content.socials"
     />
 
-    <!-- Everything below came from `/sustainability`. -->
-    <MotionGsapScrollReveal>
-      <AboutSustainabilitySection />
-    </MotionGsapScrollReveal>
+    <AboutSloganTicker v-if="content.slogans.visible && content.slogans.items.length" :items="content.slogans.items" />
 
-    <AboutSloganTicker />
+    <AboutRecognition v-if="content.recognition.visible && content.recognition.items.length" :content="content.recognition" />
 
-    <MotionGsapScrollReveal>
-      <AboutProgressGrid />
+    <MotionGsapScrollReveal v-if="content.mission.visible">
+      <AboutSustainabilitySection :content="content.mission" />
     </MotionGsapScrollReveal>
 
     <MotionGsapScrollReveal>
       <AboutStoriesGrid :posts="programmePosts" />
     </MotionGsapScrollReveal>
 
-    <MotionGsapScrollReveal>
-      <AboutExploreGrid />
-    </MotionGsapScrollReveal>
-
-    <AboutSocialCta />
+    <AboutSocialCta :instagram="content.socials.instagram" />
   </div>
 </template>

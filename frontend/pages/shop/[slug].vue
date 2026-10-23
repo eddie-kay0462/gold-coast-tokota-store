@@ -35,7 +35,12 @@ if (!product.value) {
 // photos rather than cycling through colours the customer didn't pick.
 // Initialised here, not by the panel: the gallery renders before the panel,
 // so a server render would otherwise show every colour and then swap.
-const defaultColour = () => product.value?.color ?? product.value?.colors?.[0]?.name ?? ''
+// A product card links here with `?color=` when a colour was tapped on it.
+const defaultColour = () => {
+  const asked = typeof route.query.color === 'string' ? route.query.color : ''
+  if (asked && product.value?.colors?.some((colour) => colour.name === asked)) return asked
+  return product.value?.color ?? product.value?.colors?.[0]?.name ?? ''
+}
 const selectedColor = ref(defaultColour())
 watch(product, () => { selectedColor.value = defaultColour() })
 

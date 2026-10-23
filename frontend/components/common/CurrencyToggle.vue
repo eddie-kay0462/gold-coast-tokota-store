@@ -31,7 +31,7 @@ function cellClass(code: Currency, tone: 'dark' | 'light') {
   if (tone === 'light') {
     return active ? 'border-ink bg-ink text-white' : 'border-ink/30 text-ink group-hover:border-ink'
   }
-  return active ? 'border-white bg-white text-ink' : 'border-white/40 text-white group-hover:border-white'
+  return active ? 'border-white bg-white text-ink' : 'border-white text-white group-hover:bg-white/10'
 }
 </script>
 
@@ -57,8 +57,8 @@ function cellClass(code: Currency, tone: 'dark' | 'light') {
       @click="currency.setCurrency(code)"
     >
       <span
-        class="border px-2 py-[5px] text-[11px] leading-none tracking-[0.6px] transition-colors lg:px-2.5 lg:py-1 lg:text-caption"
-        :class="[cellClass(code, tone), index === 0 ? 'rounded-l-[2px]' : '-ml-px rounded-r-[2px]']"
+        class="border px-2 py-[5px] text-[11px] font-normal leading-none tracking-[1.4px] transition-colors"
+        :class="[cellClass(code, tone), index === 0 ? '' : '-ml-px']"
       >
         {{ code }}
       </span>

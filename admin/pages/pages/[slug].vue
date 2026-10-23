@@ -7,10 +7,11 @@ import type { CmsPage } from '~/types'
  * is explicitly one component reused across both CMS resources.
  */
 const route = useRoute()
-const { useAdminItem } = useAdminApi()
+const { useAdminItem, adminFetch } = useAdminApi()
+const toast = useToast()
 const { formatRelative } = useFormatters()
 
-const { item: page } = useAdminItem<CmsPage>(`page-${route.params.slug}`, `/admin/pages/${route.params.slug}`)
+const { item: page, refresh } = useAdminItem<CmsPage>(`page-${route.params.slug}`, `/admin/pages/${route.params.slug}`)
 
 const body = ref('')
 const title = ref('')
@@ -21,6 +22,28 @@ watchEffect(() => {
 })
 
 useHead({ title: computed(() => title.value || 'Page') })
+
+// Save. The button had no handler before 23 Oct, so nothing typed here was
+// ever stored; the API sanitises the HTML before storing it.
+const saving = ref(false)
+const saveError = ref<string | null>(null)
+const dirty = computed(() => !!page.value && (body.value !== page.value.body || title.value !== page.value.title))
+
+async function save() {
+  saving.value = true
+  saveError.value = null
+  try {
+    await adminFetch(`/admin/pages/${route.params.slug}`, { method: 'PUT', body: { title: title.value, body: body.value } })
+    await refresh()
+    toast.success('Page saved', 'It’s live on the storefront now.')
+  } catch (err: unknown) {
+    const e = err as { statusCode?: number, data?: { errors?: Record<string, string[]>, message?: string } }
+    if (e.statusCode === 401 || e.statusCode === 419) return
+    saveError.value = Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Saving failed. Try again in a moment.'
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
@@ -43,11 +66,15 @@ useHead({ title: computed(() => title.value || 'Page') })
       business before saving.
     </p>
 
+    <p v-if="saveError" class="rounded-lg border border-danger/30 bg-danger-soft px-3.5 py-3 text-ui text-danger" role="alert">
+      {{ saveError }}
+    </p>
+
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr),300px]">
       <ContentRichTextEditor v-model="body" :max-length="20000">
         <template #footer>
           <UiPermissionGate capability="content.write">
-            <UiButton size="sm">Save changes</UiButton>
+            <UiButton size="sm" :disabled="!dirty" :loading="saving" @click="save">Save changes</UiButton>
           </UiPermissionGate>
         </template>
       </ContentRichTextEditor>

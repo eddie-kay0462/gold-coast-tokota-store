@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\MediaStorage;
+use App\Support\MegaMenus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,15 @@ class MediaAsset extends Model
         'width' => 'integer',
         'height' => 'integer',
     ];
+
+    /**
+     * A deleted image empties any mega menu tile using it (the foreign key
+     * nulls it), so the cached menus are dropped to match.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(fn () => MegaMenus::forget());
+    }
 
     public function uploadedBy(): BelongsTo
     {
