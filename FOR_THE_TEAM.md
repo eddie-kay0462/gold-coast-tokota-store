@@ -48,7 +48,14 @@ inert at their last step.
 
 ## Recent changes
 
-### 23 October 2026 (latest): About page closing buttons; no dashes in ranges (storefront)
+### 23 October 2026 (latest): About page ranges read "to" (API)
+
+`AboutPage::defaults()` writes the page's ranges with "to" instead of a dash,
+at the client's request: "5 to 25%", "10:00 AM to 1:00 PM", "9:00 AM to
+4:00 PM", "Monday to Friday". Saved About content keeps whatever it was saved
+with; production has none saved, so it takes these.
+
+### 23 October 2026: About page closing buttons; no dashes in ranges (storefront)
 
 - **Buttons:** "@goldcoasttokota on Instagram" was held to the standard 240px
   width, so it wrapped to two lines and stood 56px against WhatsApp's 44px.
