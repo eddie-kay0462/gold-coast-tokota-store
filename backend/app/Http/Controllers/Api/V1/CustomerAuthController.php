@@ -30,7 +30,7 @@ class CustomerAuthController extends Controller
 {
     public function register(RegisterCustomerRequest $request): JsonResponse
     {
-        $customer = Customer::create($request->validated());
+        $customer = Customer::create(collect($request->validated())->except('name')->all());
 
         // Signed straight in: making someone register and then immediately log
         // in with the credentials they just typed is friction for no security.

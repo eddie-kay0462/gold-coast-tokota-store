@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Jobs\SendPasswordReset;
 use App\Notifications\TransactionalMessages;
+use App\Support\PersonName;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,12 +16,39 @@ class Customer extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
+        'first_name',
+        'last_name',
+        // Accepted so older callers that only know a full name still work;
+        // it is split into the two parts on save (see booted()).
         'name',
         'email',
         'phone',
         'preferred_currency',
         'password',
     ];
+
+    /**
+     * `name` is the full name, kept equal to `first_name` + `last_name` on
+     * every save, so the many places that show a customer's whole name read
+     * one column.
+     *
+     * Usually the parts are set and `name` follows. A `name` set on its own
+     * (an older caller), or one that disagrees with the parts it was set
+     * alongside, wins instead and is split into them.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Customer $customer) {
+            $joined = PersonName::join($customer->first_name, $customer->last_name);
+
+            if ($customer->isDirty('name') && filled($customer->name) && $customer->name !== $joined) {
+                [$customer->first_name, $customer->last_name] = PersonName::split((string) $customer->name);
+                $customer->name = PersonName::join($customer->first_name, $customer->last_name);
+            } elseif ($joined !== '') {
+                $customer->name = $joined;
+            }
+        });
+    }
 
     protected $hidden = [
         'password',

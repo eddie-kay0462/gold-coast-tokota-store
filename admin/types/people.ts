@@ -45,7 +45,11 @@ export interface AccessExtension {
 
 export interface Customer {
   id: number
+  /** The full name, always `firstName` + `lastName`. Shown everywhere. */
   name: string
+  firstName: string
+  /** Null only for some customers from before sign-up asked for it. */
+  lastName: string | null
   email: string
   phone: string | null
   preferredCurrency: Currency
