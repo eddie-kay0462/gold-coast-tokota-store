@@ -2,16 +2,22 @@
 import { PhCaretLeft } from '@phosphor-icons/vue'
 import type { Pin } from '~/components/checkout/AddressPinPicker.vue'
 import { countryOptions as allCountries, GHANA_REGIONS } from '~/utils/countries'
-import { isValidEmail, isValidGhanaPhone } from '~/utils/validators'
+import { isValidEmail } from '~/utils/validators'
+import { callingCode, nationalNumberError } from '~/utils/phone'
 
 export type ShippingAddress = {
   email: string
-  fullName: string
+  /** The recipient, who isn't always the buyer: a gift can go to someone else. */
+  firstName: string
+  lastName: string
   line1: string
   city: string
   region: string
   postcode: string
   country: string
+  /** The phone's calling-code country. Follows the delivery country unless changed. */
+  phoneCountry: string
+  /** The number after the calling code; sent as E.164 (`addressPayload`). */
   phone: string
   /** The delivery pin, Ghana only. Decides whether Accra's courier zone applies. */
   lat: number | null
@@ -61,6 +67,12 @@ watch(() => model.value.country, (country, previous) => {
   if (country === 'GH' || previous === 'GH') model.value.region = ''
 })
 
+// The phone's country code follows the delivery country, so a UK address
+// starts on +44. It can still be changed: a Ghana number for a UK delivery.
+watch(() => model.value.country, (country) => {
+  if (country && callingCode(country)) model.value.phoneCountry = country
+})
+
 function validate(): boolean {
   errors.email = !model.value.email.trim()
     ? 'Enter your email address so we can send your receipt.'
@@ -68,26 +80,19 @@ function validate(): boolean {
       ? 'That doesn’t look like a valid email address.'
       : undefined
 
-  errors.fullName = !model.value.fullName.trim() ? 'Enter the recipient’s name.' : undefined
+  errors.firstName = !model.value.firstName.trim() ? 'Enter the recipient’s first name.' : undefined
+  errors.lastName = !model.value.lastName.trim() ? 'Enter the recipient’s last name.' : undefined
   errors.line1 = !model.value.line1.trim() ? 'Enter a street address.' : undefined
   errors.city = !model.value.city.trim() ? 'Enter a city or town.' : undefined
   errors.country = !model.value.country ? 'Choose a delivery country.' : undefined
   // Outside Accra, the region is what prices delivery.
   errors.region = isGhana.value && !model.value.region ? 'Choose your region.' : undefined
 
-  // The Ghana pattern applies only to a Ghana address. Running it on every
-  // order would reject every international customer, which is the bug this
-  // form had while it validated nothing at all.
-  const phone = model.value.phone.trim()
-  errors.phone = !phone
+  // Checked against the chosen calling code: exactly 9 digits after +233 for
+  // Ghana, a plausible length elsewhere (utils/phone.ts).
+  errors.phone = !model.value.phone.trim()
     ? 'Enter a phone number so the courier can reach you.'
-    : isGhana.value
-      ? isValidGhanaPhone(phone)
-        ? undefined
-        : 'Enter a Ghana number as 0XXXXXXXXX or +233XXXXXXXXX.'
-      : /^\+?[0-9\s-]{7,}$/.test(phone)
-        ? undefined
-        : 'Include your country code, e.g. +44 7700 900000.'
+    : nationalNumberError(model.value.phoneCountry, model.value.phone)
 
   return !Object.values(errors).some(Boolean)
 }
@@ -122,10 +127,16 @@ defineExpose({ validate })
         label="Country/Region" name="country" type="select" :options="countryOptions" required
         :error="errors.country"
       />
-      <FormsFormField
-        v-model="model.fullName"
-        label="Full name" name="fullName" autocomplete="name" required :error="errors.fullName"
-      />
+      <div class="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+        <FormsFormField
+          v-model="model.firstName"
+          label="First name" name="firstName" autocomplete="shipping given-name" required :error="errors.firstName"
+        />
+        <FormsFormField
+          v-model="model.lastName"
+          label="Last name" name="lastName" autocomplete="shipping family-name" required :error="errors.lastName"
+        />
+      </div>
       <FormsFormField
         v-model="model.line1"
         label="Address" name="line1" autocomplete="address-line1" required :error="errors.line1"
@@ -155,10 +166,11 @@ defineExpose({ validate })
       <ClientOnly v-if="isGhana">
         <CheckoutAddressPinPicker v-model="pin" @place="onPlace" />
       </ClientOnly>
-      <FormsFormField
+      <FormsPhoneField
         v-model="model.phone"
-        label="Phone (WhatsApp)" name="phone" type="tel" autocomplete="tel" required
-        :hint="isGhana ? 'For delivery updates from the courier.' : 'Include your country code.'"
+        v-model:country="model.phoneCountry"
+        label="Phone (WhatsApp)" name="phone" required
+        hint="For delivery updates from the courier."
         :error="errors.phone"
       />
     </section>
