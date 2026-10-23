@@ -83,3 +83,49 @@ export interface MegaMenuAdmin {
   columns: { heading: string, links: { label: string, to: string }[] }[]
   linkOptions: { label: string, to: string }[]
 }
+
+// --- About page (Content › Pages › About; App\Support\AboutPage) -----------
+
+interface AboutSection { visible: boolean }
+interface AboutImageBlock {
+  /** The default, a storefront path. Not editable. */
+  image: string
+  /** A media library image chosen instead, or null for the default. */
+  imageId: number | null
+  imageAlt: string
+  /** Resolved by the API: the chosen image, else the default. */
+  imageUrl?: string
+}
+
+export interface AboutVideoPost {
+  platform: 'youtube' | 'instagram'
+  id: string
+  title: string
+  meta: string
+  shape: 'portrait' | 'landscape'
+  thumb: 'oardefault' | 'maxresdefault' | null
+}
+
+export interface AboutContent {
+  hero: AboutSection & AboutImageBlock & { eyebrow: string; heading: string; lede: string }
+  statement: AboutSection & { text: string }
+  story: AboutSection & { eyebrow: string; heading: string; paragraphs: string[]; quote: string; quoteBy: string; quoteSource: string; quoteUrl: string }
+  figures: AboutSection & { items: { value: string; label: string; source: string; href: string }[] }
+  materials: AboutSection & { eyebrow: string; heading: string; body: string; items: { name: string; body: string }[] }
+  people: AboutSection & AboutImageBlock & { eyebrow: string; heading: string; body: string; caption: string; team: { role: string; name: string }[] }
+  ahenema: AboutSection & AboutImageBlock & { eyebrow: string; heading: string; body: string }
+  experiences: AboutSection & { eyebrow: string; heading: string; body: string; items: { name: string; when: string; detail: string }[] }
+  watch: AboutSection & { eyebrow: string; heading: string; body: string; posts: AboutVideoPost[] }
+  slogans: AboutSection & { items: string[] }
+  recognition: AboutSection & { eyebrow: string; heading: string; items: { name: string; detail: string; date: string; href: string }[] }
+  mission: AboutSection & { heading: string; lede: string; mission: string; vision: string }
+  socials: { instagram: string; youtube: string }
+}
+
+/** `GET /admin/pages/about`. */
+export interface AboutPageAdmin {
+  content: AboutContent
+  images: { id: number; filename: string; altText: string }[]
+  updatedAt: Timestamp | null
+  updatedBy: string | null
+}

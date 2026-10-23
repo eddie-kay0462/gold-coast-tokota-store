@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\AboutPageController as AdminAboutPageController;
 use App\Http\Controllers\Api\V1\Admin\BlogPostController as AdminBlogPostController;
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryController;
@@ -362,6 +363,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Pages are edited, never created or deleted: their slugs are
             // storefront routes, so inventing one publishes a page nothing
             // links to and removing one breaks a live URL.
+            // The About page's structured content (Content › Pages › About).
+            // Before /pages/{page}, or "about" would be read as a page id.
+            Route::get('/pages/about', [AdminAboutPageController::class, 'show'])
+                ->middleware('capability:content.view')->name('pages.about.show');
+            Route::put('/pages/about', [AdminAboutPageController::class, 'update'])
+                ->middleware('capability:content.write')->name('pages.about.update');
             Route::get('/pages', [AdminPageController::class, 'index'])
                 ->middleware('capability:content.view')->name('pages.index');
             Route::get('/pages/{page}', [AdminPageController::class, 'show'])

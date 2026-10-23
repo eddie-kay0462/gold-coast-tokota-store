@@ -13,6 +13,7 @@ class Page extends Model
         'slug',
         'title',
         'body',
+        'content',
         'is_draft',
         'updated_by_admin_id',
     ];
@@ -21,6 +22,8 @@ class Page extends Model
     {
         return [
             'is_draft' => 'boolean',
+            // Structured sections; only About uses it (App\Support\AboutPage).
+            'content' => 'array',
         ];
     }
 
