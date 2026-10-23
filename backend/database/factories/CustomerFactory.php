@@ -15,7 +15,10 @@ class CustomerFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
+            // Built from the parts, so an override of either keeps them agreeing.
+            'name' => fn (array $attributes) => trim($attributes['first_name'].' '.$attributes['last_name']),
             'email' => fake()->unique()->safeEmail(),
             'phone' => fake()->e164PhoneNumber(),
             'preferred_currency' => fake()->randomElement(['GHS', 'USD']),

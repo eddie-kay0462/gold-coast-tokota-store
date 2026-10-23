@@ -511,7 +511,7 @@ and has an `AUTH_ENABLED` flag to flip.
 
 | Route | Body |
 |---|---|
-| `POST /register` | `{ name, email, password, password_confirmation, phone?, preferred_currency? }` → `201`, signed in |
+| `POST /register` | `{ first_name, last_name, email, password, password_confirmation, phone?, preferred_currency? }` → `201`, signed in. A lone `name` is still accepted (split at the first space) for an older storefront. The customer comes back with `first_name`, `last_name` and `name` (the two joined) |
 | `POST /login` | `{ email, password, remember? }` → `200` |
 | `POST /logout` | — |
 | `GET /me` | — |

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ApiProduct } from '~/utils/catalog'
+import type { LiveStock } from '~/composables/useInventoryPolling'
 import { whatsappMessage } from '~/utils/whatsapp'
 import { SIZE_GUIDE_BETWEEN_SIZES } from '~/utils/sizeGuide'
 
@@ -7,10 +8,10 @@ const props = defineProps<{
   product: ApiProduct
   breadcrumb: string
   /**
-   * Live stock from `useInventoryPolling`, keyed by size. Null while the first
-   * poll is in flight; the panel then falls back to the product payload.
+   * Live stock from `useInventoryPolling`. Null until the first poll answers;
+   * the panel then uses the stock that came with the product.
    */
-  liveStock?: Record<string, number> | null
+  liveStock?: LiveStock | null
 }>()
 
 const emit = defineEmits<{ add: [{ size: string, color: string }] }>()
@@ -29,16 +30,18 @@ const isOnSale = computed(
  * the all-colours sum. Without the per-colour map, picking Tan would show
  * size 42 as available just because Black has a pair.
  */
+const variantStock = computed(() => props.liveStock?.variant_availability ?? props.product.variant_availability)
+
 const availability = computed(
-  () => props.liveStock
-    ?? props.product.variant_availability?.[selectedColor.value]
+  () => variantStock.value?.[selectedColor.value]
+    ?? props.liveStock?.size_availability
     ?? props.product.size_availability,
 )
 
 /** A colourway with nothing left in any size. Its swatch is marked. */
 function colourSoldOut(name: string) {
   if (props.product.is_pre_order) return false
-  const sizes = props.product.variant_availability?.[name]
+  const sizes = variantStock.value?.[name]
   return !!sizes && Object.values(sizes).every((count) => count <= 0)
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\PersonName;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -13,10 +14,26 @@ class RegisterCustomerRequest extends FormRequest
         return true;
     }
 
+    /**
+     * A storefront deployed before sign-up asked for two names still sends one
+     * `name`. Split it here rather than refuse the sign-up, so the API can go
+     * out before or after the storefront.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (! $this->filled('first_name') && $this->filled('name')) {
+            [$first, $last] = PersonName::split((string) $this->input('name'));
+            $this->merge(['first_name' => $first, 'last_name' => $last]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:120'],
+            // Required for a new sign-up; only rows from before the split may
+            // lack one. Not required on the legacy one-word `name` path.
+            'last_name' => [Rule::requiredIf(! $this->filled('name')), 'nullable', 'string', 'max:120'],
             // Plainly unique, and deliberately not "claim any existing row
             // that has no password yet". Nothing creates passwordless Customer
             // rows today — guest checkout leaves customer_id null rather than
@@ -28,6 +45,14 @@ class RegisterCustomerRequest extends FormRequest
             'password' => ['required', 'confirmed', Password::defaults()],
             'phone' => ['nullable', 'string', 'max:32'],
             'preferred_currency' => ['nullable', Rule::in(['GHS', 'USD'])],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'first_name.required' => 'Enter your first name.',
+            'last_name.required' => 'Enter your last name.',
         ];
     }
 }

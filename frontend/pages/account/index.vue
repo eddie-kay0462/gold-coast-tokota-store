@@ -1,17 +1,35 @@
 <script setup lang="ts">
+import type { ApiOrder } from '~/utils/orders'
 import { whatsappMessage } from '~/utils/whatsapp'
 import { isValidEmail } from '~/utils/validators'
 
 /**
  * The account hub: the destination of the header's person icon.
  *
- * Nobody can be signed in yet (see `composables/useAuth.ts`), so this renders
- * the signed-out state permanently rather than a dashboard of invented data.
- * The genuinely useful thing here today is the guest order lookup: guest
- * checkout is the spec's default (README Feature 4, "no forced account
- * creation"), so most people arriving here have an order and no account.
+ * Signed in: a short overview with the latest orders. Signed out: ways in, and
+ * the guest order lookup. Guest checkout is the spec's default (README
+ * Feature 4, "no forced account creation"), so many people arriving here have
+ * an order and no account.
  */
-const { isAuthenticated, user } = useAuth()
+const { isAuthenticated, user, restored } = useAuth()
+const api = useApi()
+
+const recent = ref<ApiOrder[]>([])
+const recentLoading = ref(false)
+
+watch(isAuthenticated, async (signedIn) => {
+  if (!signedIn) return
+  recentLoading.value = true
+  try {
+    recent.value = (await api<{ data: ApiOrder[] }>('/orders')).data.slice(0, 3)
+  } catch {
+    recent.value = []
+  } finally {
+    recentLoading.value = false
+  }
+}, { immediate: true })
+
+const firstName = computed(() => user.value?.name.trim().split(/\s+/)[0] ?? '')
 
 const lookup = reactive({ reference: '', email: '' })
 const lookupErrors = reactive<{ reference?: string, email?: string }>({})
@@ -33,13 +51,25 @@ async function onLookup() {
   if (!validateLookup()) return
 
   looking.value = true
-  // Inert for the same reason sign-in is: `GET /api/v1/orders/{id}` has not
-  // been built yet (README Feature 4).
-  await new Promise((resolve) => setTimeout(resolve, 600))
-  looking.value = false
-  lookupNotice.value =
-    'You can’t look up orders here yet. Message us with your order number and we’ll ' +
-    'check it for you.'
+  const reference = lookup.reference.trim().toUpperCase()
+  try {
+    // The email has to match the order's: the number alone isn't treated as
+    // proof the order is yours. A wrong number and a wrong email read the
+    // same, so this can't be used to test which emails have orders.
+    const res = await api<{ data: ApiOrder }>(`/orders/${encodeURIComponent(reference)}`)
+    const onOrder = (res.data.shipping_address?.email ?? '').trim().toLowerCase()
+    if (onOrder && onOrder === lookup.email.trim().toLowerCase()) {
+      await navigateTo(`/order-confirmation/${reference}`)
+      return
+    }
+    lookupNotice.value = 'We couldn’t find an order with that number and email. Check both and try again.'
+  } catch (err) {
+    lookupNotice.value = (err as { statusCode?: number }).statusCode === 404
+      ? 'We couldn’t find an order with that number and email. Check both and try again.'
+      : 'We couldn’t check just now. Try again in a moment, or message us with your order number.'
+  } finally {
+    looking.value = false
+  }
 }
 
 const helpLinks = [
@@ -58,15 +88,32 @@ useSeoMeta({
 
 <template>
   <div class="w-full bg-white">
-    <!-- Signed-in branch. Unreachable today, but three lines keeps the page
-         honest about its own store rather than asserting nobody can ever be
-         signed in. -->
+    <!-- Until the session is known, show nothing rather than flash the
+         signed-out page at someone who is signed in. -->
+    <div v-if="!restored" class="page-gutter section-y mx-auto flex w-full max-w-[1190px] flex-col gap-4">
+      <CommonSkeletonLoader height="2.5rem" width="40%" />
+      <CommonSkeletonLoader height="8rem" width="100%" />
+    </div>
+
     <AccountShell
-      v-if="isAuthenticated"
-      heading="Your account"
+      v-else-if="isAuthenticated"
+      :heading="firstName ? `Hello, ${firstName}` : 'Your account'"
       :description="`Signed in as ${user?.email}`"
     >
-      <CommonBrandButton to="/account/orders">View orders</CommonBrandButton>
+      <div class="flex w-full flex-col items-start gap-4">
+        <h2 class="w-full text-display-sm text-ink">Recent orders</h2>
+        <div v-if="recentLoading" class="flex w-full flex-col gap-3">
+          <CommonSkeletonLoader height="4rem" width="100%" />
+        </div>
+        <AccountOrderList v-else-if="recent.length" :orders="recent" />
+        <p v-else class="w-full text-label text-subtle">
+          No orders yet. Orders you place while signed in will appear here.
+        </p>
+        <div class="flex flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-start">
+          <CommonBrandButton to="/account/orders">All orders</CommonBrandButton>
+          <CommonBrandButton to="/shop" variant="white">Shop sandals</CommonBrandButton>
+        </div>
+      </div>
     </AccountShell>
 
     <section
@@ -106,7 +153,7 @@ useSeoMeta({
           Ordered as a guest? Enter your order number and the email you used.
         </p>
 
-        <CommonInlineNotice v-if="lookupNotice" variant="warning" title="Order lookup isn’t available yet">
+        <CommonInlineNotice v-if="lookupNotice" variant="warning" title="Order not found">
           {{ lookupNotice }}
         </CommonInlineNotice>
 

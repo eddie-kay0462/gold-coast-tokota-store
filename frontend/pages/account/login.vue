@@ -3,10 +3,17 @@ import { PhEye, PhEyeSlash } from '@phosphor-icons/vue'
 import { isValidEmail } from '~/utils/validators'
 
 /**
- * Customer sign-in: BUILT BUT DELIBERATELY INACTIVE.
- * See `composables/useAuth.ts` for what turning it on involves.
+ * Customer sign-in (`POST /login`, the `web` guard). Afterwards the customer
+ * goes back to the page that sent them here (`?redirect=`), or to /account.
  */
 const { signIn } = useAuth()
+const route = useRoute()
+
+/** Only an in-site path, so the link can't send someone off to another site. */
+const redirectTo = computed(() => {
+  const r = String(route.query.redirect ?? '')
+  return r.startsWith('/') && !r.startsWith('//') ? r : '/account'
+})
 
 const form = reactive({ email: '', password: '' })
 const errors = reactive<{ email?: string, password?: string }>({})
@@ -29,9 +36,18 @@ async function onSubmit() {
   if (!validate()) return
 
   submitting.value = true
-  const result = await signIn({ email: form.email, password: form.password })
+  const result = await signIn({ email: form.email.trim(), password: form.password })
   submitting.value = false
-  notice.value = result.notice
+
+  if (result.ok) {
+    await navigateTo(redirectTo.value)
+    return
+  }
+
+  errors.email = result.errors.email
+  errors.password = result.errors.password
+  // The field shows the API's message; the notice is for anything else.
+  notice.value = result.errors.email || result.errors.password ? null : result.notice
 }
 
 useSeoMeta({
@@ -47,7 +63,7 @@ useSeoMeta({
       Sign in to see your orders and check out faster.
     </template>
 
-    <CommonInlineNotice v-if="notice" variant="warning" title="Sign-in isn’t enabled yet">
+    <CommonInlineNotice v-if="notice" variant="warning" title="We couldn’t sign you in">
       {{ notice }}
     </CommonInlineNotice>
 
@@ -95,6 +111,10 @@ useSeoMeta({
           {{ errors.password }}
         </p>
       </div>
+
+      <NuxtLink to="/account/forgot-password" class="-my-2 py-2 text-caption text-graphite underline hover:no-underline">
+        Forgot your password?
+      </NuxtLink>
 
       <CommonBrandButton full type="submit" :disabled="submitting">
         {{ submitting ? 'Signing in…' : 'Sign in' }}
