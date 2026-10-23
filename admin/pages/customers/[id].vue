@@ -47,6 +47,14 @@ const theirOrders = computed(() =>
 
           <dl class="mt-4 space-y-2.5 border-t border-border pt-4 text-ui">
             <div class="flex justify-between gap-3">
+              <dt class="text-fg-muted">First name</dt>
+              <dd class="truncate text-fg-strong">{{ customer.firstName }}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
+              <dt class="text-fg-muted">Last name</dt>
+              <dd class="truncate text-fg-strong">{{ customer.lastName ?? '-' }}</dd>
+            </div>
+            <div class="flex justify-between gap-3">
               <dt class="text-fg-muted">Phone</dt>
               <dd class="text-fg-strong">{{ customer.phone ?? '-' }}</dd>
             </div>
