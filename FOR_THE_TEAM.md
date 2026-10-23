@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 23 October 2026 (customers have a first and a last name in the database and API; earlier on 22 October, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 23 October 2026 (customers have a first and a last name in the database and API; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -94,6 +94,126 @@ refuses.
 **Not split:** the checkout's *recipient* name (`shipping_address.full_name`)
 stays one box. It's who the parcel is for, which isn't always the account
 holder, and couriers take it whole.
+
+### 22 October 2026: sitemap lists every product and blog post
+
+`server/api/__sitemap__/urls.ts` gave the sitemap only the legal and help
+articles; `@nuxtjs/sitemap` can't find `[slug]` pages on its own. It now also
+adds:
+- `/shop/{slug}` for every active product, with `lastmod` from `updated_at`;
+- `/blog/{slug}` for every published post, with `lastmod` from `published_at`.
+
+Both come from the public API lists, which already leave out inactive
+products and unpublished posts, so nothing hidden is advertised. It walks
+every page of each list (products 48 per page, posts 24, each endpoint's own
+cap). If the API is down, those entries are left out and the rest of the
+sitemap still publishes.
+
+Checked on a local production build against the local API: `/sitemap.xml`
+has all 40 products, 3 posts, 5 legal and 3 help pages, and no account or
+checkout pages.
+
+### 22 October 2026: booking page names each workshop; DIY photos upload
+
+**Sessions say which workshop they are.** `SessionPicker` showed only a date,
+time and seats, so a customer couldn't tell a Sandal Sip & Paint from a Be a
+Shoemaker for a Day. Each card now leads with the workshop's name from the
+session's `workshop_type` (already in `GET /workshop-sessions`), with its
+duration beside the time.
+
+**DIY reference photos upload instead of going to WhatsApp.**
+- The DIY form recorded only the photo's file name and asked the customer
+  to send the photo on WhatsApp, though `POST /booking-uploads` has existed
+  since 8 Sep.
+- It now uploads the photo the moment it's chosen. The checks mirror
+  `StoreBookingUploadRequest` (JPG, PNG, WebP or HEIC, up to 5MB), so a wrong
+  file is caught at once.
+- It shows a thumbnail (or the file name for HEIC, which browsers can't
+  display), with **Remove**, and sends the stored `path` as
+  `details.reference_image`. The admin's bookings screen already turns that
+  into a viewable photo.
+- Submit waits for an upload in progress. WhatsApp stays as the fallback when
+  an upload fails or the hourly upload limit is hit.
+
+**Checked against the local API:**
+- a PNG uploaded and returned a path;
+- a text file was refused with the server's message;
+- a DIY booking saved with that path.
+
+No upcoming sessions exist locally, so a session card with its name wasn't
+seen.
+
+### 22 October 2026: product page stock stays live while it's open
+
+`useInventoryPolling` existed, but nothing used it, and it read only the
+single `quantity_available` total, while the purchase panel needs stock per
+size and per colour. Now:
+
+- It polls `GET /products/{slug}/stock` every 20 s and returns the whole
+  answer: per size, per colour and size, `in_stock`, and the badge.
+- It pauses while the tab is hidden and catches up when it's visible again.
+- A failed poll keeps the last answer on screen.
+- A 404 stops it for good, which covers the design stand-in products.
+- It skips the first poll, since the page has just loaded the same figures.
+
+`pages/shop/[slug].vue` passes the result to `ProductPurchasePanel` as
+`liveStock`. The panel now prefers **live per-colour** stock, then live
+per-size, then the stock that came with the product. The old prop was
+per-size only, and would have shown Tan 42 as available because Black 42
+was. The colour swatch "sold out" mark and the gallery's stock badge follow
+the live data too.
+
+Checked: the endpoint's live figures (Black 42 dropped from 5 to 4 after the
+morning's test sale) and the 404 for a stand-in slug. Not yet watched in a
+browser while stock changes.
+
+### 22 October 2026: customer accounts are live on the storefront
+
+Work for the storefront views now happens on **`feat/storefront-pages`**,
+branched from `main` after PR #48. The remote branch of that name was an
+old one from 21 Aug and is fast-forwarded by this push.
+
+`composables/useAuth.ts` faked every account action (a 600 ms pause, then
+"Accounts aren't available yet"), long after the API side existed. It now
+calls the real `web`-guard endpoints through `useApi()`, which does the
+Sanctum CSRF handshake and sends cookies. `AUTH_ENABLED` is `true`. Guest
+checkout is unchanged, and a signed-in customer's checkout is attached to
+their account by the session, as before.
+
+| Page | Now |
+|---|---|
+| `/account/login` | Real sign-in, the API's field errors under the fields, **Forgot your password?**, and back to `?redirect=` (in-site paths only) |
+| `/account/register` | Sends name, email, phone, currency and `password_confirmation`. The API signs the customer straight in; "email already taken" shows under the field |
+| `/account/forgot-password` (new) | `POST /forgot-password`. Says the same thing whether or not the email has an account, as the API does |
+| `/account/reset-password` (new) | Where the reset email's link (`?token=…&email=…`) lands. Handles an incomplete link, an expired token (with "Get a new link") and success |
+| `/account` | Signed in: "Hello, {first name}", the three latest orders, links. Signed out: unchanged, but **order tracking now works**: it looks up `GET /orders/{reference}` and opens the order only if the email matches the order's. A wrong number and a wrong email read the same |
+| `/account/orders` | The real history (`GET /orders`), via a shared `AccountOrderList` |
+| `/account/settings` | The customer's details from the session, read-only, because the API has **no profile-editing endpoint**. Says to message the team to change details. "Change password" goes to the reset flow. The address section explains addresses are per order (`customers` has no address) |
+
+**Under it:**
+- `plugins/auth.client.ts` restores the session once per visit
+  (`GET /me`), without blocking first paint.
+- `middleware/auth.ts` waits for that restore, then sends signed-out
+  visitors from Orders and Settings to sign in, with `?redirect=`.
+- The account nav has **Sign out**.
+- `stores/auth.ts` carries the full `CustomerResource` (`id` is the
+  string the API sends, which closes the old "id typed as string" note) and a
+  `restored` flag, so `/account` doesn't flash the signed-out view at a
+  signed-in customer.
+
+**Checked against the local API** from the storefront origin, 16 of 16 calls:
+- register (signed in) and duplicate email;
+- `/me` and `/orders`;
+- sign out, with `/me` and `/orders` then refused;
+- wrong password, and sign in;
+- forgot password, including the same answer for an unknown email;
+- a bad token, then a reset with the token read from the real reset email
+  in the mail log;
+- the old password refused, and sign in with the new one.
+
+The pages themselves were not clicked through in a browser.
+
+**Still open:** profile editing needs an API endpoint (`PATCH /me`).
 
 ### 22 October 2026: search box placeholder
 
@@ -3659,8 +3779,8 @@ was publishing `/account` and `/checkout`; it now excludes them and picks up the
 went from 9 routes to 28 — it also takes `ROUTES=/one,/two` now, because the full
 sweep is a few minutes.
 
-**Still to do here:** blog posts and products are missing from the sitemap for
-the same `[slug]` reason and need the same handler treatment.
+~~**Still to do here:** blog posts and products are missing from the sitemap.~~
+Done 22 Oct.
 
 ---
 
@@ -4324,9 +4444,8 @@ In dependency order:
 2. ~~**Feature 3 — Inventory.**~~ — **closed 27 Aug.** Reservations with
    row-level locking, the scheduled release job, `GET /products/{slug}/stock`
    and `GET /admin/inventory` with the low-stock filter all exist and are
-   tested. *What is left is on the storefront:* `[slug].vue` doesn't pass
-   `liveStock` to `ProductPurchasePanel`, so the polled per-size map the API
-   now sends goes nowhere. Small frontend wiring, no API work.
+   tested. ~~*What is left is on the storefront:* `[slug].vue` doesn't pass
+   `liveStock` to `ProductPurchasePanel`.~~ Wired 22 Oct.
 3. **Feature 4 — Checkout & payments.** *Code-complete, waiting on one key.*
    `POST /checkout/session`, `GET /orders/{reference}`, `PaystackService`,
    `POST /webhooks/paystack` with `processed_webhook_events` idempotency, and
@@ -4355,7 +4474,7 @@ In dependency order:
    experiences, `GET /workshop-types` public and admin). ~~*What is left:* an
    upload endpoint for DIY reference images.~~ — **the upload endpoint landed
    8 Sep** (`POST /booking-uploads`, with a daily prune of abandoned files);
-   the storefront form still has to use it. *What is left is the
+   the storefront form uses it since 22 Oct. *What is left is the
    by-appointment enquiry path*, since three of the six experiences have no
    bookable date to attach a booking to — open decision 35, a business
    question.
@@ -4389,11 +4508,11 @@ In dependency order:
 - ~~**Drop the USD branch at the payment step.**~~ — **closed 1 Oct** with the
   checkout wiring. `PaymentStep` redirects to `authorization_url` for both
   currencies and no longer mentions Stripe.
-- **Name the workshop on the booking page.** Sessions now carry
+- ~~**Name the workshop on the booking page.**~~ **Closed 22 Oct** (see that entry). Original note: Sessions now carry
   `workshop_type` (`GET /workshop-sessions`), and `GET /workshop-types` lists
   all six experiences including the three that run by appointment and never
   appear in the session list.
-- **Wire `useInventoryPolling`** into `ProductPurchasePanel`'s `liveStock` prop
+- ~~**Wire `useInventoryPolling`**~~ **Closed 22 Oct** (see that entry). Original note: into `ProductPurchasePanel`'s `liveStock` prop
   once `GET /products/{id}/stock` exists. Per-size stock is real in the product
   payload as of 27 Aug, so the panel is correct without polling — it just will
   not update while someone is looking at the page.
@@ -4404,7 +4523,9 @@ In dependency order:
 - ~~**Routes referenced by the footer/nav that do not exist yet**~~ — **closed
   26 Aug.** All 22 are built. A router warning in dev is now a regression, not
   something to expect; that is the fastest check that a nav change is sound.
-- **Customer auth is inert.** The pages are complete and validate, but nothing
+- ~~**Customer auth is inert.**~~ **Closed 22 Oct**: live on the storefront,
+  including password reset (see that entry); profile editing still needs
+  `PATCH /me` on the API. Original note: The pages are complete and validate, but nothing
   authenticates until the storefront is wired up. The backend side is now done
   except profile editing: register / login / logout / me landed 27 Aug and
   **password reset on 8 Sep** — though the storefront has no
@@ -4412,8 +4533,8 @@ In dependency order:
   already done: `Customer` is an `Authenticatable` with `HasApiTokens` and hashed
   passwords, the `web` guard is configured, `passwords.customers` is wired, and
   Sanctum's `guard` array lists `web`. Grep `AUTH_ENABLED` for the frontend side.
-- **`stores/auth.ts` types `user.id` as `string`**, but `customers.id` is a
-  Postgres bigint. Fix when the real session shape lands.
+- ~~**`stores/auth.ts` types `user.id` as `string`**~~ **Closed 22 Oct**:
+  the API sends it as a string (`CustomerResource`), so the type is right.
 - **The legal and help pages are unreviewed placeholder copy.** See the open
   decisions table — this is the highest-risk item on this list before launch.
 - **The announcement bar needs an admin editor.** `SiteSetting.announcements`
@@ -4421,7 +4542,7 @@ In dependency order:
   has no field for it, so today it can only be changed by re-seeding. It is the
   place the brand's delivery and payment claims live — see the open decision
   about the mockup's copy.
-- **Sitemap misses blog posts and products** — `@nuxtjs/sitemap` can't enumerate
+- ~~**Sitemap misses blog posts and products**~~ **Closed 22 Oct** (see that entry). Original note: `@nuxtjs/sitemap` can't enumerate
   `[slug]` params. `server/api/__sitemap__/urls.ts` does this for legal and help;
   extend it.
 - **Currency toggle does not follow the flag.** The header knows the visitor's

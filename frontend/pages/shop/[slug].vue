@@ -79,8 +79,12 @@ const STOCK_BADGES: Record<string, { label: string, class: string }> = {
   out_of_stock: { label: 'Out of stock', class: 'bg-line text-muted' },
 }
 
+// Live while the page is open: a size that sells out is struck through, and the
+// gallery's stock badge follows, without a reload.
+const { stock: liveStock } = useInventoryPolling(slug)
+
 const stockBadge = computed(() => {
-  const badge = product.value?.merchandising_badge
+  const badge = liveStock.value ? liveStock.value.merchandising_badge : product.value?.merchandising_badge
   return badge ? STOCK_BADGES[badge] ?? null : null
 })
 
@@ -132,6 +136,7 @@ useSeoMeta({
         v-model:color="selectedColor"
         :product="product"
         :breadcrumb="breadcrumb"
+        :live-stock="liveStock"
         @add="addToCart"
       />
     </div>

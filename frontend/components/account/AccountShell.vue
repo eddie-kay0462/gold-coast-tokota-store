@@ -19,6 +19,13 @@ defineProps<{
 }>()
 
 const route = useRoute()
+const { isAuthenticated, signOut } = useAuth()
+const signingOut = ref(false)
+
+async function onSignOut() {
+  signingOut.value = true
+  await signOut()
+}
 </script>
 
 <template>
@@ -48,6 +55,14 @@ const route = useRoute()
               "
               :aria-current="route.path === item.to ? 'page' : undefined"
             >{{ item.label }}</NuxtLink>
+          </li>
+          <li v-if="isAuthenticated" class="md:w-full">
+            <button
+              type="button"
+              class="caps-label -mb-px flex min-h-[44px] items-center whitespace-nowrap border-b border-transparent py-3 text-subtle transition-colors hover:text-ink md:-ml-px md:mb-0 md:w-full md:border-b-0 md:border-l-2 md:px-4"
+              :disabled="signingOut"
+              @click="onSignOut"
+            >{{ signingOut ? 'Signing out…' : 'Sign out' }}</button>
           </li>
         </ul>
       </nav>
