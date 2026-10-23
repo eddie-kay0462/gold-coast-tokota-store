@@ -64,10 +64,12 @@ export function callingCodeOptions(locale = 'en'): { value: string, label: strin
   return [{ value: DEFAULT_PHONE_COUNTRY, label: label(DEFAULT_PHONE_COUNTRY) }, ...others]
 }
 
-/** What the number box suggests, so people know to leave the 0 off. */
+/**
+ * What the number box suggests. Ghana's example is written without the 0;
+ * a 0 typed anyway is removed on blur (`normaliseNational`).
+ */
 export function nationalPlaceholder(country: string): string {
-  if (country === 'GH') return 'e.g. 241234567 (no 0 at the start)'
-  return dropsLeadingZero(country) ? 'Number without the 0 at the start' : 'Phone number'
+  return country === 'GH' ? 'e.g. 241234567' : 'Phone number'
 }
 
 /**

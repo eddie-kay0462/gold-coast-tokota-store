@@ -56,9 +56,8 @@ Ghana from a leading 0 or +233. It's now two boxes, in the new
 - **A narrow country-code picker** showing "GH +233". It is a native
   `<select>` laid over the box, so the list reads "Ghana (+233)", Ghana first,
   then every country A to Z.
-- **The rest of the number.** The placeholder says to leave the 0 off ("e.g.
-  241234567 (no 0 at the start)" for Ghana, "Number without the 0 at the
-  start" where that applies elsewhere).
+- **The rest of the number.** The placeholder is "e.g. 241234567" for Ghana
+  (written without the 0) and "Phone number" elsewhere.
 
 `utils/phone.ts` holds the calling codes and the rules:
 - If someone types the 0 anyway, or pastes "+233…", it's removed when they
