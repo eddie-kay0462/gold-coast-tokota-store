@@ -89,6 +89,10 @@ A new `field-group` class (`assets/css/main.css`) puts one border round both,
 makes the button full height with a hairline at the join, and draws one ring
 round the whole group while either part has keyboard focus.
 
+**Show/hide password on every account form.** The sign-in eye button is now
+the shared `FormsPasswordField`, used for both password boxes on sign-up and
+on password reset as well as sign-in. Each box toggles on its own.
+
 **The blue ring was site-wide.** The global `:focus-visible` rule set a ring
 width and colour but no style, so browsers used their own `auto` style, which
 is blue. It now sets `outline` as well, so keyboard focus everywhere shows the

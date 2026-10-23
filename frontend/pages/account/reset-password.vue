@@ -80,14 +80,14 @@ useSeoMeta({
       </CommonInlineNotice>
 
       <form class="flex w-full flex-col items-start gap-5" novalidate @submit.prevent="onSubmit">
-        <FormsFormField
+        <FormsPasswordField
           v-model="form.password"
-          label="New password" name="password" type="password" autocomplete="new-password"
+          label="New password" name="password" autocomplete="new-password"
           hint="At least 8 characters." required :error="errors.password"
         />
-        <FormsFormField
+        <FormsPasswordField
           v-model="form.confirm"
-          label="Confirm new password" name="confirm" type="password" autocomplete="new-password"
+          label="Confirm new password" name="confirm" autocomplete="new-password"
           required :error="errors.confirm"
         />
         <CommonBrandButton full type="submit" :disabled="submitting">

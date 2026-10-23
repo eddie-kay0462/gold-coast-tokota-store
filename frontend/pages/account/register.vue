@@ -125,14 +125,14 @@ useSeoMeta({
         v-model="form.currency"
         label="Preferred currency" name="currency" type="select" :options="currencyOptions"
       />
-      <FormsFormField
+      <FormsPasswordField
         v-model="form.password"
-        label="Password" name="password" type="password" autocomplete="new-password"
+        label="Password" name="password" autocomplete="new-password"
         hint="At least 8 characters." required :error="errors.password"
       />
-      <FormsFormField
+      <FormsPasswordField
         v-model="form.confirm"
-        label="Confirm password" name="confirm" type="password" autocomplete="new-password"
+        label="Confirm password" name="confirm" autocomplete="new-password"
         required :error="errors.confirm"
       />
 
