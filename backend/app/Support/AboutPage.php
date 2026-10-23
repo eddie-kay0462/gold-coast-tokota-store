@@ -136,8 +136,10 @@ final class AboutPage
                     ['platform' => 'youtube', 'id' => 'PHqE6nU1xo0', 'title' => 'The GH₵2,000 decision that changed everything', 'meta' => 'The Next Africa · 67 min', 'shape' => 'landscape', 'thumb' => 'maxresdefault'],
                 ],
             ],
+            // Off since 23 Oct at the client's request; switch it back on in
+            // Content › Pages › About.
             'slogans' => [
-                'visible' => true,
+                'visible' => false,
                 'items' => ['Crafted with Purpose', 'Inspired by Culture', 'Made in Ghana'],
             ],
             'recognition' => [
