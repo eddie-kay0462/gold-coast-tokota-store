@@ -13,6 +13,8 @@ class CustomerResource extends JsonResource
             // String, matching the storefront auth store's `user.id: string`.
             'id' => (string) $this->id,
             'name' => $this->name,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
             'email' => $this->email,
             'phone' => $this->phone,
             'preferred_currency' => $this->preferred_currency,

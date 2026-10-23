@@ -115,12 +115,16 @@ const places: [string, string][] = [
 ]
 
 export const customers: Customer[] = Array.from({ length: 48 }, (_, i) => {
-  const name = `${pick(firstNames)} ${pick(lastNames)}`
+  const firstName = pick(firstNames)
+  const lastName = pick(lastNames)
+  const name = `${firstName} ${lastName}`
   const [country, countryCode] = pick(places)
   const orderCount = int(0, 9)
   return {
     id: 100 + i,
     name,
+    firstName,
+    lastName,
     email: `${name.toLowerCase().replace(/\s+/g, '.')}${i}@example.com`,
     phone: countryCode === 'GH' ? `+2332${int(10, 59)}${int(100000, 999999)}` : null,
     preferredCurrency: countryCode === 'GH' ? 'GHS' : 'USD',
