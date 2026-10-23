@@ -255,7 +255,7 @@ const { whatsappClick } = useAnalytics()
       <CommonWhatsAppLink
         source="product-detail"
         full
-        :message="whatsappMessage.product(product.name, selectedSize)"
+        :message="whatsappMessage.product(product.name, selectedSize, selectedColor)"
         :order-draft="whatsappOrderDraft"
       >
         Prefer to order via WhatsApp?

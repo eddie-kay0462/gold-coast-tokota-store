@@ -4,10 +4,34 @@ import { whatsappMessage } from '~/utils/whatsapp'
 
 const props = defineProps<{ product: ApiProduct }>()
 
-const image = computed(() => props.product.images?.[0] || '/design/product-kentehene.png')
-/** The approved design cross-fades to a second shot on hover. Optional: most
- *  products still carry a single image, and the fade is skipped for those. */
-const hoverImage = computed(() => props.product.images?.[1] ?? null)
+// --- Colour ---------------------------------------------------------------
+// The swatches are controls: tapping one shows that colourway's photo, names
+// it under the title, checks the sizes against its stock, and is what Add to
+// cart, Order on WhatsApp and the link to the product page use. It starts on
+// the colourway the product is pictured in.
+const defaultColor = computed(() => props.product.color ?? props.product.colors?.[0]?.name ?? null)
+const chosenColor = ref<string | null>(defaultColor.value)
+watch(defaultColor, (color) => { chosenColor.value = color })
+
+/** Photos of the chosen colourway, when the product has them per colour. */
+const colorImages = computed(() =>
+  chosenColor.value ? props.product.colour_images?.[chosenColor.value] ?? [] : [],
+)
+
+const image = computed(() => colorImages.value[0] || props.product.images?.[0] || '/design/product-kentehene.png')
+/** The approved design cross-fades to a second shot on hover: the chosen
+ *  colour's second photo, or the product's own for the pictured colour. */
+const hoverImage = computed(() =>
+  colorImages.value[1]
+  ?? (chosenColor.value === defaultColor.value || !colorImages.value.length ? props.product.images?.[1] ?? null : null),
+)
+
+/** The product page opens on the colour chosen here. */
+const productLink = computed(() =>
+  chosenColor.value && chosenColor.value !== defaultColor.value
+    ? `/shop/${props.product.slug}?color=${encodeURIComponent(chosenColor.value)}`
+    : `/shop/${props.product.slug}`,
+)
 
 const isOnSale = computed(
   () => !!props.product.compare_at_ghs && props.product.compare_at_ghs > props.product.base_price_ghs,
@@ -37,14 +61,6 @@ const stockBadge = computed(() =>
 
 const isSoldOut = computed(() => props.product.merchandising_badge === 'out_of_stock')
 
-// The design shows one swatch pre-selected on each card: the colourway the
-// pictured image belongs to. Hovering a swatch is a product-detail concern, so
-// here the swatches are indicators, not controls.
-const selectedColorIndex = computed(() => {
-  const colors = props.product.colors ?? []
-  const index = colors.findIndex((color) => color.name === props.product.color)
-  return index === -1 ? 0 : index
-})
 
 // --- Size + add to cart ---------------------------------------------------
 // The approved design puts the size picker on the card itself, so a customer
@@ -55,11 +71,11 @@ const selectedSize = ref<string | null>(null)
 const sizes = computed(() => props.product.sizes ?? [])
 
 /**
- * The card buys the pictured colourway (`product.color`), so its sizes are
- * struck through against that colour's stock, not the all-colours sum.
+ * The card buys the chosen colourway, so its sizes are struck through against
+ * that colour's stock, not the all-colours sum.
  */
 const cardAvailability = computed(
-  () => props.product.variant_availability?.[props.product.color ?? '']
+  () => props.product.variant_availability?.[chosenColor.value ?? '']
     ?? props.product.size_availability,
 )
 
@@ -74,23 +90,30 @@ const canAdd = computed(
   () => !isSoldOut.value && !!selectedSize.value && stockFor(selectedSize.value) > 0,
 )
 
+function chooseColor(name: string) {
+  chosenColor.value = name
+  // A size that this colour doesn't have in stock is cleared, not kept.
+  if (selectedSize.value && stockFor(selectedSize.value) <= 0) selectedSize.value = null
+}
+
 const addToCart = useAddToCart()
 
 function add() {
   if (!canAdd.value) return
-  addToCart(props.product, { size: selectedSize.value, color: props.product.color })
+  addToCart(props.product, { size: selectedSize.value, color: chosenColor.value })
 }
 
 </script>
 
 <template>
   <article class="group/card relative flex min-w-0 flex-col gap-2.5">
-    <NuxtLink :to="`/shop/${product.slug}`" class="group flex flex-col gap-2.5">
+    <NuxtLink :to="productLink" class="group flex flex-col gap-2.5">
       <div class="relative aspect-[9/10] w-full overflow-hidden bg-surface">
         <img
+          :key="image"
           :src="image"
-          :alt="product.name"
-          class="size-full object-cover"
+          :alt="chosenColor ? `${product.name} in ${chosenColor}` : product.name"
+          class="card-photo size-full object-cover"
           loading="lazy"
         >
         <!-- Cross-fade to the second shot. `pointer-events-none` so it never
@@ -140,23 +163,28 @@ function add() {
             compact
           />
         </div>
-        <p class="h-4 font-light text-muted">{{ product.color }}</p>
+        <p class="h-4 font-light text-muted" aria-live="polite">{{ chosenColor }}</p>
       </div>
     </NuxtLink>
 
-    <!-- Wraps: a product with five or more colourways pushed past the card. -->
-    <ul v-if="product.colors?.length" class="flex flex-wrap items-center gap-2.5">
-      <li
-        v-for="(color, index) in product.colors"
-        :key="color.name"
-        class="size-5 shrink-0 rounded-full"
-        :class="index === selectedColorIndex ? 'ring-1 ring-graphite ring-offset-2' : ''"
-      >
-        <span
-          class="block size-full rounded-full border border-black/10"
-          :style="{ backgroundColor: color.hex }"
-        />
-        <span class="sr-only">{{ color.name }}</span>
+    <!-- Wraps: a product with five or more colourways pushed past the card.
+         Each swatch is a 32px button (the dot inside stays 20px), so it can
+         be tapped on a phone; the negative margin keeps the row where it was. -->
+    <ul v-if="product.colors?.length" class="-m-1.5 flex flex-wrap items-center gap-0.5" aria-label="Colours">
+      <li v-for="color in product.colors" :key="color.name">
+        <button
+          type="button"
+          class="flex size-8 items-center justify-center rounded-full"
+          :aria-label="color.name"
+          :aria-pressed="color.name === chosenColor"
+          @click="chooseColor(color.name)"
+        >
+          <span
+            class="block size-5 rounded-full border border-black/10"
+            :class="color.name === chosenColor ? 'ring-1 ring-graphite ring-offset-2' : ''"
+            :style="{ backgroundColor: color.hex }"
+          />
+        </button>
       </li>
     </ul>
 
@@ -188,10 +216,25 @@ function add() {
       <CommonWhatsAppLink
         source="product-card"
         full
-        :message="whatsappMessage.product(product.name, selectedSize)"
+        :message="whatsappMessage.product(product.name, selectedSize, chosenColor)"
       >
         Order on WhatsApp
       </CommonWhatsAppLink>
     </div>
   </article>
 </template>
+
+<style scoped>
+/* A new colour's photo fades in rather than snapping. */
+.card-photo {
+  animation: card-photo-in 0.25s ease-out;
+}
+
+@keyframes card-photo-in {
+  from { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-photo { animation: none; }
+}
+</style>
