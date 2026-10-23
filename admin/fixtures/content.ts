@@ -1,4 +1,4 @@
-import type { BlogPost, CmsPage, MediaAsset } from '~/types'
+import type { BlogPost, CmsPage, MediaAsset, MegaMenuAdmin } from '~/types'
 import { avatarFor, daysAgo, int, pick } from './_seed'
 
 const posts: [string, string, boolean][] = [
@@ -148,3 +148,21 @@ export const mediaAssets: MediaAsset[] = mediaNames.map((filename, i) => ({
 export const authorAvatars = Object.fromEntries(
   ['Samuel Kumi-Gyau', 'Mary Seade', 'Akosua Danso'].map((n) => [n, avatarFor(n)]),
 )
+
+const menuLabels: [string, string, string][] = [
+  ['best-sellers', 'Best Sellers', '/shop?sort=best-selling'],
+  ['sandals', 'Sandals', '/shop'],
+  ['ahenema', 'Ahenema', '/shop?type=ahenema'],
+  ['sale', 'Sale', '/shop?sale=true'],
+]
+
+/** Content › Menus with nothing chosen yet, as a fresh database has it. */
+export const megaMenus: MegaMenuAdmin[] = menuLabels.map(([key, label, to]) => ({
+  key,
+  label,
+  to,
+  slots: [1, 2].map((position) => ({ position, mediaAsset: null, caption: '', link: '' })),
+  showing: [],
+  columns: [{ heading: 'Styles', links: [{ label: `All ${label}`, to }] }],
+  linkOptions: [{ label: `All ${label}`, to }],
+}))
