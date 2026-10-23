@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
 use App\Http\Controllers\Api\V1\Admin\InboxLookupController as AdminInboxLookupController;
 use App\Http\Controllers\Api\V1\Admin\InventoryController as AdminInventoryController;
 use App\Http\Controllers\Api\V1\Admin\MediaController as AdminMediaController;
+use App\Http\Controllers\Api\V1\Admin\MegaMenuController as AdminMegaMenuController;
 use App\Http\Controllers\Api\V1\Admin\NewsletterController as AdminNewsletterController;
 use App\Http\Controllers\Api\V1\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\V1\Admin\PageController as AdminPageController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\CustomerAuthController;
 use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\FxRateController;
+use App\Http\Controllers\Api\V1\NavigationController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
@@ -69,6 +71,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // correctness one.
     Route::get('/products/{slug}/stock', [ProductStockController::class, 'show'])->name('products.stock');
     Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    // The header's mega menus: links from the catalogue, tiles from Content › Menus.
+    Route::get('/navigation/menus', [NavigationController::class, 'menus'])->name('navigation.menus');
     Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
     Route::get('/fx-rate', [FxRateController::class, 'show'])->name('fx-rate.show');
 
@@ -420,6 +424,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:media.upload')->name('media.store');
             Route::delete('/media/{mediaAsset}', [AdminMediaController::class, 'destroy'])
                 ->middleware('capability:media.delete')->name('media.destroy');
+
+            // The storefront mega menus' image tiles (Content › Menus).
+            Route::get('/menus', [AdminMegaMenuController::class, 'index'])
+                ->middleware('capability:content.view')->name('menus.index');
+            Route::put('/menus/{menu}', [AdminMegaMenuController::class, 'update'])
+                ->middleware('capability:content.write')->name('menus.update');
 
             // Site Settings is readable by Staff (the WhatsApp number shows on
             // screens they use) but writable only by Admin.

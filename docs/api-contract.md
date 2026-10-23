@@ -83,6 +83,7 @@ Anything that writes them directly is a bug.
 | GET | `/products/{slug}/stock` | Live stock for the polling composable — see below |
 | GET | `/products/recommendations` | `?for=slug,slug&limit=4` (max 12). Active products ranked: shares a department with a `for` product, same category, in stock, featured; name breaks ties. `for` products are excluded. Product page: `for` = the product; cart drawer: `for` = the cart's products (2 Oct) |
 | GET | `/categories` `/collections` | `/categories` lists only categories with at least one active product (1 Oct) — an empty one would be a link to an empty shop page |
+| GET | `/navigation/menus` | The header's four mega menus (`App\Support\MegaMenus`): `{ key, label, to, columns: [{ heading, links: [{ label, to }] }], promos: [{ label, image, alt, to, chosen }] }`. Links are built from the catalogue (only styles and departments with active products in that menu); tiles are chosen in Content › Menus, or the menu's own product photos. Cached 10 min, cleared when a tile, product or media asset changes (23 Oct) |
 | GET | `/fx-rate` | |
 | GET | `/pages/{slug}` · `/site-settings` | |
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
@@ -147,6 +148,7 @@ Anything that writes them directly is a bug.
 | GET | `/admin/shipments` | A view over orders. `?provider=` `?status=` |
 | GET | `/admin/dashboard/charts` | Year-over-year series |
 | GET/POST | `/admin/media` · DELETE `/admin/media/{id}` | Image library |
+| GET · PUT | `/admin/menus` · `/admin/menus/{menu}` | Mega menu image tiles: `content.view` to read, `content.write` to save `{ slots: [{ position, media_asset_id, caption, link }] }`; a slot with `media_asset_id: null` goes back to automatic. Links must be in-site paths |
 | GET | `/admin/settings/{commerce\|delivery\|notifications\|whatsapp}` | Read-only config reflections. `settings.view` |
 | GET | `/admin/settings/payments` | **`settings.payments` — Super Admin only** (§18) |
 | GET | `/admin/settings/diy-turnaround` | Per-order-type estimates. Staff may read |

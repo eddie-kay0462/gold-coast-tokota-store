@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 23 October 2026 (customers have a first and a last name in the database and API; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 23 October 2026 (header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,62 @@ inert at their last step.
 
 ## Recent changes
 
-### 23 October 2026 (latest): customers have a first and a last name
+### 23 October 2026 (latest): mega menus from the catalogue; tiles chosen in Content › Menus
+
+The storefront header's four menus (Best Sellers, Sandals, Ahenema, Sale)
+were one hard-coded template, with the same links and the same two Figma
+images in every menu. Several links led to empty pages: `?type=sandals` (no
+product has that type), Merchandise, and Top Rated (there are no ratings, so
+the sort was ignored). They're now built from the database.
+
+**Links: `App\Support\MegaMenus`, `GET /navigation/menus`.** Each menu is a
+scope on the catalogue, written as `/shop`'s own query string and run
+through `ProductFilter`, so a link only appears if it leads to products:
+- **Styles:** the product types with active products in that menu (Slippers,
+  Ahenema, Closed-Toe Shoes today). A one-style menu, like Ahenema, shows
+  just "All Ahenema".
+- **Shop for:** the departments present (Men's, Women's, Kids).
+- **Featured:** New Arrivals, Best Sellers and On Sale (only when something
+  is on sale), never repeating the menu itself, plus Customised Sandals
+  (`/booking`).
+- **"Sandals" is the whole range** (`/shop`), as agreed: everything the brand
+  makes is a sandal.
+
+**Images: Content › Menus (new admin page).**
+- Each menu has two tiles. An editor (`content.write`: Staff and up) picks
+  an image from the media library with the new `ContentMediaPicker`, then
+  gives it a caption and a link. The link must be a storefront path, and the
+  field suggests the menu's own links.
+- An empty slot is **automatic**: it shows that menu's own product photo,
+  best-selling for Best Sellers and newest otherwise, with different styles
+  first. Nobody has to choose anything for the menus to look right.
+- Interns can view the page but not save. Deleting an image from the media
+  library empties its tile.
+
+**Under it:**
+- A new `mega_menu_promos` table: `menu`, `position`, `media_asset_id` (null
+  on delete), `caption`, `link`.
+- The built menus are cached for 10 minutes, and dropped whenever a tile, a
+  product or a media asset changes.
+- `docs/api-contract.md` documents both endpoints.
+- Admin `.env`: `NUXT_PUBLIC_STOREFRONT_URL` (for the "view on storefront"
+  link).
+
+**Checked:**
+- 632 backend tests pass, including 9 new in `MegaMenuTest`: links follow the
+  catalogue, one-style menus, On Sale only when something is on sale,
+  automatic tiles, a chosen tile and its deleted image, clearing a slot,
+  in-site links only, a caption required, interns read-only, unknown menu 404.
+- Against the local database as a Staff user: chose an image for Sandals'
+  first tile, saw it on `/navigation/menus` with its caption and link, then
+  cleared it and the product photo came back.
+- The storefront header was checked in headless Chrome (storefront entry).
+- The admin page builds but **wasn't clicked through in a browser**.
+
+**To deploy:** run the migration. With nothing chosen, the storefront shows
+product photos, so choosing tiles can come later.
+
+### 23 October 2026: customers have a first and a last name
 
 Sign-up asks for First name and Last name separately (storefront work on
 `feat/storefront-pages`), so they are now stored separately.

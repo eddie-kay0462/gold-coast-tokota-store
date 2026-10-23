@@ -13,6 +13,8 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   autocomplete?: string
   rows?: number
+  /** A `<datalist>` id: suggestions the input offers while still taking any text. */
+  list?: string
 }>(), { type: 'text', rows: 4 })
 
 const model = defineModel<string>({ default: '' })
@@ -37,7 +39,7 @@ const describedBy = computed(() =>
     <div v-else class="relative">
       <input
         :id="id" v-model="model" :type="type" :placeholder="placeholder" :disabled="disabled"
-        :autocomplete="autocomplete" :aria-invalid="!!error" :aria-describedby="describedBy"
+        :autocomplete="autocomplete" :list="list" :aria-invalid="!!error" :aria-describedby="describedBy"
         class="field min-h-[44px]" :class="$slots.suffix && 'pr-11'"
       >
       <span v-if="$slots.suffix" class="absolute inset-y-0 right-0 flex items-center pr-1">

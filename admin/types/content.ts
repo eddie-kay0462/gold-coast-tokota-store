@@ -53,3 +53,33 @@ export interface MediaAsset {
   uploadedByName: string | null
   uploadedAt: Timestamp
 }
+
+/** One image tile slot in a storefront mega menu (Content › Menus). */
+export interface MegaMenuSlot {
+  position: number
+  /** Null when nobody has chosen an image: the storefront shows a product photo. */
+  mediaAsset: { id: number, url: string, filename: string, altText: string } | null
+  caption: string
+  link: string
+}
+
+/** A tile as the storefront shows it right now. */
+export interface MegaMenuTile {
+  label: string
+  image: string
+  alt: string
+  to: string
+  /** False for a product photo filling an empty slot. */
+  chosen: boolean
+}
+
+/** `GET /admin/menus`: a header menu, its tiles, and its catalogue-built links. */
+export interface MegaMenuAdmin {
+  key: string
+  label: string
+  to: string
+  slots: MegaMenuSlot[]
+  showing: MegaMenuTile[]
+  columns: { heading: string, links: { label: string, to: string }[] }[]
+  linkOptions: { label: string, to: string }[]
+}

@@ -4,7 +4,7 @@ import { adminUsers, customers, feedbackEntries, newsletterSubscribers } from '.
 import { categories, fxRate, inventoryItems, products } from './catalogue'
 import { orders, returnRequests, shipmentAttention, shipments, shippingRates, shippingSettings } from './commerce'
 import { bookings, diyTurnaroundTiers, workshopSessions, workshopTypes } from './bookings'
-import { blogPosts, cmsPages, mediaAssets } from './content'
+import { blogPosts, cmsPages, mediaAssets, megaMenus } from './content'
 import { chatMessages, chatThreads, messageTemplates } from './messaging'
 import {
   auditEntries, commerceSettings, deliverySettings, notificationSettings,
@@ -18,7 +18,7 @@ export {
   categories, fxRate, inventoryItems, products,
   orders, returnRequests, shipments, shippingRates, shippingSettings,
   bookings, diyTurnaroundTiers, workshopSessions, workshopTypes,
-  blogPosts, cmsPages, mediaAssets,
+  blogPosts, cmsPages, mediaAssets, megaMenus,
   chatMessages, chatThreads, messageTemplates,
   auditEntries, commerceSettings, deliverySettings, notificationSettings,
   paymentSettings, siteSettings, whatsappSettings,
@@ -47,6 +47,7 @@ const collections: Record<string, unknown[]> = {
   '/admin/blog': blogPosts,
   '/admin/pages': cmsPages,
   '/admin/media': mediaAssets,
+  '/admin/menus': megaMenus,
   '/admin/newsletter': newsletterSubscribers,
   '/admin/feedback': feedbackEntries,
   '/admin/team': adminUsers,

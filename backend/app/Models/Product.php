@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MegaMenus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -91,6 +92,13 @@ class Product extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    /** The header's mega menus are built from products; a change rebuilds them. */
+    protected static function booted(): void
+    {
+        static::saved(fn () => MegaMenus::forget());
+        static::deleted(fn () => MegaMenus::forget());
     }
 
     public function scopeActive(Builder $query): Builder
