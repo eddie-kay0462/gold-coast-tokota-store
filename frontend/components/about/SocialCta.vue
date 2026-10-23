@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 import { whatsappMessage } from '~/utils/whatsapp'
+import { BRAND_SOCIALS } from '~/utils/aboutContent'
 
 const siteSettings = useSiteSettingsStore()
 
 // The Instagram destination is admin-editable (SiteSetting), the same source
 // the footer's Connect column uses, never hardcoded per component.
-const instagramUrl = computed(() => siteSettings.instagramUrl || '/')
+// Falls back to the brand's own handle until the setting is filled in.
+const instagramUrl = computed(() => siteSettings.instagramUrl || BRAND_SOCIALS.instagram)
 const supportHours = computed(() => siteSettings.businessHours || 'Mon–Sat, 9am–5pm GMT')
 const isExternal = computed(() => !!siteSettings.instagramUrl)
 </script>
@@ -38,12 +40,11 @@ const isExternal = computed(() => !!siteSettings.instagramUrl)
         <CommonBrandButton
           :to="instagramUrl"
           variant="white"
-          shape="soft"
           :external="isExternal"
           :target="isExternal ? '_blank' : undefined"
           :rel="isExternal ? 'noopener noreferrer' : undefined"
         >
-          @GoldCoastTokota Instagram
+          @goldcoasttokota on Instagram
         </CommonBrandButton>
       </div>
     </div>

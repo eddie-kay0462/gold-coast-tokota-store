@@ -38,33 +38,35 @@ const programmePosts = computed(() => {
     : [...SUSTAINABILITY_POSTS, ...DESIGN_POSTS]
 
   const seen = new Set<string>()
-  return pool
-    .filter((post) => {
-      if (seen.has(post.slug)) return false
-      if (!PROGRAMME_CATEGORIES.includes(post.category ?? '')) return false
-      seen.add(post.slug)
-      return true
-    })
-    .slice(0, 3)
+  const unique = pool.filter((post) => !seen.has(post.slug) && seen.add(post.slug))
+  const programme = unique.filter((post) => PROGRAMME_CATEGORIES.includes(post.category ?? ''))
+  // The newest posts of any kind when none are in the programme categories,
+  // rather than a heading over an empty row.
+  return (programme.length ? programme : unique).slice(0, 3)
 })
 
 useSeoMeta({
   title: 'About | Gold Coast Tokota',
   description:
-    'Exceptional quality, ethical factories and radical transparency. The story behind Gold Coast Tokota, and our mission to clean up a dirty industry.',
+    'Gold Coast Tokota turns discarded tyres, water sachets and denim into handcrafted ahenema and sandals in Accra, and opens its workshop to schools, companies and visitors.',
   ogTitle: 'About | Gold Coast Tokota',
-  ogDescription: 'Exceptional quality. Ethical factories. Radical Transparency.',
-  ogImage: '/brand/og-image.png',
+  ogDescription: 'Crafted with purpose. Inspired by culture. Handmade in Ghana from materials other people throw away.',
+  ogImage: '/design/post-tyred-hero.png',
   ogType: 'website',
 })
 </script>
 
 <template>
   <!--
-    About and Sustainability were two routes telling one story; they merged on
-    27 Aug. `/sustainability` is a 301 to this page (see `nuxt.config.ts`), and
-    the section nav at the top is now what moves between the parts of it,
-    which is what that tab row was always for.
+    Redesigned 23 Oct from the brand's own material: GOLD_COAST_TOKOTA.md, its
+    Instagram and YouTube, and press (sources in utils/aboutContent.ts). The
+    page it replaced was largely template copy (ethical factories "around the
+    world", compliance-audit scores, radically transparent pricing) over stock
+    photography; none of that was this brand.
+
+    Order: who we are, what we make it from, who makes it, the ahenema itself,
+    come and see, watch, who backs us, where we're going, the latest.
+    `/sustainability` still 301s to `#sustainability` (the materials section).
   -->
   <div class="w-full bg-white">
     <AboutSectionNav />
@@ -75,73 +77,39 @@ useSeoMeta({
       <AboutStatementSection :body="statementBody" />
     </MotionGsapScrollReveal>
 
-    <AboutFeatureSection
-      id="factories"
-      eyebrow="OUR FACTORIES"
-      heading="Our ethical approach."
-      body="We spend months finding the best factories around the world, the same ones that produce your favorite designer labels. We visit them often and build strong personal relationships with the owners. Each factory is given a compliance audit to evaluate factors like fair wages, reasonable hours, and environment. Our goal? A score of 90 or above for every factory."
-      image="/design/about-factories.png"
-      alt="An artisan hand-cutting leather at the workbench"
-      :height="733"
-    />
+    <AboutStory />
 
-    <img
-      src="/design/about-workshop-wide.png"
-      alt="Inside the Gold Coast Tokota workshop, tools and hides laid out at the bench"
-      class="aspect-[16/9] max-h-[637px] w-full object-cover"
-      loading="lazy"
-    >
+    <AboutStoryNumbers />
 
-    <!-- `id="quality"`, not `id="sustainability"` as it used to be: this section
-         is about how long a pair lasts, and the anchor now belongs to the real
-         sustainability block further down. -->
+    <AboutMaterials />
+
+    <AboutPeople />
+
     <AboutFeatureSection
-      id="quality"
-      eyebrow="OUR QUALITY"
-      :heading="'Designed\nto last.'"
-      body="We're not big on trends. We want you to wear our pieces for years, even decades, to come. That's why we source the finest materials and the most skilled hands for our timeless products, like our full-grain leather ahenema, hand-stitched soles, and locally woven kente trims."
-      image="/design/about-quality.png"
-      alt="A pair of blue and black leather sandals photographed from above"
+      id="ahenema"
+      eyebrow="THE AHENEMA"
+      :heading="'Fit for royalty,\nmade for every day.'"
+      body="Ahenema have been worn by Ghanaian royalty for generations. We keep the shape, the crowns and the Adinkra symbols, and build them from reclaimed materials, leather and velvet. Now we’re making Orthopaedic Ahenema too, so the royal sandal can be worn all day."
+      image="/design/about-ahenema-kentehene.webp"
+      alt="The Kentehene ahenema: a blue suede footbed with a woven kente strap and leather crown"
       :reverse="true"
-      :height="552"
+      :height="620"
     />
 
-    <img
-      src="/design/about-materials-wide.png"
-      alt="Woven material and finishing supplies arranged across the workshop floor"
-      class="aspect-[16/9] max-h-[560px] w-full object-cover"
-      loading="lazy"
-    >
+    <AboutExperiences />
 
-    <AboutFeatureSection
-      id="prices"
-      eyebrow="OUR PRICES"
-      heading="Radically Transparent."
-      body="We believe our customers have a right to know how much their shoes cost to make. We reveal the true costs behind all of our products, from materials to labor to transportation, then offer them to you, minus the traditional retail markup."
-      image="/design/about-price-breakdown.png"
-      alt="A cost breakdown comparing the Gold Coast Tokota price with traditional retail"
-      :tinted="false"
-      :contain="true"
-      :height="660"
-    />
+    <AboutSocialCarousel />
 
-    <!-- Everything below came from `/sustainability`. -->
+    <AboutSloganTicker />
+
+    <AboutRecognition />
+
     <MotionGsapScrollReveal>
       <AboutSustainabilitySection />
     </MotionGsapScrollReveal>
 
-    <AboutSloganTicker />
-
-    <MotionGsapScrollReveal>
-      <AboutProgressGrid />
-    </MotionGsapScrollReveal>
-
     <MotionGsapScrollReveal>
       <AboutStoriesGrid :posts="programmePosts" />
-    </MotionGsapScrollReveal>
-
-    <MotionGsapScrollReveal>
-      <AboutExploreGrid />
     </MotionGsapScrollReveal>
 
     <AboutSocialCta />

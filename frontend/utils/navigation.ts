@@ -148,16 +148,15 @@ export const categoryNav: NavItem[] = [
  * itself has never been designed.
  */
 export const aboutSectionNav: NavLink[] = [
-  { label: 'About', to: '/about' },
-  // "Cleaner Manufacturing" and "Workshop" were separate tabs pointing at the
-  // same subject from two directions: the factories section on this page, and
-  // the booking page. One tab now, on the section that explains the work.
-  // Booking is a top-level header item (`Bookings`), so nothing is lost.
-  { label: 'Our Workshop', to: '/about#factories' },
-  { label: 'Designed to Last', to: '/about#quality' },
-  { label: 'Sustainability', to: '/about#sustainability' },
+  // Since the 23 Oct redesign; the old tabs pointed at sections that are gone
+  // (Our Workshop → the "ethical factories" block, Designed to Last).
+  { label: 'Our Story', to: '/about#story' },
+  { label: 'Materials', to: '/about#sustainability' },
+  { label: 'People', to: '/about#people' },
+  { label: 'Experiences', to: '/about#experiences' },
+  { label: 'Watch', to: '/about#watch' },
+  { label: 'Recognition', to: '/about#recognition' },
   { label: 'The Latest', to: '/about#stories' },
-  { label: 'Partnerships', to: '/blog/partnerships-for-change' },
 ]
 
 /**

@@ -1,9 +1,9 @@
 <template>
   <!--
-    The opening of the sustainability programme, folded into About when the two
-    pages merged (27 Aug). It carries the mission copy from the old
-    `/sustainability` masthead (Figma 10:915): the heavy rule and the "clean up
-    a dirty industry" statement.
+    Mission and vision. The heading was "We're on a mission to clean up a dirty
+    industry", template copy; since the 23 Oct redesign it is the brand's own
+    line (GOLD_COAST_TOKOTA.md §6, "Confident"). `#sustainability` moved to the
+    materials section, which is what the home banner's link is about.
 
     What did not come across is that masthead's `Gold Coast Tokota` wordmark set
     at `display-brand`. A page has one masthead, and About already has one; a
@@ -12,16 +12,16 @@
     that token's very airy leading at the mobile floor.
   -->
   <section
-    id="sustainability"
+    id="mission"
     class="page-gutter section-y mx-auto flex w-full max-w-[1440px] scroll-mt-8 flex-col items-start gap-8"
   >
     <div class="flex w-full flex-col items-start gap-2">
-      <div class="h-[14px] w-full bg-graphite" />
+      <div class="h-[14px] w-full bg-ink" />
       <h2 class="w-full font-normal text-display-heading text-black">
-        We're on a mission to clean up a dirty industry.
+        Where we’re going.
       </h2>
       <p class="w-full font-light text-lede text-subtle">
-        These are the people, stories, and ideas that will help us get there.
+        A future where African manufacturing creates value for people, culture and the planet.
       </p>
     </div>
 

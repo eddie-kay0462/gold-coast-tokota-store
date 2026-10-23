@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 23 October 2026 (contact form matches the other forms' width; earlier the same day, fallback delivery rate is ₵35, set in admin; checkout keeps the recipient's first and last name; earlier the same day, checkout asks for the recipient's first and last name, and the phone takes a country code that follows the delivery country; earlier the same day, announcement bar redesigned: one line, pure black and white; earlier the same day, booking page: WhatsApp links graphite and 20% larger, attendees can't go below 1; earlier the same day, mobile header row 25% taller; earlier the same day, product card colour swatches switch the photo, stock and links when tapped; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, shop page on mobile: centred WhatsApp button, smaller filter checkboxes, filters and swatches from the catalogue, and every product now loads; earlier the same day, home hero on phones shows one pair and pans across the other two; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 23 October 2026 (About page redesigned from the brand's own story, with an Instagram and YouTube carousel; earlier the same day, contact form matches the other forms' width; earlier the same day, fallback delivery rate is ₵35, set in admin; checkout keeps the recipient's first and last name; earlier the same day, checkout asks for the recipient's first and last name, and the phone takes a country code that follows the delivery country; earlier the same day, announcement bar redesigned: one line, pure black and white; earlier the same day, booking page: WhatsApp links graphite and 20% larger, attendees can't go below 1; earlier the same day, mobile header row 25% taller; earlier the same day, product card colour swatches switch the photo, stock and links when tapped; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, shop page on mobile: centred WhatsApp button, smaller filter checkboxes, filters and swatches from the catalogue, and every product now loads; earlier the same day, home hero on phones shows one pair and pans across the other two; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,103 @@ inert at their last step.
 
 ## Recent changes
 
-### 23 October 2026 (latest): contact form is the same width as the other forms
+### 23 October 2026 (latest): About page redesigned from the brand's own story
+
+The old `/about` was mostly template copy over stock photography: "the best,
+ethical factories around the world… the same ones that produce your
+favorite designer labels", compliance-audit scores "of 90 or above",
+"Radically Transparent" pricing with a cost-breakdown graphic, and photos of
+a shirt, a washing drum and a recycling sign on tarmac. None of it was this
+brand. It's rebuilt from `GOLD_COAST_TOKOTA.md`, the brand's Instagram and
+YouTube, and Ghanaian business press. **Every fact, figure and post lives in
+`utils/aboutContent.ts` with its source**, so it's updated in one place.
+
+**The page, top to bottom:**
+1. **Hero:** "Crafted with purpose. Inspired by culture." (§24) on deep
+   black, beside the brand's photo of the team with FITA Autotech.
+2. **Statement:** still the CMS `about` body. The seeded line is now also the
+   fallback.
+3. **Our story:**
+   - Samuel's sandals gave way on the way to a mentor; in 2022 he decided to
+     build the brand, and it was established in 2023 (Business Beat, Feb 2025).
+   - Before the first pair he researched how customers abroad saw African
+     footwear (Springboard, May 2026).
+   - The quote, "We are changing the narrative about manufacturing in Africa",
+     is linked to its source.
+4. **Figures**, each dated and linked: 2,500+ pairs and 5 tonnes of tyres and
+   denim (Business Beat, **Feb 2025**), 5–25% reclaimed material per pair
+   (Ghana Climate Innovation Centre), about 20 pairs a day (Springboard, May
+   2026).
+5. **Materials** (`#sustainability`, which the home banner and the
+   `/sustainability` redirect still land on): car tyres via FITA Autotech,
+   water sachets, denim, leather and velvet.
+6. **People:** the brand's own photo of an artisan at the bench; trains and
+   employs young people, women and people living with disabilities. Samuel
+   Kumi-Gyau (Founder & CEO) and Mary Seade (Operations Lead), per §17.
+7. **The ahenema:** royal heritage and Orthopaedic Ahenema, with the
+   Kentehene catalogue photo (copied to `public/design/`).
+8. **Experiences:** four of §15's workshops with their times as written there,
+   and Book an experience.
+9. **From the workshop:** the carousel (below).
+10. **Slogan ticker:** now the brand phrase plus "Made in Ghana" (was "Keep it
+    Clean / Do right by people / Keep It Local").
+11. **Recognition**, each linked to its source:
+    - Orange Corners Ghana (Cohort 9);
+    - Ghana Climate Innovation Centre (Cohort 10, Dec 2024);
+    - BlueInvest Africa Blue Economy Program award (Oct 2025);
+    - Africa Business Bureau, third place (Dec 2025);
+    - YEF Entrepreneurship Challenge, sixth place (Apr 2026).
+12. **Mission & vision** (§1), headed "Where we’re going." (was "We're on a
+    mission to clean up a dirty industry").
+13. **The latest:** falls back to the newest posts when none are in the
+    programme categories, instead of an empty row.
+14. **Closing band:** the Instagram button falls back to @goldcoasttokota, and
+    is square like the rest of the site.
+
+**The carousel (`AboutSocialCarousel`).** Eleven posts, the brand's own first:
+- **YouTube:** Trash to handcrafted ahenema, and Paint your story (both the
+  brand's channel); Adom TV's DIY shoemaking; Conrado TV's From trash to
+  treasure; Orange Corners/Joy Business; Springboard Hangout; The Next Africa.
+  All checked embeddable through YouTube's oEmbed.
+- **Instagram** (reels): the **Nubuke** collaboration (the tyre shoe, and the
+  4 Oct workshop event; added at the client's request); Edlys Montessori's
+  school visit; Africa Day Sip & Paint with MTN Ghana; ahenema with Wode Maya.
+
+How it behaves:
+- It swipes, with arrows on larger screens.
+- **Nothing third-party loads until a card is tapped.** YouTube cards use the
+  video's own thumbnail. Instagram's images expire, so its cards are black
+  tiles with the post's subject.
+- A tapped card opens a black lightbox at the post's shape: 9:16 for Shorts
+  and reels, 16:9 for interviews, Instagram's official embed. YouTube plays
+  from youtube-nocookie.com.
+- Escape closes it, focus returns to the card, and the page doesn't scroll
+  behind it.
+
+**Removed:** the factories, quality and prices blocks, the two wide stock
+images, and `AboutProgressGrid` / `AboutExploreGrid` (deleted). Section-nav
+tabs are now Our Story, Materials, People, Experiences, Watch, Recognition
+and The Latest.
+
+**Checked in headless Chrome at 1440 and 375px:**
+- no horizontal scroll;
+- the player opens a Short at 428×760 and an interview at 1100×619 on
+  desktop, and full width on a phone;
+- the Nubuke reel loads Instagram's embed;
+- the only console errors were the test port's CORS refusals on `/me`.
+
+**For the client to confirm:**
+- **The figures:** the 2,500 pairs, 5 tonnes and fifteen staff are from Feb
+  2025, so they're probably out of date.
+- **Staff names:** `GOLD_COAST_TOKOTA.md` says Isaaka is Production Lead;
+  VC4A lists Clinton Quesi. Only Samuel and Mary are named on the page.
+- **Instagram setting:** set **Instagram URL** in admin site settings; the
+  footer shows no Instagram link until it's filled.
+- **More photography:** only two workshop photos exist in the project, both
+  small (544px and 1529px). More real workshop photography would let the
+  page drop the remaining product shot.
+
+### 23 October 2026: contact form is the same width as the other forms
 
 The note form on `/contact` (`FormsFeedbackForm`) stretched across its column,
 about 650px on a laptop, while sign-in, sign-up and order tracking are 440px.
