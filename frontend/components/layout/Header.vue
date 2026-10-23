@@ -210,7 +210,9 @@ function isCategoryActive(to: string) {
          optically centred in the row regardless of how wide the nav or the
          icon cluster get. Taller than the old dark row (the reference gives
          the logo room) with a hairline under it. -->
-    <div class="grid w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 text-ink md:px-10 md:py-3 lg:px-[68px]">
+    <!-- Phones: 56px tall (was 45, the 44px tap targets plus the rule), 25%
+         more room around the logo and icons. From md the padding sets it. -->
+    <div class="grid min-h-[56px] w-full grid-cols-[1fr_auto_1fr] items-center border-b border-line px-5 text-ink md:min-h-0 md:px-10 md:py-3 lg:px-[68px]">
       <div class="flex items-center justify-start">
         <button
           type="button"
