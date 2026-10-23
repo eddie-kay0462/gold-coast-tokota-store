@@ -2,8 +2,9 @@
   <!-- Redesigned 23 Oct. It was a stock photograph of someone folding a shirt
        under "Exceptional quality. Ethical factories. Radical Transparency.",
        none of which is this brand. Now: the brand phrase (GOLD_COAST_TOKOTA.md
-       §24) on the site's deep black, beside the brand's own photo of the team
-       with its FITA Autotech tyre partners. -->
+       §24) on the site's deep black, beside the Ahotoso ahenema from the
+       brand's own catalogue photography: black and gold, the brand's colours.
+       The team photo that was here is the People section's now. -->
   <section class="w-full bg-ink text-white">
     <div class="mx-auto grid w-full max-w-[1440px] grid-cols-1 items-stretch md:grid-cols-2">
       <div class="page-gutter flex flex-col justify-center gap-6 py-16 md:py-24 lg:py-32">
@@ -24,11 +25,11 @@
 
       <div class="relative min-h-[360px] md:min-h-[560px]">
         <img
-          src="/design/post-tyred-hero.png"
-          alt="The Gold Coast Tokota team with the FITA Autotech tyre partners in the workshop, under the brand’s Africa map"
-          class="absolute inset-0 size-full object-cover object-top"
-          width="1529"
-          height="1536"
+          src="/design/about-hero-ahotoso.webp"
+          alt="The Ahotoso ahenema: black leather with gold crowns, handmade by Gold Coast Tokota"
+          class="absolute inset-0 size-full bg-surface object-cover"
+          width="1500"
+          height="1667"
           fetchpriority="high"
         >
       </div>

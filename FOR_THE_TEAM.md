@@ -61,7 +61,7 @@ YouTube, and Ghanaian business press. **Every fact, figure and post lives in
 
 **The page, top to bottom:**
 1. **Hero:** "Crafted with purpose. Inspired by culture." (§24) on deep
-   black, beside the brand's photo of the team with FITA Autotech.
+   black, beside the Ahotoso ahenema (black leather, gold crowns).
 2. **Statement:** still the CMS `about` body. The seeded line is now also the
    fallback.
 3. **Our story:**
@@ -78,9 +78,18 @@ YouTube, and Ghanaian business press. **Every fact, figure and post lives in
 5. **Materials** (`#sustainability`, which the home banner and the
    `/sustainability` redirect still land on): car tyres via FITA Autotech,
    water sachets, denim, leather and velvet.
-6. **People:** the brand's own photo of an artisan at the bench; trains and
-   employs young people, women and people living with disabilities. Samuel
-   Kumi-Gyau (Founder & CEO) and Mary Seade (Operations Lead), per §17.
+6. **People:** the brand's own team photo (1529px), captioned "The Gold Coast
+   Tokota team with FITA Autotech, who supply the tyres"; trains and employs
+   young people, women and people living with disabilities. Samuel Kumi-Gyau
+   (Founder & CEO) and Mary Seade (Operations Lead), per §17.
+   - **Changed the same day, at the client's request.** The first pick (an
+     artisan at the bench) was 544px and soft at that size.
+   - **Video stills didn't work either.** Frames from the brand's YouTube and
+     collaboration videos were 360p with burned-in subtitles, or shot outside
+     the gate, and Instagram needs a login to download.
+   - **So the team photo moved here,** and the hero took the **Ahotoso**
+     ahenema, black and gold, from the brand's own catalogue photography
+     (copied to `public/design/about-hero-ahotoso.webp`).
 7. **The ahenema:** royal heritage and Orthopaedic Ahenema, with the
    Kentehene catalogue photo (copied to `public/design/`).
 8. **Experiences:** four of §15's workshops with their times as written there,
@@ -140,9 +149,9 @@ and The Latest.
   VC4A lists Clinton Quesi. Only Samuel and Mary are named on the page.
 - **Instagram setting:** set **Instagram URL** in admin site settings; the
   footer shows no Instagram link until it's filled.
-- **More photography:** only two workshop photos exist in the project, both
-  small (544px and 1529px). More real workshop photography would let the
-  page drop the remaining product shot.
+- **More photography:** the project has no sharp photo of artisans at work.
+  A few high-resolution workshop shots from the client would be the best
+  People and hero images; swap them in `People.vue` / `HeroSection.vue`.
 
 ### 23 October 2026: contact form is the same width as the other forms
 
