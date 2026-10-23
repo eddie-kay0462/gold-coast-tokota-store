@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { isValidEmail, isValidGhanaPhone } from '~/utils/validators'
+import { isValidEmail } from '~/utils/validators'
+import { DEFAULT_PHONE_COUNTRY, nationalNumberError, toE164 } from '~/utils/phone'
 import { CURRENCIES } from '~/utils/constants'
 
 /**
@@ -16,8 +17,10 @@ const redirectTo = computed(() => {
 })
 
 const form = reactive({
-  name: '',
+  firstName: '',
+  lastName: '',
   email: '',
+  phoneCountry: DEFAULT_PHONE_COUNTRY,
   phone: '',
   currency: 'GHS',
   password: '',
@@ -33,7 +36,8 @@ const currencyOptions = CURRENCIES.map((value) => ({
 }))
 
 function validate(): boolean {
-  errors.name = !form.name.trim() ? 'Enter your name.' : undefined
+  errors.firstName = !form.firstName.trim() ? 'Enter your first name.' : undefined
+  errors.lastName = !form.lastName.trim() ? 'Enter your last name.' : undefined
 
   errors.email = !form.email.trim()
     ? 'Enter your email address.'
@@ -41,16 +45,10 @@ function validate(): boolean {
       ? 'That doesn’t look like a valid email address.'
       : undefined
 
-  // Phone is optional here (`customers.phone` is nullable) but validated
-  // when given. The Ghana pattern only applies to a Ghana number; an
-  // international customer must not be rejected by it.
-  errors.phone = !form.phone.trim()
-    ? undefined
-    : /^0|^\+233/.test(form.phone.trim()) && !isValidGhanaPhone(form.phone.trim())
-      ? 'Enter a Ghana number as 0XXXXXXXXX or +233XXXXXXXXX.'
-      : !/^\+?[0-9\s-]{7,}$/.test(form.phone.trim())
-        ? 'That doesn’t look like a valid phone number.'
-        : undefined
+  // Phone is optional here (`customers.phone` is nullable) but checked when
+  // given, against the chosen country: exactly 9 digits after +233 for
+  // Ghana, a plausible length elsewhere (utils/phone.ts).
+  errors.phone = form.phone.trim() ? nationalNumberError(form.phoneCountry, form.phone) : undefined
 
   errors.password = !form.password
     ? 'Choose a password.'
@@ -69,9 +67,11 @@ async function onSubmit() {
 
   submitting.value = true
   const result = await register({
-    name: form.name.trim(),
+    first_name: form.firstName.trim(),
+    last_name: form.lastName.trim(),
     email: form.email.trim(),
-    phone: form.phone.trim() || null,
+    // Saved as E.164, e.g. +233241234567.
+    phone: toE164(form.phoneCountry, form.phone),
     preferred_currency: form.currency as 'GHS' | 'USD',
     password: form.password,
     password_confirmation: form.confirm,
@@ -84,7 +84,8 @@ async function onSubmit() {
   }
 
   // The API's field names, mapped onto this form's.
-  errors.name = result.errors.name
+  errors.firstName = result.errors.first_name
+  errors.lastName = result.errors.last_name
   errors.email = result.errors.email
   errors.phone = result.errors.phone
   errors.password = result.errors.password
@@ -109,17 +110,24 @@ useSeoMeta({
     </CommonInlineNotice>
 
     <form class="flex w-full flex-col items-start gap-5" novalidate @submit.prevent="onSubmit">
-      <FormsFormField
-        v-model="form.name"
-        label="Name" name="name" autocomplete="name" required :error="errors.name"
-      />
+      <div class="grid w-full grid-cols-1 gap-5 sm:grid-cols-2">
+        <FormsFormField
+          v-model="form.firstName"
+          label="First name" name="first_name" autocomplete="given-name" required :error="errors.firstName"
+        />
+        <FormsFormField
+          v-model="form.lastName"
+          label="Last name" name="last_name" autocomplete="family-name" required :error="errors.lastName"
+        />
+      </div>
       <FormsFormField
         v-model="form.email"
         label="Email" name="email" type="email" autocomplete="email" required :error="errors.email"
       />
-      <FormsFormField
+      <FormsPhoneField
         v-model="form.phone"
-        label="Phone" name="phone" type="tel" autocomplete="tel"
+        v-model:country="form.phoneCountry"
+        label="Phone" name="phone"
         hint="Optional. We use it for delivery updates only."
         :error="errors.phone"
       />
@@ -127,14 +135,14 @@ useSeoMeta({
         v-model="form.currency"
         label="Preferred currency" name="currency" type="select" :options="currencyOptions"
       />
-      <FormsFormField
+      <FormsPasswordField
         v-model="form.password"
-        label="Password" name="password" type="password" autocomplete="new-password"
+        label="Password" name="password" autocomplete="new-password"
         hint="At least 8 characters." required :error="errors.password"
       />
-      <FormsFormField
+      <FormsPasswordField
         v-model="form.confirm"
-        label="Confirm password" name="confirm" type="password" autocomplete="new-password"
+        label="Confirm password" name="confirm" autocomplete="new-password"
         required :error="errors.confirm"
       />
 

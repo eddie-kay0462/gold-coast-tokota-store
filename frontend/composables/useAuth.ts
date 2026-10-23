@@ -62,7 +62,8 @@ export function useAuth() {
   }
 
   async function register(payload: {
-    name: string
+    first_name: string
+    last_name: string
     email: string
     phone?: string | null
     preferred_currency?: 'GHS' | 'USD'

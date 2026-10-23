@@ -35,8 +35,12 @@ useSeoMeta({
         <h2 class="caps-title w-full">Profile</h2>
         <dl class="flex w-full flex-col gap-3 text-label">
           <div class="flex w-full flex-col gap-0.5">
-            <dt class="text-caption text-muted">Name</dt>
-            <dd class="text-ink">{{ user?.name }}</dd>
+            <dt class="text-caption text-muted">First name</dt>
+            <dd class="text-ink">{{ user?.first_name }}</dd>
+          </div>
+          <div class="flex w-full flex-col gap-0.5">
+            <dt class="text-caption text-muted">Last name</dt>
+            <dd class="text-ink">{{ user?.last_name || 'Not given' }}</dd>
           </div>
           <div class="flex w-full flex-col gap-0.5">
             <dt class="text-caption text-muted">Email</dt>

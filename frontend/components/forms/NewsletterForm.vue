@@ -50,7 +50,12 @@ async function onSubmit() {
     <!-- `min-w-0` on the input matters: an <input> has an intrinsic min-content
          width (~180px) that `w-full` cannot shrink past while it is a flex item,
          which left the row 8px clear of a 320px viewport. -->
-    <form v-if="!submitted" class="flex w-full min-w-0" @submit.prevent="onSubmit">
+    <form
+      v-if="!submitted"
+      class="field-group max-w-[442px]"
+      :class="isDark ? 'border-white/25 bg-transparent' : ''"
+      @submit.prevent="onSubmit"
+    >
       <label class="sr-only" for="newsletter-email">Email address</label>
       <input
         id="newsletter-email"
@@ -58,24 +63,27 @@ async function onSubmit() {
         type="email"
         required
         :placeholder="placeholder ?? (isDark ? 'Email address' : 'Sign up for our Newsletter here!')"
-        class="w-full min-w-0 max-w-[388px] flex-1 border text-label"
+        class="w-full min-w-0 flex-1 bg-transparent text-label"
         :class="isDark
-          ? 'border-white/25 bg-transparent px-[15px] py-3 text-white placeholder:text-white/50'
-          : 'border-line bg-white px-[15px] py-[18px] text-graphite placeholder:text-muted'"
+          ? 'px-[15px] py-3 text-white placeholder:text-white/50'
+          : 'px-[15px] py-[18px] text-graphite placeholder:text-muted'"
       >
       <button
         v-if="isDark"
         type="submit"
         :disabled="pending"
-        class="flex min-h-[44px] shrink-0 items-center justify-center border border-gold bg-gold px-4 text-caption uppercase tracking-[1px] text-chrome disabled:opacity-60"
+        class="flex min-h-[44px] shrink-0 items-center justify-center bg-gold px-4 text-caption uppercase tracking-[1px] text-chrome disabled:opacity-60"
       >
         Join
       </button>
+      <!-- The site's outline button inside the group: no outer border (the
+           group has it), a hairline where it joins the box, black when
+           engaged. -->
       <button
         v-else
         type="submit"
         :disabled="pending"
-        class="btn-outline flex shrink-0 items-start border-l-0 px-[14px] py-[14.5px] disabled:opacity-60"
+        class="flex shrink-0 items-center border-l border-line bg-white px-[14px] text-ink transition-colors hover:bg-ink hover:text-white focus-visible:bg-ink focus-visible:text-white disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-ink"
         aria-label="Sign up for the newsletter"
       >
         <ArrowRight :size="24" />

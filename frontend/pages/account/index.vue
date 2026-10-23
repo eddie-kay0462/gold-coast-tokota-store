@@ -29,7 +29,7 @@ watch(isAuthenticated, async (signedIn) => {
   }
 }, { immediate: true })
 
-const firstName = computed(() => user.value?.name.trim().split(/\s+/)[0] ?? '')
+const firstName = computed(() => user.value?.first_name ?? '')
 
 const lookup = reactive({ reference: '', email: '' })
 const lookupErrors = reactive<{ reference?: string, email?: string }>({})
