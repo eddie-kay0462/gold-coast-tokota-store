@@ -2,9 +2,8 @@
 import { PhFunnelSimple as FunnelSimple, PhX as X } from '@phosphor-icons/vue'
 import type { ApiProduct, ColorFacet, Facet } from '~/utils/catalog'
 import { COLOR_FACETS, TYPE_FACETS } from '~/utils/catalog'
-import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 const route = useRoute()
 const router = useRouter()
 
@@ -46,9 +45,9 @@ function toggleFacet(facet: FacetKey, value: string) {
   })
 }
 
-// The catalogue endpoint arrives with Feature 2. Until then a failed/absent
-// endpoint resolves to an empty list rather than throwing, and the design's own
-// six products stand in, the same fallback pattern the home page uses.
+// A failed request is a "try again" page, never the old design catalogue
+// standing in: that showed demo stock and prices whenever the API was busy.
+// An empty result is just an empty result, and the grid says so.
 //
 // 48 a page, the API's cap: the catalogue (40 today) fits on one, and "Load
 // more" appends the next page when it outgrows it. Before this the page asked
@@ -56,10 +55,10 @@ function toggleFacet(facet: FacetKey, value: string) {
 const PAGE_SIZE = 48
 type ProductPage = { data: ApiProduct[], meta?: { total?: number, last_page?: number } }
 
-const { data: apiProducts, pending } = await useAsyncData(
+const { data: apiProducts, pending, error: productsError } = await useAsyncData(
   'shop-products',
   () =>
-    $fetch<ProductPage>(`${config.public.apiBase}/products`, {
+    apiFetch<ProductPage>('/products', {
       query: {
         per_page: PAGE_SIZE,
         ...Object.fromEntries(
@@ -70,9 +69,13 @@ const { data: apiProducts, pending } = await useAsyncData(
         sale: route.query.sale,
         sort: route.query.sort,
       },
-    }).catch((): ProductPage => ({ data: [] })),
+    }),
   { watch: [() => route.query] },
 )
+
+if (productsError.value) throw apiUnavailable()
+// A filter change that fails in the browser gets the same page, not an empty grid.
+watch(productsError, (error) => { if (error) showError(apiUnavailable()) })
 
 /** Pages after the first, appended by "Load more"; cleared when the filters change. */
 const morePages = ref<ApiProduct[]>([])
@@ -84,13 +87,13 @@ watch(() => route.query, () => {
 })
 
 const lastPage = computed(() => apiProducts.value?.meta?.last_page ?? 1)
-const hasMore = computed(() => !usingFallback.value && nextPage.value <= lastPage.value)
+const hasMore = computed(() => nextPage.value <= lastPage.value)
 
 async function loadMore() {
   if (loadingMore.value) return
   loadingMore.value = true
   try {
-    const res = await $fetch<ProductPage>(`${config.public.apiBase}/products`, {
+    const res = await apiFetch<ProductPage>('/products', {
       query: { ...route.query, per_page: PAGE_SIZE, page: nextPage.value },
     })
     morePages.value = [...morePages.value, ...res.data]
@@ -109,65 +112,25 @@ async function loadMore() {
  */
 const { data: facets } = await useAsyncData(
   'product-facets',
-  () => $fetch<{ data: { types: (Facet & { count: number })[], colors: ColorFacet[] } }>(`${config.public.apiBase}/products/facets`)
+  () => apiFetch<{ data: { types: (Facet & { count: number })[], colors: ColorFacet[] } }>('/products/facets')
     .then((res) => res.data)
     .catch(() => null),
 )
 const typeFacets = computed<Facet[]>(() => facets.value?.types.length ? facets.value.types : TYPE_FACETS)
 const colorFacets = computed<ColorFacet[]>(() => facets.value?.colors.length ? facets.value.colors : COLOR_FACETS)
 
-const usingFallback = computed(() => !(apiProducts.value?.data?.length))
 const sourceProducts = computed(() => [...(apiProducts.value?.data ?? []), ...morePages.value])
-
-/** Maps a product's colourway names onto the sidebar's colour facet values. */
-function colorValues(product: ApiProduct): string[] {
-  const names = [product.color, ...(product.colors ?? []).map((color) => color.name)]
-  return COLOR_FACETS.filter((facet) =>
-    names.some((name) => name?.toLowerCase().includes(facet.label.toLowerCase())),
-  ).map((facet) => facet.value)
-}
 
 /** Free-text term from the header search panel. */
 const searchTerm = computed(() =>
   typeof route.query.q === 'string' ? route.query.q.trim().toLowerCase() : '',
 )
 
-function matchesFilters(product: ApiProduct): boolean {
-  const { type, color, size, width } = selected.value
-  const department = route.query.category
-
-  if (searchTerm.value) {
-    const haystack = [product.name, product.color, product.product_type, ...(product.tags ?? [])]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-    if (!haystack.includes(searchTerm.value)) return false
-  }
-
-  if (
-    typeof department === 'string'
-    && department
-    && !(product.departments ?? []).includes(department)
-  ) return false
-  if (route.query.sale === 'true' && !(product.compare_at_ghs
-    && product.compare_at_ghs > product.base_price_ghs)) return false
-  if (type.length && !(product.product_type && type.includes(product.product_type))) return false
-  if (color.length && !colorValues(product).some((value) => color.includes(value))) return false
-  if (size.length && !(product.sizes ?? []).some((entry) => size.includes(entry))) return false
-  if (width.length && !(product.widths ?? []).some((entry) => width.includes(entry))) return false
-  return true
-}
-
-// The API is expected to filter server-side; the same predicate runs locally so
-// the fallback catalogue responds to the sidebar too.
-const products = computed(() =>
-  usingFallback.value ? DESIGN_PRODUCTS.filter(matchesFilters) : sourceProducts.value,
-)
+// The API filters server-side.
+const products = computed(() => sourceProducts.value)
 
 /** Everything the filters match, not just what's loaded so far. */
-const resultCount = computed(() =>
-  usingFallback.value ? products.value.length : (apiProducts.value?.meta?.total ?? products.value.length),
-)
+const resultCount = computed(() => apiProducts.value?.meta?.total ?? products.value.length)
 
 /** Heading and breadcrumb follow the category the header nav linked in with. */
 const CATEGORY_LABELS: Record<string, { crumb: string, heading: string }> = {

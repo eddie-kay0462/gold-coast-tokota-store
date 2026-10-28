@@ -6,9 +6,9 @@ import { whatsappMessage } from '~/utils/whatsapp'
 /**
  * The order summary, laid out the way a standard Shopify checkout lays it out:
  * thumbnails carrying a quantity badge on the corner (portrait 3:4, like the
- * home page's product tiles), a discount-code
- * row, then subtotal / shipping / total with the currency code set small
- * against the total.
+ * home page's product tiles), a gift card / discount code row, then subtotal /
+ * shipping / gift card / total with the currency code set small against the
+ * total.
  *
  * It replaces `CartSummary.vue`, which listed the same data as a plain bordered
  * box with the quantity written into the variant line.
@@ -23,27 +23,35 @@ const props = defineProps<{
 const cart = useCartStore()
 const currency = useCurrencyStore()
 
-const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
-const totalGhs = computed(() => cart.subtotalGhs + (props.deliveryGhs ?? 0))
+const giftCard = useGiftCardCode()
 
-// --- Discount code --------------------------------------------------------
-// Inert by design, the same shape as the payment step and the account pages:
-// there is no discounts endpoint and no `Discount` model, so this waits, then
-// explains itself, rather than firing a request that would 404. When one lands,
-// `apply()` posts the code and the response updates the totals.
+const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
+const grossGhs = computed(() => cart.subtotalGhs + (props.deliveryGhs ?? 0))
+const giftCardGhs = computed(() => giftCard.takenOff(grossGhs.value))
+const totalGhs = computed(() => grossGhs.value - giftCardGhs.value)
+
+// --- Gift card or discount code ------------------------------------------
+// A gift card or store credit code is checked against the API and comes off
+// the total (the payment step sends it with the order). There are no discount
+// codes online, so a code that isn't a gift card gets the old explanation:
+// send it on WhatsApp and it's applied by hand.
 const code = ref('')
 const applying = ref(false)
-const codeNotice = ref<string | null>(null)
+const codeNotice = ref<{ text: string, discount: boolean } | null>(null)
 
 async function apply() {
   if (!code.value.trim() || applying.value) return
   codeNotice.value = null
   applying.value = true
-  await new Promise((resolve) => setTimeout(resolve, 600))
+  const result = await giftCard.apply(code.value)
   applying.value = false
-  codeNotice.value =
-    'Discount codes can’t be applied online yet. '
-    + 'If you have a code, send it to us and we’ll apply it by hand.'
+  if (result.ok) {
+    code.value = ''
+    return
+  }
+  codeNotice.value = result.notAGiftCard
+    ? { text: 'That isn’t a gift card code, and discount codes can’t be applied online yet. Send it to us and we’ll apply it by hand.', discount: true }
+    : { text: result.message, discount: false }
 }
 </script>
 
@@ -89,15 +97,22 @@ async function apply() {
     <p v-else class="text-caption text-muted">Your cart is empty.</p>
 
     <template v-if="!cart.isEmpty">
-      <!-- Discount code -->
+      <!-- Gift card or discount code -->
       <div class="flex flex-col gap-2 border-t border-line pt-6">
-        <form class="flex w-full min-w-0 items-stretch gap-2" @submit.prevent="apply">
-          <label class="sr-only" for="discount-code">Discount code</label>
+        <div v-if="giftCard.applied.value" class="flex w-full items-center justify-between gap-3 text-caption text-graphite">
+          <span>Gift card ending {{ giftCard.applied.value.lastFour }} applied</span>
+          <button type="button" class="-my-3 min-h-[44px] py-3 text-caption text-muted underline hover:text-graphite" @click="giftCard.clear()">
+            Remove
+          </button>
+        </div>
+        <form v-else class="flex w-full min-w-0 items-stretch gap-2" @submit.prevent="apply">
+          <label class="sr-only" for="discount-code">Gift card or discount code</label>
           <input
             id="discount-code"
             v-model="code"
             name="discount-code"
-            placeholder="Discount code"
+            autocomplete="off"
+            placeholder="Gift card or discount code"
             class="min-h-[44px] w-full min-w-0 flex-1 border border-line bg-white px-3 text-body text-graphite placeholder:text-muted"
           >
           <button
@@ -109,8 +124,8 @@ async function apply() {
           </button>
         </form>
         <CommonInlineNotice v-if="codeNotice" variant="warning">
-          {{ codeNotice }}
-          <template #action>
+          {{ codeNotice.text }}
+          <template v-if="codeNotice.discount" #action>
             <CommonWhatsAppLink
               source="discount-code"
               variant="quiet"
@@ -140,6 +155,11 @@ async function apply() {
             {{ deliveryLabel ?? 'Calculated at the next step' }}
           </span>
           <CommonPriceDisplay v-else :base-price-ghs="deliveryGhs" compact />
+        </div>
+
+        <div v-if="giftCardGhs > 0" class="flex items-center justify-between text-graphite">
+          <span>Gift card</span>
+          <span class="flex items-baseline gap-0.5">−<CommonPriceDisplay :base-price-ghs="giftCardGhs" compact /></span>
         </div>
 
         <div class="flex items-end justify-between border-t border-line pt-3">

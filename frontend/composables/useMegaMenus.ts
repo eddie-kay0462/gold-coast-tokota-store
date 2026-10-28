@@ -17,10 +17,10 @@ interface ApiMegaMenu extends MegaMenu {
  * `utils/navigation.ts` stand in, so the header never loses its menus.
  */
 export function useMegaMenus() {
-  const config = useRuntimeConfig()
+  const apiFetch = useApiFetch()
   const { data } = useAsyncData(
     'mega-menus',
-    () => $fetch<{ data: ApiMegaMenu[] }>(`${config.public.apiBase}/navigation/menus`).then((res) => res.data),
+    () => apiFetch<{ data: ApiMegaMenu[] }>(`/navigation/menus`).then((res) => res.data),
     { default: () => [] as ApiMegaMenu[] },
   )
 

@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
-import { DESIGN_POSTS } from '~/utils/newsPosts'
 
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 
-// Feature 9 owns the blog CMS. A missing or failing endpoint resolves to an
-// empty list rather than throwing, and the design's own posts stand in; the
-// same fallback pattern the home and shop pages use.
-const { data: posts } = await useAsyncData('blog-posts', () =>
-  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/blog-posts`)
-    .catch(() => ({ data: [] as ApiPost[] })),
+// A failing endpoint is a "try again" page, not the design's sample posts.
+const { data: posts, error: postsError } = await useAsyncData('blog-posts', () =>
+  apiFetch<{ data: ApiPost[] }>('/blog-posts'),
 )
+
+if (postsError.value) throw apiUnavailable()
 
 const allPosts = computed(() => {
   const fromApi = posts.value?.data ?? []
-  if (!fromApi.length) return DESIGN_POSTS
 
   // Newest first, matching how the CMS will order published posts.
   return [...fromApi].sort((a, b) => b.published_at.localeCompare(a.published_at))
