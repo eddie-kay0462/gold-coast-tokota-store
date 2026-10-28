@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
+import { formatHours } from '~/utils/formatters'
 import { whatsappMessage } from '~/utils/whatsapp'
 
 const siteSettings = useSiteSettingsStore()
@@ -9,12 +10,9 @@ const siteSettings = useSiteSettingsStore()
 /** The About page's Instagram link, the fallback until the site setting is filled in. */
 const props = defineProps<{ instagram?: string }>()
 const instagramUrl = computed(() => siteSettings.instagramUrl || props.instagram || 'https://www.instagram.com/goldcoasttokota/')
-// Ranges read "to", not a dash, on the About page ("Mon to Sat · 9am to 5pm
-// GMT"). The setting itself is shared with the announcement bar, so it's
-// reworded here only.
-const supportHours = computed(() =>
-  (siteSettings.businessHours || 'Mon–Sat, 9am–5pm GMT').replace(/\s*[–—]\s*/g, ' to '),
-)
+// Ranges read "to", not a dash ("Mon to Sat · 9am to 5pm GMT"), the same as
+// the announcement bar (`formatHours`).
+const supportHours = computed(() => formatHours(siteSettings.businessHours || 'Mon to Sat, 9am to 5pm GMT'))
 const isExternal = computed(() => !!siteSettings.instagramUrl)
 </script>
 
