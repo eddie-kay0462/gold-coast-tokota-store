@@ -20,6 +20,10 @@ import { whatsappMessage } from '~/utils/whatsapp'
  *
  * Cart lines are sent as `{ slug, size, colour }`, not stock row ids: the cart keys
  * lines as `slug:size:colour` and never held real ids. The API resolves them.
+ *
+ * A gift card applied in the order summary goes with the order as
+ * `gift_card_code`. If it covers everything, the API pays the order there and
+ * then and hands back the confirmation page instead of Paystack's.
  */
 const props = defineProps<{
   currency: 'GHS' | 'USD'
@@ -36,6 +40,11 @@ const emit = defineEmits<{ 'quote-changed': [ShippingQuote] }>()
 
 const cart = useCartStore()
 const api = useApi()
+const giftCard = useGiftCardCode()
+
+/** What's left for Paystack once any gift card is taken off (GHS minor units). */
+const payableGhs = computed(() => props.totalGhs - giftCard.takenOff(props.totalGhs))
+const coveredByGiftCard = computed(() => !!giftCard.applied.value && payableGhs.value === 0)
 
 /**
  * The checkout handoff carries the whole basket, exactly like the cart
@@ -77,6 +86,12 @@ function describeError(err: SessionError): { title: string, body: string } {
         : (data.message ?? 'An item in your cart is no longer available. Update your cart and try again.'),
     }
   }
+  if (err.statusCode === 422 && data.errors?.gift_card_code) {
+    return {
+      title: 'Your gift card couldn’t be used',
+      body: `${data.errors.gift_card_code[0]} We’ve taken it off. Place the order again to pay the full amount, or add another code.`,
+    }
+  }
   if (err.statusCode === 422) {
     const [field, messages] = Object.entries(data.errors ?? {})[0] ?? []
     const index = field?.match(/^items\.(\d+)\./)?.[1]
@@ -111,6 +126,7 @@ async function placeOrder() {
           shipping_quote_id: props.quoteId,
           shipping_option_id: props.optionId,
           shipping_address: addressPayload(props.address),
+          gift_card_code: giftCard.applied.value?.code ?? null,
         },
       },
     )
@@ -131,6 +147,7 @@ async function placeOrder() {
       return
     }
     notice.value = describeError(error)
+    if (error.statusCode === 422 && error.data?.errors?.gift_card_code) giftCard.clear()
   }
 }
 </script>
@@ -140,9 +157,13 @@ async function placeOrder() {
     <div class="flex w-full flex-col items-start gap-2 border-y border-line py-5">
       <p class="caps-label w-full text-muted">Paying in</p>
       <p class="w-full text-display-sm font-normal text-ink">
-        <CommonPriceDisplay :base-price-ghs="totalGhs" compact />
+        <CommonPriceDisplay :base-price-ghs="payableGhs" compact />
       </p>
-      <p class="w-full text-caption text-muted">
+      <p v-if="coveredByGiftCard" class="w-full text-caption text-muted">
+        Your gift card covers this order, so there’s nothing to pay.
+      </p>
+      <p v-else class="w-full text-caption text-muted">
+        <template v-if="giftCard.applied.value">After your gift card. </template>
         Paid securely through Paystack, by card or mobile money. You’ll finish paying on
         Paystack’s page and come straight back here.
       </p>
@@ -161,7 +182,7 @@ async function placeOrder() {
     </CommonInlineNotice>
 
     <CommonBrandButton full :disabled="submitting" @click="placeOrder">
-      {{ submitting ? 'Taking you to payment…' : 'Place order' }}
+      {{ submitting ? (coveredByGiftCard ? 'Placing your order…' : 'Taking you to payment…') : 'Place order' }}
     </CommonBrandButton>
 
     <div class="flex w-full flex-col items-start gap-2 border-t border-line pt-5">

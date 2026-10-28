@@ -16,6 +16,8 @@ export type ApiOrderItem = {
   quantity: number
   /** Minor units, in the order's currency. */
   unit_price: number
+  /** On a gift card order: who it's for. The code goes to them by email. */
+  gift_card?: { recipient_name: string | null, amount_ghs: number | null } | null
 }
 
 export type OrderStatus =
@@ -31,6 +33,8 @@ export type OrderStatus =
 export type ApiOrder = {
   id: number
   reference?: string
+  /** `gift_card` for a gift card bought online: no delivery. */
+  kind?: 'goods' | 'gift_card'
   status: OrderStatus
   currency: 'GHS' | 'USD'
   /** Snapshotted at checkout for USD orders; null for GHS. */
@@ -38,8 +42,11 @@ export type ApiOrder = {
   subtotal: number
   shipping_cost: number
   tax: number
+  /** Taken off by a gift card or store credit, in the order's currency. */
+  gift_card_amount?: number
+  gift_card_last_four?: string | null
   total: number
-  payment_gateway: 'paystack' | 'stripe' | null
+  payment_gateway: 'paystack' | 'stripe' | 'gift_card' | null
   delivery_provider: 'yango' | 'swoove' | 'dhl' | 'manual' | null
   delivery_reference: string | null
   /** The live delivery booking; null until the order has one. */

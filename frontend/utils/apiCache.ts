@@ -20,6 +20,7 @@ const CACHEABLE = [
   /^\/navigation\/menus$/,
   /^\/site-settings$/,
   /^\/fx-rate$/,
+  /^\/gift-cards\/settings$/,
 ]
 
 /** Whether `path` (relative to `apiBase`, query string allowed) may be cached. */
