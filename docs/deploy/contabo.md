@@ -174,6 +174,11 @@ PAYSTACK_PUBLIC_KEY=
 PAYSTACK_SECRET_KEY=
 PAYSTACK_WEBHOOK_SECRET=
 
+# Storefront server key (openssl rand -hex 32). The same value goes in
+# NUXT_STOREFRONT_API_KEY on the storefront's Vercel project. Without it every
+# storefront visitor shares one 120-a-minute limit and product pages fail.
+STOREFRONT_API_KEY=
+
 # WhatsApp Cloud API (the admin inbox). Leave empty until the brand number is
 # connected through Meta's Embedded Signup with coexistence; the inbox then
 # records replies as "not delivered" instead of sending them.

@@ -101,6 +101,13 @@ return [
         'api_version' => env('DHL_API_VERSION', '3.3.1'),
     ],
 
+    // Shared with the storefront's server (NUXT_STOREFRONT_API_KEY on Vercel).
+    // A request carrying it is rate-limited per visitor address rather than
+    // per Vercel address; see the `api` limiter in AppServiceProvider.
+    'storefront' => [
+        'key' => env('STOREFRONT_API_KEY'),
+    ],
+
     // Feature 8 SMS.
     'fish_africa' => [
         'base_url' => env('FISH_AFRICA_BASE_URL', 'https://api.letsfish.africa'),
