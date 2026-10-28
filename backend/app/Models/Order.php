@@ -15,12 +15,17 @@ class Order extends Model
 
     protected $fillable = [
         'reference',
+        'kind',
         'customer_id',
         'currency',
         'fx_rate_applied',
         'subtotal',
         'shipping_cost',
         'tax',
+        'gift_card_id',
+        'gift_card_amount',
+        'gift_card_amount_ghs',
+        'gift_card_released_at',
         'total',
         'status',
         'delivered_at',
@@ -43,12 +48,27 @@ class Order extends Model
         'shipping_cost' => 'integer',
         'tax' => 'integer',
         'total' => 'integer',
+        'gift_card_amount' => 'integer',
+        'gift_card_amount_ghs' => 'integer',
+        'gift_card_released_at' => 'datetime',
         'shipping_address' => 'array',
         'shipping_zone' => ShippingZone::class,
         'shipping_option' => 'array',
         'delivered_at' => 'datetime',
         'reservation_expires_at' => 'datetime',
     ];
+
+    /** A gift card bought online: no stock, no shipment. */
+    public function isGiftCardPurchase(): bool
+    {
+        return $this->kind === 'gift_card';
+    }
+
+    /** The card spent on this order, if any. */
+    public function giftCard(): BelongsTo
+    {
+        return $this->belongsTo(GiftCard::class);
+    }
 
     public function customer(): BelongsTo
     {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\GiftCardUnusableException;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\NoFxRateException;
 use App\Exceptions\PaymentUnavailableException;
@@ -64,6 +65,11 @@ class CheckoutController extends Controller
             return response()->json([
                 'message' => 'Card and MoMo payment is briefly unavailable. Please try again shortly, or order on WhatsApp.',
             ], 503);
+        } catch (GiftCardUnusableException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+                'errors' => ['gift_card_code' => [$e->getMessage()]],
+            ], 422);
         } catch (NoFxRateException) {
             // Deliberately not falling back to a stale or default rate — an
             // order priced on a guessed rate loses real money on every unit.

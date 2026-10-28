@@ -19,6 +19,12 @@ class OrderItemResource extends JsonResource
             'variant_label' => $this->variant_label,
             'quantity' => $this->quantity,
             'unit_price' => $this->unit_price,
+            // On a gift card order: who it's for. The code itself is never here;
+            // it goes to the recipient by email.
+            'gift_card' => $this->gift_card ? [
+                'recipient_name' => $this->gift_card['recipient_name'] ?? null,
+                'amount_ghs' => $this->gift_card['amount_ghs'] ?? null,
+            ] : null,
             // The two fields the confirmation page uses for links and
             // thumbnails, which are presentation rather than record — so they
             // do come from the live product, and go null when it is gone.

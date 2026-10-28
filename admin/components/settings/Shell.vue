@@ -17,6 +17,7 @@ const sections: { label: string; to: string; capability?: Capability }[] = [
   { label: 'WhatsApp', to: '/settings/whatsapp', capability: 'settings.view' },
   { label: 'Payments', to: '/settings/payments', capability: 'settings.payments' },
   { label: 'Delivery', to: '/settings/delivery', capability: 'settings.view' },
+  { label: 'Gift cards', to: '/settings/gift-cards', capability: 'settings.view' },
   { label: 'Notifications', to: '/settings/notifications', capability: 'settings.view' },
   { label: 'SEO', to: '/settings/seo', capability: 'settings.view' },
   { label: 'Roles & access', to: '/settings/roles', capability: 'team.view' },
