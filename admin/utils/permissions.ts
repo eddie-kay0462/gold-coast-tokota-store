@@ -27,6 +27,12 @@ export const CAPABILITIES = [
   'shipments.update',
   'customers.view',
   'customers.export',
+  /** Look up gift cards and store credit, and their ledgers. */
+  'gift_cards.view',
+  /** Resend a card's email, to the address already on it. */
+  'gift_cards.resend',
+  /** Issue store credit, correct a balance, disable a card: moves value, so Admin. */
+  'gift_cards.issue',
 
   // Catalogue
   'products.view',
@@ -92,6 +98,7 @@ const STAFF: Capability[] = [
   'returns.view',
   'shipments.view', 'shipments.update',
   'customers.view',
+  'gift_cards.view', 'gift_cards.resend',
   'products.view',
   'inventory.view', 'inventory.adjust',
   'bookings.view', 'bookings.update_status',
@@ -113,6 +120,7 @@ const INTERN: Capability[] = [
   'returns.view',
   'shipments.view',
   'customers.view',
+  'gift_cards.view',
   'products.view',
   'inventory.view',
   'bookings.view',
@@ -163,6 +171,7 @@ export function denialMessage(capability: Capability, role: AdminRole): string {
 
   const specific: Partial<Record<Capability, string>> = {
     'orders.refund': 'Refunds can only be issued by an Admin.',
+    'gift_cards.issue': 'Only an Admin can issue, change or disable gift cards and store credit.',
     'pricing.write': 'Only an Admin can change prices.',
     'products.delete': 'Only an Admin can delete products.',
     'settings.write': 'Site settings are managed by an Admin.',

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\UpdateOrderStatusRequest;
 use App\Http\Resources\Admin\AdminOrderResource;
 use App\Jobs\SendOrderNotification;
 use App\Models\Order;
+use App\Services\GiftCards\GiftCardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -84,6 +85,7 @@ class OrderController extends Controller
             ], 422);
         }
         $wasShipped = $order->status === 'shipped';
+        $wasPending = $order->status === 'pending';
 
         $order->update([
             'status' => $status,
@@ -101,6 +103,11 @@ class OrderController extends Controller
         // their order has been dispatched." On the transition into `shipped`
         // only — a correction that re-saves an already-shipped order should
         // not tell the customer it shipped twice.
+        // An unpaid order called off gives back any gift card balance it held.
+        if ($status === 'cancelled' && $wasPending) {
+            app(GiftCardService::class)->release($order, 'Order cancelled in admin');
+        }
+
         if ($status === 'shipped' && ! $wasShipped) {
             SendOrderNotification::dispatch($order, 'shipped');
         }

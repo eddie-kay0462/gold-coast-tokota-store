@@ -37,6 +37,9 @@ class SendOrderNotification implements ShouldQueue
     {
         $message = match ($this->reason) {
             'shipped' => TransactionalMessages::orderShipped($this->order),
+            'paid' => $this->order->isGiftCardPurchase()
+                ? TransactionalMessages::giftCardReceipt($this->order->load('items'))
+                : TransactionalMessages::orderConfirmation($this->order->load('items')),
             default => TransactionalMessages::orderConfirmation($this->order->load('items')),
         };
 

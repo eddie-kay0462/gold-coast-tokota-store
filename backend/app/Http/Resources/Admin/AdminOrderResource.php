@@ -39,7 +39,12 @@ class AdminOrderResource extends JsonResource
             'subtotal' => $this->money($this->subtotal),
             'shipping_cost' => $this->money($this->shipping_cost),
             'tax' => $this->money($this->tax),
+            // What a gift card or store credit took off, and which card.
+            'gift_card_amount' => $this->money((int) $this->gift_card_amount),
+            'gift_card_id' => $this->gift_card_id,
             'total' => $this->money($this->total),
+            // `goods` or `gift_card`: a gift card order has no stock or shipment.
+            'kind' => $this->kind ?? 'goods',
 
             'status' => $this->status,
             // `web` or `whatsapp`: where the order was placed. A WhatsApp order

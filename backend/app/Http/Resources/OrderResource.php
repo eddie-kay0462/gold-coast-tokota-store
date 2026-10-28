@@ -13,6 +13,9 @@ class OrderResource extends JsonResource
         return [
             'id' => $this->id,
             'reference' => $this->reference,
+            // `goods`, or `gift_card` for a gift card bought online, which has
+            // no delivery.
+            'kind' => $this->kind ?? 'goods',
             'status' => $this->status,
             'currency' => $this->currency,
             // Null for GHS orders by definition — there is nothing to convert.
@@ -20,6 +23,9 @@ class OrderResource extends JsonResource
             'subtotal' => $this->subtotal,
             'shipping_cost' => $this->shipping_cost,
             'tax' => $this->tax,
+            // Taken off by a gift card or store credit, in the order's currency.
+            'gift_card_amount' => (int) $this->gift_card_amount,
+            'gift_card_last_four' => $this->whenLoaded('giftCard', fn () => $this->giftCard?->lastFour()),
             'total' => $this->total,
             'payment_gateway' => $this->payment_gateway,
             'delivery_provider' => $this->delivery_provider,

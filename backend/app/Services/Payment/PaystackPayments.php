@@ -5,6 +5,7 @@ namespace App\Services\Payment;
 use App\Events\OrderPaid;
 use App\Models\Order;
 use App\Models\ProcessedWebhookEvent;
+use App\Services\GiftCards\GiftCardService;
 use App\Services\Notifications\OpsAlert;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Cache;
@@ -30,7 +31,10 @@ class PaystackPayments
     /** How often one order may be checked with Paystack while its page polls. */
     private const VERIFY_EVERY_SECONDS = 8;
 
-    public function __construct(private readonly PaystackService $paystack) {}
+    public function __construct(
+        private readonly PaystackService $paystack,
+        private readonly GiftCardService $giftCards,
+    ) {}
 
     /**
      * A successful charge. Returns the order it marked paid, or null when it
@@ -190,6 +194,11 @@ class PaystackPayments
 
             return null;
         }
+
+        // Paid after its hold lapsed, by which time any gift card balance it
+        // used had gone back to the card: take it again. The sale stands
+        // either way; a shortfall is logged for a person to settle.
+        $this->giftCards->reclaim($order);
 
         $order->update([
             'status' => 'paid',
