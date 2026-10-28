@@ -29,7 +29,8 @@ const columns = computed(() => [
     heading: 'Shop',
     links: [
       { label: 'Best Sellers', to: '/shop?sort=best-selling' },
-      { label: 'Sandals', to: '/shop?type=sandals' },
+      // The whole range: no product is typed `sandals` (see utils/navigation.ts).
+      { label: 'Sandals', to: '/shop' },
       { label: 'Ahenema', to: '/shop?type=ahenema' },
       { label: 'Bookings', to: '/booking' },
     ],

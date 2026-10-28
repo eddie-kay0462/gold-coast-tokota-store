@@ -30,12 +30,14 @@ const summaryOpen = ref(false)
 
 const address = reactive<ShippingAddress>({
   email: '',
-  fullName: '',
+  firstName: '',
+  lastName: '',
   line1: '',
   city: '',
   region: '',
   postcode: '',
   country: 'GH',
+  phoneCountry: 'GH',
   phone: '',
   lat: null,
   lng: null,

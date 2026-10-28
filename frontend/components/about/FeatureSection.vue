@@ -45,10 +45,10 @@ withDefaults(defineProps<{
       class="page-gutter flex min-w-0 flex-1 flex-col items-center justify-center gap-5 py-12 font-light text-black md:min-h-[var(--about-section-height)] md:py-8"
     >
       <div class="flex w-full flex-col items-start">
-        <p class="w-full font-normal text-caption">{{ eyebrow }}</p>
+        <p v-if="eyebrow" class="caps-label w-full pb-2 text-graphite">{{ eyebrow }}</p>
         <h2 class="w-full whitespace-pre-line text-display-section">{{ heading }}</h2>
       </div>
-      <p class="w-full text-label">{{ body }}</p>
+      <p class="w-full whitespace-pre-line text-body font-light text-graphite">{{ body }}</p>
     </div>
   </section>
 </template>

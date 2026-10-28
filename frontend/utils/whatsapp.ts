@@ -69,8 +69,8 @@ export const whatsappMessage = {
    * An order for one pair. The size clause appears only once a size has been
    * picked, so an unselected card does not claim a size the customer never chose.
    */
-  product: (name: string, size?: string | null) =>
-    `${opening} I'd like to order ${withArticle(name)}${size ? ` in size ${size}` : ''}.`,
+  product: (name: string, size?: string | null, color?: string | null) =>
+    `${opening} I'd like to order ${withArticle(name)}${color ? ` in ${color}` : ''}${size ? `${color ? ',' : ' in'} size ${size}` : ''}.`,
 
   /** The whole basket, one line per item. */
   cart: (lines: string[], subtotal: string) =>
