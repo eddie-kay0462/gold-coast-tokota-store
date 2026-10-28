@@ -90,6 +90,9 @@ Anything that writes them directly is a bug.
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
 | GET | `/blog-posts/{slug}` | |
 | POST | `/checkout/session` | Guest-friendly. Throttled 20/min — see below |
+| GET | `/gift-cards/settings` | `{ enabled, amounts, expiry_months, terms, redemption_open }`. See Gift cards |
+| POST | `/gift-cards/purchase` | Buys a gift card. Throttled 20/min |
+| POST | `/gift-cards/balance` | `{ code }` → balance. Throttled 10/min |
 | GET | `/orders/{reference}` | Throttled 60/min. **Reference, never the numeric id**. While the order is `pending` on Paystack, the call asks Paystack for its status (at most once per 8 s per order) and records a successful payment, so it can return `paid` before the webhook arrives |
 | POST | `/register` · `/login` | Customer sessions, `web` guard |
 | POST | `/logout` · GET `/me` · GET `/orders` | `auth:web`. `/orders` is the signed-in customer's own history |
@@ -353,6 +356,15 @@ and a quantity; unit price, shipping and total are all read or computed
 server-side. Anything price-shaped in the body is ignored, and there is a test
 that says so.
 
+Optional `gift_card_code`: a gift card or store credit code. Its balance comes
+off the cedi total inside the same transaction as the stock holds (before USD
+conversion), and the `Order` reports it as `gift_card_amount` (order currency)
+and `gift_card_last_four`. An unusable code (unknown, disabled, expired, empty)
+is a `422` on `gift_card_code`. **When the card covers the whole total the
+order comes back `paid`** with `payment.gateway: "gift_card"` and an
+`authorization_url` that is the storefront's own confirmation page, so the
+client redirects the same way either way.
+
 ### What it does, in order
 
 1. Re-price every line from the database.
@@ -487,6 +499,36 @@ built.** Neither document states either one, and §22 forbids inventing a policy
 the brand document does not state.
 
 ---
+
+## Gift cards and store credit
+
+One balance-code system (28 Oct). A gift card is bought online; store credit
+is issued by an Admin (§11/§21). Both are a code (`GCT-XXXX-XXXX-XXXX`) holding
+a **GHS** balance, spent with `gift_card_code` at checkout. Every balance change
+is a ledger row (`issue`, `redeem`, `release`, `reclaim`, `adjust`).
+
+- **On sale only when an Admin turns it on**, with amounts, expiry (default
+  never) and terms all set in admin; none are invented here. Spending a code
+  works whenever a card exists (`redemption_open`), so store credit can be used
+  before cards go on sale.
+- `POST /gift-cards/purchase`: `{ amount, currency, purchaser: { first_name,
+  last_name?, email, phone? }, recipient_name, recipient_email, sender_name?,
+  message? }`. `amount` (GHS minor units) must be one of the configured amounts.
+  Returns `201 { data: <Order kind "gift_card">, payment }`, the same shape as
+  checkout. The order has one line named "Gift card", no shipping and no stock.
+  When it is paid, the card is issued and emailed to the recipient, the buyer
+  gets a receipt, and no shipment is opened. `409` when not on sale.
+- `POST /gift-cards/balance`: `{ code }` → `{ last_four, balance, currency:
+  "GHS", expires_at }`, or `422`. POST so codes stay out of URLs and logs.
+- A balance is taken when checkout creates the order. It goes back if the
+  payment session never opens, the hold lapses unpaid (`ReleaseExpiredReservations`),
+  or the order is cancelled unpaid (admin or the WhatsApp inbox). A payment that
+  lands after that takes it again; a shortfall is logged, and the order stays paid.
+- Admin: `GET/POST /admin/gift-cards`, `GET/PATCH /admin/gift-cards/{id}`
+  (`status`, or `balance` + `note`), `POST /admin/gift-cards/{id}/resend`,
+  `GET/PUT /admin/gift-cards/settings`. Capabilities `gift_cards.view` (every
+  tier), `gift_cards.resend` (Staff and up), `gift_cards.issue` (Admin and up,
+  like refunds); the settings need `settings.view` / `settings.write`.
 
 ## Orders (`GET /orders/{reference}`)
 

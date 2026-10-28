@@ -42,6 +42,12 @@ final class AdminCapability
         'shipments.update',
         'customers.view',
         'customers.export',
+        // Gift cards and store credit. Issuing or correcting one creates or
+        // moves value, so it sits with refunds (§18 keeps money from Staff);
+        // resending a card's email to the address already on it does not.
+        'gift_cards.view',
+        'gift_cards.resend',
+        'gift_cards.issue',
 
         // Catalogue
         'products.view',
@@ -112,6 +118,7 @@ final class AdminCapability
         'returns.view',
         'shipments.view', 'shipments.update',
         'customers.view',
+        'gift_cards.view', 'gift_cards.resend',
         'products.view',
         'inventory.view', 'inventory.adjust',
         'bookings.view', 'bookings.update_status',
@@ -135,6 +142,7 @@ final class AdminCapability
         'returns.view',
         'shipments.view',
         'customers.view',
+        'gift_cards.view',
         'products.view',
         'inventory.view',
         'bookings.view',
@@ -174,6 +182,7 @@ final class AdminCapability
     {
         $specific = [
             'orders.refund' => 'Refunds can only be issued by an Admin.',
+            'gift_cards.issue' => 'Only an Admin can issue, change or disable gift cards and store credit.',
             'pricing.write' => 'Only an Admin can change prices.',
             'products.delete' => 'Only an Admin can delete products.',
             'settings.write' => 'Site settings are managed by an Admin.',

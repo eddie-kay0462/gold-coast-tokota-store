@@ -21,6 +21,11 @@ class CreateShipmentForPaidOrder implements ShouldQueue
 
     public function handle(OrderPaid $event): void
     {
+        // A gift card is emailed, not shipped.
+        if ($event->order->isGiftCardPurchase()) {
+            return;
+        }
+
         $this->shipments->createForPaidOrder($event->order);
     }
 }

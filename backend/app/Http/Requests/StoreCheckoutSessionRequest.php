@@ -61,6 +61,9 @@ class StoreCheckoutSessionRequest extends FormRequest
 
             'shipping_quote_id' => ['nullable', 'uuid'],
             'shipping_option_id' => ['nullable', 'string', 'max:64'],
+            // A gift card or store credit code. Checked, and its balance taken,
+            // inside checkout (GiftCardService); an unusable one is a 422.
+            'gift_card_code' => ['nullable', 'string', 'max:32'],
 
             ...$this->destinationRules(),
             'shipping_address.full_name' => ['required', 'string', 'max:255'],

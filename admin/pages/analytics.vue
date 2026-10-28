@@ -92,7 +92,8 @@ const byCountry = computed(() => {
 const byMethod = computed(() => {
   const tally = new Map<string, number>()
   for (const o of paid.value) {
-    const label = o.paymentGateway === 'paystack' ? 'Paystack (GHS)' : 'Stripe (USD)'
+    // Paystack takes both currencies (§13); a gift card can pay an order in full.
+    const label = o.paymentGateway === 'gift_card' ? 'Gift card' : `Paystack (${o.currency})`
     tally.set(label, (tally.get(label) ?? 0) + 1)
   }
   return [...tally.entries()].map(([label, value]) => ({ label, value }))

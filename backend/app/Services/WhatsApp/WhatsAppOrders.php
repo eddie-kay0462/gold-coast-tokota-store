@@ -14,6 +14,7 @@ use App\Models\WhatsAppOrderDraft;
 use App\Models\WhatsAppTemplate;
 use App\Services\Checkout\CheckoutSessionService;
 use App\Services\Currency\FxRateService;
+use App\Services\GiftCards\GiftCardService;
 use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\PaymentSession;
 use App\Support\PhoneNumber;
@@ -206,6 +207,8 @@ class WhatsAppOrders
             $locked->update(['status' => 'cancelled']);
             $this->reservations->releaseOrder($locked, "Cancelled from the WhatsApp inbox by {$by->name}");
         });
+
+        app(GiftCardService::class)->release($order, "Cancelled from the WhatsApp inbox by {$by->name}");
 
         return $order->fresh();
     }

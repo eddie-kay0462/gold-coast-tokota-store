@@ -13,6 +13,10 @@ Your payment has come through and your order is confirmed.
 @endforeach
 </x-mail::table>
 
+@if ($order->gift_card_amount > 0)
+Gift card: **−{{ $order->currency === 'USD' ? '$' : 'GH₵' }}{{ number_format($order->gift_card_amount / 100, 2) }}**
+@endif
+
 {{-- Every figure below is quoted from GOLD_COAST_TOKOTA.md. Do not adjust a
      timeframe here without changing the document first — §22.3. --}}
 Orders are processed within **48 hours** of payment confirmation. We will be in

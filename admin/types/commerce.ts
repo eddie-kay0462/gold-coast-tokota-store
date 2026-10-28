@@ -21,7 +21,7 @@ export const ORDER_BOARD_COLUMNS: OrderStatus[] = [
   'pending', 'paid', 'processing', 'shipped', 'delivered',
 ]
 
-export type PaymentGateway = 'paystack' | 'stripe'
+export type PaymentGateway = 'paystack' | 'stripe' | 'gift_card'
 /**
  * Who carries a parcel. `manual` is staff booking a courier themselves; every
  * zone falls back to it while its courier API is switched off.
@@ -92,7 +92,12 @@ export interface Order {
   subtotal: Money
   shippingCost: Money
   tax: Money
+  /** Taken off by a gift card or store credit. Zero when none was used. */
+  giftCardAmount?: Money
+  giftCardId?: number | null
   total: Money
+  /** `gift_card` for a gift card bought online: no stock, no shipment. */
+  kind?: 'goods' | 'gift_card'
   status: OrderStatus
   /** Where it was placed. A WhatsApp order was built in the inbox and paid by link. */
   channel: 'web' | 'whatsapp'
