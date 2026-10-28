@@ -61,7 +61,7 @@ const anchors = computed(() =>
         <!-- Approved CMS copy arrives as rich-text HTML. -->
         <div v-if="html" class="policy-body flex w-full max-w-[720px] flex-col items-start gap-6" v-html="html" />
 
-        <!-- Draft copy is structured, so it renders as real nodes. -->
+        <!-- Built-in copy is structured, so it renders as real nodes. -->
         <div v-else class="flex w-full max-w-[720px] flex-col items-start gap-10">
           <section
             v-for="(section, index) in sections"
@@ -70,9 +70,14 @@ const anchors = computed(() =>
             class="flex w-full scroll-mt-24 flex-col items-start gap-3"
           >
             <h2 class="w-full text-display-sm font-normal text-black">{{ section.heading }}</h2>
-            <p v-for="(paragraph, i) in section.body" :key="i" class="w-full text-body text-graphite">
-              {{ paragraph }}
-            </p>
+            <template v-for="(block, i) in section.body" :key="i">
+              <p v-if="typeof block === 'string'" class="w-full text-body text-graphite">
+                {{ block }}
+              </p>
+              <ul v-else class="flex w-full list-disc flex-col gap-2 pl-6 text-body text-graphite">
+                <li v-for="item in block.list" :key="item">{{ item }}</li>
+              </ul>
+            </template>
           </section>
 
           <p v-if="!sections.length" class="w-full text-body text-muted">

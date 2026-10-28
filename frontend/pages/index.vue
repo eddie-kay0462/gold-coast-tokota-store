@@ -2,7 +2,7 @@
 type ApiProduct = { slug: string, name: string, base_price_ghs: number, color?: string | null, images?: string[] }
 type ApiPost = { slug: string, title: string, excerpt?: string, published_at?: string, cover_image?: string }
 
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 
 // Both fetches run during SSR so the rendered HTML is crawlable. A failing
 // endpoint resolves to an empty list rather than throwing.
@@ -11,12 +11,12 @@ const config = useRuntimeConfig()
 // then newest. Ten from the top are the featured products, topped up with the
 // newest ones when fewer than ten are flagged, so the rail is never short.
 const { data: featuredProducts } = await useAsyncData('home-featured-products', () =>
-  $fetch<{ data: ApiProduct[] }>(`${config.public.apiBase}/products`, { query: { per_page: 10 } })
+  apiFetch<{ data: ApiProduct[] }>(`/products`, { query: { per_page: 10 } })
     .catch(() => ({ data: [] as ApiProduct[] })),
 )
 
 const { data: latestPosts } = await useAsyncData('home-latest-posts', () =>
-  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/blog-posts?limit=5`)
+  apiFetch<{ data: ApiPost[] }>(`/blog-posts?limit=5`)
     .catch(() => ({ data: [] as ApiPost[] })),
 )
 

@@ -1,34 +1,35 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
-import { DESIGN_POSTS, SUSTAINABILITY_POSTS } from '~/utils/newsPosts'
 
 const route = useRoute()
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 
 const slug = computed(() => String(route.params.slug))
 
-// Feature 9 owns `GET /api/v1/blog-posts/{slug}`. Until it lands a failed fetch
-// resolves to null and the design's posts stand in.
-const { data: apiPost } = await useAsyncData(
+// Only the API answering 404 makes this a missing story; any other failure is
+// a "try again" page (see utils/apiError.ts).
+const { data: post, error: postError } = await useAsyncData(
   () => `blog-${slug.value}`,
   () =>
-    $fetch<{ data: ApiPost }>(`${config.public.apiBase}/blog-posts/${slug.value}`)
-      .then((response) => response.data)
-      .catch(() => null),
+    apiFetch<{ data: ApiPost }>(`/blog-posts/${slug.value}`)
+      .then((response): ApiPost | null => response.data)
+      .catch((error) => {
+        if (isNotFound(error)) return null
+        throw error
+      }),
   { watch: [slug] },
 )
 
-const post = computed<ApiPost | null>(
-  () =>
-    apiPost.value
-    ?? [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS].find((entry) => entry.slug === slug.value)
-    ?? null,
-)
-
-// A slug matching neither the API nor the design content is a genuine 404.
+if (postError.value) throw apiUnavailable()
 if (!post.value) {
   throw createError({ statusCode: 404, statusMessage: 'Story not found', fatal: true })
 }
+
+// The published feed, for the related row. Left empty if it can't be fetched.
+const { data: feed } = await useAsyncData('blog-related', () =>
+  apiFetch<{ data: ApiPost[] }>('/blog-posts')
+    .catch(() => ({ data: [] as ApiPost[] })),
+)
 
 /**
  * Genuinely related stories: same category first, then the newest of everything
@@ -36,7 +37,7 @@ if (!post.value) {
  * under a "More Stories" heading, which is a feed, not a relationship.
  */
 const related = computed(() => {
-  const others = [...DESIGN_POSTS, ...SUSTAINABILITY_POSTS]
+  const others = [...(feed.value?.data ?? [])]
     .filter((entry) => entry.slug !== slug.value)
     .sort((a, b) => b.published_at.localeCompare(a.published_at))
 

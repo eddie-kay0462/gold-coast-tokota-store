@@ -1,23 +1,32 @@
 /**
- * Placeholder copy for the policy, help and accessibility pages.
+ * Built-in copy for the policy, help and accessibility pages.
  *
- * The same design-fallback pattern as `designCatalogue.ts` and `newsPosts.ts`:
- * each page fetches `GET /pages/{slug}` and falls back to the draft here when
- * the CMS has nothing approved. Feature 9 owns the real content; when the
- * owner publishes a page from admin, `is_draft` flips to false and the entry
- * below stops rendering. Delete an entry once its page is live.
+ * Each page fetches `GET /pages/{slug}` and falls back to the entry here when
+ * the CMS has nothing approved. When the owner publishes a page from admin
+ * (Content › Pages), that copy wins and the entry below stops rendering.
  *
- * IMPORTANT: none of this text has been reviewed by Gold Coast Tokota or by a
- * lawyer. It exists to give each page its shape and structure, and every page
- * that renders it also renders `<ContentDraftNotice />` saying exactly that.
- * Do not remove that banner to "tidy up" a page; see `usePageContent`, which
- * is the single place the draft decision is made.
+ * Two kinds of entry:
+ *   - `approved: true`: Shipping, Returns, Privacy and Terms, which are
+ *     GOLD_COAST_TOKOTA.md §8 to §11, the client's own policy text, kept to its
+ *     wording. Ranges read "to" rather than a dash, as everywhere on the site.
+ *     Change them only when that document changes (its §22: don't invent a
+ *     policy, don't change one).
+ *   - everything else is placeholder that nobody at Gold Coast Tokota or any
+ *     lawyer has reviewed. It exists to give each page its shape, and every
+ *     page that renders it also renders `<ContentDraftNotice />` saying so.
+ *     Do not mark it approved to "tidy up" a page; see `usePageContent`, which
+ *     is the single place the draft decision is made.
+ *
+ * The phone number is never written here (§22.11 says it is not final); point
+ * to WhatsApp, whose number comes from site settings.
  */
+
+/** A paragraph, or a bulleted list. Rendered as real nodes, never `v-html`. */
+export type PolicyBlock = string | { list: string[] }
 
 export type PolicySection = {
   heading: string
-  /** Paragraphs. Rendered as real nodes, never `v-html`. */
-  body: string[]
+  body: PolicyBlock[]
 }
 
 export type PolicyDraft = {
@@ -25,18 +34,17 @@ export type PolicyDraft = {
   title: string
   /** One-line deck under the title. */
   summary: string
-  /** ISO date. Deliberately the date the draft was written, not "today". */
+  /** ISO date the copy was written or last approved, not "today". */
   updated: string
+  /** The client's own text (GOLD_COAST_TOKOTA.md), shown without the draft banner. */
+  approved?: boolean
   sections: PolicySection[]
 }
 
-export const LEGAL_SLUGS = [
-  'privacy',
-  'terms',
-  'do-not-sell',
-  'supply-chain',
-  'vendor-code',
-] as const
+// Do Not Sell, Supply Chain Transparency and Vendor Code of Conduct were
+// removed for launch on 28 Oct 2026: US-style pages the brand reference never
+// mentions, with placeholder text nobody had approved. Their URLs now 404.
+export const LEGAL_SLUGS = ['privacy', 'terms'] as const
 
 export const HELP_SLUGS = ['returns', 'shipping', 'bulk-orders'] as const
 
@@ -44,261 +52,258 @@ export type LegalSlug = (typeof LEGAL_SLUGS)[number]
 export type HelpSlug = (typeof HELP_SLUGS)[number]
 
 const DRAFTED = '2026-08-26'
+/** When §8 to §11 of GOLD_COAST_TOKOTA.md went onto the site. */
+const FROM_BRAND_REFERENCE = '2026-10-28'
+
+const HANDMADE_VARIATION = { list: ['Colour', 'Texture', 'Finish'] }
 
 export const POLICY_DRAFTS: Record<string, PolicyDraft> = {
+  // GOLD_COAST_TOKOTA.md §10. The one addition is naming who does the work the
+  // policy describes: Paystack takes payments (§13) and Vercel Web Analytics,
+  // which sets no cookies, counts visits.
   privacy: {
     slug: 'privacy',
     title: 'Privacy Policy',
-    summary: 'What we collect when you shop with us, why we hold it, and how to ask us to delete it.',
-    updated: DRAFTED,
+    summary: 'What we collect when you shop with us, how we use it, and how we protect it.',
+    updated: FROM_BRAND_REFERENCE,
+    approved: true,
     sections: [
       {
-        heading: 'What we collect',
+        heading: 'Information collected',
         body: [
-          'When you place an order we collect your name, email address, phone number and delivery address. When you book a workshop or a custom DIY pair we also collect the measurements and reference images you send us.',
-          'We do not store your card details. Payments are handled by Paystack (for cedi payments) and Stripe (for dollar payments), and your card information goes to them directly.',
+          'Gold Coast Tokota may collect:',
+          { list: ['Name', 'Email address', 'Phone number', 'Shipping address', 'Billing information', 'Order history', 'Website usage data'] },
         ],
       },
       {
-        heading: 'Why we hold it',
+        heading: 'How information is used',
         body: [
-          'To make and deliver what you ordered, to send you the confirmation email and SMS, to answer you when you contact us, and to keep the records the law requires us to keep.',
-          'We do not sell your personal information. See our Do Not Sell page for more.',
+          'Customer information is used to:',
+          { list: ['Process and deliver orders', 'Respond to enquiries', 'Improve customer experience', 'Send order updates', 'Provide marketing communications with consent'] },
         ],
       },
       {
-        heading: 'Who we share it with',
+        heading: 'Payment security',
         body: [
-          'Our delivery partners (Yango within Ghana, DHL internationally) receive the address and phone number needed to deliver your order, and nothing more.',
-          'Our SMS provider receives your phone number in order to send order and booking confirmations.',
+          'Gold Coast Tokota does not store payment card information.',
+          'Payments are securely processed through trusted third-party payment providers. Our payment provider is Paystack.',
         ],
       },
       {
-        heading: 'Your rights under Act 843',
+        heading: 'Data protection',
         body: [
-          'Ghana’s Data Protection Act, 2012 (Act 843) gives you the right to ask what personal data we hold about you, to have it corrected, and to ask us to delete it.',
-          'To make any of these requests, contact us and we will respond within the period the Act allows.',
+          'Appropriate technical and organisational measures are implemented to protect information from:',
+          { list: ['Unauthorised access', 'Misuse', 'Disclosure'] },
+        ],
+      },
+      {
+        heading: 'Marketing communications',
+        body: [
+          'Customers may unsubscribe from promotional emails at any time by:',
+          { list: ['Clicking the unsubscribe link', 'Contacting Gold Coast Tokota directly'] },
         ],
       },
       {
         heading: 'Cookies',
         body: [
-          'We use a small number of first-party cookies to remember your cart and your chosen currency between visits. We use Google Analytics to understand how the site is used.',
+          'The website uses cookies to:',
+          { list: ['Improve website functionality', 'Remember preferences', 'Analyse website traffic', 'Enhance user experience'] },
+          'Users can disable cookies through their browser settings.',
+          'Website traffic is measured with Vercel Web Analytics, which does not use cookies.',
         ],
       },
     ],
   },
 
+  // GOLD_COAST_TOKOTA.md §11.
   terms: {
     slug: 'terms',
     title: 'Terms of Service',
-    summary: 'The terms you agree to when you buy from or book with Gold Coast Tokota.',
-    updated: DRAFTED,
+    summary: 'The terms you agree to when you use the Gold Coast Tokota website.',
+    updated: FROM_BRAND_REFERENCE,
+    approved: true,
     sections: [
+      {
+        heading: 'Acceptance',
+        body: ['By accessing or using the Gold Coast Tokota website, customers agree to the Terms of Service.'],
+      },
+      {
+        heading: 'Products',
+        body: [
+          'All products are handcrafted.',
+          'Minor differences in:',
+          HANDMADE_VARIATION,
+          'are natural characteristics of handmade products.',
+        ],
+      },
+      {
+        heading: 'Pricing',
+        body: [
+          { list: ['All prices are displayed in Ghana Cedis (GHS) unless otherwise stated.', 'Prices may change without prior notice.'] },
+        ],
+      },
       {
         heading: 'Orders',
         body: [
-          'An order is confirmed when payment has cleared and you have received a confirmation email. Until then we may cancel an order, for example if an item turns out to be out of stock, and refund you in full.',
-          'Every pair is handmade, so slight variation in grain, colour and finish between pairs is expected and is not a defect.',
+          'Gold Coast Tokota reserves the right to:',
+          { list: ['Refuse fraudulent orders', 'Cancel orders due to pricing errors', 'Limit quantities purchased'] },
+          'Customers will be notified if an order cannot be fulfilled.',
         ],
       },
       {
-        heading: 'Pricing and currency',
+        heading: 'Intellectual property',
         body: [
-          'All prices are set in Ghana cedis. Dollar prices are converted from the cedi price using the exchange rate at the time you view the page.',
-          'For dollar orders the rate is locked when you begin payment, so the amount you are charged matches the amount you were shown.',
+          'All website content is the intellectual property of Gold Coast Tokota.',
+          'This includes:',
+          { list: ['Logos', 'Product designs', 'Images', 'Videos', 'Graphics', 'Text', 'Brand assets'] },
+          'Content may not be reproduced, copied or used without prior written permission.',
         ],
       },
       {
-        heading: 'Custom and DIY orders',
+        heading: 'Product availability',
         body: [
-          'Custom pairs are made to the measurements you supply. Please check them carefully. A custom pair made correctly to the measurements given cannot be returned for fit.',
-          'Turnaround times shown at the time of booking are estimates, not guarantees.',
+          'Products are subject to availability.',
+          'If an item becomes unavailable after purchase, customers will be offered:',
+          { list: ['A replacement', 'Store credit', 'A full refund'] },
         ],
       },
       {
-        heading: 'Workshops',
+        heading: 'Limitation of liability',
         body: [
-          'Workshop places are limited. If a session is full you may join the waitlist and we will contact you if a place opens up.',
+          'Gold Coast Tokota shall not be liable for delays or damages resulting from events beyond its reasonable control, including:',
+          { list: ['Courier disruptions', 'Customs delays', 'Natural disasters', 'Other force majeure events'] },
         ],
       },
       {
         heading: 'Governing law',
         body: [
-          'These terms are governed by the laws of the Republic of Ghana.',
+          'These Terms of Service are governed by the laws of the Republic of Ghana.',
+          'Disputes arising from use of the website are subject to the jurisdiction of the courts of Ghana.',
         ],
       },
     ],
   },
 
-  'do-not-sell': {
-    slug: 'do-not-sell',
-    title: 'Do Not Sell or Share My Personal Information',
-    summary: 'We do not sell your personal information. Here is what that means in practice.',
-    updated: DRAFTED,
-    sections: [
-      {
-        heading: 'We do not sell your data',
-        body: [
-          'Gold Coast Tokota does not sell your personal information, and does not share it for cross-context behavioural advertising.',
-          'This page exists because some privacy laws require us to say so plainly, and to give you a way to ask.',
-        ],
-      },
-      {
-        heading: 'What we do share',
-        body: [
-          'We pass your delivery details to the courier carrying your order, and your phone number to the provider sending your confirmation SMS. Both act on our instructions and cannot use your details for anything else.',
-        ],
-      },
-      {
-        heading: 'Making a request',
-        body: [
-          'To ask what we hold, to correct it, or to have it deleted, contact us with the email address you used to order. We may ask you to confirm your identity before we act.',
-        ],
-      },
-    ],
-  },
-
-  'supply-chain': {
-    slug: 'supply-chain',
-    title: 'Supply Chain Transparency',
-    summary: 'Where our materials come from and how we check the conditions they are made in.',
-    updated: DRAFTED,
-    sections: [
-      {
-        heading: 'Our workshop',
-        body: [
-          'Our sandals are made in our own workshop in Ghana by artisans we employ directly, not through a labour agency.',
-        ],
-      },
-      {
-        heading: 'Materials',
-        body: [
-          'We source leather, woven kente trim and soling materials from suppliers in Ghana wherever possible, and we visit them.',
-          'Where a material has to be imported, we say so on the product page.',
-        ],
-      },
-      {
-        heading: 'Forced and child labour',
-        body: [
-          'We do not tolerate forced labour or child labour anywhere in our supply chain. Any supplier found using either is dropped.',
-          'Our expectations of suppliers are set out in the Vendor Code of Conduct.',
-        ],
-      },
-      {
-        heading: 'Reporting a concern',
-        body: [
-          'If you believe any part of our supply chain falls short of this, contact us. Reports can be made anonymously.',
-        ],
-      },
-    ],
-  },
-
-  'vendor-code': {
-    slug: 'vendor-code',
-    title: 'Vendor Code of Conduct',
-    summary: 'What we require of every supplier and partner we work with.',
-    updated: DRAFTED,
-    sections: [
-      {
-        heading: 'Who this applies to',
-        body: [
-          'Every supplier, contractor and partner who provides materials or services to Gold Coast Tokota, including their own subcontractors.',
-        ],
-      },
-      {
-        heading: 'Labour',
-        body: [
-          'No forced labour. No child labour. Wages at or above the legal minimum, paid on time. Working hours within legal limits, with overtime voluntary and paid.',
-          'Workers may organise and raise grievances without retaliation.',
-        ],
-      },
-      {
-        heading: 'Health and safety',
-        body: [
-          'A safe workplace, with the training and protective equipment the work requires, and clean drinking water and sanitation.',
-        ],
-      },
-      {
-        heading: 'Environment',
-        body: [
-          'Compliance with applicable environmental law, responsible handling of chemicals and waste, and a willingness to reduce waste over time.',
-        ],
-      },
-      {
-        heading: 'Monitoring',
-        body: [
-          'We visit our suppliers. We may ask to see records, and we may end a relationship where this code is not met and not corrected.',
-        ],
-      },
-    ],
-  },
-
+  // GOLD_COAST_TOKOTA.md §9. Its contact line gives a WhatsApp number; that
+  // number lives in site settings, so the page points to WhatsApp instead.
   returns: {
     slug: 'returns',
     title: 'Returns & Exchanges',
-    summary: 'How to return or exchange a pair, and what we can and cannot take back.',
-    updated: DRAFTED,
+    summary: 'When we accept returns and exchanges, and how refunds work.',
+    updated: FROM_BRAND_REFERENCE,
+    approved: true,
     sections: [
       {
-        heading: 'The window',
+        heading: 'Returns',
         body: [
-          'Unworn pairs in their original packaging can be returned within 30 days of delivery. Holiday orders benefit from an extended window through January 31.',
+          'Customer satisfaction is important to Gold Coast Tokota.',
+          'Returns are accepted within 7 days of receiving the order if:',
+          { list: ['The product is defective.', 'The incorrect item was delivered.', 'The product arrived damaged during shipping.'] },
         ],
       },
       {
-        heading: 'What we cannot take back',
+        heading: 'Returned product requirements',
         body: [
-          'Custom and DIY pairs made to your own measurements cannot be returned for fit, because they were made only for you. If a custom pair does not match the measurements you gave us, that is our error and we will put it right.',
-          'Pairs that have been worn outdoors cannot be returned.',
+          'Returned products must:',
+          { list: ['Be unused.', 'Be in their original condition.', 'Include original packaging.'] },
         ],
       },
       {
         heading: 'Exchanges',
         body: [
-          'For a different size in the same style, contact us before sending anything back so we can reserve the size for you.',
+          'Exchanges are available for:',
+          { list: ['Incorrect size, subject to stock availability', 'Manufacturing defects', 'Incorrect item received'] },
+          'Customers requesting a size exchange are responsible for return shipping unless the error was made by Gold Coast Tokota.',
         ],
       },
       {
-        heading: 'Starting a return',
+        heading: 'Non-returnable items',
         body: [
-          'Message us on WhatsApp or use the contact form with your order number. We will confirm the return address and the next step.',
-          'Refunds go back to the payment method used, in the currency charged.',
+          'The following cannot be returned:',
+          { list: ['Custom-made sandals', 'Personalised products', 'Products damaged through misuse', 'Clearance or sale items, unless defective'] },
         ],
+      },
+      {
+        heading: 'Refunds',
+        body: [
+          'Approved refunds are processed within 7 to 14 business days.',
+          'Refunds use the original payment method.',
+          'Shipping charges are non-refundable unless the error was caused by Gold Coast Tokota.',
+        ],
+      },
+      {
+        heading: 'Return and exchange contact',
+        body: ['Message us on WhatsApp with your order number to start a return or exchange.'],
       },
     ],
   },
 
+  // GOLD_COAST_TOKOTA.md §8. The international table is a list here.
   shipping: {
     slug: 'shipping',
     title: 'Shipping & Delivery',
-    summary: 'Where we deliver, how long it takes, and what it costs.',
-    updated: DRAFTED,
+    summary: 'Where we deliver, how long it takes, and how it is priced.',
+    updated: FROM_BRAND_REFERENCE,
+    approved: true,
     sections: [
       {
-        heading: 'Within Ghana',
+        heading: 'Shipping locations',
+        body: ['Gold Coast Tokota ships handcrafted sustainable footwear and accessories across Ghana and to selected international destinations.'],
+      },
+      {
+        heading: 'Domestic shipping: Ghana',
         body: [
-          'Orders are processed within 48 hours of payment. Standard delivery within Ghana then takes one to two business days, depending on where you are.',
-          'In Accra, drop a pin on the map at checkout and an on-demand courier brings your order to the door. Elsewhere in Ghana we send it with a trusted courier partner.',
-          'The delivery cost depends on where it is going and is shown at checkout before you pay.',
+          {
+            list: [
+              'Orders are processed within 48 hours after payment confirmation.',
+              'Standard delivery takes 1 to 2 business days, depending on destination.',
+              'Delivery is available nationwide through trusted courier partners.',
+              'Customers receive a confirmation message and tracking information where available once their order has been dispatched.',
+            ],
+          },
         ],
       },
       {
-        heading: 'International',
+        heading: 'International shipping',
         body: [
-          'International orders ship by express courier. Transit time depends on the destination: five to ten business days in West Africa, seven to fourteen in Europe and North America, and ten to twenty-one elsewhere. The delivery cost is shown at checkout before you pay.',
+          'Gold Coast Tokota ships worldwide, subject to courier availability and customs regulations.',
+          'Processing time: 48 hours.',
+          'Estimated delivery:',
+          {
+            list: [
+              'West Africa: 5 to 10 business days',
+              'Europe: 7 to 14 business days',
+              'North America: 7 to 14 business days',
+              'Other destinations: 10 to 21 business days',
+            ],
+          },
+          'Delivery times may vary because of:',
+          { list: ['Customs clearance', 'Public holidays', 'Courier delays'] },
         ],
       },
       {
-        heading: 'Duties and taxes',
+        heading: 'Shipping costs',
         body: [
-          'International customers are responsible for any import duties or taxes charged by their own country. These are not included in the price you pay us.',
+          'Shipping charges are calculated at checkout based on:',
+          { list: ['Delivery destination', 'Package weight', 'Courier rates'] },
+          'Any customs duties, taxes or import fees imposed by the destination country are the responsibility of the customer.',
         ],
       },
       {
-        heading: 'Made-to-order timing',
+        heading: 'Handmade products',
         body: [
-          'Custom and DIY pairs are made before they ship, so the making time shown when you order comes first, and delivery time is added to it.',
+          'Because products are handcrafted, slight variations in:',
+          HANDMADE_VARIATION,
+          'may occur.',
+          'These variations are part of the uniqueness of each item and are not considered defects.',
+        ],
+      },
+      {
+        heading: 'Order tracking',
+        body: [
+          'Customers receive shipping updates via:',
+          { list: ['Email', 'WhatsApp'] },
+          'once orders have been dispatched.',
         ],
       },
     ],

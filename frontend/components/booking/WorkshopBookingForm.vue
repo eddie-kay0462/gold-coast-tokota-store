@@ -4,7 +4,7 @@ import type { WorkshopSession } from './SessionPicker.vue'
 import { useBookingStore } from '~/stores/bookings'
 import { whatsappMessage } from '~/utils/whatsapp'
 
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 const api = useApi()
 const bookingStore = useBookingStore()
 
@@ -14,7 +14,7 @@ const bookingStore = useBookingStore()
  * array, so the session list was always empty no matter what was seeded.
  */
 const { data: sessions, pending } = await useAsyncData('workshop-sessions', () =>
-  $fetch<{ data: WorkshopSession[] }>(`${config.public.apiBase}/workshop-sessions`)
+  apiFetch<{ data: WorkshopSession[] }>(`/workshop-sessions`)
     .then((response) => response.data)
     .catch(() => [] as WorkshopSession[]),
 )

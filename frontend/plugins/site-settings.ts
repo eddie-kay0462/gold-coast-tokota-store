@@ -4,11 +4,11 @@ import { useSiteSettingsStore } from '~/stores/siteSettings'
 // WhatsAppButton and footer contact info are populated before first paint
 // on every route, including SPA-only ones that skip the SSR pass.
 export default defineNuxtPlugin(async () => {
-  const config = useRuntimeConfig()
+  const apiFetch = useApiFetch()
   const siteSettings = useSiteSettingsStore()
 
   const { data } = await useAsyncData('site-settings', () =>
-    $fetch<{ data: Record<string, any> }>(`${config.public.apiBase}/site-settings`),
+    apiFetch<{ data: Record<string, any> }>(`/site-settings`),
   )
 
   if (data.value?.data) {
