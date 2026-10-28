@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Booking;
+use App\Models\GiftCard;
 use App\Models\Order;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Returns\ReturnPolicy;
@@ -80,6 +81,52 @@ final class TransactionalMessages
             // correctly without one rather than trailing an empty label.
             sms: "Gold Coast Tokota: order {$order->reference} has been dispatched."
                 .($trackingUrl ? " Track it: {$trackingUrl}" : ($tracking ? " Tracking: {$tracking}" : '')),
+        );
+    }
+
+    /**
+     * The card itself, to whoever it is for: the code, the balance, and the
+     * buyer's message. Email only. A code is a bearer value, so it isn't
+     * sent by SMS to a number nobody has confirmed belongs to the recipient.
+     */
+    public static function giftCard(GiftCard $card): NotificationMessage
+    {
+        $storeCredit = $card->source === GiftCard::SOURCE_STORE_CREDIT;
+
+        return new NotificationMessage(
+            key: 'gift_card_issued',
+            subject: $storeCredit
+                ? 'Your Gold Coast Tokota store credit'
+                : 'You have a Gold Coast Tokota gift card',
+            view: 'mail.gift-card',
+            data: [
+                'card' => $card,
+                'storeCredit' => $storeCredit,
+                'balance' => self::money($card->balance, 'GHS'),
+                'shopUrl' => rtrim((string) config('services.paystack.callback_base_url'), '/').'/shop',
+            ],
+        );
+    }
+
+    /** The buyer's receipt for a gift card order, in place of the sandal order confirmation. */
+    public static function giftCardReceipt(Order $order): NotificationMessage
+    {
+        $line = $order->items->first()?->gift_card ?? [];
+        $total = self::money($order->total, $order->currency);
+
+        return new NotificationMessage(
+            key: 'gift_card_purchased',
+            subject: "Your Gold Coast Tokota gift card order {$order->reference}",
+            view: 'mail.gift-card-receipt',
+            data: [
+                'order' => $order,
+                'total' => $total,
+                'amount' => self::money((int) ($line['amount_ghs'] ?? 0), 'GHS'),
+                'recipientName' => $line['recipient_name'] ?? null,
+                'recipientEmail' => $line['recipient_email'] ?? null,
+            ],
+            sms: "Gold Coast Tokota: payment received for gift card order {$order->reference} ({$total}). "
+                .'The card has been emailed.',
         );
     }
 

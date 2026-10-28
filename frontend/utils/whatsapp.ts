@@ -47,6 +47,7 @@ export type WhatsAppSource =
   | 'shop-empty'
   | 'stores'
   | 'gift-cards'
+  | 'community-photo'
   | 'contact'
   | 'account'
 
@@ -126,6 +127,9 @@ export const whatsappMessage = {
   visit: () => `${opening} could you send me directions to the workshop?`,
 
   giftEnquiry: () => `${opening} I'd like to arrange a gift.`,
+
+  /** The photo itself is attached in the chat; there is no upload on the site. */
+  photoShare: () => `${opening} I'd like to share a photo of my sandals.`,
 
   /** No discounts endpoint exists, so codes are applied by hand. */
   discountCode: (code?: string) =>

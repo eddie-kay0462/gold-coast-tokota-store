@@ -16,6 +16,7 @@ defineProps<{ posts: ApiPost[] }>()
     link into that filtered view says the same thing without the duplication.
   -->
   <section
+    v-if="posts.length"
     id="stories"
     class="page-gutter section-y mx-auto flex w-full max-w-[1440px] scroll-mt-8 flex-col items-start gap-3"
   >

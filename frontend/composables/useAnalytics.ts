@@ -1,6 +1,8 @@
-// Mirrors GA4 e-commerce events client-side. Purchase events are additionally
-// mirrored server-side (Laravel) so the admin dashboard never depends on GA4
-// availability or ad-blockers. See Feature 11.
+// GA4-shaped e-commerce events, sent only if a `gtag` is on the page. None is
+// installed: site traffic is counted by Vercel Web Analytics (page views,
+// cookieless; `@vercel/analytics/nuxt` in nuxt.config.ts), and the privacy
+// page says so. Purchase events are mirrored server-side (Laravel) so the admin
+// dashboard never depends on a browser tag. See Feature 11.
 export function useAnalytics() {
   function trackEvent(name: string, params: Record<string, unknown> = {}) {
     if (typeof window === 'undefined') return

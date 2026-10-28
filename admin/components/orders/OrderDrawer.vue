@@ -104,6 +104,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <dl class="space-y-1.5 border-t border-border pt-3 text-ui">
                   <div class="flex justify-between"><dt class="text-fg-muted">Subtotal</dt><dd>{{ formatMoney(order.subtotal) }}</dd></div>
                   <div class="flex justify-between"><dt class="text-fg-muted">Shipping</dt><dd>{{ formatMoney(order.shippingCost) }}</dd></div>
+                  <div v-if="order.giftCardAmount?.amount" class="flex justify-between">
+                    <dt class="text-fg-muted">
+                      <NuxtLink v-if="order.giftCardId" :to="`/gift-cards/${order.giftCardId}`" class="underline">Gift card</NuxtLink>
+                      <template v-else>Gift card</template>
+                    </dt>
+                    <dd>−{{ formatMoney(order.giftCardAmount) }}</dd>
+                  </div>
                   <div class="flex justify-between border-t border-border pt-1.5 font-medium text-fg-strong">
                     <dt>Total</dt><dd>{{ formatMoney(order.total) }}</dd>
                   </div>

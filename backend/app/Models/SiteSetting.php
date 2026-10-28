@@ -26,6 +26,10 @@ class SiteSetting extends Model
         'diy_turnaround_estimate',
         'diy_turnaround_tiers',
         'announcements',
+        'gift_cards_enabled',
+        'gift_card_amounts',
+        'gift_card_expiry_months',
+        'gift_card_terms',
     ];
 
     protected $casts = [
@@ -34,6 +38,9 @@ class SiteSetting extends Model
         'whatsapp_auto_greeting' => 'boolean',
         'whatsapp_after_hours_enabled' => 'boolean',
         'whatsapp_hours' => 'array',
+        'gift_cards_enabled' => 'boolean',
+        'gift_card_amounts' => 'array',
+        'gift_card_expiry_months' => 'integer',
     ];
 
     /** Single-row resource — creates the row on first access if missing. */

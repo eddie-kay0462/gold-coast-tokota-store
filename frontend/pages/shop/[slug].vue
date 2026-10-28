@@ -1,31 +1,28 @@
 <script setup lang="ts">
 import type { ApiProduct } from '~/utils/catalog'
-import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 const route = useRoute()
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 const addToCartLine = useAddToCart()
 
 const slug = computed(() => String(route.params.slug))
 
-// Feature 2 owns `GET /api/v1/products/{slug}`. Until it exists a failed fetch
-// resolves to null and the design catalogue stands in, matching how the listing
-// and home pages already degrade.
-const { data: apiProduct } = await useAsyncData(
+// Only the API answering 404 makes this a missing product. Any other failure
+// (rate limited, down, unreachable) is a "try again" page: never a 404, and
+// never the old design catalogue standing in for real stock.
+const { data: product, error: productError } = await useAsyncData(
   () => `product-${slug.value}`,
   () =>
-    $fetch<{ data: ApiProduct }>(`${config.public.apiBase}/products/${slug.value}`)
-      .then((response) => response.data)
-      .catch(() => null),
+    apiFetch<{ data: ApiProduct }>(`/products/${slug.value}`)
+      .then((response): ApiProduct | null => response.data)
+      .catch((error) => {
+        if (isNotFound(error)) return null
+        throw error
+      }),
   { watch: [slug] },
 )
 
-const product = computed<ApiProduct | null>(
-  () => apiProduct.value ?? DESIGN_PRODUCTS.find((entry) => entry.slug === slug.value) ?? null,
-)
-
-// A slug that matches neither the API nor the design catalogue is a genuine 404
-// rather than an empty product page.
+if (productError.value) throw apiUnavailable()
 if (!product.value) {
   throw createError({ statusCode: 404, statusMessage: 'Product not found', fatal: true })
 }
@@ -94,23 +91,19 @@ const stockBadge = computed(() => {
 })
 
 // From the API, ranked for this product (same department first, in stock
-// first). The design catalogue stands in only if the API can't be reached,
-// as it does for the product itself above.
+// first). If it can't be reached the row is simply left out.
 const { data: apiRecommended } = await useAsyncData(
   () => `recommended-${slug.value}`,
   () =>
-    $fetch<{ data: ApiProduct[] }>(`${config.public.apiBase}/products/recommendations`, {
+    apiFetch<{ data: ApiProduct[] }>('/products/recommendations', {
       query: { for: slug.value, limit: 4 },
     })
       .then((response) => response.data)
-      .catch(() => null),
+      .catch(() => [] as ApiProduct[]),
   { watch: [slug] },
 )
 
-const recommended = computed(() =>
-  apiRecommended.value
-    ?? DESIGN_PRODUCTS.filter((entry) => entry.slug !== slug.value).slice(0, 4),
-)
+const recommended = computed(() => apiRecommended.value ?? [])
 
 function addToCart({ size, color }: { size: string, color: string }) {
   if (!product.value) return
@@ -147,7 +140,7 @@ useSeoMeta({
     </div>
 
     <!-- Section 02: recommendations -->
-    <section class="page-gutter section-y mx-auto flex w-full max-w-[1168px] flex-col items-start gap-2">
+    <section v-if="recommended.length" class="page-gutter section-y mx-auto flex w-full max-w-[1168px] flex-col items-start gap-2">
       <h2 class="w-full text-body font-normal text-graphite">Recommended Products</h2>
       <ul class="grid w-full grid-cols-2 gap-x-6 gap-y-8 lg:grid-cols-4">
         <li v-for="item in recommended" :key="item.slug" class="min-w-0">

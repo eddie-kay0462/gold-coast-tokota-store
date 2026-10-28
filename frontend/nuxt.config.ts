@@ -5,7 +5,10 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
 
-  modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss', '@nuxtjs/sitemap'],
+  // `@vercel/analytics/nuxt`: Vercel Web Analytics page views, browser-only and
+  // cookieless, so no consent banner. Named on /legal/privacy. Collects nothing
+  // until Analytics is turned on in the Vercel project.
+  modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss', '@nuxtjs/sitemap', '@vercel/analytics/nuxt'],
 
   css: ['~/assets/css/main.css'],
 
@@ -24,6 +27,8 @@ export default defineNuxtConfig({
     '/checkout': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/order-confirmation/**': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
     '/account/**': { ssr: false, headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
+    // The storefront server's API cache (server/routes/_api-cache), not a page.
+    '/_api-cache/**': { headers: { 'X-Robots-Tag': 'noindex, nofollow' } },
 
     // `/help/returns` and `/help/shipping` are canonical; they sit inside the
     // help hub's structure and the footer already used those URLs. The short
@@ -86,6 +91,10 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    // Server-only. Sent as X-Storefront-Key on server-rendered API reads so the
+    // API rate-limits per visitor, not per Vercel address (`useApiFetch`).
+    // Same value as STOREFRONT_API_KEY on the API. Set NUXT_STOREFRONT_API_KEY.
+    storefrontApiKey: '',
     // Server-only geo settings. `secret` signs the geo cache cookie. Set a
     // real value in production or a restart invalidates every cached lookup.
     geo: {

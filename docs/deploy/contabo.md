@@ -174,6 +174,11 @@ PAYSTACK_PUBLIC_KEY=
 PAYSTACK_SECRET_KEY=
 PAYSTACK_WEBHOOK_SECRET=
 
+# Storefront server key (openssl rand -hex 32). The same value goes in
+# NUXT_STOREFRONT_API_KEY on the storefront's Vercel project. Without it every
+# storefront visitor shares one 120-a-minute limit and product pages fail.
+STOREFRONT_API_KEY=
+
 # WhatsApp Cloud API (the admin inbox). Leave empty until the brand number is
 # connected through Meta's Embedded Signup with coexistence; the inbox then
 # records replies as "not delivered" instead of sending them.
@@ -408,4 +413,6 @@ development, which still runs `php artisan serve` (CLAUDE.md, Commands).
 - [ ] WhatsApp webhook URL verified in the Meta app (once the number is connected); `/settings/whatsapp` shows a recent "last update from WhatsApp"
 - [ ] Storefront and admin on Vercel have
       `NUXT_PUBLIC_API_BASE=https://api.goldcoasttokota.store/api/v1`
+- [ ] Storefront on Vercel has `NUXT_STOREFRONT_API_KEY` equal to the box's
+      `STOREFRONT_API_KEY`, and Web Analytics is turned on in its Vercel project
 - [ ] Smoke test: admin sign-in, a product page, a test checkout

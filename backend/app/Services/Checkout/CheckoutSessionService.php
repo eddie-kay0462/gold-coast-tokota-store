@@ -2,6 +2,8 @@
 
 namespace App\Services\Checkout;
 
+use App\Events\OrderPaid;
+use App\Exceptions\GiftCardUnusableException;
 use App\Exceptions\InsufficientStockException;
 use App\Exceptions\NoFxRateException;
 use App\Exceptions\RegionNotServedException;
@@ -11,6 +13,7 @@ use App\Models\InventoryItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Currency\FxRateService;
+use App\Services\GiftCards\GiftCardService;
 use App\Services\Inventory\InventoryReservationService;
 use App\Services\Payment\PaymentGatewayFactory;
 use App\Services\Payment\PaymentSession;
@@ -36,6 +39,11 @@ use Throwable;
  *      InventoryReservationService already provides.
  *   5. Only then, once that transaction has committed, open a gateway session.
  *
+ * A gift card code, when given, is spent in the same transaction as the stock
+ * holds, on the cedi total, and comes off the order before it converts. An
+ * order the card covers in full needs no payment session: it is paid on the
+ * spot and the customer goes straight to the confirmation page.
+ *
  * Steps 3–4 are one transaction: if any throws, the Order and its
  * reservations roll away together. Steps 1–2 run before it, because a live
  * courier quote is a network call and must not hold stock rows locked. Step 5 is a network call to Paystack that
@@ -55,6 +63,7 @@ class CheckoutSessionService
         private readonly InventoryReservationService $reservations,
         private readonly CheckoutShipping $shipping,
         private readonly PaymentGatewayFactory $gateways,
+        private readonly GiftCardService $giftCards,
     ) {}
 
     /**
@@ -63,13 +72,14 @@ class CheckoutSessionService
      * FX lock, stock holds and payment session, with its own channel and a
      * longer hold (the customer pays from a link in the chat).
      *
-     * @param  array{items: array<int, array{inventory_item_id: int, quantity: int}>, currency: string, shipping_address: array<string, mixed>, shipping_quote_id?: string|null, shipping_option_id?: string|null, customer_id?: int|null}  $data
+     * @param  array{items: array<int, array{inventory_item_id: int, quantity: int}>, currency: string, shipping_address: array<string, mixed>, shipping_quote_id?: string|null, shipping_option_id?: string|null, customer_id?: int|null, gift_card_code?: string|null}  $data
      * @param  array{channel?: string, hold_minutes?: int, created_by_admin_id?: int|null, whatsapp_conversation_id?: int|null}  $options
      * @return array{order: Order, session: PaymentSession}
      *
      * @throws InsufficientStockException
      * @throws RegionNotServedException
      * @throws ShippingOptionChangedException
+     * @throws GiftCardUnusableException
      */
     public function create(array $data, array $options = []): array
     {
@@ -147,8 +157,25 @@ class CheckoutSessionService
                 ]);
             }
 
+            $code = trim((string) ($data['gift_card_code'] ?? ''));
+            if ($code !== '') {
+                $grossGhs = $subtotal + $shippingCost;
+                $appliedGhs = $this->giftCards->redeem($code, $order, $grossGhs);
+                $gross = $this->convert($grossGhs, $fxRate);
+                $total = $this->convert($grossGhs - $appliedGhs, $fxRate);
+
+                $order->forceFill([
+                    'total' => $total,
+                    'gift_card_amount' => $gross - $total,
+                ])->save();
+            }
+
             return $order;
         });
+
+        if ($order->total === 0) {
+            return ['order' => $this->paidByGiftCard($order), 'session' => $this->giftCardSession($order)];
+        }
 
         try {
             $session = $gateway->createSession($order);
@@ -192,9 +219,41 @@ class CheckoutSessionService
         return $session;
     }
 
+    /**
+     * The card covered everything: there is nothing to charge, so the order is
+     * paid now, through the same `OrderPaid` that a Paystack payment fires
+     * (stock is finalised, a shipment opened, the confirmation sent).
+     */
+    private function paidByGiftCard(Order $order): Order
+    {
+        $order->update([
+            'status' => 'paid',
+            'payment_gateway' => 'gift_card',
+            'payment_reference' => $order->reference,
+        ]);
+
+        OrderPaid::dispatch($order);
+
+        return $order->fresh('items');
+    }
+
+    /** Shaped like a gateway's, so the storefront redirects the same way. */
+    private function giftCardSession(Order $order): PaymentSession
+    {
+        $storefront = rtrim((string) config('services.paystack.callback_base_url'), '/');
+
+        return new PaymentSession(
+            gateway: 'gift_card',
+            reference: $order->reference,
+            authorizationUrl: "{$storefront}/order-confirmation/{$order->reference}",
+        );
+    }
+
     /** Undoes a committed checkout whose payment session never opened. */
     private function abandon(Order $order): void
     {
+        $this->giftCards->release($order, 'Payment session failed to open');
+
         DB::transaction(function () use ($order) {
             $this->reservations->releaseOrder($order, 'Payment session failed to open');
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryControl
 use App\Http\Controllers\Api\V1\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Api\V1\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\V1\Admin\FeedbackController as AdminFeedbackController;
+use App\Http\Controllers\Api\V1\Admin\GiftCardController as AdminGiftCardController;
 use App\Http\Controllers\Api\V1\Admin\InboxAutomationController as AdminInboxAutomationController;
 use App\Http\Controllers\Api\V1\Admin\InboxController as AdminInboxController;
 use App\Http\Controllers\Api\V1\Admin\InboxLookupController as AdminInboxLookupController;
@@ -38,6 +39,7 @@ use App\Http\Controllers\Api\V1\CollectionController;
 use App\Http\Controllers\Api\V1\CustomerAuthController;
 use App\Http\Controllers\Api\V1\FeedbackController;
 use App\Http\Controllers\Api\V1\FxRateController;
+use App\Http\Controllers\Api\V1\GiftCardController;
 use App\Http\Controllers\Api\V1\NavigationController;
 use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\V1\OrderController;
@@ -148,6 +150,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::middleware('throttle:60,1')->group(function () {
         Route::get('/orders/{reference}', [OrderController::class, 'show'])->name('orders.show');
+    });
+
+    // Gift cards. Buying one opens a Paystack session, so it's throttled like
+    // checkout; the balance check is tighter, because codes are what it
+    // guesses at.
+    Route::get('/gift-cards/settings', [GiftCardController::class, 'settings'])->name('gift-cards.settings');
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('/gift-cards/purchase', [GiftCardController::class, 'purchase'])->name('gift-cards.purchase');
+    });
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('/gift-cards/balance', [GiftCardController::class, 'balance'])->name('gift-cards.balance');
     });
 
     // Paystack's webhook — where an order actually becomes paid. Its own
@@ -312,6 +325,27 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:orders.view')->name('orders.show');
             Route::patch('/orders/{reference}', [AdminOrderController::class, 'updateStatus'])
                 ->middleware('capability:orders.update_status')->name('orders.update-status');
+
+            // Gift cards and store credit. Anyone may look a card up; Staff
+            // may resend its email (to the address already on it); issuing,
+            // correcting or disabling one moves money, so it is an Admin's,
+            // like a refund. The policy is a site setting.
+            Route::prefix('gift-cards')->name('gift-cards.')->group(function () {
+                Route::get('/settings', [AdminGiftCardController::class, 'settings'])
+                    ->middleware('capability:settings.view')->name('settings');
+                Route::put('/settings', [AdminGiftCardController::class, 'updateSettings'])
+                    ->middleware('capability:settings.write')->name('settings.update');
+                Route::get('/', [AdminGiftCardController::class, 'index'])
+                    ->middleware('capability:gift_cards.view')->name('index');
+                Route::post('/', [AdminGiftCardController::class, 'store'])
+                    ->middleware('capability:gift_cards.issue')->name('store');
+                Route::get('/{giftCard}', [AdminGiftCardController::class, 'show'])
+                    ->middleware('capability:gift_cards.view')->name('show');
+                Route::patch('/{giftCard}', [AdminGiftCardController::class, 'update'])
+                    ->middleware('capability:gift_cards.issue')->name('update');
+                Route::post('/{giftCard}/resend', [AdminGiftCardController::class, 'resend'])
+                    ->middleware('capability:gift_cards.resend')->name('resend');
+            });
 
             // Returns and exchanges (brand document §9/§21). Staff record and
             // track them; only an Admin resolves one, because a resolution is

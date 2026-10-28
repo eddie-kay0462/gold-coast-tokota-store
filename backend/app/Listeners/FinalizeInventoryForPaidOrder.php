@@ -26,6 +26,11 @@ class FinalizeInventoryForPaidOrder implements ShouldQueue
 
     public function handle(OrderPaid $event): void
     {
+        // A gift card holds no stock.
+        if ($event->order->isGiftCardPurchase()) {
+            return;
+        }
+
         $shortfall = [];
 
         foreach ($event->order->items as $item) {

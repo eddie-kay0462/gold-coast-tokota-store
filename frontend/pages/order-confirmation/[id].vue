@@ -85,8 +85,14 @@ onMounted(() => {
 onBeforeUnmount(() => clearTimeout(timer))
 
 const cart = useCartStore()
+const giftCard = useGiftCardCode()
+/** A gift card bought online: no delivery, and the sandal cart is left alone. */
+const isGiftCardOrder = computed(() => order.value?.kind === 'gift_card')
+const giftCardRecipient = computed(() => order.value?.items[0]?.gift_card?.recipient_name ?? null)
 watch(order, (o) => {
-  if (o && !isAwaitingPayment(o.status) && o.status !== 'cancelled') cart.clear()
+  if (!o || isAwaitingPayment(o.status) || o.status === 'cancelled' || o.kind === 'gift_card') return
+  cart.clear()
+  giftCard.clear()
 }, { immediate: true })
 
 /** Polling gave up and the order is still unpaid; the payment did not go through. */
@@ -131,11 +137,14 @@ useSeoMeta({
     <div v-else-if="order" class="flex w-full flex-col items-start gap-8">
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">
-          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : 'Thank you! Your order is in' }}
+          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : isGiftCardOrder ? 'Thank you! Your gift card is on its way' : 'Thank you! Your order is in' }}
         </h1>
         <p class="w-full text-body text-graphite">
           Order <strong class="font-normal">{{ order.reference || `#${order.id}` }}</strong>.
-          <template v-if="!stillConfirming && !notPaid">We’ve emailed your confirmation.</template>
+          <template v-if="!stillConfirming && !notPaid && isGiftCardOrder">
+            We’ve emailed the gift card<template v-if="giftCardRecipient"> to {{ giftCardRecipient }}</template>, and your receipt to you.
+          </template>
+          <template v-else-if="!stillConfirming && !notPaid">We’ve emailed your confirmation.</template>
         </p>
         <CommonStatusBadge :status="order.status" />
       </header>
@@ -146,6 +155,7 @@ useSeoMeta({
            on every route, so it stays and this sits alongside it with the order
            number already in the message. -->
       <CommonWhatsAppLink
+        v-if="!isGiftCardOrder"
         source="order-tracking"
         :message="whatsappMessage.orderTracking(order.reference || `#${order.id}`)"
       >
@@ -154,9 +164,16 @@ useSeoMeta({
 
       <CommonInlineNotice v-if="notPaid" variant="warning" title="No payment received">
         We haven’t received payment for this order, so it hasn’t been placed and nothing has been
-        charged. Your cart is still saved, so you can
-        <NuxtLink to="/checkout" class="underline">try checking out again</NuxtLink>, or message us
-        on WhatsApp and we’ll help.
+        charged.
+        <template v-if="isGiftCardOrder">
+          You can <NuxtLink to="/gift-cards" class="underline">try buying the gift card again</NuxtLink>,
+          or message us on WhatsApp and we’ll help.
+        </template>
+        <template v-else>
+          Your cart is still saved, so you can
+          <NuxtLink to="/checkout" class="underline">try checking out again</NuxtLink>, or message us
+          on WhatsApp and we’ll help.
+        </template>
       </CommonInlineNotice>
 
       <CommonInlineNotice v-if="stillConfirming" title="Still confirming your payment">
@@ -199,8 +216,14 @@ useSeoMeta({
           <div class="flex w-full items-center justify-between">
             <dt class="text-graphite">Subtotal</dt><dd class="text-black">{{ money(order.subtotal) }}</dd>
           </div>
-          <div class="flex w-full items-center justify-between">
+          <div v-if="!isGiftCardOrder" class="flex w-full items-center justify-between">
             <dt class="text-graphite">Delivery</dt><dd class="text-black">{{ money(order.shipping_cost) }}</dd>
+          </div>
+          <div v-if="order.gift_card_amount" class="flex w-full items-center justify-between">
+            <dt class="text-graphite">
+              Gift card<template v-if="order.gift_card_last_four"> ending {{ order.gift_card_last_four }}</template>
+            </dt>
+            <dd class="text-black">−{{ money(order.gift_card_amount) }}</dd>
           </div>
           <div v-if="order.tax" class="flex w-full items-center justify-between">
             <dt class="text-graphite">Tax</dt><dd class="text-black">{{ money(order.tax) }}</dd>
@@ -218,7 +241,7 @@ useSeoMeta({
       </section>
 
       <!-- Delivery -->
-      <section class="flex w-full flex-col items-start gap-2 border-t border-line pt-6">
+      <section v-if="!isGiftCardOrder" class="flex w-full flex-col items-start gap-2 border-t border-line pt-6">
         <h2 class="w-full text-display-sm font-normal text-black">Delivery</h2>
         <p class="w-full text-body text-graphite">
           By {{ deliveryProviderLabel(order.delivery_provider, order.shipment?.courier) }}<template v-if="order.delivery_reference">
@@ -243,7 +266,7 @@ useSeoMeta({
 
       <div class="flex w-full flex-col items-stretch gap-3 border-t border-line pt-6 sm:flex-row sm:items-start">
         <CommonBrandButton to="/shop">Keep shopping</CommonBrandButton>
-        <CommonBrandButton to="/help/shipping" variant="white">Delivery help</CommonBrandButton>
+        <CommonBrandButton v-if="!isGiftCardOrder" to="/help/shipping" variant="white">Delivery help</CommonBrandButton>
       </div>
     </div>
   </div>

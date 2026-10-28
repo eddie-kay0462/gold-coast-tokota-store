@@ -20,30 +20,31 @@ export type ApiPage = {
  * wrong is the day the site publishes unreviewed legal text with no banner. So
  * the rule lives here and the pages just render what they are told.
  *
- * A page counts as draft when any of these hold:
- *   - the endpoint failed or the slug is not in the CMS yet (fallback copy);
- *   - the CMS row is explicitly flagged `is_draft`;
- *   - the row exists but its body is empty, which is what a seeded-but-unwritten
- *     page looks like.
+ * Approved CMS copy (a row that is not `is_draft` and has a body) always wins.
+ * Without it the built-in copy in `utils/policyContent.ts` renders, and the
+ * page counts as a draft unless that copy is marked `approved`: the Shipping,
+ * Returns, Privacy and Terms pages, which are the client's own text from
+ * GOLD_COAST_TOKOTA.md §8 to §11. Everything else built in is placeholder and
+ * keeps its banner.
  */
 export async function usePageContent(slug: string) {
-  const config = useRuntimeConfig()
+  const apiFetch = useApiFetch()
 
   const { data } = await useAsyncData(`page-${slug}`, () =>
-    $fetch<{ data: ApiPage }>(`${config.public.apiBase}/pages/${slug}`)
+    apiFetch<{ data: ApiPage }>(`/pages/${slug}`)
       .catch(() => null),
   )
 
   const apiPage = computed(() => data.value?.data ?? null)
 
-  const isDraft = computed(() => {
+  const draft = computed<PolicyDraft | null>(() => POLICY_DRAFTS[slug] ?? null)
+
+  const cmsApproved = computed(() => {
     const page = apiPage.value
-    if (!page) return true
-    if (page.is_draft) return true
-    return !page.body?.trim()
+    return !!page && !page.is_draft && !!page.body?.trim()
   })
 
-  const draft = computed<PolicyDraft | null>(() => POLICY_DRAFTS[slug] ?? null)
+  const isDraft = computed(() => !cmsApproved.value && !draft.value?.approved)
 
   const title = computed(() => {
     // Prefer the CMS title even on a draft row; an owner who has renamed the
@@ -54,13 +55,15 @@ export async function usePageContent(slug: string) {
 
   const summary = computed(() => draft.value?.summary ?? null)
 
-  /** Approved HTML body, or null when the draft sections should render. */
-  const html = computed(() => (isDraft.value ? null : apiPage.value?.body ?? null))
+  /** Approved CMS HTML, or null when the built-in sections should render. */
+  const html = computed(() => (cmsApproved.value ? apiPage.value!.body : null))
 
-  const sections = computed(() => (isDraft.value ? draft.value?.sections ?? [] : []))
+  const sections = computed(() => (cmsApproved.value ? [] : draft.value?.sections ?? []))
 
-  const updated = computed(
-    () => apiPage.value?.updated_at ?? draft.value?.updated ?? null,
+  const updated = computed(() =>
+    cmsApproved.value
+      ? apiPage.value!.updated_at
+      : draft.value?.updated ?? apiPage.value?.updated_at ?? null,
   )
 
   return { title, summary, html, sections, updated, isDraft }

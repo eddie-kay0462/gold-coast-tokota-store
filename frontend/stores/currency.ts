@@ -60,12 +60,11 @@ export const useCurrencyStore = defineStore('currency', {
       if (this.canConvert) return Promise.resolve(true)
       if (import.meta.client && pendingFxRequest) return pendingFxRequest
 
-      const { apiBase } = useRuntimeConfig().public
-
       // `retry: 0`: ofetch retries a failed GET once by default, which doubled
       // the console error whenever the API was down. Choosing USD already
-      // retries.
-      const request = $fetch<{ data: FxRatePayload | null }>(`${apiBase}/fx-rate`, { retry: 0 })
+      // retries. Through `useApiFetch` so a server render reads the shared,
+      // cached rate rather than asking the API on every page.
+      const request = useApiFetch()<{ data: FxRatePayload | null }>('/fx-rate', { retry: 0 })
         .then(({ data: payload }) => {
           const rate = Number(payload?.rate)
           if (!payload || !Number.isFinite(rate) || rate <= 0) return false

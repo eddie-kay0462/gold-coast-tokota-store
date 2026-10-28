@@ -19,11 +19,13 @@ class OrderItem extends Model
         'quantity',
         'unit_price',
         'currency',
+        'gift_card',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'integer',
+        'gift_card' => 'array',
     ];
 
     public function order(): BelongsTo
