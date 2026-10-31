@@ -6,6 +6,10 @@ const siteSettings = useSiteSettingsStore()
 // Hero copy and imagery are admin-editable via SiteSetting; the Figma values
 // are the fallback so the page is never empty before the CMS is populated.
 const headline = computed(() => siteSettings.heroHeadline || 'Your Step into Heritage')
+// The line under it, also set in admin (Settings › General › Home hero). The
+// built-in one keeps its designed line break on wider screens; a custom line
+// wraps where it falls.
+const subheadline = computed(() => siteSettings.heroSubheadline.trim())
 const heroImage = computed(() => siteSettings.heroImage || '/design/hero.png')
 const heroAlt = 'Three pairs of handmade Gold Coast Tokota sandals in rust, white and black leather'
 </script>
@@ -31,7 +35,8 @@ const heroAlt = 'Three pairs of handmade Gold Coast Tokota sandals in rust, whit
   <section class="page-gutter flex w-full flex-col items-center gap-2.5 overflow-hidden pb-16 pt-10 text-center lg:pb-24 lg:pt-12">
     <h1 class="w-full text-display-lg text-ink">{{ headline }}</h1>
 
-    <p class="w-full text-display-sm text-graphite">
+    <p v-if="subheadline" class="w-full text-balance text-display-sm text-graphite">{{ subheadline }}</p>
+    <p v-else class="w-full text-display-sm text-graphite">
       Get your pair of authentic locally-made<br class="hidden sm:inline">
       Ghanaian footwear.
     </p>

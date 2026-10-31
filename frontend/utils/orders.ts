@@ -33,8 +33,19 @@ export type OrderStatus =
 export type ApiOrder = {
   id: number
   reference?: string
-  /** `gift_card` for a gift card bought online: no delivery. */
-  kind?: 'goods' | 'gift_card'
+  /** `gift_card` for a gift card bought online, `booking` for places at a paid event: no delivery. */
+  kind?: 'goods' | 'gift_card' | 'booking'
+  /** A `booking` order: what it's for, and the ticket once the payment has confirmed it. */
+  booking?: {
+    reference: string
+    status: string
+    event: string | null
+    scheduled_date: string | null
+    scheduled_slot: string | null
+    location_notes: string | null
+    attendee_count: number
+    ticket_url: string | null
+  }
   status: OrderStatus
   currency: 'GHS' | 'USD'
   /** Snapshotted at checkout for USD orders; null for GHS. */

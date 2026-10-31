@@ -54,6 +54,17 @@ From the client's settings feedback:
 - **Announcement bar preview.** Settings › General › Announcement bar shows the bar as the storefront draws it, above the list. It's live: lines appear as they're typed, before saving. The desktop bar shows the hours, one line at a time, then WhatsApp, flag and currency. A phone-width bar below shows the scrolling marquee. Dots step through the lines, and a pause button stops it. With no lines, it shows the storefront's built-in ones, as the bar would. `admin/components/settings/AnnouncementPreview.vue` copies the bar's look and fallback from `frontend/components/layout/AnnouncementBar.vue`, so change both or neither.
 - **Hero second line.** New `site_settings.hero_subheadline`, edited under Home hero › **Second line**. Blank keeps the built-in line ("Get your pair of authentic locally-made Ghanaian footwear."). The storefront side is on `feat/storefront-pages`. **Run the migration** (`2026_10_31_090700_add_hero_subheadline_to_site_settings`).
 
+### 31 October 2026: the hero's second line from Settings (storefront)
+
+The line under the home hero's headline reads `hero_subheadline` (Settings › General › Home hero › Second line in admin). With none set, it keeps the built-in line and its designed line break. Needs the API from `feat/backend` (31 October, `dea851e`); against an older API the built-in line shows, as before.
+
+### 31 October 2026: paid events on the booking page (storefront)
+
+- **Session list:** a paid session shows its price per person in the visitor's currency. A full session reads **Sold out** and can't be chosen unless its event keeps a waitlist (**Full · waitlist**).
+- **Booking a paid session:** the form shows people × price and a **Pay GH₵…** button, sends `currency`, and goes to Paystack. A 409 (sold out, or fewer places than the party) says so and reloads the list. Free sessions and the waitlist are as before.
+- **Confirmation page** for a `booking` order: "You're booked! Your ticket is on its way", the event, date, people, and **Download your ticket** once the payment has confirmed it; no delivery section, and the cart is left alone.
+- Needs the API from `feat/backend` (31 October, `b015ff0`). Against an older API, paid sessions still show and can be booked, but no price shows on the list and the old confirmation page appears.
+
 ### 31 October 2026: security updates (API)
 
 `composer audit` reported seven advisories in four packages that were already installed:

@@ -2,6 +2,7 @@
 import { PhMinus as Minus, PhPlus as Plus } from '@phosphor-icons/vue'
 import type { WorkshopSession } from './SessionPicker.vue'
 import { useBookingStore } from '~/stores/bookings'
+import { useCurrencyStore } from '~/stores/currency'
 import { whatsappMessage } from '~/utils/whatsapp'
 import { nationalNumberError, toE164 } from '~/utils/phone'
 
@@ -14,7 +15,7 @@ const bookingStore = useBookingStore()
  * landed, and nothing had ever called it; this form passed a hardcoded empty
  * array, so the session list was always empty no matter what was seeded.
  */
-const { data: sessions, pending } = await useAsyncData('workshop-sessions', () =>
+const { data: sessions, pending, refresh: refreshSessions } = await useAsyncData('workshop-sessions', () =>
   apiFetch<{ data: WorkshopSession[] }>(`/workshop-sessions`)
     .then((response) => response.data)
     .catch(() => [] as WorkshopSession[]),
@@ -83,6 +84,17 @@ const whatsappFallbackMessage = computed(() => whatsappMessage.workshop())
 
 const canSubmit = computed(() => !!selectedSessionId.value && !pendingSubmit.value)
 
+/**
+ * A paid session: the booking holds the seats while the customer pays on
+ * Paystack, in the currency they're browsing in, and the ticket comes by
+ * email once paid. A waitlist place costs nothing to join; it's paid for if
+ * a seat is offered.
+ */
+const currency = useCurrencyStore()
+const pricePerPerson = computed(() => selectedSession.value?.price_ghs ?? null)
+const isPaid = computed(() => !!pricePerPerson.value && !isWaitlisted.value)
+const totalGhs = computed(() => (pricePerPerson.value ?? 0) * form.attendeeCount)
+
 async function onSubmit() {
   if (!canSubmit.value) return
   phoneError.value = nationalNumberError(form.phoneCountry, form.phone)
@@ -94,11 +106,12 @@ async function onSubmit() {
     // Contact details go inside `details`, which is where StoreBookingRequest
     // validates them. They used to be sent at the top level, where the request
     // never looked; every submission would have failed validation.
-    await api('/bookings', {
+    const res = await api<{ data: { status: string }, payment?: { authorization_url: string | null } }>('/bookings', {
       method: 'POST',
       body: {
         type: 'workshop',
         workshop_session_id: Number(selectedSessionId.value),
+        currency: currency.displayCurrency,
         details: {
           attendee_count: form.attendeeCount,
           first_name: form.firstName.trim(),
@@ -110,11 +123,28 @@ async function onSubmit() {
         },
       },
     })
+    // Paid: on to Paystack's page (another origin, so a full navigation).
+    // It returns to /order-confirmation, which shows the booking and ticket.
+    if (res.payment?.authorization_url) {
+      window.location.assign(res.payment.authorization_url)
+      return
+    }
     submitted.value = true
     bookingStore.reset()
   }
-  catch {
-    error.value = 'We could not submit that request. Check your details and try again, or send it to us directly.'
+  catch (err: unknown) {
+    const e = err as { statusCode?: number, data?: { message?: string } }
+    if (e.statusCode === 409) {
+      // Sold out, or fewer places left than the party, since the list loaded.
+      error.value = `${e.data?.message ?? 'That session is full.'} Choose another date, or fewer people.`
+      await refreshSessions()
+    }
+    else if (e.statusCode === 503) {
+      error.value = e.data?.message ?? 'Payment is briefly unavailable. Please try again shortly.'
+    }
+    else {
+      error.value = 'We could not submit that request. Check your details and try again, or send it to us directly.'
+    }
   }
   finally {
     pendingSubmit.value = false
@@ -214,9 +244,21 @@ async function onSubmit() {
           Choose a session to continue.
         </p>
 
+        <div v-if="isPaid" class="flex items-center justify-between border-t border-line pt-4 text-label text-graphite">
+          <span>{{ form.attendeeCount }} × <CommonPriceDisplay :base-price-ghs="pricePerPerson!" compact /></span>
+          <span class="text-ink"><CommonPriceDisplay :base-price-ghs="totalGhs" compact /></span>
+        </div>
+
         <CommonBrandButton full type="submit" :disabled="!canSubmit">
-          {{ pendingSubmit ? 'Sending…' : isWaitlisted ? 'Join the waitlist' : 'Request session' }}
+          <template v-if="pendingSubmit">{{ isPaid ? 'Taking you to payment…' : 'Sending…' }}</template>
+          <template v-else-if="isWaitlisted">Join the waitlist</template>
+          <template v-else-if="isPaid">Pay&nbsp;<CommonPriceDisplay :base-price-ghs="totalGhs" compact /></template>
+          <template v-else>Request session</template>
         </CommonBrandButton>
+        <p v-if="isPaid" class="text-caption text-muted">
+          Paid securely through Paystack, by card or mobile money. Your ticket comes by email
+          once you’ve paid.
+        </p>
       </form>
     </div>
   </div>

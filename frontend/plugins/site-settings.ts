@@ -21,6 +21,7 @@ export default defineNuxtPlugin(async () => {
       contactPhone: data.value.data.contact_phone,
       instagramUrl: data.value.data.instagram_url,
       heroHeadline: data.value.data.hero_headline,
+      heroSubheadline: data.value.data.hero_subheadline ?? '',
       heroImage: data.value.data.hero_image,
       diyTurnaroundEstimate: data.value.data.diy_turnaround_estimate,
       announcements: Array.isArray(data.value.data.announcements)
