@@ -47,14 +47,15 @@ class AdminAuditTest extends TestCase
 
     public function test_a_password_is_never_written_down(): void
     {
-        $this->actingAs(AdminUser::factory()->create(['role' => 'super_admin']), 'admin')
-            ->postJson('/api/v1/admin/team', [
-                'name' => 'Kofi', 'email' => 'kofi@example.com', 'role' => 'staff',
-                'password' => 'a-long-password-1', 'password_confirmation' => 'a-long-password-1',
-            ])->assertCreated();
+        $admin = AdminUser::factory()->create(['password' => 'old-password-123']);
+
+        $this->actingAs($admin, 'admin')->putJson('/api/v1/admin/me', [
+            'password' => 'a-long-password-1', 'password_confirmation' => 'a-long-password-1',
+            'current_password' => 'old-password-123',
+        ])->assertOk();
 
         $entry = AdminAuditEntry::sole();
-        $this->assertStringNotContainsString('password', $entry->detail);
+        $this->assertStringNotContainsString('password', (string) $entry->detail);
         $this->assertStringNotContainsString('a-long-password-1', (string) json_encode($entry->toArray()));
     }
 

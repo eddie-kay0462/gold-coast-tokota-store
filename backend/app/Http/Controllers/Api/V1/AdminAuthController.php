@@ -99,12 +99,18 @@ class AdminAuthController extends Controller
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
-        $status = Password::broker('admins')->reset(
+        // An invitation link (`invite=1`) is checked against the week-long
+        // invitation broker; a forgotten-password link against the hour-long one.
+        $broker = $request->boolean('invite') ? 'admin_invites' : 'admins';
+
+        $status = Password::broker($broker)->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($admin, string $password) {
                 $admin->forceFill([
                     'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
+                    // Chosen their own password: no longer just invited.
+                    'invited_at' => null,
                 ])->save();
 
                 event(new PasswordReset($admin));

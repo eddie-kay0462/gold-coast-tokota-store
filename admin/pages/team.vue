@@ -115,6 +115,7 @@ function editMember(m: AdminUser | null) { editing.value = m; memberOpen.value =
               <p class="truncate text-ui font-medium text-fg-strong">{{ m.name }}</p>
               <p class="truncate text-meta text-fg-muted">{{ m.jobTitle }}</p>
               <p class="truncate text-meta text-fg-faint">{{ m.email }}</p>
+              <UiBadge v-if="m.invitePending" tone="warning" size="sm" class="mt-1">Invited · no password yet</UiBadge>
             </div>
             <button
               v-if="can('team.manage')" type="button" class="toolbar-btn shrink-0"

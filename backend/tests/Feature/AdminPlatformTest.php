@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendPasswordReset;
 use App\Models\AdminUser;
 use App\Models\Customer;
 use App\Models\MediaAsset;
@@ -9,6 +10,9 @@ use App\Models\Order;
 use App\Models\SiteSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -94,8 +98,6 @@ class AdminPlatformTest extends TestCase
         $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/team', [
             'name' => 'New Staffer',
             'email' => 'staff@goldcoasttokota.store',
-            'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
             'role' => 'staff',
         ])->assertForbidden();
     }
@@ -110,8 +112,6 @@ class AdminPlatformTest extends TestCase
         $response = $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/team', [
             'name' => 'New Staffer',
             'email' => 'staff@goldcoasttokota.store',
-            'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
             'role' => 'staff',
         ]);
 
@@ -124,8 +124,6 @@ class AdminPlatformTest extends TestCase
         $response = $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
             'name' => 'New Staffer',
             'email' => 'staff@goldcoasttokota.store',
-            'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
             'role' => 'staff',
         ]);
 
@@ -135,14 +133,77 @@ class AdminPlatformTest extends TestCase
         $this->assertArrayNotHasKey('password', $response->json('data'));
     }
 
+    /** The new member chooses their own password from an emailed link. */
+    public function test_adding_a_member_emails_them_an_invitation_to_set_a_password(): void
+    {
+        Bus::fake();
+
+        $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
+            'name' => 'Akosua', 'email' => 'akosua@goldcoasttokota.store', 'role' => 'staff',
+        ])->assertCreated()->assertJsonPath('data.invite_pending', true);
+
+        Bus::assertDispatched(SendPasswordReset::class, function (SendPasswordReset $job) {
+            $url = $job->message->data['url'];
+
+            return $job->message->key === 'admin_invite'
+                && str_starts_with($url, config('app.admin_url').'/reset-password?')
+                && str_contains($url, 'invite=1');
+        });
+    }
+
+    public function test_a_password_cannot_be_set_for_someone_else(): void
+    {
+        $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
+            'name' => 'Akosua', 'email' => 'akosua@goldcoasttokota.store', 'role' => 'staff',
+            'password' => 'chosen-for-them-1', 'password_confirmation' => 'chosen-for-them-1',
+        ])->assertStatus(422)->assertJsonValidationErrors('password');
+    }
+
+    public function test_an_invited_member_sets_their_password_from_the_link_and_can_sign_in(): void
+    {
+        Bus::fake();
+        $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
+            'name' => 'Akosua', 'email' => 'akosua@goldcoasttokota.store', 'role' => 'staff',
+        ])->assertCreated();
+        $member = AdminUser::query()->where('email', 'akosua@goldcoasttokota.store')->sole();
+
+        // A week later, the invitation still works; a reset link wouldn't.
+        $token = Password::broker('admin_invites')->createToken($member);
+        $this->travel(6)->days();
+
+        $this->postJson('/api/v1/admin/reset-password', [
+            'email' => $member->email, 'token' => $token, 'invite' => true,
+            'password' => 'her-own-password-1', 'password_confirmation' => 'her-own-password-1',
+        ])->assertOk();
+
+        $this->assertNull($member->fresh()->invited_at);
+        $this->assertTrue(Hash::check('her-own-password-1', $member->fresh()->password));
+    }
+
+    public function test_the_invitation_can_be_sent_again(): void
+    {
+        Bus::fake();
+        $invited = AdminUser::factory()->create(['role' => 'staff', 'invited_at' => now()]);
+        $setUp = AdminUser::factory()->create(['role' => 'staff']);
+
+        $this->actingAs($this->superAdmin(), 'admin')->postJson("/api/v1/admin/team/{$invited->id}/invite")->assertOk();
+        $this->actingAs($this->superAdmin(), 'admin')->postJson("/api/v1/admin/team/{$setUp->id}/invite")->assertOk();
+
+        // The invited one gets the invitation again; the set-up one an ordinary reset.
+        Bus::assertDispatched(SendPasswordReset::class, fn ($job) => $job->message->key === 'admin_invite' && $job->customer->is($invited));
+        Bus::assertDispatched(SendPasswordReset::class, fn ($job) => $job->message->key === 'password_reset' && $job->customer->is($setUp));
+        $member = $setUp;
+        $this->actingAs($this->admin(), 'admin')
+            ->postJson("/api/v1/admin/team/{$member->id}/invite")
+            ->assertForbidden();
+    }
+
     /** An intern account with no expiry is just a weaker staff account. */
     public function test_an_intern_account_needs_an_access_expiry(): void
     {
         $payload = [
             'name' => 'Intern',
             'email' => 'intern@goldcoasttokota.store',
-            'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
             'role' => 'intern',
         ];
 
@@ -162,8 +223,6 @@ class AdminPlatformTest extends TestCase
         $this->actingAs($this->superAdmin(), 'admin')->postJson('/api/v1/admin/team', [
             'name' => 'Staffer',
             'email' => 'staffer@goldcoasttokota.store',
-            'password' => 'correct-horse-battery',
-            'password_confirmation' => 'correct-horse-battery',
             'role' => 'staff',
             'access_expires_at' => now()->addDays(30)->toIso8601String(),
         ])->assertStatus(422)->assertJsonValidationErrors('access_expires_at');

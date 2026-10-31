@@ -25,6 +25,7 @@ class AdminUser extends Authenticatable
         'access_expires_at',
         'access_extensions',
         'last_active_at',
+        'invited_at',
     ];
 
     protected $hidden = [
@@ -38,6 +39,7 @@ class AdminUser extends Authenticatable
             'password' => 'hashed',
             'access_expires_at' => 'datetime',
             'last_active_at' => 'datetime',
+            'invited_at' => 'datetime',
             'access_extensions' => 'array',
         ];
     }

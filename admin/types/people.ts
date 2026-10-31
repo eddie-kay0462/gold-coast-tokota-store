@@ -32,6 +32,9 @@ export interface AdminUser {
   /** Audit trail for extensions, newest first. */
   accessExtensions: AccessExtension[]
   lastActiveAt: Timestamp | null
+  /** Invited by email and hasn't chosen a password yet, so can't sign in. */
+  invitePending?: boolean
+  invitedAt?: Timestamp | null
   createdAt: Timestamp
 }
 

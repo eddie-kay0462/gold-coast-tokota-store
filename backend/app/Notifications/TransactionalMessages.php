@@ -211,6 +211,23 @@ final class TransactionalMessages
      * for a signed URL anyway. The SMS channel skips a message with no body,
      * so this needs no special handling anywhere else.
      */
+    /** A new team member's invitation to set their password and sign in. */
+    public static function adminInvite(string $url, string $invitedBy, string $roleLabel, int $expiresInDays): NotificationMessage
+    {
+        return new NotificationMessage(
+            key: 'admin_invite',
+            subject: 'You’re invited to the Gold Coast Tokota dashboard',
+            view: 'mail.admin-invite',
+            data: [
+                'url' => $url,
+                'invitedBy' => $invitedBy,
+                'roleLabel' => $roleLabel,
+                'expiresInDays' => $expiresInDays,
+            ],
+            sms: null,
+        );
+    }
+
     public static function passwordReset(string $url, int $expiresInMinutes): NotificationMessage
     {
         return new NotificationMessage(

@@ -7,6 +7,10 @@ import { ROLE_DESCRIPTIONS, ROLE_ORDER } from '~/utils/permissions'
  * Add, edit or remove a dashboard account: `POST`, `PUT` and `DELETE
  * /admin/team`. Super Admin only (§18: Users).
  *
+ * Nobody sets a password for someone else. Adding a member emails them a link
+ * to choose their own (a week long); "Send a password link" sends it again, or
+ * gives someone already set up a fresh one.
+ *
  * An intern account needs an end date; no other tier may have one, so the
  * date field only shows for interns. A later change to an intern's date
  * belongs to Extend access, which keeps the history.
@@ -23,8 +27,7 @@ const toast = useToast()
 const { user } = useAuth()
 
 const form = reactive({
-  name: '', jobTitle: '', email: '', role: 'staff' as AdminRole,
-  password: '', passwordConfirmation: '', accessUntil: '',
+  name: '', jobTitle: '', email: '', role: 'staff' as AdminRole, accessUntil: '',
 })
 const saving = ref(false)
 const deleting = ref(false)
@@ -45,8 +48,6 @@ watch(() => [open.value, props.member] as const, ([isOpen, m]) => {
     jobTitle: m?.jobTitle ?? '',
     email: m?.email ?? '',
     role: m?.role ?? 'staff',
-    password: '',
-    passwordConfirmation: '',
     accessUntil: '',
   })
 }, { immediate: true })
@@ -54,7 +55,6 @@ watch(() => [open.value, props.member] as const, ([isOpen, m]) => {
 const needsDate = computed(() => form.role === 'intern' && (!editing.value || props.member?.role !== 'intern'))
 const valid = computed(() =>
   !!form.name.trim() && !!form.email.trim()
-  && (editing.value || form.password.length > 0)
   && (!needsDate.value || !!form.accessUntil),
 )
 
@@ -68,10 +68,6 @@ async function save() {
     email: form.email.trim(),
   }
   if (!isSelf.value) body.role = form.role
-  if (form.password) {
-    body.password = form.password
-    body.password_confirmation = form.passwordConfirmation
-  }
   if (needsDate.value) body.access_expires_at = new Date(`${form.accessUntil}T23:59:00`).toISOString()
   try {
     if (props.member) {
@@ -79,15 +75,31 @@ async function save() {
     } else {
       await adminFetch('/admin/team', { method: 'POST', body })
     }
-    toast.success(editing.value ? 'Saved' : 'Member added', editing.value
+    toast.success(editing.value ? 'Saved' : 'Invitation sent', editing.value
       ? form.name
-      : `${form.name} can sign in with that email and password now. Send them the password yourself.`)
+      : `${form.name} gets an email to choose a password. The link works for a week.`)
     emit('saved')
     open.value = false
   } catch (err) {
     error.value = failureMessage(err)
   } finally {
     saving.value = false
+  }
+}
+
+const sendingLink = ref(false)
+async function sendLink() {
+  if (!props.member) return
+  sendingLink.value = true
+  error.value = null
+  try {
+    await adminFetch(`/admin/team/${props.member.id}/invite`, { method: 'POST' })
+    toast.success('Link sent', `${props.member.email} can choose a password from it.`)
+    emit('saved')
+  } catch (err) {
+    error.value = failureMessage(err, 'Not sent. Try again in a moment.')
+  } finally {
+    sendingLink.value = false
   }
 }
 
@@ -135,13 +147,17 @@ async function remove() {
         <p class="mt-1 text-meta text-fg-faint">Intern access ends on this day. Extend it from the team page.</p>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UiField
-          v-model="form.password" :label="editing ? 'New password' : 'Password'" type="password"
-          :required="!editing" autocomplete="new-password"
-          :hint="editing ? 'Leave blank to keep the current one.' : 'At least 8 characters.'"
-        />
-        <UiField v-model="form.passwordConfirmation" label="Repeat password" type="password" autocomplete="new-password" />
+      <p v-if="!editing" class="rounded-lg bg-bg-sunken px-3 py-2.5 text-meta text-fg-muted">
+        We’ll email them a link to choose their own password. You won’t see or set it.
+      </p>
+      <div v-else-if="!isSelf" class="flex flex-wrap items-center gap-3 rounded-lg bg-bg-sunken px-3 py-2.5">
+        <p class="min-w-0 flex-1 text-meta text-fg-muted">
+          <template v-if="member!.invitePending">Invited, but hasn’t chosen a password yet.</template>
+          <template v-else>Locked out? Send them a link to choose a new password.</template>
+        </p>
+        <UiButton variant="secondary" size="sm" :loading="sendingLink" @click="sendLink">
+          {{ member!.invitePending ? 'Send the invitation again' : 'Send a password link' }}
+        </UiButton>
       </div>
 
       <p v-if="error" class="rounded-lg bg-danger-soft px-3 py-2.5 text-meta text-danger" role="alert">{{ error }}</p>
@@ -160,7 +176,7 @@ async function remove() {
       </template>
       <UiButton variant="secondary" size="sm" @click="open = false">Cancel</UiButton>
       <UiButton size="sm" type="submit" form="member-form" :loading="saving" :disabled="!valid">
-        {{ editing ? 'Save' : 'Add member' }}
+        {{ editing ? 'Save' : 'Send invitation' }}
       </UiButton>
     </template>
   </UiModal>

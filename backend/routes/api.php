@@ -557,6 +557,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:team.manage')->name('team.store');
             Route::put('/team/{adminUser}', [AdminTeamController::class, 'update'])
                 ->middleware('capability:team.manage')->name('team.update');
+            Route::post('/team/{adminUser}/invite', [AdminTeamController::class, 'invite'])
+                ->middleware('capability:team.manage')->name('team.invite');
             Route::delete('/team/{adminUser}', [AdminTeamController::class, 'destroy'])
                 ->middleware('capability:team.manage')->name('team.destroy');
 
