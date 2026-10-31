@@ -39,3 +39,22 @@ export function formatStatus(status: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
+
+const DAY = '(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\\.?'
+const TIME = '\\d{1,2}(?:[:.]\\d{2})?\\s*(?:[ap]\\.?m\\.?)?'
+
+/**
+ * Opening hours as the site writes ranges: with "to", never a dash. The
+ * client asked for this, and `business_hours` is typed freely in admin and
+ * shared with the WhatsApp inbox, so it's reworded where it's shown rather than
+ * where it's stored. "Mon–Sat · 9am–5pm GMT" → "Mon to Sat · 9am to 5pm GMT".
+ *
+ * En and em dashes always become "to". A plain hyphen does only between two
+ * days or two times ("Mon-Fri", "9am-5pm"), so a hyphenated word survives.
+ */
+export function formatHours(hours: string): string {
+  return hours
+    .replace(/\s*[–—]\s*/g, ' to ')
+    .replace(new RegExp(`(${DAY})\\s*-\\s*(?=${DAY})`, 'gi'), '$1 to ')
+    .replace(new RegExp(`(${TIME})\\s*-\\s*(?=\\d)`, 'gi'), '$1 to ')
+}

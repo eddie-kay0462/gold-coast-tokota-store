@@ -81,7 +81,6 @@ export const CAPABILITIES = [
   'settings.integrations',
   'team.view',
   'team.manage',
-  'team.extend_access',
   'audit.view',
 ] as const
 
@@ -178,7 +177,6 @@ export function denialMessage(capability: Capability, role: AdminRole): string {
     'settings.payments': 'Payment credentials are restricted to the Super Admin.',
     'settings.fx': 'Currency and exchange-rate configuration is restricted to the Super Admin.',
     'team.manage': 'Only the Super Admin can add or change team members.',
-    'team.extend_access': 'Only an Admin can extend intern access.',
     'content.publish': 'Publishing is restricted. You can save a draft and ask an Admin to publish it.',
     'inbox.reply': 'You can draft a reply, but sending it needs a Staff or Admin account.',
     'inbox.automation': 'Automatic replies are managed by an Admin.',

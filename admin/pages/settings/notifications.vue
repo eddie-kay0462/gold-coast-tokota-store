@@ -9,8 +9,33 @@ import type { NotificationSettings } from '~/types'
  */
 useHead({ title: 'Notifications' })
 
-const { useAdminItem } = useAdminApi()
-const { item: notifications } = useAdminItem<NotificationSettings>('notification-settings', '/admin/settings/notifications')
+const { useAdminItem, adminFetch } = useAdminApi()
+const { can } = useAuth()
+const toast = useToast()
+const { item: notifications, refresh } = useAdminItem<NotificationSettings>('notification-settings', '/admin/settings/notifications')
+
+// Local copy of the switches, saved together. Password resets and gift cards
+// aren't listed: they always go out.
+const triggers = ref<NotificationSettings['triggers']>([])
+watch(notifications, (n) => { triggers.value = (n?.triggers ?? []).map((t) => ({ ...t })) }, { immediate: true })
+const saving = ref(false)
+
+async function save() {
+  saving.value = true
+  try {
+    await adminFetch('/admin/settings/notifications', {
+      method: 'PUT',
+      body: { triggers: triggers.value.map((t) => ({ key: t.key, email: t.email, sms: t.sms })) },
+    })
+    toast.success('Notifications saved', 'Messages from now on follow these switches.')
+    await refresh()
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not saved', message)
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
@@ -49,7 +74,7 @@ const { item: notifications } = useAdminItem<NotificationSettings>('notification
 
         <SettingsSection
           title="Triggers"
-          description="A failed send is logged and retried. It never blocks the order or booking behind it."
+          description="Switch a message off on a channel and customers stop getting it there. Password resets and gift cards always go out. A failed send is logged and retried; it never blocks the order or booking behind it."
         >
           <table class="w-full">
             <thead class="text-left text-meta font-medium text-fg-muted">
@@ -60,17 +85,17 @@ const { item: notifications } = useAdminItem<NotificationSettings>('notification
               </tr>
             </thead>
             <tbody>
-              <tr v-for="t in notifications.triggers" :key="t.key" class="border-b border-border last:border-0">
+              <tr v-for="t in triggers" :key="t.key" class="border-b border-border last:border-0">
                 <td class="py-2.5 text-ui text-fg">{{ t.label }}</td>
                 <td class="py-2.5 text-center">
                   <input
-                    type="checkbox" :checked="t.email" :aria-label="`Email for ${t.label}`"
+                    v-model="t.email" type="checkbox" :disabled="!can('settings.write')" :aria-label="`Email for ${t.label}`"
                     class="size-4 rounded-sm border-border-strong text-accent focus:ring-accent"
                   >
                 </td>
                 <td class="py-2.5 text-center">
                   <input
-                    type="checkbox" :checked="t.sms" :aria-label="`SMS for ${t.label}`"
+                    v-model="t.sms" type="checkbox" :disabled="!can('settings.write')" :aria-label="`SMS for ${t.label}`"
                     class="size-4 rounded-sm border-border-strong text-accent focus:ring-accent"
                   >
                 </td>
@@ -79,7 +104,7 @@ const { item: notifications } = useAdminItem<NotificationSettings>('notification
           </table>
           <template #footer>
             <UiPermissionGate capability="settings.write" quiet>
-              <UiButton size="sm">Save</UiButton>
+              <UiButton size="sm" :loading="saving" @click="save">Save</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>

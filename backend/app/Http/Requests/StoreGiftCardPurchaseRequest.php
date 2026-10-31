@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\GiftCard;
 use App\Services\GiftCards\GiftCardService;
 use App\Support\PersonName;
 use Illuminate\Foundation\Http\FormRequest;
@@ -43,6 +44,7 @@ class StoreGiftCardPurchaseRequest extends FormRequest
             'recipient_email' => ['required', 'email', 'max:255'],
             'sender_name' => ['nullable', 'string', 'max:120'],
             'message' => ['nullable', 'string', 'max:500'],
+            'code_word' => ['nullable', 'string', GiftCard::CODE_WORD_RULE],
         ];
     }
 
@@ -50,6 +52,7 @@ class StoreGiftCardPurchaseRequest extends FormRequest
     {
         return [
             'amount.in' => 'Choose one of the gift card amounts shown.',
+            'code_word.regex' => 'A code word is 2 to 10 letters or numbers, with no spaces.',
         ];
     }
 }

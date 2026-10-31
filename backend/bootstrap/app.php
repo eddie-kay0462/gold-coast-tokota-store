@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureCapability;
+use App\Http\Middleware\RecordAdminAction;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // admin/staff_or_admin pair could not express it.
         $middleware->alias([
             'capability' => EnsureCapability::class,
+            'admin.audit' => RecordAdminAction::class,
         ]);
 
         // A guest hitting an API route gets 401, never a redirect. Returning

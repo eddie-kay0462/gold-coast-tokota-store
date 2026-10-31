@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Resources\Admin\AdminUserResource;
 use App\Models\AdminUser;
+use App\Services\Team\AdminInvites;
 use App\Support\AdminCapability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 
 /**
  * Admin account management — **Super Admin only** for anything that writes.
@@ -31,19 +34,41 @@ class TeamController extends Controller
         );
     }
 
-    public function store(StoreAdminUserRequest $request): AdminUserResource
+    /**
+     * Adds the member and emails them an invitation to choose their password.
+     * The one stored meanwhile is random and never sent anywhere.
+     */
+    public function store(StoreAdminUserRequest $request, AdminInvites $invites): AdminUserResource
     {
-        return new AdminUserResource(AdminUser::create($request->validated()));
+        $member = AdminUser::create([...$request->validated(), 'password' => Str::random(64)]);
+
+        $invites->send($member, $request->user('admin'));
+
+        return new AdminUserResource($member->refresh());
+    }
+
+    /**
+     * Sends the invitation again (it lasts a week), or, for someone already
+     * set up, a fresh link to choose a new password. Either way the Super
+     * Admin never handles the password.
+     */
+    public function invite(Request $request, AdminUser $adminUser, AdminInvites $invites): JsonResponse
+    {
+        if ($adminUser->invited_at !== null) {
+            $invites->send($adminUser, $request->user('admin'));
+        } else {
+            // Already set up: the ordinary reset email, as if they'd asked.
+            Password::broker('admins')->sendResetLink(['email' => $adminUser->email]);
+        }
+
+        return response()->json(['message' => "A link to set a password is on its way to {$adminUser->email}."]);
     }
 
     public function update(StoreAdminUserRequest $request, AdminUser $adminUser): JsonResponse|AdminUserResource
     {
-        $data = $request->validated();
-
-        // A blank password field means "leave it alone", not "set it to empty".
-        if (blank($data['password'] ?? null)) {
-            unset($data['password']);
-        }
+        // `password` is prohibited, so at most an empty one arrives; it
+        // never overwrites the member's own.
+        $data = collect($request->validated())->except('password')->all();
 
         // Changing your own role would let a Super Admin demote themselves out
         // of the only tier that can undo it.

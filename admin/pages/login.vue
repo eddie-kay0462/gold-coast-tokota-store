@@ -123,9 +123,12 @@ async function submit() {
               >
               Keep me signed in
             </label>
-            <button type="button" class="text-ui text-accent-text underline-offset-4 hover:underline">
+            <NuxtLink
+              :to="{ path: '/forgot-password', query: email ? { email } : {} }"
+              class="text-ui text-accent-text underline-offset-4 hover:underline"
+            >
               Forgot password?
-            </button>
+            </NuxtLink>
           </div>
 
           <UiButton type="submit" block :loading="submitting">

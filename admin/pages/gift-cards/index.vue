@@ -54,10 +54,10 @@ const columns: Column<Row>[] = [
 const issueOpen = ref(false)
 const issuing = ref(false)
 const issueError = ref<string | null>(null)
-const draft = reactive({ cedis: '', recipientName: '', recipientEmail: '', note: '', sendEmail: true })
+const draft = reactive({ cedis: '', recipientName: '', recipientEmail: '', note: '', codeWord: '', sendEmail: true })
 
 function openIssue() {
-  Object.assign(draft, { cedis: '', recipientName: '', recipientEmail: '', note: '', sendEmail: true })
+  Object.assign(draft, { cedis: '', recipientName: '', recipientEmail: '', note: '', codeWord: '', sendEmail: true })
   issueError.value = null
   issueOpen.value = true
 }
@@ -79,6 +79,7 @@ async function issue() {
         recipient_name: draft.recipientName,
         recipient_email: draft.recipientEmail || null,
         note: draft.note,
+        code_word: draft.codeWord.trim() || null,
         send_email: draft.sendEmail && !!draft.recipientEmail,
       },
     })
@@ -174,6 +175,12 @@ async function issue() {
         <UiField v-model="draft.cedis" label="Amount (GH₵)" type="number" required />
         <UiField v-model="draft.recipientName" label="Customer name" required />
         <UiField v-model="draft.recipientEmail" label="Customer email" type="email" hint="Where the code is sent." />
+        <UiField
+          v-model="draft.codeWord" label="Code word" maxlength="10" autocomplete="off"
+          :hint="draft.codeWord.trim()
+            ? `The code will read GCT-${draft.codeWord.trim().toUpperCase()}-XXXX, with four random characters so it can’t be guessed.`
+            : 'Optional, 2 to 10 letters or numbers, e.g. KOFI. Blank gives a fully random code.'"
+        />
         <UiField
           v-model="draft.note" label="Reason" type="textarea" :rows="2" required
           hint="Kept on the card's history, e.g. the order whose item became unavailable."

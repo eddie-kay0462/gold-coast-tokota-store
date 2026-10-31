@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PhArrowLeft, PhPlus, PhX } from '@phosphor-icons/vue'
-import type { FxRate, InventoryItem, Product } from '~/types'
+import { PhArrowLeft, PhPlus, PhTrash, PhX } from '@phosphor-icons/vue'
+import type { FxRate, InventoryItem, Product, VariantColour } from '~/types'
 import type { LightboxImage } from '~/components/ui/Lightbox.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
 
@@ -20,7 +20,12 @@ const { formatDate } = useFormatters()
 
 const { item: product, refresh } = useAdminItem<Product>(`product-${route.params.id}`, `/admin/products/${route.params.id}`)
 const { item: fx } = useAdminItem<FxRate>('product-fx', '/fx-rate')
-const { items: inventory } = useAdminList<InventoryItem>('product-inventory', '/admin/inventory')
+// Filtered to this product: unfiltered, the list is the 50 scarcest sizes in
+// the whole catalogue, which can leave this one's out.
+const { items: inventory, refresh: refreshInventory } = useAdminList<InventoryItem>(
+  `product-inventory-${route.params.id}`, '/admin/inventory', { product_id: route.params.id, per_page: 500 }, { allPages: true },
+)
+const { options: categoryOptions, followType } = useCategories()
 
 useHead({ title: computed(() => product.value?.name ?? 'Product') })
 
@@ -32,6 +37,128 @@ const priceGhs = ref('')
 watchEffect(() => {
   if (product.value) priceGhs.value = (product.value.basePriceGhs.amount / 100).toFixed(2)
 })
+
+// --- Sizes and colours ----------------------------------------------------
+// `PUT /admin/products/{id}/variants`. The stock rows follow the two lists; a
+// size or colour that's removed while it still has stock is refused until the
+// admin confirms (`remove_stocked`), and one with units held for a checkout is
+// refused outright.
+const variantSizes = ref<string[]>([])
+const variantColours = ref<VariantColour[]>([])
+function resetVariants() {
+  variantSizes.value = [...(product.value?.sizes ?? [])]
+  variantColours.value = (product.value?.colours ?? []).map((c) => ({ ...c }))
+}
+watch(product, resetVariants, { immediate: true })
+const savingVariants = ref(false)
+const variantsError = ref<string | null>(null)
+const stockWarning = ref<string | null>(null)
+const variantsChanged = computed(() =>
+  JSON.stringify(variantSizes.value) !== JSON.stringify(product.value?.sizes ?? [])
+  || JSON.stringify(variantColours.value) !== JSON.stringify(product.value?.colours ?? []),
+)
+
+async function saveVariants(removeStocked = false) {
+  if (!product.value) return
+  if (variantColours.value.some((c) => !c.name.trim())) {
+    variantsError.value = 'Give every colour a name, or remove it.'
+    return
+  }
+  savingVariants.value = true
+  variantsError.value = null
+  try {
+    await adminFetch(`/admin/products/${product.value.id}/variants`, {
+      method: 'PUT',
+      body: {
+        sizes: variantSizes.value,
+        colours: variantColours.value.map((c) => ({ name: c.name.trim(), hex: c.hex })),
+        remove_stocked: removeStocked,
+      },
+    })
+    stockWarning.value = null
+    await Promise.all([refresh(), refreshInventory()])
+    toast.success('Sizes and colours saved', 'New ones start at zero; set their counts under Stock.')
+  } catch (err) {
+    const e = err as { data?: { errors?: Record<string, string[]> } }
+    const warning = e.data?.errors?.remove_stocked?.[0]
+    if (warning) stockWarning.value = warning
+    else variantsError.value = failureMessage(err)
+  } finally {
+    savingVariants.value = false
+  }
+}
+
+// --- Details and price ----------------------------------------------------
+const details = reactive({ name: '', slug: '', categoryId: '', productType: '', description: '', isActive: true, isFeatured: false })
+watchEffect(() => {
+  const p = product.value
+  if (!p) return
+  Object.assign(details, {
+    name: p.name, slug: p.slug, categoryId: p.categoryId ? String(p.categoryId) : '',
+    productType: p.productType ?? '',
+    description: p.description ?? '', isActive: p.isActive, isFeatured: p.isFeatured,
+  })
+})
+function setCategory(id: string) {
+  details.productType = followType(details.productType, details.categoryId, id)
+  details.categoryId = id
+}
+const saving = ref<'details' | 'price' | 'delete' | null>(null)
+const detailsError = ref<string | null>(null)
+const priceError = ref<string | null>(null)
+
+async function update(section: 'details' | 'price', body: Record<string, unknown>, done: string) {
+  if (!product.value) return
+  saving.value = section
+  const error = section === 'details' ? detailsError : priceError
+  error.value = null
+  try {
+    await adminFetch(`/admin/products/${product.value.id}`, { method: 'PUT', body })
+    await refresh()
+    toast.success(done, 'Live on the storefront now.')
+  } catch (err) {
+    error.value = failureMessage(err)
+  } finally {
+    saving.value = null
+  }
+}
+
+function saveDetails() {
+  return update('details', {
+    name: details.name.trim(),
+    slug: details.slug.trim(),
+    category_id: details.categoryId ? Number(details.categoryId) : null,
+    product_type: details.productType.trim() || null,
+    description: details.description.trim() || null,
+    is_active: details.isActive,
+    is_featured: details.isFeatured,
+  }, 'Product saved')
+}
+
+const priceMinor = computed(() => Math.round(Number(priceGhs.value) * 100))
+const priceValid = computed(() => priceGhs.value !== '' && Number.isFinite(priceMinor.value) && priceMinor.value >= 0)
+function savePrice() {
+  if (!priceValid.value) return
+  return update('price', { base_price_ghs: priceMinor.value }, 'Price saved')
+}
+
+// Deleting removes the product outright, so it asks first.
+const confirmingDelete = ref(false)
+async function deleteProduct() {
+  if (!product.value) return
+  saving.value = 'delete'
+  try {
+    await adminFetch(`/admin/products/${product.value.id}`, { method: 'DELETE' })
+    toast.success('Product deleted', product.value.name)
+    await navigateTo('/products')
+  } catch (err) {
+    const message = failureMessage(err, 'Not deleted. Try again in a moment.')
+    if (message) toast.error('Not deleted', message)
+    confirmingDelete.value = false
+  } finally {
+    saving.value = null
+  }
+}
 
 // --- Shipping and customs ------------------------------------------------
 // Grams and millimetres, as stored. International checkout refuses a product
@@ -77,9 +204,7 @@ async function saveShipping() {
     await refresh()
     toast.success('Shipping details saved')
   } catch (err: unknown) {
-    const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
-    if (e.statusCode === 401 || e.statusCode === 419) return
-    shippingError.value = Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Saving failed. Try again in a moment.'
+    shippingError.value = failureMessage(err)
   } finally {
     savingShipping.value = false
   }
@@ -111,12 +236,6 @@ const openViewer = (src: string) => {
   viewing.value = i === -1 ? null : i
 }
 const photoError = ref<string | null>(null)
-
-function failureMessage(err: unknown, fallback: string): string | null {
-  const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
-  if (e.statusCode === 401 || e.statusCode === 419) return null
-  return Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? fallback
-}
 
 async function addPhotos(event: Event, colour: string | null) {
   const input = event.target as HTMLInputElement
@@ -173,6 +292,18 @@ const derivedUsd = computed(() => {
           <PhArrowLeft :size="16" />
           All products
         </UiButton>
+        <template v-if="product && can('products.delete')">
+          <UiButton v-if="!confirmingDelete" variant="ghost" size="sm" class="text-danger" @click="confirmingDelete = true">
+            <PhTrash :size="16" />
+            Delete
+          </UiButton>
+          <template v-else>
+            <UiButton variant="secondary" size="sm" @click="confirmingDelete = false">Keep it</UiButton>
+            <UiButton variant="danger" size="sm" :loading="saving === 'delete'" @click="deleteProduct">
+              Delete {{ product.name }}
+            </UiButton>
+          </template>
+        </template>
       </template>
     </UiPageHeader>
 
@@ -184,14 +315,36 @@ const derivedUsd = computed(() => {
       <div class="admin-stack min-w-0">
         <SettingsSection title="Details">
           <div class="grid gap-4 sm:grid-cols-2">
-            <UiField :model-value="product.name" label="Name" class="sm:col-span-2" />
-            <UiField :model-value="product.slug" label="Slug" />
-            <UiField :model-value="product.categoryName" label="Category" />
-            <UiField :model-value="product.description" label="Description" type="textarea" class="sm:col-span-2" />
+            <UiField v-model="details.name" label="Name" required class="sm:col-span-2" :disabled="!can('products.write')" />
+            <UiField
+              v-model="details.slug" label="Slug" required :disabled="!can('products.write')"
+              hint="The end of its web address. Changing it breaks old links."
+            />
+            <UiSelect
+              :model-value="details.categoryId" label="Category" :options="categoryOptions" :disabled="!can('products.write')"
+              @update:model-value="setCategory"
+            />
+            <UiField
+              v-model="details.productType" label="Type" list="product-types" :disabled="!can('products.write')"
+              hint="Follows the category unless you type your own. The shop’s Type filter: slippers, ahenema, closed-toe."
+            />
+            <datalist id="product-types">
+              <option v-for="t in ['slippers', 'ahenema', 'closed-toe']" :key="t" :value="t" />
+            </datalist>
+            <UiField v-model="details.description" label="Description" type="textarea" class="sm:col-span-2" :disabled="!can('products.write')" />
+            <label class="flex items-center gap-2 text-ui text-fg">
+              <input v-model="details.isActive" type="checkbox" class="size-4 rounded-sm" :disabled="!can('products.write')">
+              On sale in the shop
+            </label>
+            <label class="flex items-center gap-2 text-ui text-fg">
+              <input v-model="details.isFeatured" type="checkbox" class="size-4 rounded-sm" :disabled="!can('products.write')">
+              Featured on the home page
+            </label>
           </div>
+          <p v-if="detailsError" class="mt-3 text-meta text-danger" role="alert">{{ detailsError }}</p>
           <template #footer>
             <UiPermissionGate capability="products.write" quiet>
-              <UiButton size="sm">Save</UiButton>
+              <UiButton size="sm" :loading="saving === 'details'" :disabled="!details.name.trim() || !details.slug.trim()" @click="saveDetails">Save</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>
@@ -215,9 +368,10 @@ const derivedUsd = computed(() => {
               </p>
             </div>
           </div>
+          <p v-if="priceError" class="mt-3 text-meta text-danger" role="alert">{{ priceError }}</p>
           <template #footer>
             <UiPermissionGate capability="pricing.write">
-              <UiButton size="sm">Save price</UiButton>
+              <UiButton size="sm" :loading="saving === 'price'" :disabled="!priceValid" @click="savePrice">Save price</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>
@@ -365,35 +519,45 @@ const derivedUsd = computed(() => {
           <UiLightbox v-model:index="viewing" :images="viewerImages" />
         </SettingsSection>
 
-        <SettingsSection title="Variants" description="Stock per size and colourway.">
-          <ul class="divide-y divide-border">
-            <li v-for="v in variants" :key="v.id" class="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-              <span class="min-w-0 flex-1">
-                <span class="block text-ui text-fg-strong">
-                  {{ Object.values(v.variantAttributes).join(' · ') }}
-                </span>
-                <span class="block font-mono text-meta text-fg-faint">{{ v.sku }}</span>
-              </span>
-              <span
-                class="text-ui"
-                :class="v.quantityAvailable <= v.lowStockThreshold ? 'font-medium text-warning' : 'text-fg'"
-              >{{ v.quantityAvailable }} available</span>
-              <span v-if="v.quantityReserved" class="text-meta text-info">
-                {{ v.quantityReserved }} reserved
-              </span>
-            </li>
-          </ul>
+        <SettingsSection
+          title="Sizes & colours"
+          description="Every colour comes in every size. Each pair is a line of stock below."
+        >
+          <ProductsVariantsEditor
+            v-model:sizes="variantSizes" v-model:colours="variantColours"
+            :disabled="!can('products.write')"
+          />
+          <div v-if="stockWarning" class="mt-3 rounded-lg bg-warning-soft px-3 py-2.5 text-meta text-warning" role="alert">
+            <p>{{ stockWarning }}</p>
+            <div class="mt-2 flex gap-2">
+              <UiButton variant="danger" size="sm" :loading="savingVariants" @click="saveVariants(true)">Remove them and their stock</UiButton>
+              <UiButton variant="secondary" size="sm" @click="stockWarning = null; resetVariants()">Undo my changes</UiButton>
+            </div>
+          </div>
+          <p v-if="variantsError" class="mt-3 text-meta text-danger" role="alert">{{ variantsError }}</p>
+          <template #footer>
+            <UiPermissionGate capability="products.write" quiet>
+              <UiButton v-if="variantsChanged" variant="ghost" size="sm" @click="resetVariants">Undo</UiButton>
+              <UiButton size="sm" :loading="savingVariants && !stockWarning" :disabled="!variantsChanged || !variantSizes.length" @click="saveVariants()">
+                Save sizes & colours
+              </UiButton>
+            </UiPermissionGate>
+          </template>
+        </SettingsSection>
+
+        <SettingsSection title="Stock" description="Per colour and size. Open a colour to set its counts.">
+          <ProductsStockByColour :items="variants" :colours="product.colours" @saved="refreshInventory(); refresh()" />
         </SettingsSection>
       </div>
 
       <aside class="flex flex-col gap-4">
         <SettingsSection title="Status">
           <UiBadge :tone="product.isActive ? 'success' : 'neutral'" dot>
-            {{ product.isActive ? 'Active' : 'Inactive' }}
+            {{ product.isActive ? 'On sale' : 'Draft' }}
           </UiBadge>
           <UiBadge v-if="product.isFeatured" tone="accent" dot class="ml-1.5">Featured</UiBadge>
           <p class="mt-3 text-meta text-fg-muted">
-            Inactive products are hidden from the storefront but stay visible here.
+            Drafts are hidden from the storefront but stay here, under Products › Drafts.
           </p>
           <dl class="mt-3 space-y-1.5 border-t border-border pt-3 text-meta">
             <div class="flex justify-between gap-2">

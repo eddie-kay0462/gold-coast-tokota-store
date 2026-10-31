@@ -104,6 +104,37 @@ class PaystackService implements PaymentGateway
     }
 
     /**
+     * Refund some or all of a charge to the card or mobile money account it
+     * came from (§9: "Refunds use the original payment method"). Paystack
+     * queues it and pays it out over the following days.
+     *
+     * @param  int  $amount  In the charge's currency, minor units.
+     * @return array{status: string, amount: int}
+     *
+     * @throws RuntimeException with Paystack's own message when it refuses.
+     */
+    public function refund(string $reference, int $amount, ?string $note = null): array
+    {
+        $response = Http::withToken(config('services.paystack.secret'))
+            ->acceptJson()
+            ->timeout(20)
+            ->post($this->endpoint('/refund'), array_filter([
+                'transaction' => $reference,
+                'amount' => $amount,
+                'merchant_note' => $note,
+            ]));
+
+        if ($response->failed() || $response->json('status') !== true) {
+            throw new RuntimeException((string) ($response->json('message') ?: 'Paystack didn’t accept the refund.'));
+        }
+
+        return [
+            'status' => (string) $response->json('data.status'),
+            'amount' => (int) ($response->json('data.amount') ?? $amount),
+        ];
+    }
+
+    /**
      * Whether a webhook body genuinely came from Paystack.
      *
      * HMAC-SHA512 of the **raw** body with the secret key, compared in

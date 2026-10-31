@@ -5,7 +5,6 @@ namespace App\Http\Requests\Admin;
 use App\Support\AdminCapability;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * Creating and editing admin accounts.
@@ -43,7 +42,10 @@ class StoreAdminUserRequest extends FormRequest
                 $creating ? 'required' : 'sometimes', 'email', 'max:255',
                 Rule::unique('admin_users', 'email')->ignore($userId),
             ],
-            'password' => [$creating ? 'required' : 'nullable', 'confirmed', Password::defaults()],
+            // Nobody sets a password for someone else: a new member chooses
+            // theirs from the invitation email (AdminInvites), and anyone who
+            // has forgotten theirs resets it. Their own goes via PUT /admin/me.
+            'password' => ['prohibited'],
             'role' => [$creating ? 'required' : 'sometimes', Rule::in(AdminCapability::ROLES)],
 
             // An intern account without an expiry is just a weaker staff

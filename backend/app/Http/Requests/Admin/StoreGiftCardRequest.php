@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\GiftCard;
 use Illuminate\Foundation\Http\FormRequest;
 
 /** Issuing store credit by hand (§11/§21: an item unavailable after purchase). */
@@ -21,7 +22,15 @@ class StoreGiftCardRequest extends FormRequest
             'recipient_email' => ['nullable', 'required_if:send_email,true', 'email', 'max:255'],
             // Why it was issued, for whoever reads the ledger later.
             'note' => ['required', 'string', 'max:500'],
+            'code_word' => ['nullable', 'string', GiftCard::CODE_WORD_RULE],
             'send_email' => ['boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'code_word.regex' => 'A code word is 2 to 10 letters or numbers, with no spaces.',
         ];
     }
 }

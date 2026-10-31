@@ -20,7 +20,7 @@ class BookingController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $bookings = Booking::query()
-            ->with(['customer', 'workshopSession'])
+            ->with(['customer', 'workshopSession.workshopType'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
             ->when(
@@ -28,7 +28,7 @@ class BookingController extends Controller
                 fn ($q) => $q->where('workshop_session_id', $request->integer('workshop_session_id')),
             )
             ->latest()
-            ->paginate(25)
+            ->paginate(max(1, min($request->integer('per_page', 25), 200)))
             ->withQueryString();
 
         return AdminBookingResource::collection($bookings);
@@ -60,7 +60,7 @@ class BookingController extends Controller
                 SendBookingNotification::dispatch($booking, 'confirmed');
             }
 
-            return new AdminBookingResource($booking->load(['customer', 'workshopSession']));
+            return new AdminBookingResource($booking->load(['customer', 'workshopSession.workshopType']));
         }
 
         $result = DB::transaction(function () use ($booking, $target) {
@@ -87,6 +87,6 @@ class BookingController extends Controller
         // has already established.
         SendBookingNotification::dispatch($result, 'waitlist_promoted');
 
-        return new AdminBookingResource($result->load(['customer', 'workshopSession']));
+        return new AdminBookingResource($result->load(['customer', 'workshopSession.workshopType']));
     }
 }

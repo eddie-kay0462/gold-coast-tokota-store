@@ -12,10 +12,12 @@ export interface SiteSettings {
   whatsappHoldHours?: number
   contactEmail: string
   contactPhone: string
-  addressLine: string
+  address: string
   instagramUrl: string
   heroHeadline: string
   heroImage: string | null
+  /** The announcement bar's lines, up to five. Empty: the storefront's own. */
+  announcements?: string[]
   /** Replaces README's single `diy_turnaround_estimate` string. */
   diyTurnaroundTiers: DiyTurnaroundTier[]
   updatedAt: Timestamp

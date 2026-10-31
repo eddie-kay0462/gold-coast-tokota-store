@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\WorkshopSession;
 use App\Models\WorkshopType;
+use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -144,6 +145,22 @@ class AdminOperationsTest extends TestCase
             ->assertJsonPath('data.status', 'shipped');
     }
 
+    /** The same as cancelling a WhatsApp order: its held stock goes back on sale. */
+    public function test_cancelling_an_unpaid_order_releases_the_stock_it_held(): void
+    {
+        $item = InventoryItem::factory()->create(['quantity_available' => 5, 'quantity_reserved' => 0]);
+        $order = Order::factory()->create(['status' => 'pending']);
+        app(InventoryReservationService::class)->reserve($item, 2, now()->addHours(24), $order);
+        $this->assertSame(2, $item->fresh()->quantity_reserved);
+
+        $this->actingAs($this->staff(), 'admin')
+            ->patchJson("/api/v1/admin/orders/{$order->reference}", ['status' => 'cancelled'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled');
+
+        $this->assertSame(0, $item->fresh()->quantity_reserved);
+    }
+
     /** README two-tier rule: refunds are named alongside pricing as Admin-only. */
     public function test_staff_cannot_issue_a_refund(): void
     {
@@ -190,6 +207,31 @@ class AdminOperationsTest extends TestCase
 
         $response->assertOk();
         $this->assertCount(1, $response->json('data'));
+    }
+
+    /** What the admin's booking and waitlist screens read off each row. */
+    public function test_a_booking_carries_its_workshop_attendees_and_queue_place(): void
+    {
+        $session = WorkshopSession::factory()->create(['capacity' => 1]);
+        Booking::factory()->create(['workshop_session_id' => $session->id, 'status' => 'confirmed']);
+        $first = Booking::factory()->create([
+            'workshop_session_id' => $session->id, 'status' => 'waitlisted',
+            'details' => ['name' => 'Ama', 'email' => 'ama@example.com', 'phone' => '0200000000', 'attendee_count' => 3],
+            'created_at' => now()->subHour(),
+        ]);
+        $second = Booking::factory()->create(['workshop_session_id' => $session->id, 'status' => 'waitlisted']);
+
+        $rows = collect($this->actingAs($this->staff(), 'admin')
+            ->getJson('/api/v1/admin/bookings?status=waitlisted')
+            ->assertOk()
+            ->json('data'))->keyBy('id');
+
+        $this->assertSame(1, $rows[$first->id]['waitlist_position']);
+        $this->assertSame(2, $rows[$second->id]['waitlist_position']);
+        $this->assertSame(3, $rows[$first->id]['attendee_count']);
+        $this->assertSame('Ama', $rows[$first->id]['customer_name']);
+        $this->assertSame($session->workshopType->name, $rows[$first->id]['workshop_type_name']);
+        $this->assertSame($session->scheduled_date->toDateString(), $rows[$first->id]['scheduled_date']);
     }
 
     public function test_a_waitlisted_booking_can_be_promoted_when_a_seat_is_free(): void

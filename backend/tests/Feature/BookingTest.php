@@ -138,6 +138,28 @@ class BookingTest extends TestCase
         $response->assertJsonValidationErrors(['details.size', 'details.foot_length', 'details.fulfilment']);
     }
 
+    /** The storefront sends first and last name, as checkout does; `name` is made from them. */
+    public function test_a_booking_keeps_first_and_last_name(): void
+    {
+        $response = $this->postJson('/api/v1/bookings', [
+            'type' => 'diy_order',
+            'details' => [
+                'first_name' => 'Nana Ama',
+                'last_name' => 'Owusu',
+                'email' => 'nana@example.com',
+                'phone' => '+233241234567',
+                'size' => '40',
+                'foot_length' => 25.5,
+                'fulfilment' => 'pickup',
+            ],
+        ])->assertCreated();
+
+        $details = Booking::findOrFail($response->json('data.id'))->details;
+        $this->assertSame('Nana Ama Owusu', $details['name']);
+        $this->assertSame('Nana Ama', $details['first_name']);
+        $this->assertSame('Owusu', $details['last_name']);
+    }
+
     public function test_booking_requires_contact_details(): void
     {
         $response = $this->postJson('/api/v1/bookings', [

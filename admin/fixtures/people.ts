@@ -132,7 +132,8 @@ export const customers: Customer[] = Array.from({ length: 48 }, (_, i) => {
     country,
     countryCode,
     orderCount,
-    lifetimeValue: ghs(orderCount * int(12000, 68000)),
+    lifetimeValue: ghs(countryCode === 'GH' ? orderCount * int(12000, 68000) : 0),
+    lifetimeValueUsd: countryCode === 'GH' || !orderCount ? null : { amount: orderCount * int(900, 5000), currency: 'USD' },
     lastOrderAt: orderCount ? daysAgo(int(0, 120)) : null,
     createdAt: daysAgo(int(5, 400)),
   }
