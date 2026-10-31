@@ -7,6 +7,8 @@ use App\Http\Resources\CategoryResource;
 use App\Http\Resources\CollectionResource;
 use App\Models\Category;
 use App\Models\Collection;
+use App\Models\Product;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -27,10 +29,34 @@ class CategoryController extends Controller
     {
         return response()->json([
             'data' => [
-                'categories' => CategoryResource::collection(Category::query()->withCount('products')->orderBy('name')->get()),
+                'categories' => CategoryResource::collection($this->withUsualType(
+                    Category::query()->withCount('products')->orderBy('name')->get()
+                )),
                 'collections' => CollectionResource::collection(Collection::query()->orderBy('name')->get()),
             ],
         ]);
+    }
+
+    /**
+     * Each category's most common product type, taken from its products rather
+     * than a fixed map, so a new category picks one up once it's stocked. Ties
+     * go to the alphabetically first type.
+     *
+     * @param  EloquentCollection<int, Category>  $categories
+     * @return EloquentCollection<int, Category>
+     */
+    private function withUsualType(EloquentCollection $categories): EloquentCollection
+    {
+        $usual = Product::query()
+            ->whereNotNull('category_id')->whereNotNull('product_type')->where('product_type', '!=', '')
+            ->selectRaw('category_id, product_type, COUNT(*) as uses')
+            ->groupBy('category_id', 'product_type')
+            ->orderByDesc('uses')->orderBy('product_type')
+            ->get()
+            ->groupBy('category_id')
+            ->map(fn ($rows) => $rows->first()->product_type);
+
+        return $categories->each(fn (Category $c) => $c->setAttribute('usual_product_type', $usual->get($c->id)));
     }
 
     public function store(Request $request): CategoryResource

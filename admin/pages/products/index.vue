@@ -5,7 +5,7 @@ import type { Column } from '~/components/ui/DataTable.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
 
 /**
- * Products, Figma node 10:3761, followed closely: Active / All tabs, the
+ * Products, Figma node 10:3761, followed closely: tabs (by state, below), the
  * sort-filter-history toolbar cluster, the dismissible info banner, a
  * checkbox table with a per-row action cluster, and the black primary action.
  *
@@ -22,13 +22,31 @@ const { can } = useAuth()
 const toast = useToast()
 const { formatDate, formatNumber } = useFormatters()
 
-const { items: products, pending, refresh } = useAdminList<Product>('admin-products', '/admin/products')
+const { items: products, pending, refresh } = useAdminList<Product>('admin-products', '/admin/products', { per_page: 200 }, { allPages: true })
 const { item: fx } = useAdminItem<FxRate>('fx-rate', '/fx-rate')
 
-const tab = ref<'active' | 'all'>('active')
-const visible = computed(() =>
-  tab.value === 'active' ? products.value.filter((p) => p.isActive) : products.value,
-)
+// By state, all from fields the product already has: "Drafts" are products
+// not on sale, which is how Add product saves a new one. There is no separate
+// draft status to keep in step.
+const tabs = [
+  { key: 'all', label: 'All', test: () => true },
+  { key: 'active', label: 'On sale', test: (p: Product) => p.isActive },
+  { key: 'draft', label: 'Drafts', test: (p: Product) => !p.isActive },
+  { key: 'out', label: 'Out of stock', test: (p: Product) => p.isActive && !p.isPreOrder && p.totalAvailable === 0 },
+  { key: 'low', label: 'Low stock', test: (p: Product) => p.lowStock && p.totalAvailable > 0 },
+  { key: 'preorder', label: 'Pre-order', test: (p: Product) => !!p.isPreOrder },
+] as const
+type TabKey = typeof tabs[number]['key']
+
+// Kept in the address, so a tab survives a reload and opening a product and coming back.
+const route = useRoute()
+const router = useRouter()
+const tab = computed<TabKey>({
+  get: () => (tabs.some((t) => t.key === route.query.tab) ? route.query.tab as TabKey : 'active'),
+  set: (key) => { router.replace({ query: { ...route.query, tab: key === 'active' ? undefined : key } }) },
+})
+const tabCount = (key: TabKey) => products.value.filter(tabs.find((t) => t.key === key)!.test).length
+const visible = computed(() => products.value.filter(tabs.find((t) => t.key === tab.value)!.test))
 
 const r = useResource<Product>(visible, {
   searchFields: ['name', 'sku', 'categoryName'],
@@ -37,7 +55,6 @@ const r = useResource<Product>(visible, {
 })
 
 // Arriving from Categories filters to that one.
-const route = useRoute()
 if (typeof route.query.category === 'string') r.setFilter('categoryName', route.query.category)
 
 const bannerDismissed = useCookie<boolean>('gct-products-banner', { default: () => false })
@@ -50,16 +67,18 @@ const categoryOptions = computed(() => [
 // --- Deactivate (bulk) and delete --------------------------------------------
 const busy = ref(false)
 
-async function deactivateSelected() {
+async function setOnSale(onSale: boolean) {
   const ids = [...r.selected.value]
   busy.value = true
   let done = 0
   try {
     for (const id of ids) {
-      await adminFetch(`/admin/products/${id}`, { method: 'PUT', body: { is_active: false } })
+      await adminFetch(`/admin/products/${id}`, { method: 'PUT', body: { is_active: onSale } })
       done++
     }
-    toast.success(`${done} product${done === 1 ? '' : 's'} taken off sale`, 'They stay here under All products.')
+    const plural = done === 1 ? '' : 's'
+    if (onSale) toast.success(`${done} product${plural} on sale`, 'They’re in the shop now.')
+    else toast.success(`${done} product${plural} taken off sale`, 'They stay here under Drafts.')
     r.clearSelection()
   } catch (err) {
     const message = failureMessage(err)
@@ -116,20 +135,18 @@ const columns: Column<Product>[] = [
     </UiPageHeader>
 
     <!-- Tabs (Figma 10:5807) -->
-    <div class="flex items-center gap-5 border-b border-border">
+    <div class="flex items-center gap-5 overflow-x-auto border-b border-border">
       <button
-        v-for="t in (['active', 'all'] as const)" :key="t"
+        v-for="t in tabs" :key="t.key"
         type="button"
-        class="-mb-px border-b-2 pb-2.5 text-ui transition-colors"
-        :class="tab === t
+        class="-mb-px shrink-0 border-b-2 pb-2.5 text-ui transition-colors"
+        :class="tab === t.key
           ? 'border-accent font-medium text-fg-strong'
           : 'border-transparent text-fg-muted hover:text-fg-strong'"
-        @click="tab = t"
+        @click="tab = t.key; r.clearSelection()"
       >
-        {{ t === 'active' ? 'Active' : 'All products' }}
-        <span class="ml-1.5 text-meta text-fg-faint">
-          {{ t === 'active' ? products.filter((p) => p.isActive).length : products.length }}
-        </span>
+        {{ t.label }}
+        <span class="ml-1.5 text-meta text-fg-faint">{{ tabCount(t.key) }}</span>
       </button>
     </div>
 
@@ -168,7 +185,8 @@ const columns: Column<Product>[] = [
     <div v-if="r.selectedCount.value" class="flex items-center gap-3 rounded-lg bg-accent-soft px-4 py-2.5">
       <p class="text-ui text-accent-text">{{ r.selectedCount.value }} selected</p>
       <UiPermissionGate capability="products.write" quiet>
-        <UiButton variant="ghost" size="sm" :loading="busy" @click="deactivateSelected">Take off sale</UiButton>
+        <UiButton v-if="tab === 'draft'" variant="ghost" size="sm" :loading="busy" @click="setOnSale(true)">Put on sale</UiButton>
+        <UiButton v-else variant="ghost" size="sm" :loading="busy" @click="setOnSale(false)">Take off sale</UiButton>
       </UiPermissionGate>
       <button type="button" class="ml-auto text-meta text-accent-text hover:underline" @click="r.clearSelection()">
         Clear
@@ -185,7 +203,7 @@ const columns: Column<Product>[] = [
       :dir="r.dir.value"
       :row-link="(p) => `/products/${p.id}`"
       empty-title="No products match"
-      empty-description="Try a different search, or switch to All products to include deactivated items."
+      empty-description="Try a different search, or another tab."
       @sort="r.toggleSort"
       @toggle-row="r.toggleRow"
       @toggle-all="r.toggleAllOnPage"
@@ -225,8 +243,9 @@ const columns: Column<Product>[] = [
 
       <template #cell-isActive="{ row }">
         <UiBadge :tone="row.isActive ? 'success' : 'neutral'" dot>
-          {{ row.isActive ? 'Active' : 'Inactive' }}
+          {{ row.isActive ? 'On sale' : 'Draft' }}
         </UiBadge>
+        <UiBadge v-if="row.isPreOrder" tone="info" size="sm" class="ml-1">Pre-order</UiBadge>
       </template>
 
       <template #cell-updatedAt="{ row }">

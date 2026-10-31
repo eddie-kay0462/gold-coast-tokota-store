@@ -15,7 +15,7 @@ useHead({ title: 'Orders' })
 
 const { useAdminList } = useAdminApi()
 const { formatDateTime } = useFormatters()
-const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders', { per_page: 500 })
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders', { per_page: 500 }, { allPages: true })
 const { can } = useAuth()
 const { download, downloading } = useDownload()
 

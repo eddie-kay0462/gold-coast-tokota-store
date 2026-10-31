@@ -332,6 +332,20 @@ class AdminCmsTest extends TestCase
         $response->assertJsonPath('data.collections.0.name', 'Obrempong');
     }
 
+    /** The product form fills Type in from the category, so each one says its usual type. */
+    public function test_each_category_names_the_type_most_of_its_products_carry(): void
+    {
+        $shoes = Category::factory()->create(['name' => 'Shoes']);
+        Category::factory()->create(['name' => 'Empty']);
+        Product::factory()->count(2)->create(['category_id' => $shoes->id, 'product_type' => 'closed-toe']);
+        Product::factory()->create(['category_id' => $shoes->id, 'product_type' => 'shoes']);
+
+        $this->actingAs($this->staff(), 'admin')->getJson('/api/v1/admin/categories')
+            ->assertJsonPath('data.categories.0.name', 'Empty')
+            ->assertJsonPath('data.categories.0.product_type', null)
+            ->assertJsonPath('data.categories.1.product_type', 'closed-toe');
+    }
+
     public function test_an_admin_can_add_rename_and_delete_an_empty_category(): void
     {
         $id = $this->actingAs($this->admin(), 'admin')

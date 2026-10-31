@@ -85,7 +85,8 @@ class OrderController extends Controller
         return Order::query()
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->date('to')))
-            ->when($request->boolean('paid'), fn ($q) => $q->whereIn('status', ['paid', 'processing', 'shipped', 'delivered']))
+            ->when($request->boolean('paid'), fn ($q) => $q->whereIn('status', Order::REVENUE_STATUSES))
+            ->when($request->filled('customer_id'), fn ($q) => $q->where('customer_id', $request->integer('customer_id')))
             ->when(
                 $request->filled('status'),
                 fn ($query) => $query->where('status', $request->string('status')),

@@ -23,9 +23,9 @@ const { item: fx } = useAdminItem<FxRate>('product-fx', '/fx-rate')
 // Filtered to this product: unfiltered, the list is the 50 scarcest sizes in
 // the whole catalogue, which can leave this one's out.
 const { items: inventory, refresh: refreshInventory } = useAdminList<InventoryItem>(
-  `product-inventory-${route.params.id}`, '/admin/inventory', { product_id: route.params.id, per_page: 500 },
+  `product-inventory-${route.params.id}`, '/admin/inventory', { product_id: route.params.id, per_page: 500 }, { allPages: true },
 )
-const { options: categoryOptions } = useCategories()
+const { options: categoryOptions, followType } = useCategories()
 
 useHead({ title: computed(() => product.value?.name ?? 'Product') })
 
@@ -77,7 +77,7 @@ async function saveVariants(removeStocked = false) {
     })
     stockWarning.value = null
     await Promise.all([refresh(), refreshInventory()])
-    toast.success('Sizes and colours saved', 'New ones start at zero; set their stock in Inventory.')
+    toast.success('Sizes and colours saved', 'New ones start at zero; set their counts under Stock.')
   } catch (err) {
     const e = err as { data?: { errors?: Record<string, string[]> } }
     const warning = e.data?.errors?.remove_stocked?.[0]
@@ -99,6 +99,10 @@ watchEffect(() => {
     description: p.description ?? '', isActive: p.isActive, isFeatured: p.isFeatured,
   })
 })
+function setCategory(id: string) {
+  details.productType = followType(details.productType, details.categoryId, id)
+  details.categoryId = id
+}
 const saving = ref<'details' | 'price' | 'delete' | null>(null)
 const detailsError = ref<string | null>(null)
 const priceError = ref<string | null>(null)
@@ -316,10 +320,13 @@ const derivedUsd = computed(() => {
               v-model="details.slug" label="Slug" required :disabled="!can('products.write')"
               hint="The end of its web address. Changing it breaks old links."
             />
-            <UiSelect v-model="details.categoryId" label="Category" :options="categoryOptions" :disabled="!can('products.write')" />
+            <UiSelect
+              :model-value="details.categoryId" label="Category" :options="categoryOptions" :disabled="!can('products.write')"
+              @update:model-value="setCategory"
+            />
             <UiField
               v-model="details.productType" label="Type" list="product-types" :disabled="!can('products.write')"
-              hint="The shop’s Type filter: slippers, ahenema, closed-toe."
+              hint="Follows the category unless you type your own. The shop’s Type filter: slippers, ahenema, closed-toe."
             />
             <datalist id="product-types">
               <option v-for="t in ['slippers', 'ahenema', 'closed-toe']" :key="t" :value="t" />
@@ -538,35 +545,19 @@ const derivedUsd = computed(() => {
           </template>
         </SettingsSection>
 
-        <SettingsSection title="Variants" description="Stock per size and colourway. Counts are set in Inventory.">
-          <ul class="divide-y divide-border">
-            <li v-for="v in variants" :key="v.id" class="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-              <span class="min-w-0 flex-1">
-                <span class="block text-ui text-fg-strong">
-                  {{ Object.values(v.variantAttributes).join(' · ') }}
-                </span>
-                <span class="block font-mono text-meta text-fg-faint">{{ v.sku }}</span>
-              </span>
-              <span
-                class="text-ui"
-                :class="v.quantityAvailable <= v.lowStockThreshold ? 'font-medium text-warning' : 'text-fg'"
-              >{{ v.quantityAvailable }} available</span>
-              <span v-if="v.quantityReserved" class="text-meta text-info">
-                {{ v.quantityReserved }} reserved
-              </span>
-            </li>
-          </ul>
+        <SettingsSection title="Stock" description="Per colour and size. Open a colour to set its counts.">
+          <ProductsStockByColour :items="variants" :colours="product.colours" @saved="refreshInventory(); refresh()" />
         </SettingsSection>
       </div>
 
       <aside class="flex flex-col gap-4">
         <SettingsSection title="Status">
           <UiBadge :tone="product.isActive ? 'success' : 'neutral'" dot>
-            {{ product.isActive ? 'Active' : 'Inactive' }}
+            {{ product.isActive ? 'On sale' : 'Draft' }}
           </UiBadge>
           <UiBadge v-if="product.isFeatured" tone="accent" dot class="ml-1.5">Featured</UiBadge>
           <p class="mt-3 text-meta text-fg-muted">
-            Inactive products are hidden from the storefront but stay visible here.
+            Drafts are hidden from the storefront but stay here, under Products › Drafts.
           </p>
           <dl class="mt-3 space-y-1.5 border-t border-border pt-3 text-meta">
             <div class="flex justify-between gap-2">

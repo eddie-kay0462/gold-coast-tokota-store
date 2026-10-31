@@ -29,6 +29,8 @@ const props = withDefaults(defineProps<{
   sort?: string | null
   dir?: 'asc' | 'desc'
   rowLink?: (row: T) => string
+  /** Extra classes for one row, e.g. to mark the one just saved. */
+  rowClass?: (row: T) => string | false | undefined
   emptyTitle?: string
   emptyDescription?: string
 }>(), {
@@ -111,7 +113,7 @@ function sortIcon(col: Column<T>) {
           <tbody>
             <tr
               v-for="row in rows" :key="rowKey(row)"
-              class="table-row" :class="isSelected(row) && 'bg-accent-soft/40'"
+              class="table-row" :class="[isSelected(row) && 'bg-accent-soft/40', rowClass?.(row)]"
             >
               <td v-if="selectable" class="px-4 py-3">
                 <input
@@ -144,7 +146,7 @@ function sortIcon(col: Column<T>) {
 
       <!-- ── Cards, below md ── -->
       <ul class="divide-y divide-border md:hidden">
-        <li v-for="row in rows" :key="rowKey(row)" class="p-4" :class="isSelected(row) && 'bg-accent-soft/40'">
+        <li v-for="row in rows" :key="rowKey(row)" class="p-4" :class="[isSelected(row) && 'bg-accent-soft/40', rowClass?.(row)]">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <NuxtLink v-if="rowLink" :to="rowLink(row)" class="block font-medium text-fg-strong">

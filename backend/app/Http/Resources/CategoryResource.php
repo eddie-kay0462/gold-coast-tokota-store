@@ -15,6 +15,12 @@ class CategoryResource extends JsonResource
             'slug' => $this->slug,
             // Admin only: the category list counts its products.
             'product_count' => $this->whenCounted('products'),
+            // Admin only: the type most of its products carry, so the product
+            // form can fill Type in from the category. Null for an empty one.
+            'product_type' => $this->when(
+                array_key_exists('usual_product_type', $this->resource->getAttributes()),
+                fn () => $this->resource->getAttribute('usual_product_type'),
+            ),
         ];
     }
 }

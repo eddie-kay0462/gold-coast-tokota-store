@@ -75,6 +75,27 @@ class AdminPlatformTest extends TestCase
         $this->assertCount(1, $response->json('orders'));
     }
 
+    /** Spend counts money actually taken, per currency; country is the latest order's. */
+    public function test_a_customer_carries_spend_last_order_and_country(): void
+    {
+        $customer = Customer::factory()->create();
+        Order::factory()->create(['customer_id' => $customer->id, 'status' => 'delivered', 'currency' => 'GHS', 'total' => 50000, 'created_at' => now()->subDays(9)]);
+        Order::factory()->create(['customer_id' => $customer->id, 'status' => 'paid', 'currency' => 'USD', 'total' => 4200, 'created_at' => now()->subDays(5)]);
+        Order::factory()->create(['customer_id' => $customer->id, 'status' => 'pending', 'currency' => 'GHS', 'total' => 99900, 'created_at' => now()->subDay(), 'shipping_address' => ['country' => 'gb']]);
+
+        $row = $this->actingAs($this->admin(), 'admin')->getJson('/api/v1/admin/customers')->json('data.0');
+
+        $this->assertSame(['amount' => 50000, 'currency' => 'GHS'], $row['lifetime_value']);
+        $this->assertSame(['amount' => 4200, 'currency' => 'USD'], $row['lifetime_value_usd']);
+        $this->assertSame(3, $row['order_count']);
+        $this->assertSame('GB', $row['country_code']);
+        $this->assertNotNull($row['last_order_at']);
+
+        $this->actingAs($this->admin(), 'admin')->getJson("/api/v1/admin/customers/{$customer->id}")
+            ->assertJsonPath('data.lifetime_value.amount', 50000)
+            ->assertJsonPath('data.country_code', 'GB');
+    }
+
     public function test_customers_are_read_only(): void
     {
         $customer = Customer::factory()->create();

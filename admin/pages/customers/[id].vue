@@ -8,13 +8,17 @@ const { useAdminItem, useAdminList } = useAdminApi()
 const { formatDate, formatRelative } = useFormatters()
 
 const { item: customer } = useAdminItem<Customer>(`customer-${route.params.id}`, `/admin/customers/${route.params.id}`)
-const { items: orders } = useAdminList<Order>('customer-orders', '/admin/orders')
+// Asked for by customer, not the latest page of every order filtered here: an
+// older customer's orders were off that page.
+const { items: orders } = useAdminList<Order>(
+  `customer-orders-${route.params.id}`, '/admin/orders', { customer_id: route.params.id, per_page: 500 }, { allPages: true },
+)
 
 useHead({ title: computed(() => customer.value?.name ?? 'Customer') })
 
 const theirOrders = computed(() =>
   orders.value
-    .filter((o) => o.customerEmail === customer.value?.email)
+    .filter((o) => o.customerId === customer.value?.id || o.customerEmail === customer.value?.email)
     .sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime()),
 )
 </script>
@@ -60,7 +64,7 @@ const theirOrders = computed(() =>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-fg-muted">Location</dt>
-              <dd class="text-fg-strong">{{ customer.country }}</dd>
+              <dd class="text-fg-strong">{{ customer.country ?? '-' }}</dd>
             </div>
             <div class="flex justify-between gap-3">
               <dt class="text-fg-muted">Prefers</dt>
@@ -84,7 +88,10 @@ const theirOrders = computed(() =>
 
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
           <UiMetricCard label="Orders" :value="String(customer.orderCount)" />
-          <UiMetricCard label="Lifetime value" :value="formatMoney(customer.lifetimeValue)" />
+          <UiMetricCard
+            label="Lifetime value"
+            :value="customer.lifetimeValueUsd ? `${formatMoney(customer.lifetimeValue)} + ${formatMoney(customer.lifetimeValueUsd)}` : formatMoney(customer.lifetimeValue)"
+          />
         </div>
       </aside>
 

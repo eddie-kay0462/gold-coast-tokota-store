@@ -20,9 +20,6 @@ use Illuminate\Support\Facades\DB;
  */
 class DashboardController extends Controller
 {
-    /** Statuses that represent money actually taken. */
-    private const REVENUE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
-
     public function metrics(): JsonResponse
     {
         $today = today();
@@ -88,7 +85,7 @@ class DashboardController extends Controller
     private function revenueSince(CarbonInterface $from): array
     {
         return $this->sumByCurrency(
-            Order::query()->whereIn('status', self::REVENUE_STATUSES)->where('created_at', '>=', $from)
+            Order::query()->whereIn('status', Order::REVENUE_STATUSES)->where('created_at', '>=', $from)
         );
     }
 
@@ -96,7 +93,7 @@ class DashboardController extends Controller
     private function revenueBetween(CarbonInterface $from, CarbonInterface $to): array
     {
         return $this->sumByCurrency(
-            Order::query()->whereIn('status', self::REVENUE_STATUSES)->whereBetween('created_at', [$from, $to])
+            Order::query()->whereIn('status', Order::REVENUE_STATUSES)->whereBetween('created_at', [$from, $to])
         );
     }
 
@@ -167,7 +164,7 @@ class DashboardController extends Controller
     {
         $query = Order::query()
             ->whereYear('created_at', $year)
-            ->when($metric === 'revenue', fn ($q) => $q->whereIn('status', self::REVENUE_STATUSES)->where('currency', 'GHS'));
+            ->when($metric === 'revenue', fn ($q) => $q->whereIn('status', Order::REVENUE_STATUSES)->where('currency', 'GHS'));
 
         $column = $metric === 'revenue' ? 'SUM(total)' : 'COUNT(*)';
 

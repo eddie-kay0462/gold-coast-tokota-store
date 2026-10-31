@@ -16,7 +16,11 @@ const { adminFetch } = useAdminApi()
 const { can } = useAuth()
 const toast = useToast()
 
-const { options: categoryOptions } = useCategories()
+const { options: categoryOptions, followType } = useCategories()
+function setCategory(id: string) {
+  form.productType = followType(form.productType, form.categoryId, id)
+  form.categoryId = id
+}
 
 const form = reactive({
   name: '', slug: '', sku: '', categoryId: '', productType: '', priceGhs: '', description: '',
@@ -100,10 +104,10 @@ async function save() {
                 <input id="new-sku" v-model="form.sku" class="field w-full font-mono text-meta" required @input="skuTouched = true">
                 <p class="mt-1 text-meta text-fg-faint">Unique; for stock and orders.</p>
               </div>
-              <UiSelect v-model="form.categoryId" label="Category" :options="categoryOptions" />
+              <UiSelect :model-value="form.categoryId" label="Category" :options="categoryOptions" @update:model-value="setCategory" />
               <UiField
                 v-model="form.productType" label="Type" list="new-product-types"
-                hint="The shop’s Type filter: slippers, ahenema, closed-toe."
+                hint="Filled in from the category. The shop’s Type filter: slippers, ahenema, closed-toe."
               />
               <datalist id="new-product-types">
                 <option v-for="t in ['slippers', 'ahenema', 'closed-toe']" :key="t" :value="t" />

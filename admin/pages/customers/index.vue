@@ -8,7 +8,7 @@ useHead({ title: 'Customers' })
 
 const { useAdminList } = useAdminApi()
 const { formatRelative } = useFormatters()
-const { items: customers, pending } = useAdminList<Customer>('admin-customers', '/admin/customers', { per_page: 500 })
+const { items: customers, pending } = useAdminList<Customer>('admin-customers', '/admin/customers', { per_page: 500 }, { allPages: true })
 const { download, downloading } = useDownload()
 
 const r = useResource<Customer>(customers, {
@@ -73,7 +73,7 @@ const columns: Column<Customer>[] = [
         </span>
       </template>
       <template #cell-country="{ row }">
-        <span class="text-fg-muted">{{ row.country }}</span>
+        <span class="text-fg-muted">{{ row.country ?? '-' }}</span>
         <UiBadge v-if="!row.hasAccount" tone="outline" size="sm" class="ml-1.5">Guest</UiBadge>
       </template>
       <template #cell-orderCount="{ row }">
@@ -81,6 +81,7 @@ const columns: Column<Customer>[] = [
       </template>
       <template #cell-lifetimeValue="{ row }">
         <span class="text-fg-strong">{{ formatMoney(row.lifetimeValue) }}</span>
+        <span v-if="row.lifetimeValueUsd" class="block text-meta text-fg-muted">+ {{ formatMoney(row.lifetimeValueUsd) }}</span>
         <span class="block text-meta text-fg-faint">prefers {{ row.preferredCurrency }}</span>
       </template>
       <template #cell-lastOrderAt="{ row }">

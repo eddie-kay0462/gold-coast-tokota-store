@@ -5,6 +5,8 @@ export interface Category {
   name: string
   slug: string
   productCount: number
+  /** The type most of its products carry; null for an empty category. */
+  productType?: string | null
 }
 
 export interface Product {
@@ -32,6 +34,8 @@ export interface Product {
   colourPhotos?: { colour: string, hex: string | null, urls: string[], keys?: string[] }[]
   isActive: boolean
   isFeatured: boolean
+  /** Made to order; sells with no stock on hand. */
+  isPreOrder?: boolean
   /** The shop's type filter: slippers, ahenema, closed-toe… */
   productType?: string | null
   /** Colourways as stored; with `sizes`, what the stock grid is made from. */

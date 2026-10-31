@@ -21,7 +21,7 @@ useHead({ title: 'Fulfilment' })
 
 const { useAdminList } = useAdminApi()
 const { formatRelative } = useFormatters()
-const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders-board', '/admin/orders', { per_page: 500 })
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders-board', '/admin/orders', { per_page: 500 }, { allPages: true })
 
 const columns = computed(() =>
   ORDER_BOARD_COLUMNS.map((status: OrderStatus) => {

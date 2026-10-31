@@ -13,6 +13,9 @@ class Order extends Model
 {
     use HasFactory;
 
+    /** Statuses that represent money actually taken. */
+    public const REVENUE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
+
     protected $fillable = [
         'reference',
         'kind',

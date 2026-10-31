@@ -58,10 +58,13 @@ export interface Customer {
   preferredCurrency: Currency
   /** Null for a guest who never created an account (README: guest checkout). */
   hasAccount: boolean
-  country: string
-  countryCode: string
+  /** Where their latest order went; null for someone who has never ordered. */
+  country: string | null
+  countryCode: string | null
   orderCount: number
+  /** Money taken (paid onward), per currency: cedis always, dollars when any. */
   lifetimeValue: Money
+  lifetimeValueUsd: Money | null
   lastOrderAt: Timestamp | null
   createdAt: Timestamp
 }

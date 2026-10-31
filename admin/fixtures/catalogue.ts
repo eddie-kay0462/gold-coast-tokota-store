@@ -2,9 +2,9 @@ import type { Category, FxRate, InventoryItem, Product } from '~/types'
 import { chance, daysAgo, ghs, hoursAgo, int, pick } from './_seed'
 
 export const categories: Category[] = [
-  { id: 1, name: 'Henema Sandals', slug: 'henema-sandals', productCount: 9 },
-  { id: 2, name: 'Kente Collection', slug: 'kente-collection', productCount: 5 },
-  { id: 3, name: 'Recycled Tyre Soles', slug: 'recycled-tyre-soles', productCount: 4 },
+  { id: 1, name: 'Henema Sandals', slug: 'henema-sandals', productCount: 9, productType: 'ahenema' },
+  { id: 2, name: 'Kente Collection', slug: 'kente-collection', productCount: 5, productType: 'slippers' },
+  { id: 3, name: 'Recycled Tyre Soles', slug: 'recycled-tyre-soles', productCount: 4, productType: 'closed-toe' },
   { id: 4, name: 'Accessories', slug: 'accessories', productCount: 4 },
   { id: 5, name: 'DIY Kits', slug: 'diy-kits', productCount: 2 },
 ]
