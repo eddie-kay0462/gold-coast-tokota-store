@@ -1,18 +1,17 @@
 <script setup lang="ts">
 import type { ApiPost } from '~/utils/newsPosts'
-import { DESIGN_POSTS, SUSTAINABILITY_POSTS } from '~/utils/newsPosts'
 import { aboutImage, withAboutDefaults, type AboutContent } from '~/utils/aboutContent'
 
 type ApiPage = { title: string, body: string, content: Partial<AboutContent> | null }
 
-const config = useRuntimeConfig()
+const apiFetch = useApiFetch()
 
 // Every section is edited in the admin (Content › Pages › About) and arrives
 // as `content`, already merged over its defaults by the API. If the endpoint
 // fails, the same defaults (utils/aboutContent.ts) render the page, the same
 // pattern the home, shop and blog pages use.
 const { data: page } = await useAsyncData('about-page', () =>
-  $fetch<{ data: ApiPage }>(`${config.public.apiBase}/pages/about`)
+  apiFetch<{ data: ApiPage }>(`/pages/about`)
     .catch(() => null),
 )
 
@@ -26,7 +25,7 @@ const content = computed(() => withAboutDefaults(page.value?.data?.content))
 const PROGRAMME_CATEGORIES = ['Sustainability', 'Careers', 'Partnerships', 'Advocacy', 'Processes', 'Style', 'Community']
 
 const { data: posts } = await useAsyncData('about-programme-posts', () =>
-  $fetch<{ data: ApiPost[] }>(`${config.public.apiBase}/blog-posts`)
+  apiFetch<{ data: ApiPost[] }>(`/blog-posts`)
     .catch(() => ({ data: [] as ApiPost[] })),
 )
 
@@ -34,9 +33,7 @@ const { data: posts } = await useAsyncData('about-programme-posts', () =>
 const programmePosts = computed(() => {
   const fromApi = posts.value?.data ?? []
 
-  const pool = fromApi.length
-    ? [...fromApi].sort((a, b) => b.published_at.localeCompare(a.published_at))
-    : [...SUSTAINABILITY_POSTS, ...DESIGN_POSTS]
+  const pool = [...fromApi].sort((a, b) => b.published_at.localeCompare(a.published_at))
 
   const seen = new Set<string>()
   const unique = pool.filter((post) => !seen.has(post.slug) && seen.add(post.slug))

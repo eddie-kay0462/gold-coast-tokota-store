@@ -5,7 +5,6 @@ import { cartLine } from '~/composables/useShippingQuote'
 import { formatMoney } from '~/utils/formatters'
 import { whatsappMessage } from '~/utils/whatsapp'
 import type { ApiProduct } from '~/utils/catalog'
-import { DESIGN_PRODUCTS } from '~/utils/designCatalogue'
 
 const cart = useCartStore()
 const router = useRouter()
@@ -20,8 +19,9 @@ let previouslyFocused: HTMLElement | null = null
  * Suggestions from `GET /products/recommendations`, ranked against what is in
  * the cart, which the API also excludes, since suggesting what someone just
  * added reads as broken. Fetched when the drawer opens or the cart's products
- * change, not on every page. The design catalogue stands in only if the API
- * can't be reached.
+ * change, not on every page. If the API can't be reached the row is left out;
+ * the design catalogue's demo products used to stand in, and linked to pages
+ * that don't exist.
  */
 const api = useApi()
 const apiRecommendations = ref<ApiProduct[] | null>(null)
@@ -43,11 +43,7 @@ watch(
   { immediate: true },
 )
 
-const recommendations = computed(() => {
-  if (apiRecommendations.value) return apiRecommendations.value
-  const inCart = new Set(cart.items.map((item) => item.slug))
-  return DESIGN_PRODUCTS.filter((product) => !inCart.has(product.slug)).slice(0, 4)
-})
+const recommendations = computed(() => apiRecommendations.value ?? [])
 
 const savingsGhs = computed(() => cart.compareAtSubtotalGhs - cart.subtotalGhs)
 

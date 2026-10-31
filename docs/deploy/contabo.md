@@ -413,4 +413,6 @@ development, which still runs `php artisan serve` (CLAUDE.md, Commands).
 - [ ] WhatsApp webhook URL verified in the Meta app (once the number is connected); `/settings/whatsapp` shows a recent "last update from WhatsApp"
 - [ ] Storefront and admin on Vercel have
       `NUXT_PUBLIC_API_BASE=https://api.goldcoasttokota.store/api/v1`
+- [ ] Storefront on Vercel has `NUXT_STOREFRONT_API_KEY` equal to the box's
+      `STOREFRONT_API_KEY`, and Web Analytics is turned on in its Vercel project
 - [ ] Smoke test: admin sign-in, a product page, a test checkout

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
+import { formatHours } from '~/utils/formatters'
 import { countryName, flagUrl } from '~/utils/geo'
 import { whatsappMessage } from '~/utils/whatsapp'
 
@@ -45,18 +46,19 @@ const ROTATE_SECONDS = 4
  * The second line: when someone can expect an answer.
  *
  * Admin-editable via `SiteSetting.business_hours`, with the brand guidelines'
- * published hours (Monday–Saturday, 9:00–17:00 GMT) as the design fallback,
+ * published hours (Monday to Saturday, 9:00 to 17:00 GMT) as the design fallback,
  * the same pattern the rotating line above uses. It moved out of a constant
  * once the admin app turned out to have had a field for it all along.
  */
-const FALLBACK_HOURS = 'Mon–Sat · 9am–5pm GMT'
+const FALLBACK_HOURS = 'Mon to Sat · 9am to 5pm GMT'
 
 const siteSettings = useSiteSettingsStore()
 // The flag shows where the visitor is connecting from (resolved server-side,
 // refined with browser signals a VPN doesn't change).
 const { geo } = useVisitorCountry()
 
-const supportHours = computed(() => siteSettings.businessHours || FALLBACK_HOURS)
+// Ranges read "to" whatever dashes the saved setting uses (`formatHours`).
+const supportHours = computed(() => formatHours(siteSettings.businessHours || FALLBACK_HOURS))
 
 const messages = computed(() =>
   siteSettings.announcements.length ? siteSettings.announcements : FALLBACK_ANNOUNCEMENTS,

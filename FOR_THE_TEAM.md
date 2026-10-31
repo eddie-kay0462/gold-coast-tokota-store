@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 31 October 2026 (admin feedback on orders: a click anywhere on an order opens it, the side view shows refunds as soon as they're sent, an unshipped order's suggested refund includes delivery, gift card codes can carry a chosen word, and the giver's message shows when a card is checked or applied; earlier the same day, admin feedback on products and customers: the Customers screen loads again, Inventory no longer drops restocked rows, stock is set per colour on the product page, Type follows the category, the colour picker knows colour names, Products has tabs by state; earlier the same day, new team members are invited by email and choose their own password; earlier the same day, admin audit, phase 2: product sizes and colours, Add product, categories, notification switches, FX refresh, audit log and activity feed, own-account editing and admin password reset, refunds through Paystack, orders and customers exports; earlier the same day, admin audit, phase 1: about 30 admin buttons that did nothing now save, among them workshop sessions, general settings and the announcement bar, product details and price, order status, the blog editor, media upload, bookings, waitlist, returns and team; earlier on 28 October, gift cards and store credit in the API and admin, off until switched on in Settings › Gift cards; earlier the same day, API rate limit is per storefront visitor, not per Vercel address, when the storefront sends `STOREFRONT_API_KEY`; earlier on 23 October, About page ranges read "to" instead of a dash; earlier the same day, About page slogan ticker off by default; earlier the same day, About page fully editable in Content › Pages › About; earlier the same day, fallback delivery rate is ₵35, set in admin; earlier the same day, checkout keeps the recipient's first and last name; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 31 October 2026 (admin feedback on orders: a click anywhere on an order opens it, the side view shows refunds as soon as they're sent, an unshipped order's suggested refund includes delivery, gift card codes can carry a chosen word, and the giver's message shows when a card is checked or applied; earlier the same day, admin feedback on products and customers: the Customers screen loads again, Inventory no longer drops restocked rows, stock is set per colour on the product page, Type follows the category, the colour picker knows colour names, Products has tabs by state; earlier the same day, new team members are invited by email and choose their own password; earlier the same day, admin audit, phase 2: product sizes and colours, Add product, categories, notification switches, FX refresh, audit log and activity feed, own-account editing and admin password reset, refunds through Paystack, orders and customers exports; earlier the same day, admin audit, phase 1: about 30 admin buttons that did nothing now save, among them workshop sessions, general settings and the announcement bar, product details and price, order status, the blog editor, media upload, bookings, waitlist, returns and team; earlier on 28 October, announcement bar shows the saved hours with "to" instead of dashes; gift cards on the storefront: buy one, apply a code at checkout; earlier the same day, gift cards and store credit in the API and admin, off until switched on in Settings › Gift cards; earlier the same day, API rate limit is per storefront visitor, not per Vercel address, when the storefront sends `STOREFRONT_API_KEY`; earlier on 23 October, About page ranges read "to" instead of a dash; earlier the same day, About page slogan ticker off by default; earlier the same day, About page fully editable in Content › Pages › About; earlier the same day, fallback delivery rate is ₵35, set in admin; earlier the same day, checkout keeps the recipient's first and last name; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -55,7 +55,7 @@ inert at their last step.
 - **Refund suggestion before shipping.** §9 keeps delivery charges unless the mistake was ours, so the suggested amount left delivery out. An order that hasn't been sent out has had no delivery, so its suggestion now includes it. Once it's shipped, delivery is left out as before. The amount stays editable either way.
 - **Chosen gift card codes.** The buyer (storefront, `code_word` on purchase) or an admin (Issue store credit) can give a word, and the card reads `GCT-MAMA-7KQ4`. The four random characters stay, because a code is spent by whoever types it and a bare word can be guessed. Codes now match ignoring dashes, so a typed `gct mama 7kq4` works.
 - **The giver's message:** `POST /gift-cards/balance` sends `sender_name` and `message`, which the storefront shows on the balance check and when the card is applied at checkout (on `feat/storefront-pages`).
-- Gift cards are already redeemable at checkout on `main` and `dev` ("Gift card or discount code" in the order summary). `feat/backend` hasn't merged `dev` since then, so a storefront run from this branch still shows the old placeholder.
+- Gift cards were already redeemable at checkout on `main` and `dev` ("Gift card or discount code" in the order summary); `feat/backend` had not merged `dev` since then, so a storefront run from it showed the old placeholder. `dev` is now merged in.
 
 ### 31 October 2026: admin feedback on products, inventory and customers (API, admin)
 
@@ -208,6 +208,38 @@ no session ever landed on a calendar day.
 
 Tests: 681 passing (5 new: stock freed on cancel, staff can't publish,
 publishing dates the post, media alt text, booking fields).
+### 28 October 2026: announcement bar hours read "to" (storefront)
+
+The bar showed the saved `business_hours` as typed, "Mon–Sat · 9am–5pm GMT".
+It now reads "Mon to Sat · 9am to 5pm GMT", as the About page already did.
+`formatHours` (`utils/formatters.ts`) does it for both: en and em dashes
+become "to", and a plain hyphen does between two days or two times, so a
+hyphenated word is left alone. The stored setting is unchanged (the WhatsApp
+inbox reads it too), so it works whatever the client types in admin.
+
+### 28 October 2026: gift cards on the storefront
+
+The storefront half of the entry below. Nothing changes for customers until an
+Admin puts gift cards on sale in Settings › Gift cards.
+
+- **`/gift-cards`**: while on sale, choose one of the configured amounts, say
+  who it's for (name, email, optional "from" and message), give your own name
+  and email, and pay on Paystack. While off, it's the WhatsApp page as before.
+  A balance check shows whenever any card exists; the client's terms show
+  under the form once written. Amounts show in the visitor's currency; the
+  card itself holds cedis.
+- **Checkout**: the order summary's inert "Discount code" field is now "Gift
+  card or discount code". A gift card or store credit code is checked and comes
+  off the total (`composables/useGiftCardCode.ts`); anything else still gets
+  the "send it on WhatsApp" message, since discount codes don't exist online.
+  The payment step sends the code, shows what's left to pay, and says so when
+  the card covers everything (the API then pays the order without Paystack). A
+  code refused when the order is placed is removed, with a message.
+- **Order confirmation**: shows the gift card line on a sandal order. A gift
+  card order reads "Your gift card is on its way", has no delivery section, and
+  leaves the sandal cart alone.
+- Checked locally end to end: a ₵500 card bought in the browser, paid, issued
+  and both emails logged; the code applied at checkout took the total to ₵0.
 
 ### 28 October 2026: gift cards and store credit (API and admin)
 
@@ -254,6 +286,62 @@ becomes unavailable after purchase. The storefront half is on
   the others. Nothing goes on sale until an Admin turns it on.
 - 20 new tests in `GiftCardTest`; 676 pass. `docs/api-contract.md` has the
   endpoints.
+
+### 28 October 2026: launch audit blockers 1 to 6 (storefront)
+
+Works through the [Storefront Launch Audit](https://claude.ai/artifact/YBpAgmG28DViarUNJZ7a5H)'s
+blockers, each decided with Kirk on 28 Oct. Blocker 7 (deploy and migrations
+on the box) is a human step; gift cards are planned after launch (below).
+
+- **Real products no longer show as "not found" (blocker 1).**
+  - `composables/useApiFetch.ts` is now how pages read the API. During a
+    server render it sends `X-Storefront-Key` (`NUXT_STOREFRONT_API_KEY`,
+    server-only) and the visitor's address, so the API limits each visitor
+    rather than Vercel's one address (the API half is the entry below).
+  - Public catalogue reads (products, facets, recommendations, stories, pages,
+    menus, site settings, the display FX rate; list in `utils/apiCache.ts`) go
+    through `server/routes/_api-cache`, a one-minute cache on the storefront
+    server. **Pages themselves are not cached**: they render each visitor's
+    currency and cart from cookies, which a page cache would serve to everyone.
+    Locally, 750 renders across five pages cost the API 11 requests. Stock
+    polling, workshop sessions, orders and accounts still go straight to the API.
+  - A failed API call is now a "try again" (503) page. Only the API answering
+    404 makes a product or story "not found" (`utils/apiError.ts`). The Figma
+    demo catalogue and sample stories that used to stand in for real stock are
+    deleted (`utils/designCatalogue.ts`, `DESIGN_POSTS`,
+    `SUSTAINABILITY_POSTS`), along with the cart drawer's demo suggestions and
+    the story page's related row, which had only ever shown sample posts.
+    An empty filter result now says so instead of showing demo products.
+- **Branded error page (blocker 5).** `error.vue`: site header and footer, a
+  plain message, Shop and Help buttons, four products under a 404, and "Try
+  again" on any other error. Titled "… | Gold Coast Tokota".
+- **Policy pages (blockers 2 to 4).** Shipping, Returns, Privacy and Terms are
+  GOLD_COAST_TOKOTA.md §8 to §11, kept to its wording (ranges read "to"; UK
+  spelling, as on the rest of the site), marked `approved` in
+  `utils/policyContent.ts`, so they show without the draft banner. A page
+  the client publishes in Content › Pages still takes priority
+  (`usePageContent`). Returns is now 7 days and refunds 7 to 14 business days;
+  Privacy names Paystack and Vercel Web Analytics, with no Stripe or Google
+  Analytics. Policy sections can now hold bulleted lists. Bulk orders and
+  Accessibility keep their banners until the client sends text.
+- **Do Not Sell, Supply Chain Transparency and Vendor Code of Conduct are
+  removed.** They aren't in the brand reference; their URLs 404 and they're
+  out of the sitemap.
+- **Vercel Web Analytics** (`@vercel/analytics` 2.0.1, `@vercel/analytics/nuxt`):
+  page views, cookieless, no consent banner. **Turn on Analytics in the
+  storefront's Vercel project**, or the script 404s on every page.
+- **Blocker 6:** `/community/submit` sends photos to WhatsApp or Instagram
+  instead of a form that sent nothing; `/gift-cards` says gifts are arranged on
+  WhatsApp, with no fake balance check. `/careers` loses its "Diversity, equity
+  and inclusion" section, which called itself a placeholder.
+- **Deploy:** set `NUXT_STOREFRONT_API_KEY` on the storefront's Vercel
+  project, the same value as `STOREFRONT_API_KEY` on the box. Without it the
+  site works but every visitor shares one 120-a-minute limit again.
+- **Next, after launch: gift cards and store credit**, decided 28 Oct. Bought
+  online through Paystack and emailed to the recipient, fixed amounts set in
+  admin, expiry an admin setting that starts at "never", terms written by the
+  client, off until switched on. One balance-code system also serves the store
+  credit §11/§21 promise when an item is unavailable.
 
 ### 28 October 2026: storefront visitors get their own rate limit (API)
 
@@ -5395,8 +5483,9 @@ will light up:
 
 - **Feature 10 — SEO.** `@nuxtjs/sitemap` is installed and `useSeoMeta` is on
   every built page; structured data and social cards still to do.
-- **Feature 11 — Analytics.** GA4 snippet + server-side event mirroring.
-  `useAnalytics` is a stub.
+- **Feature 11 — Analytics.** Page views by Vercel Web Analytics since 28 Oct
+  (turn it on in the Vercel project). The GA4-shaped events in `useAnalytics`
+  go nowhere until a tag is chosen; purchases are mirrored server-side.
 - **Feature 14 — Testing.** No test infrastructure on either side yet.
 - **GSAP motion.** Only `GsapHeroIntro` and `GsapScrollReveal` exist. Phase 3d
   calls for a fuller motion pass on Home/About.
@@ -5432,8 +5521,8 @@ will light up:
 | 26 | **Listing filters only ever see the first page** | The shop page sends `type`, `color`, `size`, `width`, `category`, `q`, `sale` and `sort` as query params, `ProductController::index` ignores every one of them, and `matchesFilters()` filters client-side over a 12-per-page response. Invisible at six products; wrong at sixty. Server-side filtering is the fix — see `docs/api-contract.md`, "Known gaps". |
 | 27 | **The third-party credentials are still empty** | Everything in `backend/.env` for Paystack, Yango, DHL, Fish Africa and exchangerate.host. **Paystack is now the whole of the payments story** (§13) and its test key is self-serve — an hour of somebody's time, and the only thing between `PaystackService` and a working checkout. The rest need business accounts requested by a human, with real lead times — **they gate Features 4, 5 and 8, so request them now**, not on arrival at the stage. Stripe's keys are no longer needed unless the business overrules §13. |
 | 1 | ~~**Site-wide horizontal overflow below ~500px**~~ | **Closed 21 Aug 2026.** Measured rather than estimated: the document never actually scrolled sideways, but the sign-up link did overlap the currency cluster by 41px at 320px and 375px. The cluster is a normal flex child now, and the message runs through a marquee below `sm` — the treatment Kirk chose. |
-| 14 | **Every legal and help page is unreviewed placeholder copy** | `/legal/**`, `/help/**` and `/accessibility` render drafts from `utils/policyContent.ts` behind a "Draft — awaiting review" banner. Plausible and Ghana-specific (Act 843, Yango/DHL split, WCAG 2.1 AA), but written to give the pages shape — **not** reviewed, and not a statement of policy. A lawyer needs to write the real privacy policy and terms; a support lead needs returns and shipping. Publish from admin and `is_draft` flips off. **Must not ship to production as-is.** |
-| 15 | **DEI has no link anywhere** | Was "`/about#dei` repointed to `/careers#dei`". The footer link that raised this went with the 27 Aug footer trim, so nothing now links to `/careers#dei` at all — the section exists and its copy is still a placeholder. The decision is no longer *where* DEI lives but **whether it needs a home**; if it does, it needs brand-written text and a link. **Awaiting a decision.** |
+| 14 | ~~**Every legal and help page is unreviewed placeholder copy**~~ | **Mostly closed 28 Oct.** Shipping, Returns, Privacy and Terms are now GOLD_COAST_TOKOTA.md §8 to §11, the client's own text, shown without the draft banner. Do Not Sell, Supply Chain and Vendor Code were removed. **Still open:** `/help/bulk-orders` and `/accessibility` are placeholder with the banner, until the client sends wording or publishes it in Content › Pages. |
+| 15 | ~~**DEI has no link anywhere**~~ | **Closed 28 Oct:** the placeholder DEI section is removed from `/careers`. It comes back if the client supplies wording. |
 | 16 | **The testimonial names a product that doesn't exist** | *(9 Oct: the testimonial block was removed from the home page, so this no longer shows anywhere. Still needed if the review comes back.)* Aseye Bakah's review credits "The Original Ahenema"; that slug is in no fallback set and no fixture. The link renders as plain text until it resolves. Confirm the real SKU with the brand. |
 | 17 | ~~**"Sign Up For Texts" links to an email form**~~ | **Closed 27 Aug 2026.** The announcement bar was rebuilt as the approved mockup's rotating strip and that copy no longer exists. |
 | 21 | **The approved mockup asserts two things the project cannot back up** | Template B's announcement bar reads "Free delivery in Accra" and "Order online, pick up in Osu". Checkout charges GH₵25 for Accra delivery, and the address on file in the brand PDF is Haatso, not Osu. Neither line shipped. The bar renders "Handcrafted in Ghana / Pay with MoMo or card / We ship worldwide" instead, and `SiteSetting.announcements` makes the real copy a settings change rather than a deploy. **Confirm both claims with the brand**, then set them. |
@@ -5534,7 +5623,8 @@ will light up:
   and `components/checkout/PaymentStep.vue`.
 - **`usePageContent` is the only place the draft decision is made.** Do not
   re-derive "is this approved?" in a page, and do not remove `<ContentDraftNotice>`
-  to make a page look finished. A page showing unreviewed legal text without that
+  to make a page look finished. `approved: true` in `utils/policyContent.ts` is
+  only for text taken from GOLD_COAST_TOKOTA.md. A page showing unreviewed legal text without that
   banner is the failure mode the `pages.is_draft` column exists to prevent.
 - **`<CommonInlineNotice>`, not `Toast.vue`.** The toast still has no placement,
   no region in the layout and no consumer (issue #10). An in-flow notice needs
