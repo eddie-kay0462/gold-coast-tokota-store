@@ -69,6 +69,15 @@ return [
             'throttle' => 60,
         ],
 
+        // Dashboard accounts. Its own table, since an email can belong to a
+        // customer and a member of staff at once.
+        'admins' => [
+            'provider' => 'admins',
+            'table' => 'admin_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
         'admins' => [
             'provider' => 'admins',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),

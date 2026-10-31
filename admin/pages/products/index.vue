@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhPencilSimple, PhTrash, PhPackage, PhX, PhInfo } from '@phosphor-icons/vue'
+import { PhPencilSimple, PhPlus, PhTrash, PhPackage, PhX, PhInfo } from '@phosphor-icons/vue'
 import type { FxRate, Product } from '~/types'
 import type { Column } from '~/components/ui/DataTable.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
@@ -35,6 +35,10 @@ const r = useResource<Product>(visible, {
   defaultSort: 'name',
   defaultDir: 'asc',
 })
+
+// Arriving from Categories filters to that one.
+const route = useRoute()
+if (typeof route.query.category === 'string') r.setFilter('categoryName', route.query.category)
 
 const bannerDismissed = useCookie<boolean>('gct-products-banner', { default: () => false })
 
@@ -100,7 +104,16 @@ const columns: Column<Product>[] = [
 
 <template>
   <div class="admin-stack">
-    <UiPageHeader title="Products" description="Everything in the catalogue, across all categories." />
+    <UiPageHeader title="Products" description="Everything in the catalogue, across all categories.">
+      <template #actions>
+        <UiPermissionGate capability="products.write" quiet>
+          <UiButton size="sm" to="/products/new">
+            <PhPlus :size="16" />
+            Add product
+          </UiButton>
+        </UiPermissionGate>
+      </template>
+    </UiPageHeader>
 
     <!-- Tabs (Figma 10:5807) -->
     <div class="flex items-center gap-5 border-b border-border">

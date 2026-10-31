@@ -10,7 +10,7 @@ use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Customers — read-only, Admin and Staff.
@@ -36,7 +36,7 @@ class CustomerController extends Controller
                     ->orWhereRaw('LOWER(email) LIKE ?', [$term]));
             })
             ->latest()
-            ->paginate(50)
+            ->paginate(max(1, min($request->integer('per_page', 50), 500)))
             ->withQueryString();
 
         return AdminCustomerResource::collection($customers);
@@ -54,5 +54,20 @@ class CustomerController extends Controller
                 Order::query()->with('items')->where('customer_id', $customer->id)->latest()->get()
             ),
         ]);
+    }
+
+    /** Customer accounts as CSV, newest first: who they are and how much they've ordered. */
+    public function export(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['first_name', 'last_name', 'email', 'phone', 'preferred_currency', 'orders', 'joined_at']);
+            Customer::query()->withCount('orders')->latest()->chunk(500, function ($customers) use ($out) {
+                foreach ($customers as $c) {
+                    fputcsv($out, [$c->first_name, $c->last_name, $c->email, $c->phone, $c->preferred_currency, $c->orders_count, $c->created_at?->toIso8601String()]);
+                }
+            });
+            fclose($out);
+        }, 'customers-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
     }
 }

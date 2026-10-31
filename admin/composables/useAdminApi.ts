@@ -6,8 +6,8 @@ import { useAuthStore } from '~/stores/auth'
  * The one way this app talks to data.
  *
  * `adminFetch` calls the real Laravel admin API and falls back to bundled
- * fixtures for any path the API doesn't serve (today: inbox ×3, activity and
- * audit, FOR_THE_TEAM.md issue 28).
+ * fixtures for any path the API doesn't serve. Since 31 Oct the API serves
+ * every path the screens call, so in `auto` a fixture now means the API failed.
  *
  * Auth failures are the exception to the fallback. A 401 or 419 means the
  * Sanctum session is gone, not that the endpoint is missing, so it sends the

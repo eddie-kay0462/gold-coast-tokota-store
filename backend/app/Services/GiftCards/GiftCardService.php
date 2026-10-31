@@ -150,6 +150,35 @@ class GiftCardService
         });
     }
 
+    /**
+     * A paid order is refunded: what the card paid goes back on the card,
+     * once. Returns the GHS amount returned (0 if there was nothing to).
+     */
+    public function refundToCard(Order $order, AdminUser $by): int
+    {
+        if (! $order->gift_card_id || $order->gift_card_amount_ghs <= 0) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($order, $by) {
+            $locked = Order::query()->lockForUpdate()->find($order->id);
+            if (! $locked || $locked->gift_card_refunded_at) {
+                return 0;
+            }
+
+            $card = GiftCard::query()->lockForUpdate()->find($locked->gift_card_id);
+            if ($card) {
+                $card->increment('balance', $locked->gift_card_amount_ghs);
+                $this->record($card, 'refund', $locked->gift_card_amount_ghs, order: $locked, admin: $by, note: "Order {$locked->reference} refunded");
+            }
+
+            $locked->update(['gift_card_refunded_at' => now()]);
+            $order->setRawAttributes($locked->getAttributes(), true);
+
+            return $card ? $locked->gift_card_amount_ghs : 0;
+        });
+    }
+
     /** Releases every unpaid order whose stock hold has lapsed. */
     public function releaseLapsed(): int
     {

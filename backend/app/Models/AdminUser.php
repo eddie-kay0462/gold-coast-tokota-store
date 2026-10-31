@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Jobs\SendPasswordReset;
+use App\Notifications\TransactionalMessages;
 use App\Support\AdminCapability;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -87,5 +89,21 @@ class AdminUser extends Authenticatable
     public function workshopSessions(): HasMany
     {
         return $this->hasMany(WorkshopSession::class, 'created_by_admin_id');
+    }
+
+    /**
+     * The reset link points at the admin app's own reset page, not the
+     * storefront's. Sent the same way as a customer's (SendPasswordReset).
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $url = config('app.admin_url')
+            .'/reset-password?token='.$token
+            .'&email='.urlencode($this->email);
+
+        SendPasswordReset::dispatch($this, TransactionalMessages::passwordReset(
+            $url,
+            (int) config('auth.passwords.admins.expire', 60),
+        ));
     }
 }

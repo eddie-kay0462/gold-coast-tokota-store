@@ -13,6 +13,8 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            // Admin only: the category list counts its products.
+            'product_count' => $this->whenCounted('products'),
         ];
     }
 }

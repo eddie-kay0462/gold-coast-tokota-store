@@ -7,7 +7,7 @@ the whole diff.
 **Read `README.md` for the spec and `CLAUDE.md` for the architectural rules.**
 This file is the *status* layer on top of those two — it does not restate them.
 
-- **Last updated:** 31 October 2026 (admin audit, phase 1: about 30 admin buttons that did nothing now save, among them workshop sessions, general settings and the announcement bar, product details and price, order status, the blog editor, media upload, bookings, waitlist, returns and team; earlier on 28 October, gift cards and store credit in the API and admin, off until switched on in Settings › Gift cards; earlier the same day, API rate limit is per storefront visitor, not per Vercel address, when the storefront sends `STOREFRONT_API_KEY`; earlier on 23 October, About page ranges read "to" instead of a dash; earlier the same day, About page slogan ticker off by default; earlier the same day, About page fully editable in Content › Pages › About; earlier the same day, fallback delivery rate is ₵35, set in admin; earlier the same day, checkout keeps the recipient's first and last name; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
+- **Last updated:** 31 October 2026 (admin audit, phase 2: product sizes and colours, Add product, categories, notification switches, FX refresh, audit log and activity feed, own-account editing and admin password reset, refunds through Paystack, orders and customers exports; earlier the same day, admin audit, phase 1: about 30 admin buttons that did nothing now save, among them workshop sessions, general settings and the announcement bar, product details and price, order status, the blog editor, media upload, bookings, waitlist, returns and team; earlier on 28 October, gift cards and store credit in the API and admin, off until switched on in Settings › Gift cards; earlier the same day, API rate limit is per storefront visitor, not per Vercel address, when the storefront sends `STOREFRONT_API_KEY`; earlier on 23 October, About page ranges read "to" instead of a dash; earlier the same day, About page slogan ticker off by default; earlier the same day, About page fully editable in Content › Pages › About; earlier the same day, fallback delivery rate is ₵35, set in admin; earlier the same day, checkout keeps the recipient's first and last name; earlier the same day, `GET /products/facets`: the shop's filter types and colours from the catalogue; earlier the same day, header mega menus are built from the catalogue, with image tiles chosen in Content › Menus; earlier the same day, customers have a first and a last name in the database and API; earlier the same day, sign-up phone number is a country code plus the number, saved as E.164; earlier on 22 October, sitemap lists every product and blog post; earlier the same day, booking page: sessions name their workshop, DIY photos upload for real; earlier the same day, product pages keep stock live while open; earlier the same day, customer accounts are live on the storefront: sign in, register, sign out, password reset, order history, guest order lookup; earlier the same day, storefront status badge reads words instead of codes ("Being Checked" for a stock conflict); earlier the same day, order confirmation no longer flickers while it polls, and confirms a Paystack payment by asking Paystack instead of waiting only for the webhook; earlier the same day, WhatsApp checks: local walkthrough of every inbox call, a real Paystack test order and resend, the order builder now uses a location the customer shared as the delivery pin, a rehearsal guide for Meta's test number with opt-in raw-payload logging; earlier on 19 October, WhatsApp phase 4: greeting and after-hours auto-replies, off by default; order and booking updates on WhatsApp for customers who have written in; quick replies with live slots. Phases 0–4 of the WhatsApp plan are built; phase 3 earlier the same day: Order on WhatsApp, from a storefront cart code or built in the inbox, paid by Paystack link, stock held for an admin-set number of hours; phase 2 earlier the same day: a context panel beside each chat for the customer's orders and bookings, live stock, upcoming workshops and the published policies, each insertable into the reply; phase 1 earlier the same day: the inbox is live on the Cloud API, with a webhook receiver, coexistence echoes and history, drafts, templates and the 24-hour window enforced; phase 0 earlier the same day: stock holds are per order, every stock change is logged, orders know their channel; earlier on 18 October: catalogue photos: background removal and an import to R2, `scripts/catalogue/` + `catalogue:import-media`; Opanyin gains Grey, Ohene moves to Ahenema; tests no longer reach Paystack; R2's public domain is `images.goldcoasttokota.store`; earlier on 15 October: the API is dockerized for the Contabo box shared with IRIS, behind IRIS's Caddy on a shared `edge` network; Laravel trusts its own nginx as a proxy; earlier on 11 October: local `db:seed` fixed; zone-based shipping, phase 3: DHL Express for international orders, product customs data, labels and pickup; phase 2: Yango booked on "Mark packed", confirmed by a poller, production-only acceptance; phase 1: Accra / Ghana / International zones, regional rates, delivery priced before payment, a shipment opened on every paid order, manual dispatch from admin; earlier on 10 October: Stories, Bookings, cart drawer, checkout, account, sign-in/register and the header dropdown restyled to match the home page; tests run on GitHub against Postgres 18 for every PR; Neon is live on Postgres 18, migrated and seeded; em dashes removed from the storefront and admin, customer copy reworded; backend installs on PHP 8.3 again; late payments no longer oversell; checkout no longer holds stock locked while Paystack answers; a webhook that fails midway is retried; hosting moves off Render: Vercel + Contabo + Neon + Cloudflare R2; Redis for queue/cache/sessions; seeder needs a real admin password in production; S3 image storage removed earlier the same day)
 - **Last commit on `main`:** `a068587` — *Merge pull request #29 from eddie-kay0462/dev*. `feat/backend`, `dev` and `main` were level at `9e35b64` on 10 Oct before this change
 - **Working tree:** clean. Everything through the 8–9 Oct storefront fixes (product page, size guide, currency switch, homepage featured row, Vue bump) is committed on `feat/backend` and pushed. The 2 Oct S3 change (`e343bb7`) was undone on 10 Oct — see that entry. The 30 Sep catalogue change is committed (`0fbe207`). The 28 Aug – 8 Sep backend work is committed on
   `feat/backend` (`029b4b7`) and pushed, and `feat/backend` now contains
@@ -48,7 +48,68 @@ inert at their last step.
 
 ## Recent changes
 
-### 31 October 2026 (latest): admin buttons that did nothing now work (admin, API)
+### 31 October 2026 (latest): admin audit, phase 2: the parts that needed API work (admin, API)
+
+**Run on the box after deploy:** `php artisan migrate --force --database=pgsql_direct`
+(four migrations: `notification_channels` on site settings, `admin_audit_entries`,
+`admin_password_reset_tokens`, and refund columns on orders). `ADMIN_URL` must be
+set on the box (it is in `docs/deploy/contabo.md`): admin reset emails link to it.
+
+- **Product sizes and colours.** New `PUT /admin/products/{id}/variants`
+  (`App\Services\Catalogue\ProductVariants`): one stock row per colour and size,
+  new ones at 0. Removing a size or colour that still has stock asks first
+  (`remove_stocked`); one with units held for a checkout is refused. A product's
+  page has a **Sizes & colours** editor (`components/products/VariantsEditor.vue`,
+  which also takes a run like "36 to 45"), plus a Type field for the shop filter.
+- **Add product** is back, at `/products/new`: name, slug, SKU, category, type,
+  price, description, sizes and colours, saved **off sale** so it can't appear in
+  the shop before it has photos and stock. The product page opens next.
+- **Categories:** add, rename, delete (empty ones only). `GET /admin/categories`
+  answers `{categories, collections}`, but every admin screen read it as a list,
+  so the Categories page and the category dropdowns showed nothing live. Now
+  read through `composables/useCategories.ts`.
+- **Settings › Notifications:** each of the five customer messages can be
+  switched off for email or SMS; stored in `site_settings.notification_channels`,
+  and the dispatcher skips a switched-off channel. Password resets and gift
+  cards always go.
+- **Settings › Store:** "Refresh now" fetches the exchange rate
+  (`POST /admin/settings/fx/refresh`, Super Admin).
+- **Settings › SEO:** the "Defaults" form controlled nothing: the storefront has
+  no global title template or fallback description. It's now a plain statement
+  of how pages are titled. Its gap check now looks for posts with no excerpt.
+  **API:** `GET /blog-posts` now sends `excerpt` (also as `subtitle`, the
+  name the storefront's cards and article deck already read, and what its
+  description falls back to), `meta_description` and `cover_image_alt`. Until
+  now nothing typed into a post's excerpt reached the storefront.
+- **Audit log and activity feed are live**, no longer sample data.
+  `RecordAdminAction` (on every signed-in admin route) writes one row per
+  successful change: who, their role, what, which record, and the names of the
+  fields sent, never their values. The dashboard's Recent activity is read from
+  orders, bookings, stock recounts, WhatsApp messages, posts and new customers.
+- **Account:** name, job title, email and password save (`PUT /admin/me`; a
+  new email or password needs the current one). **Forgot password?** on the
+  admin login works: `/forgot-password` and `/reset-password`, with their own
+  token table so a customer account under the same email can't collide.
+- **Refunds through Paystack**, from the order panel (`POST
+  /admin/orders/{reference}/refund`, `App\Services\Payment\OrderRefunds`,
+  `components/orders/RefundModal.vue`). Partial refunds are allowed, but never
+  more than was paid. The amount starts at what's left less delivery (§9:
+  delivery isn't refunded unless the mistake was ours). Any gift card part goes
+  back on its card. The order turns `refunded` once nothing is left. A gift card
+  purchase is refused, with instructions.
+- **Exports:** Orders (`/admin/orders/export`, with `from`/`to`/`paid`),
+  Customers (`/admin/customers/export`) and Analytics (the paid orders in its
+  date range) download as CSV.
+- **Bug found:** the orders list, the fulfilment board and Analytics only ever
+  saw the newest 25 orders, because the API pages at 25 and those screens page
+  and total in the browser. The orders API takes `per_page` up to 500, plus
+  `from`/`to`. Analytics now asks for its own date range. The customers list
+  does the same (it stopped at 50).
+
+Tests: 712 passing (31 new across variants, categories, notification switches,
+FX refresh, audit, own account and password reset, refunds and exports).
+
+### 31 October 2026: admin buttons that did nothing now work (admin, API)
 
 An audit of the admin app found about 30 controls that looked finished but did
 nothing: no click handler, a modal that only closed, or an upload that said
@@ -5076,23 +5137,18 @@ API, per the folder structure in `README.md`.
 
 ## What is left to do
 
-### Admin audit, phase 2 (found 31 Oct; needs API work)
+### Admin audit (31 Oct): what's left
 
-1. **Product sizes and colours.** Neither the API nor the admin can add one, so
-   a product made in admin would have no stock rows and couldn't be sold. Only
-   the catalogue import makes them. "Add product" is hidden until this exists.
-2. **Categories:** "New category" had no endpoint behind it.
-3. **Settings › Notifications** (no save endpoint), **Settings › Store** FX
-   "Refresh now" (no route), **Settings › SEO** (values hard-coded in the page).
-4. **Dashboard activity feed and Settings › Audit:** no `/admin/activity` or
-   `/admin/audit`, so both still show sample data.
-5. **Account** self-edit, and **Forgot password** on the admin login.
-6. **Refunds through Paystack**, from the order drawer. Today a refund is
-   recorded in admin and made in the Paystack dashboard.
-7. **Exports:** orders, customers and analytics. Newsletter export works.
-8. **Click every Phase 1 control in a browser** against a running API. The
-   build passes and the API changes are tested, but the screens haven't been
-   clicked through yet.
+1. **Click every new control in a browser** against a running API. The admin
+   builds and the API changes are tested, but the screens haven't been clicked
+   through. The refund in particular wants one real Paystack test refund.
+2. **Audit log retention** (open decision 28 asked about it): rows are kept
+   indefinitely. Say if they should be pruned after some period.
+3. **Storefront:** a post's `meta_description` now reaches it, but
+   `pages/blog/[slug].vue` still describes a post by its subtitle (the
+   excerpt). Use `meta_description` first if the client wants the two to
+   differ.
+4. Not built, by choice: product **Import** and **Duplicate**.
 
 ### WhatsApp (phases 0–4 built 19 Oct)
 

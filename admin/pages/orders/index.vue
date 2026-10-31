@@ -15,7 +15,9 @@ useHead({ title: 'Orders' })
 
 const { useAdminList } = useAdminApi()
 const { formatDateTime } = useFormatters()
-const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders')
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders', { per_page: 500 })
+const { can } = useAuth()
+const { download, downloading } = useDownload()
 
 const r = useResource<Order>(orders, {
   searchFields: ['reference', 'customerName', 'customerEmail'],
@@ -60,7 +62,10 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
           <PhKanban :size="16" />
           Fulfilment board
         </UiButton>
-        <UiButton variant="secondary" size="sm">
+        <UiButton
+          v-if="can('orders.view') && can('customers.export')" variant="secondary" size="sm"
+          :loading="downloading" @click="download('/admin/orders/export', 'orders.csv')"
+        >
           <PhDownloadSimple :size="16" />
           Export
         </UiButton>

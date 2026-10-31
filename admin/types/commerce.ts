@@ -96,6 +96,11 @@ export interface Order {
   giftCardAmount?: Money
   giftCardId?: number | null
   total: Money
+  /** Sent back through Paystack from admin so far, and what's left that could be. */
+  refundedAmount?: Money
+  refundableAmount?: Money
+  refundedAt?: Timestamp | null
+  giftCardRefundedAt?: Timestamp | null
   /** `gift_card` for a gift card bought online: no stock, no shipment. */
   kind?: 'goods' | 'gift_card'
   status: OrderStatus

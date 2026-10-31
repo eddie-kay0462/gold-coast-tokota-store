@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Admin\AboutPageController as AdminAboutPageController;
+use App\Http\Controllers\Api\V1\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Api\V1\Admin\BlogPostController as AdminBlogPostController;
 use App\Http\Controllers\Api\V1\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Api\V1\Admin\CategoryController as AdminCategoryController;
@@ -214,12 +215,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // (AdminLoginRequest) is the rate-limiting control (Feature 12).
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/login', [AdminAuthController::class, 'login'])->name('login');
+        Route::middleware('throttle:6,1')->group(function () {
+            Route::post('/forgot-password', [AdminAuthController::class, 'forgotPassword'])->name('forgot-password');
+            Route::post('/reset-password', [AdminAuthController::class, 'resetPassword'])->name('reset-password');
+        });
 
-        Route::middleware('auth:admin')->group(function () {
+        // Every successful change below is written to the audit log.
+        Route::middleware(['auth:admin', 'admin.audit'])->group(function () {
             // No capability gate on either: an account whose access has
             // lapsed still has to be able to see who it is and sign out.
             Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
             Route::get('/me', [AdminAuthController::class, 'me'])->name('me');
+            Route::put('/me', [AdminAuthController::class, 'updateMe'])->name('me.update');
 
             // Every route below names the capability it needs rather than a
             // tier, because the brand document's permission model (§18) does
@@ -315,14 +322,23 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:analytics.view')->name('dashboard.metrics');
             Route::get('/dashboard/charts', [AdminDashboardController::class, 'charts'])
                 ->middleware('capability:analytics.view')->name('dashboard.charts');
+            Route::get('/activity', [AdminActivityController::class, 'activity'])
+                ->middleware('capability:analytics.view')->name('activity');
+            Route::get('/audit', [AdminActivityController::class, 'audit'])
+                ->middleware('capability:audit.view')->name('audit');
 
             // Orders. Viewing and moving an order through fulfilment is Staff
             // work; issuing a refund is not, and that is enforced on the
             // submitted status inside UpdateOrderStatusRequest.
             Route::get('/orders', [AdminOrderController::class, 'index'])
                 ->middleware('capability:orders.view')->name('orders.index');
+            // Before /orders/{reference}. Customer details, so customers.export too.
+            Route::get('/orders/export', [AdminOrderController::class, 'export'])
+                ->middleware('capability:orders.view,customers.export')->name('orders.export');
             Route::get('/orders/{reference}', [AdminOrderController::class, 'show'])
                 ->middleware('capability:orders.view')->name('orders.show');
+            Route::post('/orders/{reference}/refund', [AdminOrderController::class, 'refund'])
+                ->middleware('capability:orders.refund')->name('orders.refund');
             Route::patch('/orders/{reference}', [AdminOrderController::class, 'updateStatus'])
                 ->middleware('capability:orders.update_status')->name('orders.update-status');
 
@@ -417,12 +433,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
             Route::get('/categories', [AdminCategoryController::class, 'index'])
                 ->middleware('capability:products.view')->name('categories.index');
+            Route::post('/categories', [AdminCategoryController::class, 'store'])
+                ->middleware('capability:products.write')->name('categories.store');
+            Route::put('/categories/{category}', [AdminCategoryController::class, 'update'])
+                ->middleware('capability:products.write')->name('categories.update');
+            Route::delete('/categories/{category}', [AdminCategoryController::class, 'destroy'])
+                ->middleware('capability:products.delete')->name('categories.destroy');
 
             // Customers are read-only: their details are theirs to change,
             // and deletion is a data-protection policy question rather than
             // a button.
             Route::get('/customers', [AdminCustomerController::class, 'index'])
                 ->middleware('capability:customers.view')->name('customers.index');
+            // Before /customers/{customer}, or "export" would be read as an id.
+            Route::get('/customers/export', [AdminCustomerController::class, 'export'])
+                ->middleware('capability:customers.export')->name('customers.export');
             Route::get('/customers/{customer}', [AdminCustomerController::class, 'show'])
                 ->middleware('capability:customers.view')->name('customers.show');
 
@@ -506,6 +531,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                     ->middleware('capability:settings.view')->name('delivery');
                 Route::get('/notifications', [AdminSettingsController::class, 'notifications'])
                     ->middleware('capability:settings.view')->name('notifications');
+                Route::put('/notifications', [AdminSettingsController::class, 'updateNotifications'])
+                    ->middleware('capability:settings.write')->name('notifications.update');
+                Route::post('/fx/refresh', [AdminSettingsController::class, 'refreshFx'])
+                    ->middleware('capability:settings.fx')->name('fx.refresh');
                 Route::get('/whatsapp', [AdminSettingsController::class, 'whatsapp'])
                     ->middleware('capability:settings.view')->name('whatsapp');
 
@@ -545,6 +574,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:products.write,pricing.write')->name('products.store');
             Route::put('/products/{product}', [AdminProductController::class, 'update'])
                 ->middleware('capability:products.write,pricing.write')->name('products.update');
+            Route::put('/products/{product}/variants', [AdminProductController::class, 'variants'])
+                ->middleware('capability:products.write')->name('products.variants');
             Route::delete('/products/{product}', [AdminProductController::class, 'destroy'])
                 ->middleware('capability:products.delete')->name('products.destroy');
 

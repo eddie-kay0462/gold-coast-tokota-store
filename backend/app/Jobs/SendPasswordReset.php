@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\AdminUser;
 use App\Models\Customer;
 use App\Notifications\NotificationMessage;
 use App\Notifications\NotificationRecipient;
@@ -30,7 +31,7 @@ class SendPasswordReset implements ShouldQueue
     public array $backoff = [10, 60];
 
     public function __construct(
-        public readonly Customer $customer,
+        public readonly Customer|AdminUser $customer,
         public readonly NotificationMessage $message,
     ) {}
 

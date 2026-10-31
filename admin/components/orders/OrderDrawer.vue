@@ -54,6 +54,24 @@ const nextStep = computed<{ status: OrderStatus; label: string } | null>(() => {
   }
 })
 
+// Refunds: `components/orders/RefundModal.vue`. Offered while something paid
+// is left to send back, through Paystack or onto a gift card.
+const REFUNDABLE: OrderStatus[] = ['paid', 'processing', 'shipped', 'delivered', 'inventory_conflict']
+const refundOpen = ref(false)
+const current = ref<Order | null>(null)
+watch(() => props.order, (o) => { current.value = o }, { immediate: true })
+const canRefund = computed(() => {
+  const o = current.value
+  if (!o || o.kind === 'gift_card' || !status.value || !REFUNDABLE.includes(status.value)) return false
+  const cardLeft = o.giftCardRefundedAt ? 0 : o.giftCardAmount?.amount ?? 0
+  return (o.refundableAmount?.amount ?? 0) > 0 || cardLeft > 0
+})
+function onRefunded(next: Order) {
+  current.value = next
+  status.value = next.status
+  emit('changed')
+}
+
 async function setStatus(next: OrderStatus) {
   if (!props.order) return
   changing.value = next
@@ -225,6 +243,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <PhChatsTeardrop :size="16" />
               WhatsApp
             </UiButton>
+            <UiButton v-if="can('orders.refund') && canRefund" variant="ghost" size="sm" @click="refundOpen = true">
+              Refund
+            </UiButton>
             <template v-if="can('orders.update_status')">
               <template v-if="status === 'pending'">
                 <UiButton v-if="!confirmingCancel" variant="ghost" size="sm" @click="confirmingCancel = true">
@@ -243,4 +264,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       </div>
     </Transition>
   </Teleport>
+  <OrdersRefundModal v-model:open="refundOpen" :order="current" @refunded="onRefunded" />
 </template>

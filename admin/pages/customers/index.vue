@@ -8,7 +8,8 @@ useHead({ title: 'Customers' })
 
 const { useAdminList } = useAdminApi()
 const { formatRelative } = useFormatters()
-const { items: customers, pending } = useAdminList<Customer>('admin-customers', '/admin/customers')
+const { items: customers, pending } = useAdminList<Customer>('admin-customers', '/admin/customers', { per_page: 500 })
+const { download, downloading } = useDownload()
 
 const r = useResource<Customer>(customers, {
   searchFields: ['name', 'email', 'country'],
@@ -36,7 +37,7 @@ const columns: Column<Customer>[] = [
     <UiPageHeader title="Customers" description="Everyone who has ordered, including guest checkouts.">
       <template #actions>
         <UiPermissionGate capability="customers.export" quiet>
-          <UiButton variant="secondary" size="sm">
+          <UiButton variant="secondary" size="sm" :loading="downloading" @click="download('/admin/customers/export', 'customers.csv')">
             <PhDownloadSimple :size="16" />
             Export
           </UiButton>

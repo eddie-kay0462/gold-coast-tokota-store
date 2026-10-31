@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhArrowSquareOut, PhCheckCircle, PhWarningCircle } from '@phosphor-icons/vue'
-import type { BlogPost, CmsPage, Product, SiteSettings } from '~/types'
+import type { BlogPost, CmsPage, Product } from '~/types'
 
 /**
  * SEO.
@@ -14,31 +14,16 @@ import type { BlogPost, CmsPage, Product, SiteSettings } from '~/types'
  */
 useHead({ title: 'SEO' })
 
-const { useAdminItem, useAdminList } = useAdminApi()
-const { item: site } = useAdminItem<SiteSettings>('seo-site-settings', '/admin/site-settings')
+const { useAdminList } = useAdminApi()
 const { items: posts } = useAdminList<BlogPost>('seo-blog', '/admin/blog')
 const { items: cmsPages } = useAdminList<CmsPage>('seo-pages', '/admin/pages')
 const { items: products } = useAdminList<Product>('seo-products', '/admin/products')
 
-const form = reactive({
-  siteName: 'Gold Coast Tokota',
-  titleTemplate: '%s · Gold Coast Tokota',
-  defaultDescription: '',
-  canonicalHost: 'https://goldcoasttokota.store',
-})
-watchEffect(() => {
-  if (site.value && !form.defaultDescription) {
-    form.defaultDescription =
-      'Handcrafted sustainable footwear from recycled materials, celebrating Ghanaian culture '
-      + 'through immersive experiences and craftsmanship.'
-  }
-})
-
-/** Content that would ship with a weak or missing tag. */
 const gaps = computed(() => {
   const out: { label: string; detail: string; to: string }[] = []
-  for (const p of posts.value.filter((x) => x.isPublished && !x.metaDescription.trim())) {
-    out.push({ label: p.title, detail: 'Published post with no meta description', to: `/blog/${p.id}` })
+  // The storefront describes a post by its excerpt.
+  for (const p of posts.value.filter((x) => x.isPublished && !(x.excerpt ?? '').trim())) {
+    out.push({ label: p.title, detail: 'Published post with no excerpt, so search results show no description', to: `/blog/${p.id}` })
   }
   for (const p of products.value.filter((x) => x.isActive && x.description.trim().length < 60)) {
     out.push({ label: p.name, detail: 'Active product with a very short description', to: `/products/${p.id}` })
@@ -58,30 +43,27 @@ const indexable = computed(() => [
     <UiPermissionGate capability="settings.view">
       <div class="admin-stack">
         <SettingsSection
-          title="Defaults"
-          description="Used where a page supplies nothing of its own. A page-level tag always wins."
+          title="How pages are titled"
+          description="Set in the storefront’s code, not here, so a change needs a deploy."
         >
-          <div class="grid gap-4 md:grid-cols-2">
-            <UiField v-model="form.siteName" label="Site name" />
-            <UiField
-              v-model="form.titleTemplate" label="Title template"
-              hint="%s is replaced by the page's own title."
-            />
-            <UiField
-              v-model="form.canonicalHost" label="Canonical host" type="url" class="md:col-span-2"
-              hint="Canonical URLs and the sitemap are built from this."
-            />
-            <UiField
-              v-model="form.defaultDescription" label="Fallback description" type="textarea"
-              class="md:col-span-2"
-              hint="Used when a page has no description of its own. Better than shipping an empty tag."
-            />
-          </div>
-          <template #footer>
-            <UiPermissionGate capability="settings.write" quiet>
-              <UiButton size="sm">Save</UiButton>
-            </UiPermissionGate>
-          </template>
+          <dl class="space-y-3 text-ui">
+            <div class="flex flex-wrap justify-between gap-2">
+              <dt class="text-fg-muted">Titles</dt>
+              <dd class="font-mono text-meta text-fg-strong">Page name | Gold Coast Tokota</dd>
+            </div>
+            <div class="flex flex-wrap justify-between gap-2">
+              <dt class="text-fg-muted">Address in links and the sitemap</dt>
+              <dd class="font-mono text-meta text-fg-strong">https://goldcoasttokota.store</dd>
+            </div>
+            <div class="flex flex-wrap justify-between gap-2">
+              <dt class="text-fg-muted">Descriptions</dt>
+              <dd class="text-meta text-fg-strong">Each page’s own. A post’s is its excerpt, which also shows under its title.</dd>
+            </div>
+          </dl>
+          <p class="mt-3 text-meta text-fg-faint">
+            What you can change here is each item’s own text: a post’s meta description in its
+            editor, a product’s description on its page. The gaps below are the ones worth filling.
+          </p>
         </SettingsSection>
 
         <SettingsSection

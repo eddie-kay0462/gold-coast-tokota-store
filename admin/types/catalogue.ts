@@ -32,6 +32,11 @@ export interface Product {
   colourPhotos?: { colour: string, hex: string | null, urls: string[], keys?: string[] }[]
   isActive: boolean
   isFeatured: boolean
+  /** The shop's type filter: slippers, ahenema, closed-toe… */
+  productType?: string | null
+  /** Colourways as stored; with `sizes`, what the stock grid is made from. */
+  colours?: VariantColour[]
+  sizes?: string[]
   /** What couriers and customs need; required for international orders while DHL is on. */
   shipping?: ProductShipping
   /** Rolled up across variants, for the list view. */
@@ -95,4 +100,10 @@ export interface FxRate {
   source: string
   /** True once the cached rate is older than the staleness threshold. */
   isStale: boolean
+}
+
+/** One colourway of a product: its name and swatch. */
+export interface VariantColour {
+  name: string
+  hex: string | null
 }

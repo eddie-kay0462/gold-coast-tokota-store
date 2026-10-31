@@ -15,6 +15,13 @@ class BlogPostResource extends JsonResource
             'slug' => $this->slug,
             'body' => $this->body,
             'cover_image' => $this->cover_image,
+            'cover_image_alt' => $this->cover_image_alt,
+            // The admin's Excerpt. `subtitle` is the name the storefront's
+            // story card and article deck read, and its description falls
+            // back to it; both carry the same text.
+            'excerpt' => $this->excerpt,
+            'subtitle' => $this->excerpt,
+            'meta_description' => $this->meta_description,
             'author' => $this->author,
             'published_at' => $this->published_at,
         ];

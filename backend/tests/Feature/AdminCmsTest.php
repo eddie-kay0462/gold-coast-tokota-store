@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Collection;
 use App\Models\NewsletterSubscriber;
 use App\Models\Page;
+use App\Models\Product;
 use App\Models\SiteSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -329,6 +330,42 @@ class AdminCmsTest extends TestCase
         $response->assertOk();
         $response->assertJsonPath('data.categories.0.name', 'Sandals');
         $response->assertJsonPath('data.collections.0.name', 'Obrempong');
+    }
+
+    public function test_an_admin_can_add_rename_and_delete_an_empty_category(): void
+    {
+        $id = $this->actingAs($this->admin(), 'admin')
+            ->postJson('/api/v1/admin/categories', ['name' => 'Kids Sandals'])
+            ->assertCreated()
+            ->assertJsonPath('data.slug', 'kids-sandals')
+            ->assertJsonPath('data.product_count', 0)
+            ->json('data.id');
+
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson("/api/v1/admin/categories/{$id}", ['name' => 'Kids', 'slug' => 'kids'])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Kids');
+
+        $this->actingAs($this->admin(), 'admin')->deleteJson("/api/v1/admin/categories/{$id}")->assertNoContent();
+        $this->assertDatabaseMissing('categories', ['id' => $id]);
+    }
+
+    public function test_a_category_with_products_is_not_deleted(): void
+    {
+        $category = Category::factory()->create(['name' => 'Sandals']);
+        Product::factory()->create(['category_id' => $category->id]);
+
+        $this->actingAs($this->admin(), 'admin')
+            ->deleteJson("/api/v1/admin/categories/{$category->id}")
+            ->assertStatus(422);
+        $this->assertDatabaseHas('categories', ['id' => $category->id]);
+    }
+
+    public function test_staff_cannot_add_a_category(): void
+    {
+        $this->actingAs($this->staff(), 'admin')
+            ->postJson('/api/v1/admin/categories', ['name' => 'Kids'])
+            ->assertForbidden();
     }
 
     public function test_every_cms_endpoint_is_closed_to_guests(): void

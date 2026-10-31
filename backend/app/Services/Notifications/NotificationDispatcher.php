@@ -5,6 +5,7 @@ namespace App\Services\Notifications;
 use App\Contracts\NotificationChannel;
 use App\Notifications\NotificationMessage;
 use App\Notifications\NotificationRecipient;
+use App\Support\NotificationTriggers;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -34,6 +35,11 @@ class NotificationDispatcher
         $results = [];
 
         foreach ($this->channels as $channel) {
+            // Switched off in Settings › Notifications for this message.
+            if (! NotificationTriggers::allows($message->key, $channel->name())) {
+                continue;
+            }
+
             try {
                 $results[$channel->name()] = $channel->send($to, $message);
             } catch (Throwable $e) {

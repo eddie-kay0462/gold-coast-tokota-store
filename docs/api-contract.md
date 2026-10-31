@@ -88,7 +88,7 @@ Anything that writes them directly is a bug.
 | GET | `/fx-rate` | |
 | GET | `/pages/{slug}` · `/site-settings` | |
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
-| GET | `/blog-posts/{slug}` | |
+| GET | `/blog-posts/{slug}` | Since 31 Oct both also carry `excerpt`, `subtitle` (the same text, the name the storefront reads), `meta_description` and `cover_image_alt` |
 | POST | `/checkout/session` | Guest-friendly. Throttled 20/min — see below |
 | GET | `/gift-cards/settings` | `{ enabled, amounts, expiry_months, terms, redemption_open }`. See Gift cards |
 | POST | `/gift-cards/purchase` | Buys a gift card. Throttled 20/min |
@@ -101,7 +101,7 @@ Anything that writes them directly is a bug.
 | GET | `/workshop-types` | The six experiences §15 publishes, active only |
 | GET | `/workshop-sessions` · POST `/bookings` | Sessions carry their `workshop_type` |
 | POST | `/webhooks/paystack` | HMAC-signed, idempotent. Throttled 300/min — see below |
-| POST | `/admin/login` · `/admin/logout` · GET `/admin/me` | Sanctum cookie session, `admin` guard. Login takes optional `remember` (boolean, the "Keep me signed in" box). Writes need the `X-XSRF-TOKEN` header from the `XSRF-TOKEN` cookie, re-read after login — Laravel rotates it |
+| POST | `/admin/login` · `/admin/logout` · GET/PUT `/admin/me` · POST `/admin/forgot-password` · `/admin/reset-password` | PUT `/admin/me` (31 Oct): own `name`, `job_title`, `email`, `password` (+`password_confirmation`); a new email or password needs `current_password`. Forgot/reset (throttled 6/min, own token table `admin_password_reset_tokens`) email a link to `ADMIN_URL/reset-password?token=…&email=…`; forgot always answers 200. | Sanctum cookie session, `admin` guard. Login takes optional `remember` (boolean, the "Keep me signed in" box). Writes need the `X-XSRF-TOKEN` header from the `XSRF-TOKEN` cookie, re-read after login — Laravel rotates it |
 | GET | `/admin/inventory` | Admin **and** Staff. `?low_stock=true` `?product_id=` `?per_page=` — 50/page by default, max 500 (one row per size; the admin screen asks for 500) |
 | PATCH | `/admin/inventory/{id}` | `inventory.adjust` (Staff and up; not Intern). Body: `quantity_available` and/or `low_stock_threshold`, both absolute integers ≥ 0, plus an optional `note` (≤255) kept on the movement. `422` if the count would fall below `quantity_reserved`. `quantity_reserved` is never writable. A changed count writes an `adjustment` movement. Returns the row |
 | GET | `/admin/inventory/{id}/movements` | `inventory.view`. The variant's stock history, newest first, `?per_page=` (50, max 200). Each row: `reason` (`hold` · `hold_released` · `hold_expired` · `sale` · `adjustment`), `delta_available`, `delta_reserved`, `quantity_available_after`, `quantity_reserved_after`, `channel` (`web`¦`whatsapp`¦null), `order_reference`, `admin_name`, `note`, `created_at` |
@@ -130,7 +130,7 @@ Anything that writes them directly is a bug.
 | POST | `/admin/inbox/quick-replies/{id}/render` | `inbox.view`. `{thread}` → `{body, missing[]}`: slots filled from the chat (`customer.first_name`, `order.*` from the linked order, `delivery.region`/`delivery.estimate`, `returns.window`, `session.next`, `hours`); an unfillable slot becomes `[label]` and is listed in `missing` |
 | GET | `/admin/inbox/templates` · POST `/admin/inbox/templates/sync` | `inbox.view` / `inbox.templates`. The local mirror of Meta's templates: `id`, `name`, `category`, `language`, `status`, `body`, `variables` (e.g. `["{{1}}"]`), `rejection_reason`, `updated_at`. Sync pulls them from the WABA |
 | GET | `/webhooks/whatsapp` · POST `/webhooks/whatsapp` | Public. GET answers Meta's `hub.challenge` when `hub.verify_token` matches `WHATSAPP_VERIFY_TOKEN`, else 403. POST needs a valid `X-Hub-Signature-256` (app secret), else 401; always 200 once verified. Handles `messages`, `smb_message_echoes`, `history`, `smb_app_state_sync`, `message_template_status_update`; idempotent per `wamid` |
-| GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` `?channel=web¦whatsapp` — 25/page. Each order carries `channel`, `whatsapp_conversation_id` and `created_by_admin_id` |
+| GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` `?channel=web¦whatsapp` `?from=` `?to=` (placed dates) `?paid=1` — 25/page, `?per_page=` up to 500 (31 Oct). Each order also carries `refunded_amount`, `refundable_amount` (Money), `refunded_at`, `gift_card_refunded_at`. GET `/admin/orders/export` (CSV, same filters; `orders.view` + `customers.export`). POST `/admin/orders/{reference}/refund` (`orders.refund`): `amount` (minor units, order currency, ≤ refundable), `return_gift_card` (default true), `note`; sends a Paystack refund, puts any gift card part back on its card, marks the order `refunded` once nothing is left. A gift card purchase is refused. Each order carries `channel`, `whatsapp_conversation_id` and `created_by_admin_id` |
 | PATCH | `/admin/orders/{reference}` | Status. **`refunded` needs `orders.refund`**. `delivered` stamps `delivered_at`. `cancelled` on a `pending` order frees its held stock and any gift card balance (31 Oct) |
 | GET/POST | `/admin/returns` · GET `/admin/returns/{id}` | `returns.view`. `?status=` `?reason=` — 25/page |
 | PATCH | `/admin/returns/{id}` | `returns.resolve` (Admin+). `refunded` also needs `orders.refund` |
@@ -145,8 +145,8 @@ Anything that writes them directly is a bug.
 | GET | `/admin/site-settings` | Staff may read |
 | PUT | `/admin/site-settings` | **Admin only** |
 | GET | `/admin/newsletter` · `/admin/newsletter/export` | Read-only. Export streams CSV |
-| GET | `/admin/categories` | Categories and collections together |
-| GET | `/admin/customers` · `/admin/customers/{id}` | Read-only. `?q=` |
+| GET | `/admin/categories` · POST · PUT/DELETE `/admin/categories/{id}` | GET: categories (now with `product_count`) and collections together. Writes (31 Oct): `name`, optional `slug` (made from the name); `products.write`, delete `products.delete` and only for an empty category (422 otherwise) |
+| GET | `/admin/customers` · `/admin/customers/{id}` | Read-only. `?q=` `?per_page=` (default 50, up to 500). GET `/admin/customers/export`: CSV, `customers.export` (31 Oct) |
 | GET | `/admin/team` | `team.view` — every tier holds it |
 | POST/PUT/DELETE | `/admin/team/{id}` | **`team.manage` — Super Admin only** |
 | GET | `/admin/shipments` | A view over orders. `?provider=` `?status=` |
@@ -158,12 +158,15 @@ Anything that writes them directly is a bug.
 | GET | `/admin/settings/payments` | **`settings.payments` — Super Admin only** (§18) |
 | GET | `/admin/settings/diy-turnaround` | Per-order-type estimates. Staff may read |
 | PUT | `/admin/settings/diy-turnaround` | `settings.write` — Admin+ |
+| PUT | `/admin/settings/notifications` | `settings.write` (31 Oct). `triggers: [{ key, email, sms }]` for any of `order_placed`, `order_shipped`, `booking_submitted`, `booking_confirmed`, `waitlist_promoted`; stored in `site_settings.notification_channels`; the dispatcher skips a channel switched off for that message. Password resets and gift cards always send |
+| POST | `/admin/settings/fx/refresh` | `settings.fx` — Super Admin (31 Oct). Fetches the rate now; 201 with the new rate, 502 if the provider fails (the last rate stays) |
 | GET | `/admin/products` · `/admin/products/{id}` | `products.view` — every tier. **Unscoped:** drafts included. `?active=` `?q=` `?category_id=` `?per_page=` |
 | — | admin product `image_urls`, `colour_photos` | `AdminProductResource` (2 Oct). `images` stays the raw stored references; `image_urls` are absolute and loadable from the admin's origin (storefront-relative `/products/…` paths resolve against `STOREFRONT_URL`, `products/…` keys against the storefront too, other bare keys through the `public` disk — `App\Support\MediaUrl`). `colour_photos` is `[{colour, hex, urls, keys}]` in swatch order; `keys` are the stored references, index-aligned with `urls` |
 | POST/PUT | `/admin/products` | `products.write` **and** `pricing.write` — Admin+. **`images` can't add photos:** POST refuses any; PUT accepts only references already on the product (reorder or remove; a removed one leaves its colourway too) |
 | POST | `/admin/products/{id}/photos` | `products.write` — Admin+ (18 Oct). Multipart `file` (JPG/PNG/WebP/AVIF, ≤15 MB, ≥600 px a side) and `colour` (required when the product has colourways, one of them; refused when it has none). Cropped to 1500×1667, WebP, stored at `catalogue/{slug}/{n}-{colour}-{hash}.webp` on the media disk with a media-library row (`App\Support\Catalogue\CataloguePhoto`, the same naming `catalogue:import-media` uses). Appended to `images` and `colour_images[colour]`. Returns the product |
 | DELETE | `/admin/products/{id}/photos` | `products.write` — Admin+. JSON `key` (one of `images`). Takes it off the product and its colourway; the file stays in the media library |
 | DELETE | `/admin/products/{id}` | `products.delete` — Admin+ |
+| PUT | `/admin/products/{id}/variants` | `products.write` (31 Oct). `sizes` (1–30 labels), `colours` (`[{ name, hex }]`, up to 12, may be empty), `remove_stocked`. Makes one stock row per colour × size (per size with no colours), new ones at 0. A removed row with stock is refused under `remove_stocked` until that's true; one with units held for a checkout is refused under `sizes`. POST `/admin/products` takes the same `sizes`/`colours` optionally, and both take `product_type`. Products now carry `product_type`, `colours` and `sizes` |
 
 #### The admin product shape is not the storefront's
 
@@ -196,7 +199,7 @@ controls quietly operating on a fraction of the catalogue.
 | Method | Path | Consumer | Stage |
 |---|---|---|---|
 | GET | `/admin/inbox/{threads\|messages\|templates}` | admin app | new scope — see open decisions |
-| GET | `/admin/activity` · `/admin/audit` | admin app | new scope — see open decisions |
+| GET | `/admin/activity` · `/admin/audit` | admin app | **Built 31 Oct.** Activity: up to 20 items (`kind`, `title`, `actor`, `avatar`, `at`) read from orders, bookings, stock recounts, inbound WhatsApp, published posts and new customers; `analytics.view`. Audit: `audit.view`, `?per_page=` (default 200, ≤500); rows `actor_name`, `actor_role`, `action`, `route`, `target`, `detail`, `at`, written by `RecordAdminAction` after each successful admin write (field names only, never values) |
 
 `/webhooks/paystack` shipped; `/webhooks/stripe` will not — see the payments
 note below.
