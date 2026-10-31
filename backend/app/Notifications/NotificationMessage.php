@@ -24,5 +24,14 @@ final class NotificationMessage
         public readonly string $view,
         public readonly array $data = [],
         public readonly ?string $sms = null,
+        /**
+         * Files for the email. Each is either the bytes, base64, or a ticket
+         * named by its booking id, rendered only when the email is sent: a
+         * queued message stays small, and nothing is rendered for a channel
+         * that's switched off.
+         *
+         * @var list<array{name: string, mime: string, base64?: string, ticket_booking_id?: int}>
+         */
+        public readonly array $attachments = [],
     ) {}
 }

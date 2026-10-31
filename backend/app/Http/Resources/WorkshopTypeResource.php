@@ -17,6 +17,9 @@ class WorkshopTypeResource extends JsonResource
             'slot_label' => $this->slot_label,
             'duration_label' => $this->duration_label,
             'capacity' => $this->capacity,
+            // Pesewas per person; null is free.
+            'price_ghs' => $this->price_ghs,
+            'allow_waitlist' => (bool) $this->allow_waitlist,
             // The three §15 runs "By Appointment" have no standing schedule,
             // so a client offering seats for them would be offering seats that
             // do not exist. This is the flag to branch on, not the days label.

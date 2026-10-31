@@ -10,6 +10,9 @@ import type { WorkshopType } from '~/types'
  * The schedule fields are what customers read on the booking page. The actual
  * dates and seats are set per session. Only an experience that never had a
  * session can be deleted; any other is switched off (the API says so).
+ *
+ * A price makes it a paid event: customers pay on Paystack when they book and
+ * get a PDF ticket. Without a waitlist, a full session is sold out.
  */
 const props = defineProps<{ type: WorkshopType | null }>()
 const open = defineModel<boolean>('open', { default: false })
@@ -20,7 +23,7 @@ const toast = useToast()
 
 const form = reactive({
   name: '', description: '', daysLabel: '', slotLabel: '', durationLabel: '', capacity: '',
-  requiresAppointment: false, isActive: true,
+  requiresAppointment: false, isActive: true, price: '', allowWaitlist: false,
 })
 const saving = ref(false)
 const deleting = ref(false)
@@ -41,11 +44,16 @@ watch(() => [open.value, props.type] as const, ([isOpen, t]) => {
     capacity: t ? String(t.capacity) : '',
     requiresAppointment: t?.requiresAppointment ?? false,
     isActive: t?.isActive ?? true,
+    price: t?.priceGhs ? (t.priceGhs / 100).toFixed(2) : '',
+    allowWaitlist: t?.allowWaitlist ?? false,
   })
 }, { immediate: true })
 
+// Blank is free; otherwise cedis, at least GH₵1.
+const priceMinor = computed(() => (String(form.price).trim() === '' ? null : Math.round(Number(form.price) * 100)))
+const priceValid = computed(() => priceMinor.value === null || (Number.isFinite(priceMinor.value) && priceMinor.value >= 100))
 const valid = computed(() =>
-  !!form.name.trim() && !!form.daysLabel.trim() && !!form.slotLabel.trim() && !!form.durationLabel.trim()
+  priceValid.value && !!form.name.trim() && !!form.daysLabel.trim() && !!form.slotLabel.trim() && !!form.durationLabel.trim()
   && Number.isInteger(Number(form.capacity)) && Number(form.capacity) >= 1,
 )
 
@@ -62,6 +70,8 @@ async function save() {
     capacity: Number(form.capacity),
     requires_appointment: form.requiresAppointment,
     is_active: form.isActive,
+    price_ghs: priceMinor.value,
+    allow_waitlist: form.allowWaitlist,
   }
   try {
     if (props.type) await adminFetch(`/admin/workshop-types/${props.type.id}`, { method: 'PUT', body })
@@ -110,7 +120,20 @@ async function remove() {
         <UiField v-model="form.slotLabel" label="Usual time" required placeholder="e.g. 10:00 AM to 1:00 PM" />
         <UiField v-model="form.durationLabel" label="Length" required placeholder="e.g. 3 hours" />
         <UiField v-model="form.capacity" label="Usual seats" type="number" required hint="Each session can change it." />
+        <UiField
+          v-model="form.price" label="Price per person (GHS)" type="number"
+          :hint="priceValid ? 'Blank for a free event. Each date can charge differently.' : 'At least GH₵1, or blank for free.'"
+        />
       </div>
+      <label class="flex items-start gap-2 text-ui text-fg">
+        <input v-model="form.allowWaitlist" type="checkbox" class="mt-0.5 size-4">
+        <span>
+          Allow a waitlist when a session is full
+          <span class="block text-meta text-fg-faint">
+            Off: a full session shows as sold out.<template v-if="priceMinor"> On: people join free and are sent a pay link when a seat comes up, with a day to pay.</template>
+          </span>
+        </span>
+      </label>
       <label class="flex items-center gap-2 text-ui text-fg">
         <input v-model="form.requiresAppointment" type="checkbox" class="size-4">
         By appointment: no standing dates
