@@ -14,6 +14,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\SiteSetting;
 use App\Models\WorkshopSession;
 use App\Notifications\NotificationRecipient;
 use App\Notifications\TransactionalMessages;
@@ -266,6 +267,34 @@ class NotificationTest extends TestCase
     }
 
     // ------------------------------------------------------------- resilience
+
+    /** Settings › Notifications: a trigger switched off on a channel isn't sent there. */
+    public function test_a_channel_switched_off_for_a_trigger_is_skipped(): void
+    {
+        Mail::fake();
+        SiteSetting::current()->update(['notification_channels' => ['order_placed' => ['email' => false, 'sms' => true]]]);
+
+        $order = $this->order();
+        $results = (new NotificationDispatcher([new MailChannel]))->send(
+            NotificationRecipient::forOrder($order),
+            TransactionalMessages::orderConfirmation($order),
+        );
+
+        $this->assertArrayNotHasKey('mail', $results);
+        Mail::assertNothingSent();
+    }
+
+    public function test_an_admin_can_switch_a_trigger_off_and_see_it(): void
+    {
+        $this->actingAs(AdminUser::factory()->create(['role' => 'admin']), 'admin')
+            ->putJson('/api/v1/admin/settings/notifications', [
+                'triggers' => [['key' => 'order_shipped', 'email' => true, 'sms' => false]],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.triggers.1.key', 'order_shipped')
+            ->assertJsonPath('data.triggers.1.sms', false)
+            ->assertJsonPath('data.triggers.0.sms', true);
+    }
 
     public function test_an_sms_failure_does_not_stop_the_email(): void
     {

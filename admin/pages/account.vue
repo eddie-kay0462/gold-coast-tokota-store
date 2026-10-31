@@ -12,7 +12,9 @@ import { humanise } from '~/utils/formatters'
  */
 useHead({ title: 'Account' })
 
-const { user, role, roleDescription, accessExpiresAt, accessDaysRemaining, hasLapsed, logout } = useAuth()
+const { user, role, roleDescription, accessExpiresAt, accessDaysRemaining, hasLapsed, logout, restoreSession } = useAuth()
+const { adminFetch } = useAdminApi()
+const toast = useToast()
 const { preference, setPreference, resolved } = useTheme()
 const { formatDate } = useFormatters()
 
@@ -23,6 +25,39 @@ watchEffect(() => {
     name: user.value.name, email: user.value.email, jobTitle: user.value.jobTitle,
   })
 })
+
+// `PUT /admin/me`. A new email needs your current password, as does a new
+// password; the API checks it.
+const current = reactive({ forProfile: '', forPassword: '' })
+const passwords = reactive({ next: '', confirm: '' })
+const saving = ref<'profile' | 'password' | null>(null)
+const profileError = ref<string | null>(null)
+const passwordError = ref<string | null>(null)
+const emailChanged = computed(() => !!user.value && form.email.trim() !== user.value.email)
+
+async function saveMe(section: 'profile' | 'password') {
+  const error = section === 'profile' ? profileError : passwordError
+  error.value = null
+  const body = section === 'profile'
+    ? {
+        name: form.name.trim(), job_title: form.jobTitle.trim() || null, email: form.email.trim(),
+        ...(emailChanged.value ? { current_password: current.forProfile } : {}),
+      }
+    : { password: passwords.next, password_confirmation: passwords.confirm, current_password: current.forPassword }
+  saving.value = section
+  try {
+    await adminFetch('/admin/me', { method: 'PUT', body })
+    await restoreSession()
+    if (section === 'password') Object.assign(passwords, { next: '', confirm: '' })
+    current.forProfile = ''
+    current.forPassword = ''
+    toast.success(section === 'profile' ? 'Profile saved' : 'Password changed')
+  } catch (err) {
+    error.value = failureMessage(err)
+  } finally {
+    saving.value = null
+  }
+}
 
 const themeOptions = [
   { value: 'light', label: 'Light' },
@@ -72,12 +107,35 @@ const grantedByArea = computed(() => {
         <UiField v-model="form.jobTitle" label="Job title" />
         <UiField
           v-model="form.email" label="Email address" type="email" class="sm:col-span-2"
-          hint="Also your sign-in address, once sign-in is enabled."
+          hint="Also the address you sign in with."
+        />
+        <UiField
+          v-if="emailChanged" v-model="current.forProfile" label="Current password" type="password"
+          autocomplete="current-password" class="sm:col-span-2" hint="Needed to change your email."
         />
       </div>
+      <p v-if="profileError" class="mt-3 text-meta text-danger" role="alert">{{ profileError }}</p>
 
       <template #footer>
-        <UiButton size="sm">Save changes</UiButton>
+        <UiButton size="sm" :loading="saving === 'profile'" :disabled="!form.name.trim() || !form.email.trim()" @click="saveMe('profile')">
+          Save changes
+        </UiButton>
+      </template>
+    </SettingsSection>
+
+    <SettingsSection title="Password">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <UiField v-model="current.forPassword" label="Current password" type="password" autocomplete="current-password" class="sm:col-span-2" />
+        <UiField v-model="passwords.next" label="New password" type="password" autocomplete="new-password" hint="At least 8 characters." />
+        <UiField v-model="passwords.confirm" label="Repeat new password" type="password" autocomplete="new-password" />
+      </div>
+      <p v-if="passwordError" class="mt-3 text-meta text-danger" role="alert">{{ passwordError }}</p>
+      <template #footer>
+        <UiButton
+          size="sm" :loading="saving === 'password'"
+          :disabled="!current.forPassword || !passwords.next || passwords.next !== passwords.confirm"
+          @click="saveMe('password')"
+        >Change password</UiButton>
       </template>
     </SettingsSection>
 

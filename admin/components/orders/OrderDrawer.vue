@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhChatsTeardrop, PhTruck, PhX } from '@phosphor-icons/vue'
-import type { Order, Shipment } from '~/types'
+import type { Order, OrderStatus, Shipment } from '~/types'
 import { PAYMENT_METHOD_LABELS } from '~/types'
 import { formatMoney } from '~/utils/currency'
 
@@ -29,6 +29,70 @@ watch([open, () => shipment.value?.id], async ([isOpen, id]) => {
     // The panel still shows the shipment; only the timeline is missing.
   }
 }, { immediate: true })
+
+// Status changes, `PATCH /admin/orders/{reference}`. Held locally like the
+// shipment, so the badge moves at once. Only the steps a person takes are
+// offered: `paid` comes from Paystack, and once there is a shipment, shipped
+// and delivered are recorded on it (the API refuses them here). Cancelling is
+// for unpaid orders; a paid one needs a refund, which is not built yet.
+const status = ref<OrderStatus | null>(null)
+watch(() => props.order?.status, (value) => { status.value = value ?? null }, { immediate: true })
+const { can } = useAuth()
+const toast = useToast()
+const changing = ref<OrderStatus | null>(null)
+const confirmingCancel = ref(false)
+watch(open, () => { confirmingCancel.value = false })
+
+const nextStep = computed<{ status: OrderStatus; label: string } | null>(() => {
+  if (props.order?.kind === 'gift_card') return null
+  switch (status.value) {
+    case 'paid': return { status: 'processing', label: 'Start making it' }
+    case 'inventory_conflict': return { status: 'processing', label: 'Resolved: start making it' }
+    case 'processing': return shipment.value ? null : { status: 'shipped', label: 'Mark shipped' }
+    case 'shipped': return shipment.value ? null : { status: 'delivered', label: 'Mark delivered' }
+    default: return null
+  }
+})
+
+// Refunds: `components/orders/RefundModal.vue`. Offered while something paid
+// is left to send back, through Paystack or onto a gift card.
+const REFUNDABLE: OrderStatus[] = ['paid', 'processing', 'shipped', 'delivered', 'inventory_conflict']
+const refundOpen = ref(false)
+const current = ref<Order | null>(null)
+watch(() => props.order, (o) => { current.value = o }, { immediate: true })
+const canRefund = computed(() => {
+  const o = current.value
+  if (!o || o.kind === 'gift_card' || !status.value || !REFUNDABLE.includes(status.value)) return false
+  const cardLeft = o.giftCardRefundedAt ? 0 : o.giftCardAmount?.amount ?? 0
+  return (o.refundableAmount?.amount ?? 0) > 0 || cardLeft > 0
+})
+const refundedSoFar = computed(() => !!current.value?.refundedAmount?.amount || !!current.value?.giftCardRefundedAt)
+const partlyRefunded = computed(() => refundedSoFar.value && status.value !== 'refunded')
+function onRefunded(next: Order) {
+  current.value = next
+  status.value = next.status
+  emit('changed')
+}
+
+async function setStatus(next: OrderStatus) {
+  if (!props.order) return
+  changing.value = next
+  try {
+    const { data } = await adminFetch<Order>(`/admin/orders/${props.order.reference}`, {
+      method: 'PATCH',
+      body: { status: next },
+    })
+    status.value = data.status
+    toast.success(next === 'cancelled' ? 'Order cancelled' : 'Status updated', props.order.reference)
+    confirmingCancel.value = false
+    emit('changed')
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not changed', message)
+  } finally {
+    changing.value = null
+  }
+}
 
 function onShipmentUpdated(next: Shipment) {
   shipment.value = { ...next, events: next.events ?? shipment.value?.events }
@@ -68,7 +132,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <p class="mt-1 text-meta text-fg-muted">Placed {{ formatDateTime(order.placedAt) }}</p>
             </div>
             <div class="flex shrink-0 items-center gap-2">
-              <UiStatusBadge :status="order.status" show-icon />
+              <UiBadge v-if="partlyRefunded" tone="warning" size="sm">Partly refunded</UiBadge>
+              <UiStatusBadge :status="status ?? order.status" show-icon />
               <button type="button" class="toolbar-btn" aria-label="Close" @click="open = false">
                 <PhX :size="18" />
               </button>
@@ -118,6 +183,30 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <p v-if="order.fxRateApplied" class="mt-2 text-meta text-fg-faint">
                   Charged in USD at a rate of {{ order.fxRateApplied.toFixed(4) }}, locked when the
                   order was placed. Later rate changes never alter this total.
+                </p>
+              </section>
+
+              <!-- From `current`, the order as the last refund left it, so a
+                   refund shows here the moment it's sent. -->
+              <section v-if="refundedSoFar" class="rounded-lg border border-border bg-bg-sunken p-3">
+                <h3 class="text-meta uppercase tracking-wide text-fg-faint">Refunds</h3>
+                <dl class="mt-1.5 space-y-1 text-ui">
+                  <div v-if="current?.refundedAmount?.amount" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Sent back through Paystack</dt>
+                    <dd class="text-fg-strong">{{ formatMoney(current.refundedAmount) }}</dd>
+                  </div>
+                  <div v-if="current?.giftCardRefundedAt && current.giftCardAmount?.amount" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Put back on the gift card</dt>
+                    <dd class="text-fg-strong">{{ formatMoney(current.giftCardAmount) }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Left to refund</dt>
+                    <dd class="text-fg-strong">{{ formatMoney(current?.refundableAmount ?? { amount: 0, currency: order.total.currency }) }}</dd>
+                  </div>
+                </dl>
+                <p v-if="current?.refundedAt" class="mt-2 text-meta text-fg-faint">
+                  Last refund {{ formatDateTime(current.refundedAt) }}. It reaches the customer in 7 to
+                  14 business days.
                 </p>
               </section>
 
@@ -181,15 +270,26 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <PhChatsTeardrop :size="16" />
               WhatsApp
             </UiButton>
-            <UiPermissionGate capability="orders.refund" quiet>
-              <UiButton variant="ghost" size="sm">Refund</UiButton>
-            </UiPermissionGate>
-            <UiPermissionGate capability="orders.update_status" quiet>
-              <UiButton size="sm">Advance status</UiButton>
-            </UiPermissionGate>
+            <UiButton v-if="can('orders.refund') && canRefund" variant="ghost" size="sm" @click="refundOpen = true">
+              Refund
+            </UiButton>
+            <template v-if="can('orders.update_status')">
+              <template v-if="status === 'pending'">
+                <UiButton v-if="!confirmingCancel" variant="ghost" size="sm" @click="confirmingCancel = true">
+                  Cancel order
+                </UiButton>
+                <UiButton v-else variant="danger" size="sm" :loading="changing === 'cancelled'" @click="setStatus('cancelled')">
+                  Cancel it and free the stock
+                </UiButton>
+              </template>
+              <UiButton v-if="nextStep" size="sm" :loading="changing === nextStep.status" @click="setStatus(nextStep.status)">
+                {{ nextStep.label }}
+              </UiButton>
+            </template>
           </footer>
         </div>
       </div>
     </Transition>
   </Teleport>
+  <OrdersRefundModal v-model:open="refundOpen" :order="current" @refunded="onRefunded" />
 </template>

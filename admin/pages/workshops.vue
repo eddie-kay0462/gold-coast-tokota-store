@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhCalendarDots, PhClock, PhPlus, PhUsersThree } from '@phosphor-icons/vue'
+import { PhCalendarDots, PhClock, PhPencilSimple, PhPlus, PhUsersThree } from '@phosphor-icons/vue'
 import type { DiyTurnaroundTier, WorkshopSession, WorkshopType } from '~/types'
 
 /**
@@ -17,17 +17,78 @@ import type { DiyTurnaroundTier, WorkshopSession, WorkshopType } from '~/types'
  */
 useHead({ title: 'Workshops' })
 
-const { useAdminList } = useAdminApi()
-const { formatDate } = useFormatters()
-const { items: types, pending } = useAdminList<WorkshopType>('admin-workshop-types', '/admin/workshop-types')
-const { items: sessions } = useAdminList<WorkshopSession>('admin-workshop-sessions', '/admin/workshop-sessions')
-const { items: tiers } = useAdminList<DiyTurnaroundTier>('admin-diy-tiers', '/admin/settings/diy-turnaround')
+const { useAdminList, adminFetch } = useAdminApi()
+const { formatDate, now } = useFormatters()
+const { can } = useAuth()
+const toast = useToast()
+const { items: types, pending, refresh: refreshTypes } = useAdminList<WorkshopType>('admin-workshop-types', '/admin/workshop-types')
+// Upcoming only: the list is date-ascending and paged, so past sessions would
+// push next month's off the first page.
+const { items: sessions, refresh: refreshSessions } = useAdminList<WorkshopSession>(
+  'admin-workshop-sessions', '/admin/workshop-sessions', { upcoming: true },
+)
+const { items: tiers, refresh: refreshTiers } = useAdminList<DiyTurnaroundTier>('admin-diy-tiers', '/admin/settings/diy-turnaround')
+
+const todayKey = computed(() => now.value.toISOString().slice(0, 10))
+const upcomingSessions = computed(() =>
+  sessions.value
+    .filter((s) => s.scheduledDate >= todayKey.value)
+    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)),
+)
 
 /** Next scheduled session per type, and how full it is. */
 const upcoming = (typeId: number) =>
-  sessions.value
-    .filter((s) => s.workshopTypeId === typeId && new Date(s.scheduledDate) >= new Date('2026-08-21'))
-    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))[0] ?? null
+  upcomingSessions.value.find((s) => s.workshopTypeId === typeId) ?? null
+
+// New events (experiences) and edits to them: `components/bookings/EventModal.vue`.
+const editingType = ref<WorkshopType | null>(null)
+const typeOpen = ref(false)
+function openType(t: WorkshopType | null) {
+  editingType.value = t
+  typeOpen.value = true
+}
+
+const editingSession = ref<WorkshopSession | null>(null)
+const sessionOpen = ref(false)
+function openSession(s: WorkshopSession | null) {
+  editingSession.value = s
+  sessionOpen.value = true
+}
+
+// DIY turnaround: one tier's estimate edited in place; the API takes the
+// whole list, so the rest go back unchanged.
+const editingTier = ref<string | null>(null)
+const tierEstimate = ref('')
+const savingTier = ref(false)
+function editTier(tier: DiyTurnaroundTier) {
+  editingTier.value = tier.id
+  tierEstimate.value = tier.estimate
+}
+async function saveTier() {
+  if (!editingTier.value || !tierEstimate.value.trim()) return
+  savingTier.value = true
+  try {
+    await adminFetch('/admin/settings/diy-turnaround', {
+      method: 'PUT',
+      body: {
+        tiers: tiers.value.map((t) => ({
+          id: t.id,
+          label: t.label,
+          estimate: t.id === editingTier.value ? tierEstimate.value.trim() : t.estimate,
+          sort_order: t.sortOrder,
+        })),
+      },
+    })
+    toast.success('Turnaround saved', 'The storefront quotes it from now on.')
+    editingTier.value = null
+    await refreshTiers()
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not saved', message)
+  } finally {
+    savingTier.value = false
+  }
+}
 </script>
 
 <template>
@@ -39,7 +100,13 @@ const upcoming = (typeId: number) =>
           Calendar
         </UiButton>
         <UiPermissionGate capability="workshops.manage" quiet>
-          <UiButton size="sm">
+          <UiButton variant="secondary" size="sm" @click="openType(null)">
+            <PhPlus :size="16" />
+            New event
+          </UiButton>
+        </UiPermissionGate>
+        <UiPermissionGate capability="workshops.manage" quiet>
+          <UiButton size="sm" @click="openSession(null)">
             <PhPlus :size="16" />
             New session
           </UiButton>
@@ -55,9 +122,17 @@ const upcoming = (typeId: number) =>
       <article v-for="t in types" :key="t.id" class="card card-pad flex flex-col">
         <div class="flex items-start justify-between gap-3">
           <h2 class="text-section font-medium text-fg-strong">{{ t.name }}</h2>
-          <UiBadge :tone="t.isActive ? 'success' : 'neutral'" dot>
-            {{ t.isActive ? 'Active' : 'Paused' }}
-          </UiBadge>
+          <span class="flex shrink-0 items-center gap-1">
+            <UiBadge :tone="t.isActive ? 'success' : 'neutral'" dot>
+              {{ t.isActive ? 'Active' : 'Paused' }}
+            </UiBadge>
+            <button
+              v-if="can('workshops.manage')" type="button" class="toolbar-btn"
+              :aria-label="`Edit ${t.name}`" @click="openType(t)"
+            >
+              <PhPencilSimple :size="16" />
+            </button>
+          </span>
         </div>
 
         <p class="mt-2 flex-1 text-ui text-fg-muted">{{ t.description }}</p>
@@ -83,11 +158,11 @@ const upcoming = (typeId: number) =>
           <p class="mt-0.5 flex flex-wrap items-center gap-2 text-ui text-fg-strong">
             {{ formatDate(upcoming(t.id)!.scheduledDate) }}
             <UiBadge
-              :tone="upcoming(t.id)!.confirmedCount >= t.capacity ? 'accent' : 'neutral'"
+              :tone="upcoming(t.id)!.occupiedSeats >= t.capacity ? 'accent' : 'neutral'"
               size="sm"
             >
-              {{ upcoming(t.id)!.confirmedCount }}/{{ t.capacity }}
-              {{ upcoming(t.id)!.confirmedCount >= t.capacity ? '· full' : '' }}
+              {{ upcoming(t.id)!.occupiedSeats }}/{{ t.capacity }}
+              {{ upcoming(t.id)!.occupiedSeats >= t.capacity ? '· full' : '' }}
             </UiBadge>
           </p>
           <p v-if="upcoming(t.id)!.waitlistCount" class="mt-1 text-meta text-accent-text">
@@ -99,6 +174,44 @@ const upcoming = (typeId: number) =>
         </p>
       </article>
     </div>
+
+    <!-- Upcoming sessions: what the booking page offers seats on -->
+    <section class="card">
+      <div class="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4 md:p-5">
+        <div>
+          <h2 class="card-title">Upcoming sessions</h2>
+          <p class="mt-1 text-ui text-fg-muted">
+            What the booking page offers seats on. A workshop with no session here can’t be booked.
+          </p>
+        </div>
+      </div>
+      <UiEmptyState
+        v-if="!upcomingSessions.length"
+        title="No sessions scheduled"
+        description="Add one with New session and it shows on the booking page straight away."
+      />
+      <ul v-else class="divide-y divide-border">
+        <li v-for="s in upcomingSessions" :key="s.id" class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 md:px-5">
+          <span class="w-28 shrink-0 text-ui font-medium text-fg-strong">{{ formatDate(s.scheduledDate) }}</span>
+          <span class="min-w-0 flex-1 text-ui text-fg">
+            {{ s.eventName ?? s.workshopTypeName }}
+            <span v-if="s.title" class="text-fg-faint">({{ s.workshopTypeName }})</span>
+            <span class="text-fg-faint">· {{ s.scheduledSlot }}</span>
+          </span>
+          <UiBadge :tone="s.remainingCapacity === 0 ? 'accent' : 'neutral'" size="sm">
+            {{ s.occupiedSeats }}/{{ s.capacity }}{{ s.remainingCapacity === 0 ? ' · full' : '' }}
+          </UiBadge>
+          <span v-if="s.waitlistCount" class="text-meta text-accent-text">{{ s.waitlistCount }} waiting</span>
+          <button
+            v-if="can('workshops.manage')" type="button" class="toolbar-btn"
+            :aria-label="`Edit the ${s.workshopTypeName} session on ${formatDate(s.scheduledDate)}`"
+            @click="openSession(s)"
+          >
+            <PhPencilSimple :size="16" />
+          </button>
+        </li>
+      </ul>
+    </section>
 
     <!-- DIY turnaround matrix -->
     <section class="card">
@@ -112,12 +225,28 @@ const upcoming = (typeId: number) =>
       <ul class="divide-y divide-border">
         <li v-for="tier in tiers" :key="tier.id" class="flex flex-wrap items-center gap-3 px-4 py-3 md:px-5">
           <span class="min-w-0 flex-1 text-ui text-fg-strong">{{ tier.label }}</span>
-          <span class="text-ui text-fg-muted">{{ tier.estimate }}</span>
-          <UiPermissionGate capability="settings.write" quiet>
-            <UiButton variant="ghost" size="sm">Edit</UiButton>
-          </UiPermissionGate>
+          <form v-if="editingTier === tier.id" class="flex items-center gap-2" @submit.prevent="saveTier">
+            <input
+              v-model="tierEstimate" class="field w-56" maxlength="120" required
+              :aria-label="`Turnaround for ${tier.label}`"
+            >
+            <UiButton size="sm" type="submit" :loading="savingTier">Save</UiButton>
+            <UiButton variant="ghost" size="sm" @click="editingTier = null">Cancel</UiButton>
+          </form>
+          <template v-else>
+            <span class="text-ui text-fg-muted">{{ tier.estimate }}</span>
+            <UiPermissionGate capability="settings.write" quiet>
+              <UiButton variant="ghost" size="sm" @click="editTier(tier)">Edit</UiButton>
+            </UiPermissionGate>
+          </template>
         </li>
       </ul>
     </section>
+
+    <BookingsEventModal v-model:open="typeOpen" :type="editingType" @saved="refreshTypes()" />
+    <BookingsSessionModal
+      v-model:open="sessionOpen" :session="editingSession" :types="types"
+      @saved="refreshSessions()" @deleted="refreshSessions()"
+    />
   </div>
 </template>

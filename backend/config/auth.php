@@ -69,6 +69,25 @@ return [
             'throttle' => 60,
         ],
 
+        // Dashboard accounts. Its own table, since an email can belong to a
+        // customer and a member of staff at once.
+        'admins' => [
+            'provider' => 'admins',
+            'table' => 'admin_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+
+        // Invitations to a new team member to set their first password. The
+        // same table (one live link per address), but a week to act on it
+        // rather than an hour.
+        'admin_invites' => [
+            'provider' => 'admins',
+            'table' => 'admin_password_reset_tokens',
+            'expire' => 60 * 24 * 7,
+            'throttle' => 0,
+        ],
+
         'admins' => [
             'provider' => 'admins',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),

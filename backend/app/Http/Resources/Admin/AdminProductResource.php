@@ -52,6 +52,18 @@ class AdminProductResource extends JsonResource
             // relative paths, which resolve to the admin's own HTML there.
             // `images` stays raw so a save round-trips what is stored.
             'image_urls' => array_values(array_filter(array_map(MediaUrl::absolute(...), $this->images ?? []))),
+            'product_type' => $this->product_type,
+            // The two lists the stock grid is made from (ProductVariants):
+            // the colourways as stored, and the distinct sizes of its rows.
+            'colours' => collect($this->colors ?? [])
+                ->map(fn (array $c) => ['name' => $c['name'], 'hex' => $c['hex'] ?? null])
+                ->values(),
+            'sizes' => $this->whenLoaded('inventoryItems', fn () => $this->inventoryItems
+                ->map(fn ($item) => (string) ($item->variant_attributes['size'] ?? ''))
+                ->filter(fn ($size) => $size !== '')
+                ->unique()
+                ->sort(fn ($a, $b) => is_numeric($a) && is_numeric($b) ? $a <=> $b : strnatcasecmp($a, $b))
+                ->values()),
             // Photos grouped by colourway, in swatch order, so the editor can
             // show which photos belong to Tan, Black, ….
             'colour_photos' => collect($this->colors ?? [])

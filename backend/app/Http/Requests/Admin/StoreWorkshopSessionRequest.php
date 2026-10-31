@@ -27,6 +27,10 @@ class StoreWorkshopSessionRequest extends FormRequest
             'scheduled_slot' => [$creating ? 'required' : 'sometimes', 'string', 'max:100'],
             'capacity' => [$creating ? 'required' : 'sometimes', 'integer', 'min:1', 'max:100'],
             'location_notes' => ['nullable', 'string', 'max:1000'],
+            // A themed run of the experience: its own name and blurb on the
+            // booking page. Blank means it goes by the experience's name.
+            'title' => ['nullable', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:2000'],
         ];
     }
 

@@ -21,6 +21,10 @@ class WorkshopSessionResource extends JsonResource
                 'slug' => $this->workshopType->slug,
                 'duration_label' => $this->workshopType->duration_label,
             ]),
+            'title' => $this->title,
+            'description' => $this->description,
+            // What to call it: its own title, or the experience it belongs to.
+            'event_name' => $this->title ?: $this->workshopType?->name,
             'scheduled_date' => $this->scheduled_date?->toDateString(),
             'scheduled_slot' => $this->scheduled_slot,
             'capacity' => $this->capacity,

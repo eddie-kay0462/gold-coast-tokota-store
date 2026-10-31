@@ -12,7 +12,13 @@ import type { AdminUser } from '~/types'
  */
 const props = defineProps<{ member: AdminUser | null }>()
 const open = defineModel<boolean>('open', { default: false })
+const emit = defineEmits<{ saved: [] }>()
 const { formatDate, daysUntil, now } = useFormatters()
+const { adminFetch } = useAdminApi()
+const toast = useToast()
+const saving = ref(false)
+const error = ref<string | null>(null)
+watch(open, (isOpen) => { if (isOpen) error.value = null })
 
 const days = ref(30)
 const presets = [7, 30, 90]
@@ -29,6 +35,28 @@ const newExpiry = computed(() => {
     : new Date(props.member.accessExpiresAt)
   return new Date(base.getTime() + days.value * 864e5).toISOString()
 })
+
+const valid = computed(() => Number.isInteger(days.value) && days.value >= 1 && days.value <= 365)
+
+/** `PUT /admin/team/{id}`; the API writes the extension into the history. */
+async function save() {
+  if (!props.member || !newExpiry.value || !valid.value) return
+  saving.value = true
+  error.value = null
+  try {
+    await adminFetch(`/admin/team/${props.member.id}`, {
+      method: 'PUT',
+      body: { access_expires_at: newExpiry.value },
+    })
+    toast.success('Access extended', `${props.member.name}, until ${formatDate(newExpiry.value)}`)
+    emit('saved')
+    open.value = false
+  } catch (err) {
+    error.value = failureMessage(err)
+  } finally {
+    saving.value = false
+  }
+}
 </script>
 
 <template>
@@ -81,15 +109,18 @@ const newExpiry = computed(() => {
         <p class="field-label">Previous extensions</p>
         <ul class="space-y-1.5 text-meta text-fg-muted">
           <li v-for="(e, i) in member.accessExtensions" :key="i">
-            +{{ e.days }} days by {{ e.extendedByName }} on {{ formatDate(e.extendedAt) }}
+            <template v-if="e.days">+{{ Math.round(e.days) }} days</template><template v-else>Until {{ formatDate(e.newExpiry) }}</template>
+            by {{ e.extendedByName }} on {{ formatDate(e.extendedAt) }}
           </li>
         </ul>
       </div>
     </div>
 
+    <p v-if="error" class="mt-4 rounded-lg bg-danger-soft px-3 py-2.5 text-meta text-danger" role="alert">{{ error }}</p>
+
     <template #footer>
       <UiButton variant="secondary" size="sm" @click="open = false">Cancel</UiButton>
-      <UiButton size="sm" @click="open = false">Extend access</UiButton>
+      <UiButton size="sm" :loading="saving" :disabled="!valid" @click="save">Extend access</UiButton>
     </template>
   </UiModal>
 </template>

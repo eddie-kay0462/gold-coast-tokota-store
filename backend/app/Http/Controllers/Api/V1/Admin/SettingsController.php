@@ -5,15 +5,20 @@ namespace App\Http\Controllers\Api\V1\Admin;
 use App\Enums\ShippingZone;
 use App\Http\Controllers\Api\V1\WhatsAppWebhookController;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FxRateResource;
 use App\Models\ShippingSetting;
 use App\Models\SiteSetting;
+use App\Services\Currency\FxRateService;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Notifications\FishAfricaSmsService;
 use App\Services\Returns\ReturnPolicy;
 use App\Services\Shipping\ShippingManager;
 use App\Services\WhatsApp\CloudApiClient;
+use App\Support\NotificationTriggers;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 
 /**
  * The settings panels that describe how the system is *configured*, as opposed
@@ -127,13 +132,10 @@ class SettingsController extends Controller
             // The four triggers README Feature 8 names, plus the dispatch
             // notification the brand document promises under Domestic
             // Shipping. All five dispatch as of 8 Sep.
-            'triggers' => [
-                ['key' => 'order_placed', 'label' => 'Order placed', 'email' => true, 'sms' => true],
-                ['key' => 'order_shipped', 'label' => 'Order dispatched', 'email' => true, 'sms' => true],
-                ['key' => 'booking_submitted', 'label' => 'Booking submitted', 'email' => true, 'sms' => true],
-                ['key' => 'booking_confirmed', 'label' => 'Booking confirmed', 'email' => true, 'sms' => true],
-                ['key' => 'waitlist_promoted', 'label' => 'Waitlist promotion', 'email' => true, 'sms' => true],
-            ],
+            // The four triggers README Feature 8 names, plus the dispatch
+            // notification the brand document promises under Domestic
+            // Shipping, each switchable per channel (31 Oct).
+            'triggers' => NotificationTriggers::all(),
             'dispatch_implemented' => true,
             // Without Fish Africa credentials the SMS half falls back to
             // LogSmsChannel, which writes the message to the log instead of
@@ -170,6 +172,43 @@ class SettingsController extends Controller
     }
 
     /** Last four characters only — enough to tell two keys apart, not to use one. */
+    /**
+     * Fetch the exchange rate now instead of waiting for the hourly job.
+     * A failed fetch keeps the last good rate (FxRateService) and says so.
+     */
+    public function refreshFx(FxRateService $fx): JsonResponse|FxRateResource
+    {
+        $rate = $fx->fetchLatest();
+
+        if ($rate === null) {
+            return response()->json([
+                'message' => 'The rate provider didn’t answer, so the last rate is still in use. Try again in a few minutes.',
+            ], 502);
+        }
+
+        return new FxRateResource($rate);
+    }
+
+    /** The per-channel switches; anything not sent stays as it was. */
+    public function updateNotifications(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'triggers' => ['required', 'array'],
+            'triggers.*.key' => ['required', 'string', Rule::in(array_keys(NotificationTriggers::TRIGGERS))],
+            'triggers.*.email' => ['required', 'boolean'],
+            'triggers.*.sms' => ['required', 'boolean'],
+        ]);
+
+        $settings = SiteSetting::current();
+        $channels = $settings->notification_channels ?? [];
+        foreach ($data['triggers'] as $trigger) {
+            $channels[$trigger['key']] = ['email' => (bool) $trigger['email'], 'sms' => (bool) $trigger['sms']];
+        }
+        $settings->update(['notification_channels' => $channels]);
+
+        return $this->notifications();
+    }
+
     private function mask(?string $value): ?string
     {
         if (blank($value)) {

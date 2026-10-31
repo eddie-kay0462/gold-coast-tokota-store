@@ -19,7 +19,6 @@ useHead({ title: 'Analytics' })
 const { useAdminList, useAdminItem } = useAdminApi()
 const { formatDate, formatNumber, now } = useFormatters()
 
-const { items: orders, pending } = useAdminList<Order>('analytics-orders', '/admin/orders')
 const { item: charts } = useAdminItem<DashboardCharts>('analytics-charts', '/admin/dashboard/charts')
 const { item: metrics } = useAdminItem<DashboardMetrics>('analytics-metrics', '/admin/dashboard/metrics')
 
@@ -30,6 +29,17 @@ watchEffect(() => {
   const from = new Date(now.value.getTime() - 29 * 864e5).toISOString().slice(0, 10)
   range.value = { from, to: today.value, label: 'Last 30 days' }
 })
+
+// The range's orders, fetched for that range: the list endpoint pages, so
+// fetching "all" and filtering here would only ever see the newest page.
+const orderQuery = computed(() => ({ from: range.value.from, to: range.value.to, per_page: 500 }))
+const { items: orders, pending } = useAdminList<Order>('analytics-orders', '/admin/orders', orderQuery, { allPages: true })
+const { can } = useAuth()
+const { download, downloading } = useDownload()
+function exportRange() {
+  const q = new URLSearchParams({ from: range.value.from, to: range.value.to, paid: '1' })
+  download(`/admin/orders/export?${q}`, `sales-${range.value.from}-to-${range.value.to}.csv`)
+}
 
 const inRange = computed(() =>
   orders.value.filter((o) => {
@@ -108,7 +118,10 @@ const byMethod = computed(() => {
         description="Sales computed from order records, so the figures hold even when a customer blocks tracking."
       >
         <template #actions>
-          <UiButton variant="secondary" size="sm">
+          <UiButton
+            v-if="can('analytics.revenue') && can('customers.export')" variant="secondary" size="sm"
+            :loading="downloading" @click="exportRange"
+          >
             <PhDownloadSimple :size="16" />
             Export
           </UiButton>

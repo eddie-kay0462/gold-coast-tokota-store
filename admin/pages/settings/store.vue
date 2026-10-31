@@ -13,10 +13,27 @@ import { formatRate } from '~/utils/currency'
  */
 useHead({ title: 'Store & currency' })
 
-const { useAdminItem } = useAdminApi()
+const { useAdminItem, adminFetch } = useAdminApi()
 const { formatRelative } = useFormatters()
+const toast = useToast()
 const { item: commerce } = useAdminItem<CommerceSettings>('commerce-settings', '/admin/settings/commerce')
-const { item: fx } = useAdminItem<FxRate>('settings-fx', '/fx-rate')
+const { item: fx, refresh: refreshFx } = useAdminItem<FxRate>('settings-fx', '/fx-rate')
+
+/** Fetches the rate now; a provider outage keeps the last one and says so. */
+const refreshing = ref(false)
+async function refreshRate() {
+  refreshing.value = true
+  try {
+    const { data } = await adminFetch<FxRate>('/admin/settings/fx/refresh', { method: 'POST' })
+    toast.success('Rate updated', formatRate(data))
+    await refreshFx()
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not updated', message)
+  } finally {
+    refreshing.value = false
+  }
+}
 </script>
 
 <template>
@@ -49,7 +66,7 @@ const { item: fx } = useAdminItem<FxRate>('settings-fx', '/fx-rate')
               </p>
             </div>
             <UiPermissionGate capability="settings.fx" quiet>
-              <UiButton variant="secondary" size="sm" class="ml-auto">
+              <UiButton variant="secondary" size="sm" class="ml-auto" :loading="refreshing" @click="refreshRate">
                 <PhArrowsClockwise :size="16" />
                 Refresh now
               </UiButton>

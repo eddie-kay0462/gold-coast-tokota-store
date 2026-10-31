@@ -6,8 +6,8 @@ import { useAuthStore } from '~/stores/auth'
  * The one way this app talks to data.
  *
  * `adminFetch` calls the real Laravel admin API and falls back to bundled
- * fixtures for any path the API doesn't serve (today: inbox ×3, activity and
- * audit, FOR_THE_TEAM.md issue 28).
+ * fixtures for any path the API doesn't serve. Since 31 Oct the API serves
+ * every path the screens call, so in `auto` a fixture now means the API failed.
  *
  * Auth failures are the exception to the fallback. A 401 or 419 means the
  * Sanctum session is gone, not that the endpoint is missing, so it sends the
@@ -191,11 +191,16 @@ export function useAdminApi() {
    * pending/error/refresh handles without repeating the boilerplate that the
    * old scaffold copied into every page.
    */
-  function useAdminList<T>(key: string, path: string, query?: Ref<ListQuery> | ListQuery) {
+  function useAdminList<T>(
+    key: string,
+    path: string,
+    query?: Ref<ListQuery> | ListQuery,
+    options: { allPages?: boolean } = {},
+  ) {
     const q = isRef(query) ? query : ref(query ?? {})
     const state = useAsyncData<AdminResult<T[]>>(
       key,
-      () => adminFetch<T[]>(path, { query: q.value }),
+      () => (options.allPages ? fetchAllPages<T>(path, q.value) : adminFetch<T[]>(path, { query: q.value })),
       { watch: [q], default: () => ({ data: [] as T[], meta: null, source: 'fixture' as const }) },
     )
     return {
@@ -204,6 +209,33 @@ export function useAdminApi() {
       total: computed(() => Number(state.data.value?.meta?.total ?? state.data.value?.data?.length ?? 0)),
       source: computed<DataSource>(() => state.data.value?.source ?? 'fixture'),
     }
+  }
+
+  /**
+   * Every page of a list, for screens that search, sort and count in the
+   * browser over the whole set. One capped page silently dropped rows: the
+   * inventory has more stock rows than its 500 a page, sorted scarcest first,
+   * so a variant that was restocked fell off the end and vanished.
+   *
+   * Pages after the first are fetched together. Rows are de-duplicated by id,
+   * in case one moved between pages while they loaded.
+   */
+  async function fetchAllPages<T>(path: string, query: ListQuery): Promise<AdminResult<T[]>> {
+    const first = await adminFetch<T[]>(path, { query })
+    const lastPage = Math.min(Number(first.meta?.lastPage ?? 1), 50)
+    if (first.source !== 'live' || lastPage <= 1) return first
+    const rest = await Promise.all(
+      Array.from({ length: lastPage - 1 }, (_, i) => adminFetch<T[]>(path, { query: { ...query, page: i + 2 } })),
+    )
+    const seen = new Set<unknown>()
+    const data = [first, ...rest].flatMap((r) => r.data).filter((row) => {
+      const id = (row as { id?: unknown })?.id
+      if (id === undefined) return true
+      if (seen.has(id)) return false
+      seen.add(id)
+      return true
+    })
+    return { ...first, data }
   }
 
   function useAdminItem<T>(key: string, path: string) {

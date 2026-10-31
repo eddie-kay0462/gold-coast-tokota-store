@@ -14,6 +14,8 @@ class WorkshopSession extends Model
 
     protected $fillable = [
         'workshop_type_id',
+        'title',
+        'description',
         'scheduled_date',
         'scheduled_slot',
         'capacity',

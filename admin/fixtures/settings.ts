@@ -35,7 +35,7 @@ export const siteSettings: SiteSettings = {
   whatsappHoldHours: 24,
   contactEmail: 'hello@goldcoasttokota.store',
   contactPhone: '+233257534297',
-  addressLine: 'Haatso, Accra, Ghana',
+  address: 'Haatso, Accra, Ghana',
   instagramUrl: 'https://instagram.com/goldcoasttokota',
   heroHeadline: 'Crafted with Purpose. Inspired by Culture.',
   heroImage: null,

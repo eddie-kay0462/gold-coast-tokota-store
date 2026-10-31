@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Admin;
 
+use App\Services\Payment\OrderRefunds;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,6 +44,12 @@ class AdminOrderResource extends JsonResource
             'gift_card_amount' => $this->money((int) $this->gift_card_amount),
             'gift_card_id' => $this->gift_card_id,
             'total' => $this->money($this->total),
+            // Refunds sent from admin (OrderRefunds): what went back through
+            // Paystack, and what is left that could.
+            'refunded_amount' => $this->money((int) $this->refunded_amount),
+            'refundable_amount' => $this->money(OrderRefunds::refundable($this->resource)),
+            'refunded_at' => $this->refunded_at,
+            'gift_card_refunded_at' => $this->gift_card_refunded_at,
             // `goods` or `gift_card`: a gift card order has no stock or shipment.
             'kind' => $this->kind ?? 'goods',
 

@@ -60,7 +60,11 @@ class GiftCardService
      * the moment of issue; changing the setting later doesn't move cards
      * already out there.
      *
-     * @param  array{recipient_name?: string|null, recipient_email?: string|null, sender_name?: string|null, message?: string|null, note?: string|null}  $details
+     * `code_word` is an optional word the buyer or admin chose ("MAMA"). The
+     * card then reads GCT-MAMA-7KQ4: personal, but the four random characters
+     * keep it from being guessed, since a code is spent by whoever types it.
+     *
+     * @param  array{recipient_name?: string|null, recipient_email?: string|null, sender_name?: string|null, message?: string|null, note?: string|null, code_word?: string|null}  $details
      */
     public function issue(int $amountGhs, string $source, array $details = [], ?AdminUser $by = null, ?Order $purchaseOrder = null): GiftCard
     {
@@ -68,7 +72,7 @@ class GiftCardService
 
         return DB::transaction(function () use ($amountGhs, $source, $details, $by, $purchaseOrder, $months) {
             $card = GiftCard::create([
-                'code' => $this->newCode(),
+                'code' => $this->newCode($details['code_word'] ?? null),
                 'source' => $source,
                 'status' => 'active',
                 'initial_balance' => $amountGhs,
@@ -147,6 +151,35 @@ class GiftCardService
 
             $locked->update(['gift_card_released_at' => now()]);
             $order->setRawAttributes($locked->getAttributes(), true);
+        });
+    }
+
+    /**
+     * A paid order is refunded: what the card paid goes back on the card,
+     * once. Returns the GHS amount returned (0 if there was nothing to).
+     */
+    public function refundToCard(Order $order, AdminUser $by): int
+    {
+        if (! $order->gift_card_id || $order->gift_card_amount_ghs <= 0) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($order, $by) {
+            $locked = Order::query()->lockForUpdate()->find($order->id);
+            if (! $locked || $locked->gift_card_refunded_at) {
+                return 0;
+            }
+
+            $card = GiftCard::query()->lockForUpdate()->find($locked->gift_card_id);
+            if ($card) {
+                $card->increment('balance', $locked->gift_card_amount_ghs);
+                $this->record($card, 'refund', $locked->gift_card_amount_ghs, order: $locked, admin: $by, note: "Order {$locked->reference} refunded");
+            }
+
+            $locked->update(['gift_card_refunded_at' => now()]);
+            $order->setRawAttributes($locked->getAttributes(), true);
+
+            return $card ? $locked->gift_card_amount_ghs : 0;
         });
     }
 
@@ -245,20 +278,29 @@ class GiftCardService
         ]);
     }
 
-    private function newCode(): string
+    /**
+     * GCT-XXXX-XXXX-XXXX, or GCT-WORD-XXXX with a chosen word. Unique even with
+     * the dashes taken out, since that's how a typed code is matched.
+     */
+    private function newCode(?string $word = null): string
     {
+        $word = GiftCard::codeWord($word);
+
         do {
-            $groups = [];
-            for ($g = 0; $g < 3; $g++) {
-                $chunk = '';
-                for ($i = 0; $i < 4; $i++) {
-                    $chunk .= self::ALPHABET[random_int(0, strlen(self::ALPHABET) - 1)];
-                }
-                $groups[] = $chunk;
-            }
+            $groups = $word !== null ? [$word, $this->randomChunk()] : [$this->randomChunk(), $this->randomChunk(), $this->randomChunk()];
             $code = 'GCT-'.implode('-', $groups);
-        } while (GiftCard::query()->where('code', $code)->exists());
+        } while (GiftCard::query()->withCode($code)->exists());
 
         return $code;
+    }
+
+    private function randomChunk(): string
+    {
+        $chunk = '';
+        for ($i = 0; $i < 4; $i++) {
+            $chunk .= self::ALPHABET[random_int(0, strlen(self::ALPHABET) - 1)];
+        }
+
+        return $chunk;
     }
 }

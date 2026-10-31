@@ -13,6 +13,9 @@ class Order extends Model
 {
     use HasFactory;
 
+    /** Statuses that represent money actually taken. */
+    public const REVENUE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
+
     protected $fillable = [
         'reference',
         'kind',
@@ -40,6 +43,9 @@ class Order extends Model
         'channel',
         'whatsapp_conversation_id',
         'created_by_admin_id',
+        'refunded_amount',
+        'refunded_at',
+        'gift_card_refunded_at',
     ];
 
     protected $casts = [
@@ -51,6 +57,9 @@ class Order extends Model
         'gift_card_amount' => 'integer',
         'gift_card_amount_ghs' => 'integer',
         'gift_card_released_at' => 'datetime',
+        'refunded_amount' => 'integer',
+        'refunded_at' => 'datetime',
+        'gift_card_refunded_at' => 'datetime',
         'shipping_address' => 'array',
         'shipping_zone' => ShippingZone::class,
         'shipping_option' => 'array',

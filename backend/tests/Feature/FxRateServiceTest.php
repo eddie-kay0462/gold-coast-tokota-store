@@ -66,4 +66,22 @@ class FxRateServiceTest extends TestCase
         $this->assertFalse($service->isStale($fresh));
         $this->assertTrue($service->isStale($stale));
     }
+
+    public function test_the_super_admin_can_refresh_the_rate_now(): void
+    {
+        Http::fake(['api.exchangerate.host/*' => Http::response(['success' => true, 'quotes' => ['GHSUSD' => 0.0731]])]);
+
+        $this->actingAs(\App\Models\AdminUser::factory()->create(['role' => 'super_admin']), 'admin')
+            ->postJson('/api/v1/admin/settings/fx/refresh')
+            ->assertCreated()
+            ->assertJsonPath('data.rate', 0.0731);
+    }
+
+    /** §18: currency configuration is the Super Admin's. */
+    public function test_an_admin_cannot_refresh_the_rate(): void
+    {
+        $this->actingAs(\App\Models\AdminUser::factory()->create(['role' => 'admin']), 'admin')
+            ->postJson('/api/v1/admin/settings/fx/refresh')
+            ->assertForbidden();
+    }
 }

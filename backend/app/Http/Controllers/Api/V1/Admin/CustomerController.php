@@ -7,10 +7,11 @@ use App\Http\Resources\Admin\AdminCustomerResource;
 use App\Http\Resources\Admin\AdminOrderResource;
 use App\Models\Customer;
 use App\Models\Order;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Customers — read-only, Admin and Staff.
@@ -24,8 +25,7 @@ class CustomerController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $customers = Customer::query()
-            ->withCount('orders')
+        $customers = $this->withSummary(Customer::query())
             ->when($request->filled('q'), function ($query) use ($request) {
                 $term = '%'.mb_strtolower(trim((string) $request->string('q'))).'%';
 
@@ -36,7 +36,7 @@ class CustomerController extends Controller
                     ->orWhereRaw('LOWER(email) LIKE ?', [$term]));
             })
             ->latest()
-            ->paginate(50)
+            ->paginate(max(1, min($request->integer('per_page', 50), 500)))
             ->withQueryString();
 
         return AdminCustomerResource::collection($customers);
@@ -44,7 +44,7 @@ class CustomerController extends Controller
 
     public function show(Customer $customer): JsonResponse
     {
-        $customer->loadCount('orders');
+        $customer = $this->withSummary(Customer::query())->findOrFail($customer->id);
 
         return response()->json([
             'data' => new AdminCustomerResource($customer),
@@ -54,5 +54,42 @@ class CustomerController extends Controller
                 Order::query()->with('items')->where('customer_id', $customer->id)->latest()->get()
             ),
         ]);
+    }
+
+    /**
+     * What the list and the record show about each customer: how many orders,
+     * what they've spent, when they last ordered, and where the latest one went.
+     *
+     * Spend counts only orders in `Order::REVENUE_STATUSES`, and is summed per
+     * currency: adding cedis and dollars together would need a rate, and each
+     * USD order already locked its own.
+     */
+    private function withSummary(Builder $query): Builder
+    {
+        $taken = fn (string $currency) => fn ($orders) => $orders
+            ->whereIn('status', Order::REVENUE_STATUSES)
+            ->where('currency', $currency);
+
+        return $query
+            ->withCount('orders')
+            ->withSum(['orders as lifetime_ghs' => $taken('GHS')], 'total')
+            ->withSum(['orders as lifetime_usd' => $taken('USD')], 'total')
+            ->withMax('orders as last_order_at', 'created_at')
+            ->with('latestOrder:orders.id,orders.customer_id,orders.shipping_address');
+    }
+
+    /** Customer accounts as CSV, newest first: who they are and how much they've ordered. */
+    public function export(): StreamedResponse
+    {
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['first_name', 'last_name', 'email', 'phone', 'preferred_currency', 'orders', 'joined_at']);
+            Customer::query()->withCount('orders')->latest()->chunk(500, function ($customers) use ($out) {
+                foreach ($customers as $c) {
+                    fputcsv($out, [$c->first_name, $c->last_name, $c->email, $c->phone, $c->preferred_currency, $c->orders_count, $c->created_at?->toIso8601String()]);
+                }
+            });
+            fclose($out);
+        }, 'customers-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Services\GiftCards;
 
 use App\Exceptions\NoFxRateException;
+use App\Models\GiftCard;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Currency\FxRateService;
@@ -75,6 +76,7 @@ class GiftCardCheckout
                     'recipient_email' => $data['recipient_email'],
                     'sender_name' => $data['sender_name'] ?? null,
                     'message' => $data['message'] ?? null,
+                    'code_word' => GiftCard::codeWord($data['code_word'] ?? null),
                 ],
             ]);
 

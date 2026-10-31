@@ -32,6 +32,9 @@ export interface AdminUser {
   /** Audit trail for extensions, newest first. */
   accessExtensions: AccessExtension[]
   lastActiveAt: Timestamp | null
+  /** Invited by email and hasn't chosen a password yet, so can't sign in. */
+  invitePending?: boolean
+  invitedAt?: Timestamp | null
   createdAt: Timestamp
 }
 
@@ -40,7 +43,7 @@ export interface AccessExtension {
   extendedByName: string
   previousExpiry: Timestamp | null
   newExpiry: Timestamp
-  days: number
+  days: number | null
 }
 
 export interface Customer {
@@ -55,10 +58,13 @@ export interface Customer {
   preferredCurrency: Currency
   /** Null for a guest who never created an account (README: guest checkout). */
   hasAccount: boolean
-  country: string
-  countryCode: string
+  /** Where their latest order went; null for someone who has never ordered. */
+  country: string | null
+  countryCode: string | null
   orderCount: number
+  /** Money taken (paid onward), per currency: cedis always, dollars when any. */
   lifetimeValue: Money
+  lifetimeValueUsd: Money | null
   lastOrderAt: Timestamp | null
   createdAt: Timestamp
 }
