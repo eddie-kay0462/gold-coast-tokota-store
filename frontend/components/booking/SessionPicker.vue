@@ -7,7 +7,10 @@ export type WorkshopSession = {
   capacity: number
   remaining_capacity: number
   location_notes?: string | null
-  /** Which of the §15 experiences this session runs. */
+  /** A themed run's own name and blurb ("Halloween Sip & Paint"); null for a plain one. */
+  title?: string | null
+  description?: string | null
+  /** Which experience this session runs: one of §15's, or one the client added. */
   workshop_type?: { id: number, name: string, slug: string, duration_label: string | null } | null
 }
 
@@ -68,10 +71,14 @@ function formatDate(value: string | null) {
           </span>
 
           <span class="min-w-0 flex-1">
-            <span v-if="session.workshop_type" class="block text-label text-ink">{{ session.workshop_type.name }}</span>
+            <span v-if="session.title || session.workshop_type" class="block text-label text-ink">{{ session.title || session.workshop_type?.name }}</span>
+            <span v-if="session.title && session.workshop_type" class="block text-caption text-muted">{{ session.workshop_type.name }}</span>
             <span class="block text-label font-bold uppercase tracking-[1.4px] text-ink">{{ formatDate(session.scheduled_date) }}</span>
             <span class="block text-caption text-muted">
               {{ session.scheduled_slot }}<template v-if="session.workshop_type?.duration_label"> · {{ session.workshop_type.duration_label }}</template>
+            </span>
+            <span v-if="session.title && session.description" class="mt-0.5 block text-caption text-graphite">
+              {{ session.description }}
             </span>
             <span v-if="session.location_notes" class="mt-0.5 block text-caption text-muted">
               {{ session.location_notes }}
