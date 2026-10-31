@@ -96,7 +96,7 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
 
     <UiDataTable
       :columns="columns" :rows="r.paged.value" :loading="pending"
-      :sort="r.sort.value" :dir="r.dir.value"
+      :sort="r.sort.value" :dir="r.dir.value" :row-click="openOrder"
       empty-title="No orders match"
       empty-description="Try clearing the status filter or searching for a different customer."
       @sort="r.toggleSort"
@@ -122,6 +122,7 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
       </template>
       <template #cell-status="{ row }">
         <UiStatusBadge :status="row.status" />
+        <UiBadge v-if="row.refundedAmount?.amount && row.status !== 'refunded'" tone="warning" size="sm" class="ml-1.5">Partly refunded</UiBadge>
       </template>
       <template #actions="{ row }">
         <UiButton variant="ghost" size="sm" @click="openOrder(row)">View</UiButton>

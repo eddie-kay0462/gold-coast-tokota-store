@@ -517,18 +517,24 @@ is a ledger row (`issue`, `redeem`, `release`, `reclaim`, `adjust`).
   before cards go on sale.
 - `POST /gift-cards/purchase`: `{ amount, currency, purchaser: { first_name,
   last_name?, email, phone? }, recipient_name, recipient_email, sender_name?,
-  message? }`. `amount` (GHS minor units) must be one of the configured amounts.
+  message?, code_word? }`. `code_word` (31 Oct): 2 to 10 letters or numbers;
+  the card then reads `GCT-<WORD>-XXXX` with four random characters, instead of
+  `GCT-XXXX-XXXX-XXXX`. `amount` (GHS minor units) must be one of the configured amounts.
   Returns `201 { data: <Order kind "gift_card">, payment }`, the same shape as
   checkout. The order has one line named "Gift card", no shipping and no stock.
   When it is paid, the card is issued and emailed to the recipient, the buyer
   gets a receipt, and no shipment is opened. `409` when not on sale.
 - `POST /gift-cards/balance`: `{ code }` → `{ last_four, balance, currency:
-  "GHS", expires_at }`, or `422`. POST so codes stay out of URLs and logs.
+  "GHS", expires_at, recipient_name, sender_name, message }`, or `422`. POST so
+  codes stay out of URLs and logs. The last three (31 Oct) let checkout and the
+  balance check show the giver's note. Codes match ignoring case, spaces and
+  dashes, here and at checkout.
 - A balance is taken when checkout creates the order. It goes back if the
   payment session never opens, the hold lapses unpaid (`ReleaseExpiredReservations`),
   or the order is cancelled unpaid (admin or the WhatsApp inbox). A payment that
   lands after that takes it again; a shortfall is logged, and the order stays paid.
-- Admin: `GET/POST /admin/gift-cards`, `GET/PATCH /admin/gift-cards/{id}`
+- Admin: `GET/POST /admin/gift-cards` (POST takes an optional `code_word`, as
+  above), `GET/PATCH /admin/gift-cards/{id}`
   (`status`, or `balance` + `note`), `POST /admin/gift-cards/{id}/resend`,
   `GET/PUT /admin/gift-cards/settings`. Capabilities `gift_cards.view` (every
   tier), `gift_cards.resend` (Staff and up), `gift_cards.issue` (Admin and up,

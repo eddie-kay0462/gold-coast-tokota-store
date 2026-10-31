@@ -29,6 +29,11 @@ const props = withDefaults(defineProps<{
   sort?: string | null
   dir?: 'asc' | 'desc'
   rowLink?: (row: T) => string
+  /**
+   * Run when the row itself is clicked, anywhere outside its own links,
+   * buttons and inputs (e.g. to open a side view).
+   */
+  rowClick?: (row: T) => void
   /** Extra classes for one row, e.g. to mark the one just saved. */
   rowClass?: (row: T) => string | false | undefined
   emptyTitle?: string
@@ -48,6 +53,13 @@ const selected = defineModel<Set<string>>('selected', { default: () => new Set<s
 
 const primary = computed(() => props.primaryKey ?? props.columns[0]?.key ?? 'id')
 const rowKey = (row: T) => String(row.id ?? JSON.stringify(row))
+function onRowClick(row: T, event: MouseEvent) {
+  if (!props.rowClick) return
+  const hit = (event.target as HTMLElement | null)?.closest('a, button, input, select, textarea, label')
+  if (hit && (event.currentTarget as HTMLElement).contains(hit)) return
+  props.rowClick(row)
+}
+
 const isSelected = (row: T) => selected.value.has(rowKey(row))
 const allSelected = computed(() => props.rows.length > 0 && props.rows.every(isSelected))
 
@@ -113,7 +125,8 @@ function sortIcon(col: Column<T>) {
           <tbody>
             <tr
               v-for="row in rows" :key="rowKey(row)"
-              class="table-row" :class="[isSelected(row) && 'bg-accent-soft/40', rowClass?.(row)]"
+              class="table-row" :class="[isSelected(row) && 'bg-accent-soft/40', rowClick && 'cursor-pointer', rowClass?.(row)]"
+              @click="onRowClick(row, $event)"
             >
               <td v-if="selectable" class="px-4 py-3">
                 <input
@@ -146,7 +159,11 @@ function sortIcon(col: Column<T>) {
 
       <!-- ── Cards, below md ── -->
       <ul class="divide-y divide-border md:hidden">
-        <li v-for="row in rows" :key="rowKey(row)" class="p-4" :class="[isSelected(row) && 'bg-accent-soft/40', rowClass?.(row)]">
+        <li
+          v-for="row in rows" :key="rowKey(row)" class="p-4"
+          :class="[isSelected(row) && 'bg-accent-soft/40', rowClick && 'cursor-pointer', rowClass?.(row)]"
+          @click="onRowClick(row, $event)"
+        >
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
               <NuxtLink v-if="rowLink" :to="rowLink(row)" class="block font-medium text-fg-strong">

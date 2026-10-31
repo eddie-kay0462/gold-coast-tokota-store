@@ -7,8 +7,9 @@ import { formatMoney } from '~/utils/currency'
  * Paystack to whatever paid, and any gift card part back on its card.
  *
  * The amount starts at what's left to refund less delivery, because §9 keeps
- * delivery charges unless the mistake was ours. Whoever sends it can change
- * it, up to what's left.
+ * delivery charges unless the mistake was ours. An order that hasn't left yet
+ * has had no delivery, so there it starts at everything left. Whoever sends
+ * it can change it, up to what's left.
  */
 const props = defineProps<{ order: Order | null }>()
 const open = defineModel<boolean>('open', { default: false })
@@ -28,7 +29,14 @@ const left = computed(() => props.order?.refundableAmount?.amount ?? 0)
 const cardPart = computed(() =>
   props.order && !props.order.giftCardRefundedAt ? props.order.giftCardAmount?.amount ?? 0 : 0,
 )
-const suggested = computed(() => Math.max(0, left.value - (props.order?.shippingCost.amount ?? 0)))
+// Gone out: shipped or delivered, or its shipment has a dispatch time.
+const delivered = computed(() =>
+  ['shipped', 'delivered'].includes(props.order?.status ?? '') || !!props.order?.shipment?.dispatchedAt,
+)
+const keepsDelivery = computed(() => delivered.value && (props.order?.shippingCost.amount ?? 0) > 0)
+const suggested = computed(() =>
+  keepsDelivery.value ? Math.max(0, left.value - (props.order?.shippingCost.amount ?? 0)) : left.value,
+)
 
 watch(() => [open.value, props.order] as const, ([isOpen]) => {
   if (!isOpen) return
@@ -89,7 +97,8 @@ async function send() {
       <div>
         <UiField v-model="amount" :label="`Refund (${currency})`" type="number" />
         <p class="mt-1 text-meta text-fg-faint">
-          Suggested: everything left less delivery, which isn’t refunded unless the mistake was ours.
+          <template v-if="keepsDelivery">Suggested: everything left less delivery, which isn’t refunded unless the mistake was ours.</template>
+          <template v-else>Suggested: everything left. It hasn’t been sent out, so delivery is refunded too.</template>
         </p>
       </div>
 

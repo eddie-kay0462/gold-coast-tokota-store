@@ -55,6 +55,11 @@ class GiftCardController extends Controller
             'balance' => $card->balance,
             'currency' => 'GHS',
             'expires_at' => $card->expires_at,
+            // Shown when the card is checked or applied at checkout: who it's
+            // from and what they wrote. Never the purchaser's contact details.
+            'recipient_name' => $card->recipient_name,
+            'sender_name' => $card->sender_name,
+            'message' => $card->message,
         ]]);
     }
 

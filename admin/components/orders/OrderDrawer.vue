@@ -66,6 +66,8 @@ const canRefund = computed(() => {
   const cardLeft = o.giftCardRefundedAt ? 0 : o.giftCardAmount?.amount ?? 0
   return (o.refundableAmount?.amount ?? 0) > 0 || cardLeft > 0
 })
+const refundedSoFar = computed(() => !!current.value?.refundedAmount?.amount || !!current.value?.giftCardRefundedAt)
+const partlyRefunded = computed(() => refundedSoFar.value && status.value !== 'refunded')
 function onRefunded(next: Order) {
   current.value = next
   status.value = next.status
@@ -130,6 +132,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <p class="mt-1 text-meta text-fg-muted">Placed {{ formatDateTime(order.placedAt) }}</p>
             </div>
             <div class="flex shrink-0 items-center gap-2">
+              <UiBadge v-if="partlyRefunded" tone="warning" size="sm">Partly refunded</UiBadge>
               <UiStatusBadge :status="status ?? order.status" show-icon />
               <button type="button" class="toolbar-btn" aria-label="Close" @click="open = false">
                 <PhX :size="18" />
@@ -180,6 +183,30 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 <p v-if="order.fxRateApplied" class="mt-2 text-meta text-fg-faint">
                   Charged in USD at a rate of {{ order.fxRateApplied.toFixed(4) }}, locked when the
                   order was placed. Later rate changes never alter this total.
+                </p>
+              </section>
+
+              <!-- From `current`, the order as the last refund left it, so a
+                   refund shows here the moment it's sent. -->
+              <section v-if="refundedSoFar" class="rounded-lg border border-border bg-bg-sunken p-3">
+                <h3 class="text-meta uppercase tracking-wide text-fg-faint">Refunds</h3>
+                <dl class="mt-1.5 space-y-1 text-ui">
+                  <div v-if="current?.refundedAmount?.amount" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Sent back through Paystack</dt>
+                    <dd class="text-fg-strong">{{ formatMoney(current.refundedAmount) }}</dd>
+                  </div>
+                  <div v-if="current?.giftCardRefundedAt && current.giftCardAmount?.amount" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Put back on the gift card</dt>
+                    <dd class="text-fg-strong">{{ formatMoney(current.giftCardAmount) }}</dd>
+                  </div>
+                  <div class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Left to refund</dt>
+                    <dd class="text-fg-strong">{{ formatMoney(current?.refundableAmount ?? { amount: 0, currency: order.total.currency }) }}</dd>
+                  </div>
+                </dl>
+                <p v-if="current?.refundedAt" class="mt-2 text-meta text-fg-faint">
+                  Last refund {{ formatDateTime(current.refundedAt) }}. It reaches the customer in 7 to
+                  14 business days.
                 </p>
               </section>
 
