@@ -7,6 +7,10 @@ export type WorkshopSession = {
   capacity: number
   remaining_capacity: number
   location_notes?: string | null
+  /** Pesewas per person; null is free. */
+  price_ghs?: number | null
+  /** A full session takes waitlist bookings (true) or is sold out (false). */
+  allow_waitlist?: boolean
   /** A themed run's own name and blurb ("Halloween Sip & Paint"); null for a plain one. */
   title?: string | null
   description?: string | null
@@ -23,6 +27,9 @@ export type WorkshopSession = {
  * and typed against a `booked_count` field the API does not return (it returns
  * `remaining_capacity`), so capacity would have rendered `NaN` the moment real
  * sessions arrived.
+ *
+ * A paid session shows its price per person in the visitor's currency, and a
+ * full one is "Sold out" (not selectable) unless its event keeps a waitlist.
  */
 defineProps<{
   sessions: WorkshopSession[]
@@ -33,6 +40,8 @@ defineProps<{
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 
 /** "Sat 8 Aug": the short form the mockup uses on each card. */
+const soldOut = (s: WorkshopSession) => s.remaining_capacity <= 0 && !s.allow_waitlist
+
 function formatDate(value: string | null) {
   if (!value) return 'Date to be confirmed'
   const date = new Date(value)
@@ -54,9 +63,12 @@ function formatDate(value: string | null) {
         <button
           type="button"
           class="flex w-full items-center gap-4 border px-4 py-3.5 text-left transition-colors"
-          :class="String(session.id) === modelValue
-            ? 'border-ink bg-white'
-            : 'border-line bg-white hover:border-ink'"
+          :disabled="soldOut(session)"
+          :class="soldOut(session)
+            ? 'cursor-not-allowed border-line bg-surface opacity-60'
+            : String(session.id) === modelValue
+              ? 'border-ink bg-white'
+              : 'border-line bg-white hover:border-ink'"
           :aria-pressed="String(session.id) === modelValue"
           @click="emit('update:modelValue', String(session.id))"
         >
@@ -85,13 +97,18 @@ function formatDate(value: string | null) {
             </span>
           </span>
 
-          <span
-            class="caps-label shrink-0 whitespace-nowrap"
-            :class="session.remaining_capacity > 0 ? 'text-subtle' : 'text-sale'"
-          >
-            {{ session.remaining_capacity > 0
-              ? `${session.remaining_capacity} ${session.remaining_capacity === 1 ? 'spot' : 'spots'} left`
-              : 'Full' }}
+          <span class="flex shrink-0 flex-col items-end gap-0.5">
+            <span v-if="session.price_ghs" class="text-label text-ink">
+              <CommonPriceDisplay :base-price-ghs="session.price_ghs" compact /> each
+            </span>
+            <span
+              class="caps-label whitespace-nowrap"
+              :class="session.remaining_capacity > 0 ? 'text-subtle' : 'text-sale'"
+            >
+              {{ session.remaining_capacity > 0
+                ? `${session.remaining_capacity} ${session.remaining_capacity === 1 ? 'spot' : 'spots'} left`
+                : session.allow_waitlist ? 'Full · waitlist' : 'Sold out' }}
+            </span>
           </span>
         </button>
       </li>

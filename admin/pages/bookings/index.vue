@@ -3,6 +3,7 @@ import { PhCaretDown } from '@phosphor-icons/vue'
 import type { Booking } from '~/types'
 import type { Column } from '~/components/ui/DataTable.vue'
 import { humanise } from '~/utils/formatters'
+import { formatMoney } from '~/utils/currency'
 
 /**
  * Bookings, split by the two types README Feature 7 defines. They are not
@@ -72,6 +73,9 @@ const eventGroups = computed(() => {
       last,
       people: rows.filter((b) => b.status === 'pending' || b.status === 'confirmed').reduce((n, b) => n + (b.attendeeCount ?? 0), 0),
       waiting: rows.filter((b) => b.status === 'waitlisted').length,
+      checkedIn: rows.filter((b) => b.checkedInAt).reduce((n, b) => n + (b.attendeeCount ?? 1), 0),
+      // Paid events: takings in cedis (a dollar booking's own amount is in its order).
+      takenGhs: rows.reduce((n, b) => n + (b.amountPaid?.currency === 'GHS' ? b.amountPaid.amount : 0), 0),
       sessions: new Set(rows.map((b) => b.workshopSessionId)).size,
     }
   }).sort((a, b) => {
@@ -175,6 +179,8 @@ const counts = computed(() => ({
           <span v-if="g.next" class="text-meta text-fg-muted">Next {{ formatDate(g.next) }}</span>
           <UiBadge size="sm">{{ g.people }} {{ g.people === 1 ? 'person' : 'people' }} booked</UiBadge>
           <UiBadge v-if="g.waiting" tone="accent" size="sm">{{ g.waiting }} waiting</UiBadge>
+          <UiBadge v-if="g.checkedIn" tone="success" size="sm">{{ g.checkedIn }} checked in</UiBadge>
+          <UiBadge v-if="g.takenGhs" size="sm">{{ formatMoney({ amount: g.takenGhs, currency: 'GHS' }) }} taken</UiBadge>
           <PhCaretDown :size="16" class="shrink-0 text-fg-faint transition-transform" :class="!closedEvents.has(g.name) && 'rotate-180'" />
         </button>
         <div v-if="!closedEvents.has(g.name)" class="border-t border-border">
@@ -196,6 +202,8 @@ const counts = computed(() => ({
             </template>
             <template #cell-status="{ row }">
               <UiStatusBadge :status="row.status" />
+              <UiBadge v-if="row.checkedInAt" tone="success" size="sm" class="ml-1">In</UiBadge>
+              <UiBadge v-if="row.needsAttention" tone="warning" size="sm" class="ml-1">Paid, no seat</UiBadge>
               <span v-if="row.waitlistPosition" class="block text-meta text-fg-faint">
                 #{{ row.waitlistPosition }} in queue
               </span>

@@ -30,6 +30,8 @@ class StoreWorkshopSessionRequest extends FormRequest
             // A themed run of the experience: its own name and blurb on the
             // booking page. Blank means it goes by the experience's name.
             'title' => ['nullable', 'string', 'max:120'],
+            // This date's own price per person, in pesewas; null follows the event's.
+            'price_ghs' => ['sometimes', 'nullable', 'integer', 'min:100', 'max:100000000'],
             'description' => ['nullable', 'string', 'max:2000'],
         ];
     }

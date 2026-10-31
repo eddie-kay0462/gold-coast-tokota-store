@@ -50,7 +50,7 @@ class WorkshopSessionController extends Controller
         // turns up to no seat. Refuse and say who is affected.
         if ($capacity !== null && $capacity < $workshopSession->occupied_seats) {
             return response()->json([
-                'message' => "This session already has {$workshopSession->occupied_seats} bookings. Cancel some before reducing capacity below that.",
+                'message' => "{$workshopSession->occupied_seats} people are booked on this session. Cancel some before reducing its seats below that.",
             ], 422);
         }
 
@@ -65,7 +65,7 @@ class WorkshopSessionController extends Controller
         // without telling them. Cancel the bookings first, deliberately.
         if ($workshopSession->occupied_seats > 0) {
             return response()->json([
-                'message' => "This session has {$workshopSession->occupied_seats} bookings. Cancel them before deleting it.",
+                'message' => "{$workshopSession->occupied_seats} people are booked on this session. Cancel their bookings before deleting it.",
             ], 422);
         }
 

@@ -2,11 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Booking;
 use App\Models\WorkshopSession;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<\App\Models\Booking>
+ * @extends Factory<Booking>
  */
 class BookingFactory extends Factory
 {
@@ -42,7 +43,10 @@ class BookingFactory extends Factory
                     'name' => fake()->name(),
                     'email' => fake()->safeEmail(),
                     'phone' => fake()->e164PhoneNumber(),
-                    'attendee_count' => fake()->numberBetween(1, 3),
+                    // One person unless a test says otherwise: seats are
+                    // counted in people, so a random party size makes
+                    // capacity tests flaky.
+                    'attendee_count' => 1,
                 ],
             ];
         });

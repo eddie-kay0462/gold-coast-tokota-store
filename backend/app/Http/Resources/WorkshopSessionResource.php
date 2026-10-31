@@ -28,6 +28,12 @@ class WorkshopSessionResource extends JsonResource
             'scheduled_date' => $this->scheduled_date?->toDateString(),
             'scheduled_slot' => $this->scheduled_slot,
             'capacity' => $this->capacity,
+            // What a place costs on this date, per person, in pesewas: its own
+            // price or its event's. Null is free. Show it in the visitor's
+            // currency the way product prices are.
+            'price_ghs' => $this->priceGhs(),
+            // A full session with no waitlist is sold out.
+            'allow_waitlist' => (bool) $this->workshopType?->allow_waitlist,
             'remaining_capacity' => $this->remaining_capacity,
             'location_notes' => $this->location_notes,
         ];

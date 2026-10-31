@@ -202,6 +202,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('/workshop-types', [WorkshopTypeController::class, 'index'])->name('workshop-types.index');
     Route::get('/workshop-sessions', [WorkshopSessionController::class, 'index'])->name('workshop-sessions.index');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
+    // The ticket PDF, by a signed link from the confirmation email and page.
+    Route::get('/bookings/{booking}/ticket', [BookingController::class, 'ticket'])
+        ->middleware('signed')->name('bookings.ticket');
 
     // Blog (Feature 9 CMS) + Newsletter (Feature 1 content flow). Admin
     // write endpoints for blog posts aren't built yet — no admin UI consumes
@@ -380,6 +383,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:bookings.view')->name('bookings.index');
             Route::patch('/bookings/{booking}', [AdminBookingController::class, 'updateStatus'])
                 ->middleware('capability:bookings.update_status')->name('bookings.update-status');
+            // Paid events: the door. A ticket's QR code opens the admin's
+            // check-in page, which looks the code up here.
+            Route::get('/bookings/check-in/{code}', [AdminBookingController::class, 'findByTicket'])
+                ->middleware('capability:bookings.update_status')->name('bookings.find-by-ticket');
+            Route::post('/bookings/{booking}/check-in', [AdminBookingController::class, 'checkIn'])
+                ->middleware('capability:bookings.update_status')->name('bookings.check-in');
+            Route::post('/bookings/{booking}/resend-ticket', [AdminBookingController::class, 'resendTicket'])
+                ->middleware('capability:bookings.update_status')->name('bookings.resend-ticket');
 
             // The six experiences the brand document §15 defines. Read-only:
             // their days, times and capacities are the published programme,

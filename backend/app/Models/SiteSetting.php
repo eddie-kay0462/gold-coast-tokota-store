@@ -22,6 +22,7 @@ class SiteSetting extends Model
         'tagline',
         'instagram_url',
         'hero_headline',
+        'hero_subheadline',
         'hero_image',
         'diy_turnaround_estimate',
         'diy_turnaround_tiers',

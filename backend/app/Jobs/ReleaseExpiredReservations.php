@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\Bookings\BookingCheckout;
 use App\Services\GiftCards\GiftCardService;
 use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Bus\Queueable;
@@ -14,10 +15,12 @@ class ReleaseExpiredReservations implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function handle(InventoryReservationService $reservations, GiftCardService $giftCards): void
+    public function handle(InventoryReservationService $reservations, GiftCardService $giftCards, BookingCheckout $bookings): void
     {
         $reservations->releaseAllExpired();
         // Gift card balance held by the same lapsed checkouts goes back too.
         $giftCards->releaseLapsed();
+        // And seats held by paid event bookings nobody paid for.
+        $bookings->releaseLapsed();
     }
 }

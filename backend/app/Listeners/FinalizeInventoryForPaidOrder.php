@@ -26,8 +26,8 @@ class FinalizeInventoryForPaidOrder implements ShouldQueue
 
     public function handle(OrderPaid $event): void
     {
-        // A gift card holds no stock.
-        if ($event->order->isGiftCardPurchase()) {
+        // A gift card or a ticket holds no stock.
+        if ($event->order->shipsNothing()) {
             return;
         }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Admin;
 
 use App\Http\Controllers\Api\V1\BookingUploadController;
+use App\Services\Bookings\TicketPdf;
 use App\Support\MediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -62,6 +63,20 @@ class AdminBookingResource extends JsonResource
             // booking. Checking the prefix is also what stops an arbitrary
             // string in that field being rendered as a link.
             'reference_image_url' => $this->referenceImageUrl($details),
+            // Paid events. Money is { amount, currency } like everywhere in
+            // the admin; `price` is per person, in cedis.
+            'price' => ($p = $session?->priceGhs()) !== null ? ['amount' => $p, 'currency' => 'GHS'] : null,
+            'amount_paid' => $this->relationLoaded('order') && $this->order && in_array($this->order->status, ['paid', 'refunded'], true)
+                ? ['amount' => $this->order->total, 'currency' => $this->order->currency] : null,
+            'order_id' => $this->order_id,
+            'order_reference' => $this->relationLoaded('order') ? $this->order?->reference : null,
+            'hold_expires_at' => $this->hold_expires_at,
+            'checked_in_at' => $this->checked_in_at,
+            'checked_in_by' => $this->relationLoaded('checkedInBy') ? $this->checkedInBy?->name : null,
+            'needs_attention' => (bool) $this->needs_attention,
+            'ticket_code' => $this->ticket_code,
+            'ticket_url' => $this->type === 'workshop' && in_array($this->status, ['confirmed', 'completed'], true)
+                ? app(TicketPdf::class)->downloadUrl($this->resource) : null,
             'submitted_at' => $this->created_at,
             'created_at' => $this->created_at,
         ];

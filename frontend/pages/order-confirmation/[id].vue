@@ -88,9 +88,15 @@ const cart = useCartStore()
 const giftCard = useGiftCardCode()
 /** A gift card bought online: no delivery, and the sandal cart is left alone. */
 const isGiftCardOrder = computed(() => order.value?.kind === 'gift_card')
+/** Places at a paid event: also no delivery and no cart. The ticket comes by email. */
+const isBookingOrder = computed(() => order.value?.kind === 'booking')
+const booking = computed(() => order.value?.booking ?? null)
+const eventDate = computed(() => booking.value?.scheduled_date
+  ? new Date(booking.value.scheduled_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  : null)
 const giftCardRecipient = computed(() => order.value?.items[0]?.gift_card?.recipient_name ?? null)
 watch(order, (o) => {
-  if (!o || isAwaitingPayment(o.status) || o.status === 'cancelled' || o.kind === 'gift_card') return
+  if (!o || isAwaitingPayment(o.status) || o.status === 'cancelled' || o.kind === 'gift_card' || o.kind === 'booking') return
   cart.clear()
   giftCard.clear()
 }, { immediate: true })
@@ -137,11 +143,14 @@ useSeoMeta({
     <div v-else-if="order" class="flex w-full flex-col items-start gap-8">
       <header class="flex w-full flex-col items-start gap-3">
         <h1 class="w-full text-display-section font-normal text-black">
-          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : isGiftCardOrder ? 'Thank you! Your gift card is on its way' : 'Thank you! Your order is in' }}
+          {{ stillConfirming ? 'Confirming your payment…' : notPaid ? 'Your payment didn’t go through' : isGiftCardOrder ? 'Thank you! Your gift card is on its way' : isBookingOrder ? 'You’re booked! Your ticket is on its way' : 'Thank you! Your order is in' }}
         </h1>
         <p class="w-full text-body text-graphite">
           Order <strong class="font-normal">{{ order.reference || `#${order.id}` }}</strong>.
-          <template v-if="!stillConfirming && !notPaid && isGiftCardOrder">
+          <template v-if="!stillConfirming && !notPaid && isBookingOrder">
+            We’ve emailed your ticket. Show it at the door, on your phone or printed.
+          </template>
+          <template v-else-if="!stillConfirming && !notPaid && isGiftCardOrder">
             We’ve emailed the gift card<template v-if="giftCardRecipient"> to {{ giftCardRecipient }}</template>, and your receipt to you.
           </template>
           <template v-else-if="!stillConfirming && !notPaid">We’ve emailed your confirmation.</template>
@@ -154,8 +163,24 @@ useSeoMeta({
            mockup hides its floating button here; README Feature 6 requires it
            on every route, so it stays and this sits alongside it with the order
            number already in the message. -->
+      <!-- The event, and the ticket once the payment has confirmed the booking. -->
+      <section v-if="isBookingOrder && booking && !notPaid" class="flex w-full flex-col items-start gap-3 border border-line p-4">
+        <p class="caps-label text-muted">Your booking · {{ booking.reference }}</p>
+        <p class="text-display-sm font-normal text-black">{{ booking.event }}</p>
+        <p class="text-body text-graphite">
+          <template v-if="eventDate">{{ eventDate }}</template><template v-if="booking.scheduled_slot"> · {{ booking.scheduled_slot }}</template><br>
+          {{ booking.attendee_count }} {{ booking.attendee_count === 1 ? 'person' : 'people' }}<template v-if="booking.location_notes"> · {{ booking.location_notes }}</template>
+        </p>
+        <CommonBrandButton v-if="booking.ticket_url" :to="booking.ticket_url" target="_blank" rel="noopener">
+          Download your ticket
+        </CommonBrandButton>
+        <p v-else-if="!stillConfirming" class="text-caption text-muted">
+          Your ticket is being prepared and will be in your email in a moment.
+        </p>
+      </section>
+
       <CommonWhatsAppLink
-        v-if="!isGiftCardOrder"
+        v-if="!isGiftCardOrder && !isBookingOrder"
         source="order-tracking"
         :message="whatsappMessage.orderTracking(order.reference || `#${order.id}`)"
       >
@@ -168,6 +193,10 @@ useSeoMeta({
         <template v-if="isGiftCardOrder">
           You can <NuxtLink to="/gift-cards" class="underline">try buying the gift card again</NuxtLink>,
           or message us on WhatsApp and we’ll help.
+        </template>
+        <template v-else-if="isBookingOrder">
+          Your places were held for a short while; you can
+          <NuxtLink to="/booking" class="underline">book again</NuxtLink>, or message us on WhatsApp and we’ll help.
         </template>
         <template v-else>
           Your cart is still saved, so you can
@@ -216,7 +245,7 @@ useSeoMeta({
           <div class="flex w-full items-center justify-between">
             <dt class="text-graphite">Subtotal</dt><dd class="text-black">{{ money(order.subtotal) }}</dd>
           </div>
-          <div v-if="!isGiftCardOrder" class="flex w-full items-center justify-between">
+          <div v-if="!isGiftCardOrder && !isBookingOrder" class="flex w-full items-center justify-between">
             <dt class="text-graphite">Delivery</dt><dd class="text-black">{{ money(order.shipping_cost) }}</dd>
           </div>
           <div v-if="order.gift_card_amount" class="flex w-full items-center justify-between">
@@ -241,7 +270,7 @@ useSeoMeta({
       </section>
 
       <!-- Delivery -->
-      <section v-if="!isGiftCardOrder" class="flex w-full flex-col items-start gap-2 border-t border-line pt-6">
+      <section v-if="!isGiftCardOrder && !isBookingOrder" class="flex w-full flex-col items-start gap-2 border-t border-line pt-6">
         <h2 class="w-full text-display-sm font-normal text-black">Delivery</h2>
         <p class="w-full text-body text-graphite">
           By {{ deliveryProviderLabel(order.delivery_provider, order.shipment?.courier) }}<template v-if="order.delivery_reference">
@@ -266,7 +295,7 @@ useSeoMeta({
 
       <div class="flex w-full flex-col items-stretch gap-3 border-t border-line pt-6 sm:flex-row sm:items-start">
         <CommonBrandButton to="/shop">Keep shopping</CommonBrandButton>
-        <CommonBrandButton v-if="!isGiftCardOrder" to="/help/shipping" variant="white">Delivery help</CommonBrandButton>
+        <CommonBrandButton v-if="!isGiftCardOrder && !isBookingOrder" to="/help/shipping" variant="white">Delivery help</CommonBrandButton>
       </div>
     </div>
   </div>

@@ -288,6 +288,22 @@ class AdminCmsTest extends TestCase
             ->assertJsonPath('data.whatsapp_number', '233555000111');
     }
 
+    /** Both hero lines are the owner's to change; blank goes back to the storefront's own. */
+    public function test_the_hero_second_line_is_editable(): void
+    {
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson('/api/v1/admin/site-settings', ['hero_headline' => 'Walk in Heritage', 'hero_subheadline' => 'Handmade in Haatso, worn everywhere.'])
+            ->assertOk();
+
+        $this->getJson('/api/v1/site-settings')
+            ->assertJsonPath('data.hero_headline', 'Walk in Heritage')
+            ->assertJsonPath('data.hero_subheadline', 'Handmade in Haatso, worn everywhere.');
+
+        $this->actingAs($this->admin(), 'admin')
+            ->putJson('/api/v1/admin/site-settings', ['hero_subheadline' => null])->assertOk();
+        $this->getJson('/api/v1/site-settings')->assertJsonPath('data.hero_subheadline', null);
+    }
+
     /** It is interpolated into a wa.me URL; punctuation silently breaks the link. */
     public function test_a_whatsapp_number_with_punctuation_is_rejected(): void
     {

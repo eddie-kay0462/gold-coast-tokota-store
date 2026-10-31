@@ -27,6 +27,8 @@ const map: Record<string, { tone: Tone; icon: unknown; label?: string }> = {
   // Bookings
   confirmed: { tone: 'success', icon: PhCheckCircle },
   waitlisted: { tone: 'accent', icon: PhHourglass },
+  awaiting_payment: { tone: 'warning', icon: PhClock, label: 'Awaiting payment' },
+  expired: { tone: 'neutral', icon: PhXCircle, label: 'Not paid' },
   completed: { tone: 'neutral', icon: PhCheckCircle },
   // Returns
   requested: { tone: 'warning', icon: PhClock },

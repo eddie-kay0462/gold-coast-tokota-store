@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Booking;
 use App\Models\GiftCard;
 use App\Models\Order;
+use App\Services\Bookings\TicketPdf;
 use App\Services\Delivery\DeliveryEstimates;
 use App\Services\Returns\ReturnPolicy;
 
@@ -163,21 +164,40 @@ final class TransactionalMessages
         );
     }
 
+    /**
+     * A booking confirmed: by staff, or by paying for a place at a paid
+     * event. A workshop booking carries its ticket (a PDF with the QR code
+     * staff check in against) and a link to the same ticket, in case a mail
+     * client strips the attachment.
+     */
     public static function bookingConfirmed(Booking $booking): NotificationMessage
     {
         $when = $booking->workshopSession?->scheduled_date ?? $booking->scheduled_date;
+        $isWorkshop = $booking->type === 'workshop';
+        $tickets = app(TicketPdf::class);
 
         return new NotificationMessage(
             key: 'booking_confirmed',
-            subject: 'Your booking is confirmed — Gold Coast Tokota',
+            subject: $isWorkshop ? 'Your ticket — Gold Coast Tokota' : 'Your booking is confirmed — Gold Coast Tokota',
             view: 'mail.booking-confirmed',
             data: [
                 'booking' => $booking,
                 'when' => $when,
-                'isDiy' => $booking->type === 'diy_order',
+                'isDiy' => ! $isWorkshop,
+                'event' => $booking->workshopSession?->eventName(),
+                'slot' => $booking->workshopSession?->scheduled_slot,
+                'people' => $booking->attendees(),
+                'ticketUrl' => $isWorkshop ? $tickets->downloadUrl($booking) : null,
+                'paid' => $booking->order?->status === 'paid' || $booking->order?->status === 'refunded',
             ],
             sms: 'Gold Coast Tokota: your booking is confirmed'
-                .($when ? ' for '.$when->format('j M Y') : '').'. We look forward to seeing you.',
+                .($when ? ' for '.$when->format('j M Y') : '').'. '
+                .($isWorkshop ? 'Your ticket is in your email. ' : '').'We look forward to seeing you.',
+            attachments: $isWorkshop ? [[
+                'name' => $tickets->filename($booking),
+                'mime' => 'application/pdf',
+                'ticket_booking_id' => $booking->id,
+            ]] : [],
         );
     }
 
@@ -185,10 +205,12 @@ final class TransactionalMessages
      * A place opened up and a waitlisted booking was promoted into it — the
      * fourth trigger README Feature 8 names.
      */
-    public static function waitlistPromoted(Booking $booking): NotificationMessage
+    public static function waitlistPromoted(Booking $booking, ?string $payUrl = null): NotificationMessage
     {
         $when = $booking->workshopSession?->scheduled_date;
 
+        // At a paid event the place is offered, not given: it's theirs once
+        // they pay, within the hold, and the ticket follows the payment.
         return new NotificationMessage(
             key: 'waitlist_promoted',
             subject: 'A place has opened up — Gold Coast Tokota',
@@ -196,9 +218,15 @@ final class TransactionalMessages
             data: [
                 'booking' => $booking,
                 'when' => $when,
+                'event' => $booking->workshopSession?->eventName(),
+                'payUrl' => $payUrl,
+                'payBy' => $payUrl ? $booking->hold_expires_at : null,
             ],
-            sms: 'Gold Coast Tokota: good news, a place has opened up and you are off the waitlist'
-                .($when ? ' for '.$when->format('j M Y') : '').'.',
+            sms: $payUrl
+                ? 'Gold Coast Tokota: a place has opened up'.($when ? ' for '.$when->format('j M Y') : '').'. Pay by '
+                    .$booking->hold_expires_at?->format('j M, g:ia').' to keep it: check your email for the link.'
+                : 'Gold Coast Tokota: good news, a place has opened up and you are off the waitlist'
+                    .($when ? ' for '.$when->format('j M Y') : '').'.',
         );
     }
 

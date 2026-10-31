@@ -73,6 +73,24 @@ class Order extends Model
         return $this->kind === 'gift_card';
     }
 
+    /** The booking a `booking` order pays for. */
+    public function booking(): HasOne
+    {
+        return $this->hasOne(Booking::class);
+    }
+
+    /** Places at a paid event: tickets, no stock, nothing shipped. */
+    public function isBookingPayment(): bool
+    {
+        return $this->kind === 'booking';
+    }
+
+    /** Neither stock nor a parcel: a gift card or event tickets. */
+    public function shipsNothing(): bool
+    {
+        return $this->isGiftCardPurchase() || $this->isBookingPayment();
+    }
+
     /** The card spent on this order, if any. */
     public function giftCard(): BelongsTo
     {

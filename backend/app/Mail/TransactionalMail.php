@@ -2,9 +2,12 @@
 
 namespace App\Mail;
 
+use App\Models\Booking;
 use App\Notifications\NotificationMessage;
 use App\Notifications\NotificationRecipient;
+use App\Services\Bookings\TicketPdf;
 use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Attachment;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -30,6 +33,20 @@ class TransactionalMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(subject: $this->message->subject);
+    }
+
+    /** @return list<Attachment> */
+    public function attachments(): array
+    {
+        return array_map(
+            fn (array $file) => Attachment::fromData(
+                fn () => isset($file['ticket_booking_id'])
+                    ? app(TicketPdf::class)->render(Booking::findOrFail($file['ticket_booking_id']))
+                    : base64_decode($file['base64'] ?? ''),
+                $file['name'],
+            )->withMime($file['mime']),
+            $this->message->attachments,
+        );
     }
 
     public function content(): Content

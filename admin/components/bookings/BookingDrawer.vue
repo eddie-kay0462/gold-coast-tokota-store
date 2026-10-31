@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { PhArrowSquareOut, PhChatsTeardrop, PhEnvelopeSimple, PhX } from '@phosphor-icons/vue'
-import type { Booking, BookingStatus } from '~/types'
+import { PhArrowSquareOut, PhChatsTeardrop, PhEnvelopeSimple, PhWarningCircle, PhX } from '@phosphor-icons/vue'
+import type { Booking, BookingStatus, Order } from '~/types'
 import { humanise } from '~/utils/formatters'
+import { formatMoney } from '~/utils/currency'
 
 /**
  * A booking in a side view, like an order's: who, what, the DIY reference
@@ -11,6 +12,10 @@ import { humanise } from '~/utils/formatters'
  *
  * A waitlisted booking is promoted from the Waitlist screen, which checks for
  * a free seat first, so it's linked rather than offered here.
+ *
+ * A paid event's booking also shows its payment and ticket: what was paid
+ * and on which order, the hold while it waits for payment, check-in, and
+ * Resend ticket / Refund (through the order, `RefundModal`).
  */
 const props = defineProps<{ booking: Booking | null }>()
 const open = defineModel<boolean>('open', { default: false })
@@ -60,13 +65,76 @@ const photoShows = computed(() => !!props.booking?.referenceImageUrl && !/\.(hei
 // Anything the form sent that isn't shown above, so nothing is hidden. The
 // keys arrive camelCased, like every API field in the admin.
 const SHOWN = new Set([
-  'name', 'firstName', 'lastName', 'email', 'phone', 'attendeeCount', 'size', 'footLength', 'fulfilment', 'referenceImage',
+  'name', 'firstName', 'lastName', 'email', 'phone', 'attendeeCount', 'size', 'footLength', 'fulfilment', 'referenceImage', 'currency',
 ])
 const otherDetails = computed(() =>
   Object.entries(props.booking?.details ?? {})
     .filter(([k, v]) => !SHOWN.has(k) && v !== null && v !== '' && typeof v !== 'object')
     .map(([k, v]) => ({ label: humanise(k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`)), value: String(v) })),
 )
+
+// --- Paid events ---------------------------------------------------------
+const checkedInAt = ref<string | null>(null)
+const checkedInBy = ref<string | null>(null)
+watch(() => props.booking, (b) => {
+  checkedInAt.value = b?.checkedInAt ?? null
+  checkedInBy.value = b?.checkedInBy ?? null
+}, { immediate: true })
+
+const checkingIn = ref(false)
+async function checkIn() {
+  if (!props.booking) return
+  checkingIn.value = true
+  try {
+    const { data } = await adminFetch<Booking>(`/admin/bookings/${props.booking.id}/check-in`, { method: 'POST' })
+    checkedInAt.value = data.checkedInAt ?? new Date().toISOString()
+    checkedInBy.value = data.checkedInBy ?? null
+    toast.success('Checked in', `${props.booking.customerName} · ${props.booking.attendeeCount ?? 1} ${props.booking.attendeeCount === 1 ? 'person' : 'people'}`)
+    emit('changed')
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not checked in', message)
+  } finally {
+    checkingIn.value = false
+  }
+}
+
+const resending = ref(false)
+async function resendTicket() {
+  if (!props.booking) return
+  resending.value = true
+  try {
+    await adminFetch(`/admin/bookings/${props.booking.id}/resend-ticket`, { method: 'POST' })
+    toast.success('Ticket sent', props.booking.customerEmail)
+  } catch (err) {
+    const message = failureMessage(err, 'Not sent. Try again in a moment.')
+    if (message) toast.error('Not sent', message)
+  } finally {
+    resending.value = false
+  }
+}
+
+// Refunds go through the booking's order, as for any order.
+const refundOrder = ref<Order | null>(null)
+const refundOpen = ref(false)
+const loadingRefund = ref(false)
+async function openRefund() {
+  if (!props.booking?.orderReference) return
+  loadingRefund.value = true
+  try {
+    const { data } = await adminFetch<Order>(`/admin/orders/${props.booking.orderReference}`)
+    refundOrder.value = data
+    refundOpen.value = true
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Couldn’t open the refund', message)
+  } finally {
+    loadingRefund.value = false
+  }
+}
+
+const isPaidEvent = computed(() => !!props.booking?.price)
+const canCheckIn = computed(() => !isDiy.value && (status.value === 'confirmed' || status.value === 'completed') && !checkedInAt.value)
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && open.value) open.value = false
@@ -182,6 +250,54 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
                 </section>
               </template>
 
+              <section v-if="isPaidEvent || booking.ticketUrl">
+                <h3 class="text-meta uppercase tracking-wide text-fg-faint">{{ isPaidEvent ? 'Payment and ticket' : 'Ticket' }}</h3>
+                <p
+                  v-if="booking.needsAttention"
+                  class="mt-2 flex items-start gap-2 rounded-lg bg-warning-soft px-3 py-2.5 text-meta text-warning"
+                >
+                  <PhWarningCircle :size="16" class="mt-px shrink-0" />
+                  Paid after the hold ran out, and the session had filled by then. Add a seat to the
+                  session, or refund them.
+                </p>
+                <dl class="mt-1.5 space-y-1 text-ui">
+                  <div v-if="booking.price" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Price</dt>
+                    <dd>{{ formatMoney(booking.price) }} each</dd>
+                  </div>
+                  <div v-if="booking.amountPaid" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Paid</dt>
+                    <dd>{{ formatMoney(booking.amountPaid) }}<span v-if="booking.orderReference" class="ml-1 font-mono text-meta text-fg-faint">{{ booking.orderReference }}</span></dd>
+                  </div>
+                  <div v-else-if="status === 'awaiting_payment'" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Payment</dt>
+                    <dd>Not yet. Seats held until {{ booking.holdExpiresAt ? formatDateTime(booking.holdExpiresAt) : '-' }}</dd>
+                  </div>
+                  <div v-else-if="status === 'expired'" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Payment</dt>
+                    <dd>Never paid; the seats went back</dd>
+                  </div>
+                  <div v-if="booking.ticketCode" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">Ticket</dt>
+                    <dd class="font-mono">{{ booking.ticketCode }}</dd>
+                  </div>
+                  <div v-if="booking.ticketCode" class="flex justify-between gap-3">
+                    <dt class="text-fg-muted">At the door</dt>
+                    <dd>{{ checkedInAt ? `Checked in ${formatDateTime(checkedInAt)}${checkedInBy ? ` by ${checkedInBy}` : ''}` : 'Not checked in' }}</dd>
+                  </div>
+                </dl>
+                <div v-if="booking.ticketUrl" class="mt-2 flex flex-wrap gap-2">
+                  <UiButton variant="secondary" size="sm" :to="booking.ticketUrl" target="_blank" rel="noopener">
+                    <PhArrowSquareOut :size="16" />
+                    Open ticket
+                  </UiButton>
+                  <UiButton v-if="can('bookings.update_status')" variant="secondary" size="sm" :loading="resending" @click="resendTicket">
+                    <PhEnvelopeSimple :size="16" />
+                    Resend ticket
+                  </UiButton>
+                </div>
+              </section>
+
               <section v-if="otherDetails.length">
                 <h3 class="text-meta uppercase tracking-wide text-fg-faint">Also sent</h3>
                 <dl class="mt-1.5 space-y-1 text-ui">
@@ -194,8 +310,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
           </div>
 
           <footer v-if="can('bookings.update_status')" class="flex shrink-0 flex-wrap justify-end gap-2 border-t border-border p-4 md:p-5">
+            <UiButton
+              v-if="booking.amountPaid && can('orders.refund')" variant="ghost" size="sm" :loading="loadingRefund"
+              @click="openRefund"
+            >Refund</UiButton>
+            <UiButton v-if="canCheckIn" size="sm" :loading="checkingIn" @click="checkIn">Check in</UiButton>
             <UiButton v-if="status === 'waitlisted'" variant="secondary" size="sm" to="/waitlist">Open the waitlist</UiButton>
-            <template v-if="status === 'pending' || status === 'confirmed'">
+            <template v-if="status === 'pending' || status === 'confirmed' || status === 'awaiting_payment'">
               <UiButton v-if="!confirmingCancel" variant="ghost" size="sm" class="mr-auto text-danger" @click="confirmingCancel = true">
                 Cancel {{ isDiy ? 'order' : 'booking' }}
               </UiButton>
@@ -217,4 +338,5 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
       </div>
     </Transition>
   </Teleport>
+  <OrdersRefundModal v-model:open="refundOpen" :order="refundOrder" @refunded="emit('changed')" />
 </template>
