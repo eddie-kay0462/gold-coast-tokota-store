@@ -19,6 +19,8 @@ export const useSiteSettingsStore = defineStore('siteSettings', {
     contactPhone: '',
     instagramUrl: '',
     heroHeadline: '',
+    /** The line under the hero headline; empty keeps the built-in one. */
+    heroSubheadline: '',
     heroImage: '',
     diyTurnaroundEstimate: '',
     /**
