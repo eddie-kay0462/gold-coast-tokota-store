@@ -38,6 +38,8 @@ const props = withDefaults(defineProps<{
   rowClass?: (row: T) => string | false | undefined
   emptyTitle?: string
   emptyDescription?: string
+  /** No card of its own, for a table inside another card. */
+  flush?: boolean
 }>(), {
   selectable: false, loading: false, sort: null, dir: 'asc',
   emptyTitle: 'Nothing here yet',
@@ -72,7 +74,7 @@ function sortIcon(col: Column<T>) {
 </script>
 
 <template>
-  <div class="card overflow-hidden">
+  <div class="overflow-hidden" :class="!flush && 'card'">
     <!-- Loading -->
     <div v-if="loading" class="flex flex-col gap-px p-4">
       <div v-for="i in 6" :key="i" class="h-12 animate-pulse rounded bg-bg-sunken" />

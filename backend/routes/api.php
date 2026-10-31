@@ -387,6 +387,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // where the day-to-day changes happen.
             Route::get('/workshop-types', [AdminWorkshopTypeController::class, 'index'])
                 ->middleware('capability:bookings.view')->name('workshop-types.index');
+            Route::post('/workshop-types', [AdminWorkshopTypeController::class, 'store'])
+                ->middleware('capability:workshops.manage')->name('workshop-types.store');
+            Route::put('/workshop-types/{workshopType}', [AdminWorkshopTypeController::class, 'update'])
+                ->middleware('capability:workshops.manage')->name('workshop-types.update');
+            Route::delete('/workshop-types/{workshopType}', [AdminWorkshopTypeController::class, 'destroy'])
+                ->middleware('capability:workshops.manage')->name('workshop-types.destroy');
 
             Route::get('/workshop-sessions', [AdminWorkshopSessionController::class, 'index'])
                 ->middleware('capability:bookings.view')->name('workshop-sessions.index');

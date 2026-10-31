@@ -79,7 +79,7 @@ const groups = computed(() =>
     <section v-for="g in groups" :key="g.session.id" v-else class="card">
       <header class="flex flex-wrap items-center gap-3 border-b border-border p-4 md:p-5">
         <div class="min-w-0 flex-1">
-          <h2 class="card-title">{{ g.session.workshopTypeName }}</h2>
+          <h2 class="card-title">{{ g.session.eventName ?? g.session.workshopTypeName }}</h2>
           <p class="mt-0.5 text-ui text-fg-muted">
             {{ formatDate(g.session.scheduledDate) }} · {{ g.session.scheduledSlot }}
           </p>

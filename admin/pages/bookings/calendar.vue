@@ -150,7 +150,7 @@ const canAddOn = (key: string) => canManage.value && key >= ymd(TODAY)
             <li v-for="s in todaysTop" :key="s.id" class="flex items-start gap-2">
               <span class="mt-1.5 size-1.5 shrink-0 rounded-pill" :style="{ backgroundColor: typeColour(s.workshopTypeId) }" />
               <span class="min-w-0">
-                <span class="block truncate text-ui text-fg">{{ s.workshopTypeName }}</span>
+                <span class="block truncate text-ui text-fg">{{ s.eventName ?? s.workshopTypeName }}</span>
                 <span class="block text-meta text-fg-faint">{{ s.scheduledSlot }}</span>
               </span>
             </li>
@@ -162,7 +162,7 @@ const canAddOn = (key: string) => canManage.value && key >= ymd(TODAY)
             <li v-for="s in tomorrowsTop" :key="s.id" class="flex items-start gap-2">
               <span class="mt-1.5 size-1.5 shrink-0 rounded-pill" :style="{ backgroundColor: typeColour(s.workshopTypeId) }" />
               <span class="min-w-0">
-                <span class="block truncate text-ui text-fg">{{ s.workshopTypeName }}</span>
+                <span class="block truncate text-ui text-fg">{{ s.eventName ?? s.workshopTypeName }}</span>
                 <span class="block text-meta text-fg-faint">{{ s.scheduledSlot }}</span>
               </span>
             </li>
@@ -214,7 +214,7 @@ const canAddOn = (key: string) => canManage.value && key >= ymd(TODAY)
                 >
                   <span class="mt-1.5 size-1.5 shrink-0 rounded-pill" :style="{ backgroundColor: typeColour(s.workshopTypeId) }" />
                   <span class="min-w-0">
-                    <span class="block truncate text-meta text-fg">{{ s.workshopTypeName }}</span>
+                    <span class="block truncate text-meta text-fg">{{ s.eventName ?? s.workshopTypeName }}</span>
                     <span
                       class="block text-micro"
                       :class="s.occupiedSeats >= s.capacity ? 'text-accent-text' : 'text-fg-faint'"
@@ -249,7 +249,7 @@ const canAddOn = (key: string) => canManage.value && key >= ymd(TODAY)
           <li v-for="s in agenda" :key="s.id" class="flex items-start gap-3 p-4">
             <span class="mt-1 size-2 shrink-0 rounded-pill" :style="{ backgroundColor: typeColour(s.workshopTypeId) }" />
             <span class="min-w-0 flex-1">
-              <span class="block text-ui text-fg-strong">{{ s.workshopTypeName }}</span>
+              <span class="block text-ui text-fg-strong">{{ s.eventName ?? s.workshopTypeName }}</span>
               <span class="block text-meta text-fg-muted">
                 {{ formatDate(s.scheduledDate) }} · {{ s.scheduledSlot }}
               </span>

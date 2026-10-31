@@ -36,6 +36,12 @@ class AdminBookingResource extends JsonResource
             'reference' => ($this->type === 'workshop' ? 'WS-' : 'DIY-').$this->id,
             'scheduled_date' => $this->scheduled_date?->toDateString() ?? $session?->scheduled_date?->toDateString(),
             'workshop_type_name' => $session?->workshopType?->name,
+            // The session's own title when it has one ("Halloween Sip &
+            // Paint"), else the experience's name. Bookings group by session.
+            'session_title' => $session?->title,
+            'event_name' => $session ? ($session->title ?: $session->workshopType?->name) : null,
+            'first_name' => $details['first_name'] ?? null,
+            'last_name' => $details['last_name'] ?? null,
             'scheduled_slot' => $session?->scheduled_slot,
             'attendee_count' => isset($details['attendee_count']) ? (int) $details['attendee_count'] : null,
             // 1 is next up: the oldest waitlisted booking on the session.

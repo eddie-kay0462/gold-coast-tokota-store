@@ -29,14 +29,20 @@ export interface WorkshopType {
   capacity: number
   /** No standing schedule; sessions are added only for agreed dates. */
   requiresAppointment?: boolean
-  description: string
+  description: string | null
   isActive: boolean
+  upcomingSessionsCount?: number
 }
 
 export interface WorkshopSession {
   id: number
   workshopTypeId: number
   workshopTypeName: string
+  /** A themed run's own name ("Halloween Sip & Paint"); null goes by the type's. */
+  title: string | null
+  description: string | null
+  /** `title`, or the type's name. */
+  eventName: string
   scheduledDate: string          // YYYY-MM-DD
   scheduledSlot: string          // "10:00 AM – 1:00 PM"
   capacity: number
@@ -57,9 +63,15 @@ export interface Booking {
   customerName: string
   customerEmail: string
   customerPhone: string
+  /** From bookings made since the form asked for two parts; null before. */
+  firstName?: string | null
+  lastName?: string | null
   /** Workshop bookings only. */
   workshopSessionId: number | null
   workshopTypeName: string | null
+  /** The session's own title, or the type's name: what bookings group by. */
+  eventName?: string | null
+  sessionTitle?: string | null
   scheduledSlot?: string | null
   attendeeCount: number | null
   /** DIY orders only: no capacity or date constraint (README Feature 7). */
@@ -71,6 +83,8 @@ export interface Booking {
   referenceImageUrl?: string | null
   whatsappThreadId?: string | null
   notes?: string
+  /** Everything the form sent, as stored. */
+  details?: Record<string, unknown>
   createdAt: Timestamp
 }
 

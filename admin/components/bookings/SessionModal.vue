@@ -12,6 +12,9 @@ import type { WorkshopSession, WorkshopType } from '~/types'
  * The API refuses to cut capacity below the seats already booked, or to
  * delete a session anyone is booked on; its message says how many, and is
  * shown as-is.
+ *
+ * A title makes it a themed run ("Halloween Sip & Paint"): it goes by that
+ * name on the booking page and in Bookings, and stays under its workshop.
  */
 const props = defineProps<{
   session: WorkshopSession | null
@@ -25,7 +28,7 @@ const emit = defineEmits<{ saved: []; deleted: [] }>()
 const { adminFetch } = useAdminApi()
 const toast = useToast()
 
-const form = reactive({ typeId: '', date: '', slot: '', capacity: '', notes: '' })
+const form = reactive({ typeId: '', title: '', description: '', date: '', slot: '', capacity: '', notes: '' })
 const saving = ref(false)
 const deleting = ref(false)
 const confirmingDelete = ref(false)
@@ -51,6 +54,8 @@ watch(() => [open.value, props.session] as const, ([isOpen, s]) => {
   if (s) {
     Object.assign(form, {
       typeId: String(s.workshopTypeId),
+      title: s.title ?? '',
+      description: s.description ?? '',
       date: s.scheduledDate,
       slot: s.scheduledSlot,
       capacity: String(s.capacity),
@@ -60,6 +65,8 @@ watch(() => [open.value, props.session] as const, ([isOpen, s]) => {
     const first = props.types.find((t) => t.isActive && !t.requiresAppointment) ?? props.types[0]
     Object.assign(form, {
       typeId: first ? String(first.id) : '',
+      title: '',
+      description: '',
       date: props.date ?? '',
       slot: '',
       capacity: '',
@@ -86,6 +93,8 @@ async function save() {
   error.value = null
   const body = {
     workshop_type_id: Number(form.typeId),
+    title: form.title.trim() || null,
+    description: form.description.trim() || null,
     scheduled_date: form.date,
     scheduled_slot: form.slot.trim(),
     capacity: Number(form.capacity),
@@ -129,13 +138,23 @@ async function remove() {
   <UiModal
     v-model:open="open"
     :title="editing ? 'Edit session' : 'New session'"
-    :description="editing ? `${session!.workshopTypeName} · ${session!.occupiedSeats} booked` : 'A dated run of a workshop, with its own seats.'"
+    :description="editing ? `${session!.eventName ?? session!.workshopTypeName} · ${session!.occupiedSeats} booked` : 'A dated run of a workshop, with its own seats.'"
   >
     <form id="session-form" class="flex flex-col gap-4" @submit.prevent="save">
       <UiSelect v-model="form.typeId" label="Workshop" :options="typeOptions" />
       <p v-if="selectedType?.requiresAppointment" class="-mt-2 text-meta text-fg-faint">
         This one usually runs by appointment. Add a session only for a date you’ve agreed.
       </p>
+
+      <UiField
+        v-model="form.title" label="Theme or title" maxlength="120"
+        :placeholder="selectedType ? `e.g. Halloween ${selectedType.name}` : 'e.g. Halloween Sip & Paint'"
+        :hint="form.title.trim() ? 'Shown instead of the workshop’s name for this date.' : `Optional. Blank: it’s listed as ${selectedType?.name ?? 'the workshop'}.`"
+      />
+      <UiField
+        v-if="form.title.trim()" v-model="form.description" label="About this one" type="textarea" :rows="2"
+        hint="Optional. What’s different this time, for the booking page."
+      />
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div>

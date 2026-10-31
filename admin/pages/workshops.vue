@@ -21,7 +21,7 @@ const { useAdminList, adminFetch } = useAdminApi()
 const { formatDate, now } = useFormatters()
 const { can } = useAuth()
 const toast = useToast()
-const { items: types, pending } = useAdminList<WorkshopType>('admin-workshop-types', '/admin/workshop-types')
+const { items: types, pending, refresh: refreshTypes } = useAdminList<WorkshopType>('admin-workshop-types', '/admin/workshop-types')
 // Upcoming only: the list is date-ascending and paged, so past sessions would
 // push next month's off the first page.
 const { items: sessions, refresh: refreshSessions } = useAdminList<WorkshopSession>(
@@ -39,6 +39,14 @@ const upcomingSessions = computed(() =>
 /** Next scheduled session per type, and how full it is. */
 const upcoming = (typeId: number) =>
   upcomingSessions.value.find((s) => s.workshopTypeId === typeId) ?? null
+
+// New events (experiences) and edits to them: `components/bookings/EventModal.vue`.
+const editingType = ref<WorkshopType | null>(null)
+const typeOpen = ref(false)
+function openType(t: WorkshopType | null) {
+  editingType.value = t
+  typeOpen.value = true
+}
 
 const editingSession = ref<WorkshopSession | null>(null)
 const sessionOpen = ref(false)
@@ -92,6 +100,12 @@ async function saveTier() {
           Calendar
         </UiButton>
         <UiPermissionGate capability="workshops.manage" quiet>
+          <UiButton variant="secondary" size="sm" @click="openType(null)">
+            <PhPlus :size="16" />
+            New event
+          </UiButton>
+        </UiPermissionGate>
+        <UiPermissionGate capability="workshops.manage" quiet>
           <UiButton size="sm" @click="openSession(null)">
             <PhPlus :size="16" />
             New session
@@ -108,9 +122,17 @@ async function saveTier() {
       <article v-for="t in types" :key="t.id" class="card card-pad flex flex-col">
         <div class="flex items-start justify-between gap-3">
           <h2 class="text-section font-medium text-fg-strong">{{ t.name }}</h2>
-          <UiBadge :tone="t.isActive ? 'success' : 'neutral'" dot>
-            {{ t.isActive ? 'Active' : 'Paused' }}
-          </UiBadge>
+          <span class="flex shrink-0 items-center gap-1">
+            <UiBadge :tone="t.isActive ? 'success' : 'neutral'" dot>
+              {{ t.isActive ? 'Active' : 'Paused' }}
+            </UiBadge>
+            <button
+              v-if="can('workshops.manage')" type="button" class="toolbar-btn"
+              :aria-label="`Edit ${t.name}`" @click="openType(t)"
+            >
+              <PhPencilSimple :size="16" />
+            </button>
+          </span>
         </div>
 
         <p class="mt-2 flex-1 text-ui text-fg-muted">{{ t.description }}</p>
@@ -172,7 +194,8 @@ async function saveTier() {
         <li v-for="s in upcomingSessions" :key="s.id" class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 md:px-5">
           <span class="w-28 shrink-0 text-ui font-medium text-fg-strong">{{ formatDate(s.scheduledDate) }}</span>
           <span class="min-w-0 flex-1 text-ui text-fg">
-            {{ s.workshopTypeName }}
+            {{ s.eventName ?? s.workshopTypeName }}
+            <span v-if="s.title" class="text-fg-faint">({{ s.workshopTypeName }})</span>
             <span class="text-fg-faint">· {{ s.scheduledSlot }}</span>
           </span>
           <UiBadge :tone="s.remainingCapacity === 0 ? 'accent' : 'neutral'" size="sm">
@@ -220,6 +243,7 @@ async function saveTier() {
       </ul>
     </section>
 
+    <BookingsEventModal v-model:open="typeOpen" :type="editingType" @saved="refreshTypes()" />
     <BookingsSessionModal
       v-model:open="sessionOpen" :session="editingSession" :types="types"
       @saved="refreshSessions()" @deleted="refreshSessions()"
