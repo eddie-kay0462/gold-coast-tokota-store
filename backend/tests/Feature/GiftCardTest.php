@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Shipment;
 use App\Models\SiteSetting;
+use App\Services\Bookings\BookingCheckout;
 use App\Services\GiftCards\GiftCardService;
 use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -296,7 +297,7 @@ class GiftCardTest extends TestCase
         $this->checkout($this->stocked(), $card->code)->assertCreated();
 
         $this->travel(16)->minutes();
-        (new ReleaseExpiredReservations)->handle(app(InventoryReservationService::class), app(GiftCardService::class));
+        (new ReleaseExpiredReservations)->handle(app(InventoryReservationService::class), app(GiftCardService::class), app(BookingCheckout::class));
 
         $this->assertSame(20_000, $card->fresh()->balance);
         $this->assertNotNull(Order::firstOrFail()->gift_card_released_at);

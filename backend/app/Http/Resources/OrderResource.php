@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\Bookings\TicketPdf;
 use App\Services\Delivery\DeliveryEstimates;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -47,6 +48,22 @@ class OrderResource extends JsonResource
             'processing_hours' => DeliveryEstimates::PROCESSING_HOURS,
             'delivery_estimate' => DeliveryEstimates::for($this->shipping_address['country'] ?? null),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            // Tickets for a paid event: what they're for, and the ticket
+            // itself once the payment has confirmed the booking.
+            'booking' => $this->when(
+                $this->kind === 'booking' && $this->relationLoaded('booking') && $this->booking !== null,
+                fn () => [
+                    'reference' => $this->booking->reference(),
+                    'status' => $this->booking->status,
+                    'event' => $this->booking->workshopSession?->eventName(),
+                    'scheduled_date' => $this->booking->workshopSession?->scheduled_date?->toDateString(),
+                    'scheduled_slot' => $this->booking->workshopSession?->scheduled_slot,
+                    'location_notes' => $this->booking->workshopSession?->location_notes,
+                    'attendee_count' => $this->booking->attendees(),
+                    'ticket_url' => in_array($this->booking->status, ['confirmed', 'completed'], true)
+                        ? app(TicketPdf::class)->downloadUrl($this->booking) : null,
+                ],
+            ),
             'created_at' => $this->created_at,
         ];
     }

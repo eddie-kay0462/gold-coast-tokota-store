@@ -46,7 +46,9 @@ class StoreBookingRequest extends FormRequest
             'details.phone' => ['required', 'string', 'max:32'],
 
             // Workshop-only fields.
-            'details.attendee_count' => [Rule::requiredIf($isWorkshop), 'nullable', 'integer', 'min:1'],
+            'details.attendee_count' => [Rule::requiredIf($isWorkshop), 'nullable', 'integer', 'min:1', 'max:100'],
+            // What a paid session is charged in; the price is set in cedis.
+            'currency' => ['sometimes', Rule::in(['GHS', 'USD'])],
 
             // DIY-only fields.
             'details.size' => [Rule::requiredIf($isDiy), 'nullable', 'string', 'max:20'],

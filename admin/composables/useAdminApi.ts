@@ -91,6 +91,11 @@ export interface AdminFetchOptions {
   query?: ListQuery
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
+  /**
+   * A failed read is the answer, not something demo data should cover: a
+   * check-in lookup's 404 means the ticket doesn't exist.
+   */
+  noFixture?: boolean
 }
 
 export interface AdminResult<T> {
@@ -134,7 +139,7 @@ export function useAdminApi() {
     path: string,
     options: AdminFetchOptions = {},
   ): Promise<AdminResult<T>> {
-    const { query = {}, method = 'GET', body } = options
+    const { query = {}, method = 'GET', body, noFixture = false } = options
 
     if (mode === 'fixtures') return fromFixture<T>(path, query)
 
@@ -175,7 +180,7 @@ export function useAdminApi() {
       }
       // Fixtures stand in for reads only. A failed write falling back would
       // swallow the API's validation message and look like it had saved.
-      if (mode === 'live' || method !== 'GET') throw err
+      if (mode === 'live' || method !== 'GET' || noFixture) throw err
 
       const status = (err as { statusCode?: number; status?: number })?.statusCode
         ?? (err as { status?: number })?.status

@@ -29,15 +29,17 @@ class SendBookingNotification implements ShouldQueue
     public function __construct(
         public readonly Booking $booking,
         public readonly string $reason,
+        /** A paid waitlist offer's Paystack link. */
+        public readonly ?string $payUrl = null,
     ) {}
 
     public function handle(NotificationDispatcher $dispatcher): void
     {
-        $booking = $this->booking->load(['workshopSession.workshopType', 'customer']);
+        $booking = $this->booking->load(['workshopSession.workshopType', 'customer', 'order']);
 
         $message = match ($this->reason) {
             'confirmed' => TransactionalMessages::bookingConfirmed($booking),
-            'waitlist_promoted' => TransactionalMessages::waitlistPromoted($booking),
+            'waitlist_promoted' => TransactionalMessages::waitlistPromoted($booking, $this->payUrl),
             default => TransactionalMessages::bookingSubmitted($booking),
         };
 

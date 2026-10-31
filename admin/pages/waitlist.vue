@@ -26,14 +26,20 @@ const { items: sessions, refresh: refreshSessions } = useAdminList<WorkshopSessi
 // Promote is `confirmed`, which the API only allows while the session has a
 // seat (409 otherwise) and which messages the customer. Skip cancels the
 // entry. Neither happens on its own: a place opening doesn't promote anyone.
+//
+// At a paid event, promoting offers the seat instead: the customer is sent a
+// pay link and has a day to pay, and the seats are held for them meanwhile.
 const changing = ref<number | null>(null)
-async function decide(b: Booking, status: 'confirmed' | 'cancelled') {
+const isPaid = (s: WorkshopSession) => !!s.effectivePriceGhs
+async function decide(b: Booking, status: 'confirmed' | 'cancelled', paid = false) {
   changing.value = b.id
   try {
     await adminFetch(`/admin/bookings/${b.id}`, { method: 'PATCH', body: { status } })
-    toast.success(status === 'confirmed' ? 'Promoted' : 'Skipped', status === 'confirmed'
-      ? `${b.customerName} has the place and has been told.`
-      : `${b.customerName} is off the waitlist.`)
+    toast.success(status === 'cancelled' ? 'Skipped' : paid ? 'Seat offered' : 'Promoted', status === 'cancelled'
+      ? `${b.customerName} is off the waitlist.`
+      : paid
+        ? `${b.customerName} has a pay link and a day to pay. The seats are held until then.`
+        : `${b.customerName} has the place and has been told.`)
     await Promise.all([refresh(), refreshSessions()])
   } catch (err) {
     const message = failureMessage(err)
@@ -108,12 +114,12 @@ const groups = computed(() =>
             <span class="flex shrink-0 gap-1">
               <UiButton
                 variant="secondary" size="sm" :loading="changing === b.id"
-                :disabled="g.session.remainingCapacity < 1"
-                :title="g.session.remainingCapacity < 1 ? 'No place free on this session yet' : undefined"
-                @click="decide(b, 'confirmed')"
+                :disabled="g.session.remainingCapacity < (b.attendeeCount ?? 1)"
+                :title="g.session.remainingCapacity < (b.attendeeCount ?? 1) ? 'Not enough places free on this session yet' : undefined"
+                @click="decide(b, 'confirmed', isPaid(g.session))"
               >
                 <PhArrowUp :size="14" />
-                Promote
+                {{ isPaid(g.session) ? 'Offer the seat' : 'Promote' }}
               </UiButton>
               <UiButton variant="ghost" size="sm" :disabled="changing === b.id" @click="decide(b, 'cancelled')">
                 <PhSkipForward :size="14" />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhCalendarDots, PhClock, PhPencilSimple, PhPlus, PhUsersThree } from '@phosphor-icons/vue'
+import { PhCalendarDots, PhClock, PhPencilSimple, PhPlus, PhTicket, PhUsersThree } from '@phosphor-icons/vue'
 import type { DiyTurnaroundTier, WorkshopSession, WorkshopType } from '~/types'
 
 /**
@@ -150,6 +150,11 @@ async function saveTier() {
           <div class="flex items-center gap-2 text-ui text-fg">
             <PhUsersThree :size="16" class="shrink-0 text-fg-faint" />
             {{ t.capacity }} places
+          </div>
+          <div class="flex items-center gap-2 text-ui text-fg">
+            <PhTicket :size="16" class="shrink-0 text-fg-faint" />
+            {{ t.priceGhs ? `GH₵${(t.priceGhs / 100).toFixed(2)} each` : 'Free' }}
+            <span v-if="!t.allowWaitlist" class="text-meta text-fg-faint">· no waitlist</span>
           </div>
         </dl>
 

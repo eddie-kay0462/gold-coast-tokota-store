@@ -28,7 +28,7 @@ const emit = defineEmits<{ saved: []; deleted: [] }>()
 const { adminFetch } = useAdminApi()
 const toast = useToast()
 
-const form = reactive({ typeId: '', title: '', description: '', date: '', slot: '', capacity: '', notes: '' })
+const form = reactive({ typeId: '', title: '', description: '', date: '', slot: '', capacity: '', price: '', notes: '' })
 const saving = ref(false)
 const deleting = ref(false)
 const confirmingDelete = ref(false)
@@ -59,6 +59,7 @@ watch(() => [open.value, props.session] as const, ([isOpen, s]) => {
       date: s.scheduledDate,
       slot: s.scheduledSlot,
       capacity: String(s.capacity),
+      price: s.priceGhs ? (s.priceGhs / 100).toFixed(2) : '',
       notes: s.locationNotes ?? '',
     })
   } else {
@@ -70,6 +71,7 @@ watch(() => [open.value, props.session] as const, ([isOpen, s]) => {
       date: props.date ?? '',
       slot: '',
       capacity: '',
+      price: '',
       notes: '',
     })
   }
@@ -82,8 +84,12 @@ watch(() => form.typeId, () => {
   form.slot = slotSuggestions.value[0] ?? ''
 }, { immediate: true })
 
+// Blank follows the event's price.
+const priceMinor = computed(() => (String(form.price).trim() === '' ? null : Math.round(Number(form.price) * 100)))
+const priceValid = computed(() => priceMinor.value === null || (Number.isFinite(priceMinor.value) && priceMinor.value >= 100))
+const eventPrice = computed(() => selectedType.value?.priceGhs ? `GH₵${(selectedType.value.priceGhs / 100).toFixed(2)}` : null)
 const valid = computed(() =>
-  !!form.typeId && !!form.date && !!form.slot.trim()
+  priceValid.value && !!form.typeId && !!form.date && !!form.slot.trim()
   && Number.isInteger(Number(form.capacity)) && Number(form.capacity) >= 1,
 )
 
@@ -98,6 +104,7 @@ async function save() {
     scheduled_date: form.date,
     scheduled_slot: form.slot.trim(),
     capacity: Number(form.capacity),
+    price_ghs: priceMinor.value,
     location_notes: form.notes.trim() || null,
   }
   try {
@@ -174,6 +181,11 @@ async function remove() {
       <datalist id="session-slots">
         <option v-for="s in slotSuggestions" :key="s" :value="s" />
       </datalist>
+
+      <UiField
+        v-model="form.price" label="Price per person for this date (GHS)" type="number"
+        :hint="!priceValid ? 'At least GH₵1, or blank.' : eventPrice ? `Blank: the event’s price, ${eventPrice}.` : 'Blank: free, like the event.'"
+      />
 
       <UiField v-model="form.notes" label="Location notes" type="textarea" :rows="2" hint="Optional. Shown with the booking." />
 

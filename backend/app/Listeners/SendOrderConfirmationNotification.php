@@ -18,6 +18,12 @@ class SendOrderConfirmationNotification
 {
     public function handle(OrderPaid $event): void
     {
+        // Tickets go out with the booking confirmation instead
+        // (ConfirmBookingForPaidOrder), so the customer gets one email.
+        if ($event->order->isBookingPayment()) {
+            return;
+        }
+
         SendOrderNotification::dispatch($event->order, 'paid');
     }
 }
