@@ -27,6 +27,8 @@ export interface WorkshopType {
   slotLabel: string
   durationLabel: string
   capacity: number
+  /** No standing schedule; sessions are added only for agreed dates. */
+  requiresAppointment?: boolean
   description: string
   isActive: boolean
 }
@@ -38,10 +40,12 @@ export interface WorkshopSession {
   scheduledDate: string          // YYYY-MM-DD
   scheduledSlot: string          // "10:00 AM – 1:00 PM"
   capacity: number
-  confirmedCount: number
+  /** Seats taken by pending and confirmed bookings, from the API. */
+  occupiedSeats: number
+  remainingCapacity: number
   waitlistCount: number
-  locationNotes: string
-  createdByAdminId: number
+  locationNotes: string | null
+  createdByAdminId?: number
   createdAt: Timestamp
 }
 
@@ -56,26 +60,30 @@ export interface Booking {
   /** Workshop bookings only. */
   workshopSessionId: number | null
   workshopTypeName: string | null
+  scheduledSlot?: string | null
   attendeeCount: number | null
   /** DIY orders only: no capacity or date constraint (README Feature 7). */
   scheduledDate: string | null
   diySpecs: DiySpecs | null
   /** Position in the queue for a waitlisted workshop booking. 1 is next up. */
   waitlistPosition: number | null
-  whatsappThreadId: string | null
-  notes: string
+  /** The customer's reference photo, a signed link. DIY orders only. */
+  referenceImageUrl?: string | null
+  whatsappThreadId?: string | null
+  notes?: string
   createdAt: Timestamp
 }
 
+/** What the storefront's DIY form collects. The optional ones are fixture-only. */
 export interface DiySpecs {
-  tierId: string
-  size: string
+  size: string | null
   footLengthCm: number | null
-  colourway: string
-  soleMaterial: string
-  referenceImages: string[]
-  preferredFulfilment: 'pickup' | 'delivery'
-  measurementsNote: string
+  preferredFulfilment: 'pickup' | 'delivery' | null
+  tierId?: string
+  colourway?: string
+  soleMaterial?: string
+  referenceImages?: string[]
+  measurementsNote?: string
 }
 
 /**

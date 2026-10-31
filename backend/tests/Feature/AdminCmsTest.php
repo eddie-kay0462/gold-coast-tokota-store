@@ -91,6 +91,36 @@ class AdminCmsTest extends TestCase
 
     // --- blog -----------------------------------------------------------
 
+    /** Staff write drafts; an Admin puts them live (`content.publish`). */
+    public function test_staff_can_save_a_draft_but_not_publish_it(): void
+    {
+        $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/blog', [
+            'title' => 'Draft', 'body' => '<p>x</p>', 'is_published' => false,
+        ])->assertCreated();
+
+        $post = BlogPost::first();
+
+        $this->actingAs($this->staff(), 'admin')
+            ->putJson("/api/v1/admin/blog/{$post->id}", ['is_published' => true])
+            ->assertForbidden();
+        $this->assertFalse($post->fresh()->is_published);
+
+        // Editing the draft is still fine.
+        $this->actingAs($this->staff(), 'admin')
+            ->putJson("/api/v1/admin/blog/{$post->id}", ['title' => 'Better title', 'is_published' => false])
+            ->assertOk();
+    }
+
+    /** Live means published *and* dated, so publishing without a date is now. */
+    public function test_publishing_without_a_date_puts_the_post_live_now(): void
+    {
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/v1/admin/blog', [
+            'title' => 'Live', 'body' => '<p>x</p>', 'is_published' => true,
+        ])->assertCreated();
+
+        $this->assertSame(1, BlogPost::query()->published()->count());
+    }
+
     public function test_blog_admin_list_includes_drafts(): void
     {
         BlogPost::factory()->create(['is_published' => true, 'published_at' => now()->subDay()]);

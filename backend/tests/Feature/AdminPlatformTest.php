@@ -333,6 +333,21 @@ class AdminPlatformTest extends TestCase
         Storage::disk('public')->assertExists(MediaAsset::first()->path);
     }
 
+    public function test_an_images_alt_text_can_be_changed_after_upload(): void
+    {
+        Storage::fake('public');
+
+        $this->actingAs($this->staff(), 'admin')->postJson('/api/v1/admin/media', [
+            'file' => UploadedFile::fake()->image('sandal.jpg', 800, 1000),
+        ])->assertCreated();
+        $asset = MediaAsset::first();
+
+        $this->actingAs($this->staff(), 'admin')
+            ->patchJson("/api/v1/admin/media/{$asset->id}", ['alt_text' => 'Tan Domfo slides'])
+            ->assertOk()
+            ->assertJsonPath('data.alt_text', 'Tan Domfo slides');
+    }
+
     /** Nothing a browser will execute may be uploaded and then linked from a page. */
     public function test_a_non_image_upload_is_rejected(): void
     {

@@ -469,6 +469,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->middleware('capability:content.view')->name('media.index');
             Route::post('/media', [AdminMediaController::class, 'store'])
                 ->middleware('capability:media.upload')->name('media.store');
+            Route::patch('/media/{mediaAsset}', [AdminMediaController::class, 'update'])
+                ->middleware('capability:media.upload')->name('media.update');
             Route::delete('/media/{mediaAsset}', [AdminMediaController::class, 'destroy'])
                 ->middleware('capability:media.delete')->name('media.destroy');
 

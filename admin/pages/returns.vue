@@ -19,7 +19,15 @@ useHead({ title: 'Returns' })
 
 const { useAdminList } = useAdminApi()
 const { formatDate, formatRelative, daysUntil } = useFormatters()
-const { items: returns, pending } = useAdminList<ReturnRequest>('admin-returns', '/admin/returns')
+const { items: returns, pending, refresh } = useAdminList<ReturnRequest>('admin-returns', '/admin/returns')
+
+const resolving = ref<ReturnRequest | null>(null)
+const resolveOpen = ref(false)
+function resolve(row: ReturnRequest) {
+  resolving.value = row
+  resolveOpen.value = true
+}
+const OPEN_STATUSES = ['requested', 'approved', 'received']
 
 const r = useResource<ReturnRequest>(returns, {
   searchFields: ['orderReference', 'customerName', 'itemsSummary'],
@@ -104,7 +112,7 @@ const windowLabel = (iso: string) => {
       </template>
       <template #actions="{ row }">
         <UiPermissionGate capability="returns.resolve" quiet>
-          <UiButton v-if="row.status === 'requested'" variant="ghost" size="sm">Resolve</UiButton>
+          <UiButton v-if="OPEN_STATUSES.includes(row.status)" variant="ghost" size="sm" @click="resolve(row)">Update</UiButton>
         </UiPermissionGate>
       </template>
       <template #footer>
@@ -115,6 +123,8 @@ const windowLabel = (iso: string) => {
         />
       </template>
     </UiDataTable>
+
+    <OrdersReturnModal v-model:open="resolveOpen" :request="resolving" @saved="refresh()" />
 
     <p class="flex items-start gap-2 text-meta text-fg-faint">
       <PhWarningCircle :size="14" class="mt-px shrink-0" />

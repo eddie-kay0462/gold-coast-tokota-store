@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreMediaAssetRequest;
 use App\Http\Resources\Admin\MediaAssetResource;
 use App\Models\MediaAsset;
 use App\Support\MediaStorage;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -49,6 +50,19 @@ class MediaController extends Controller
         ]);
 
         return new MediaAssetResource($asset->load('uploadedBy'));
+    }
+
+    /**
+     * Alt text only: the file itself is replaced by uploading a new one, so
+     * anything already pointing at this URL keeps working.
+     */
+    public function update(Request $request, MediaAsset $mediaAsset): MediaAssetResource
+    {
+        $data = $request->validate(['alt_text' => ['present', 'nullable', 'string', 'max:255']]);
+
+        $mediaAsset->update(['alt_text' => $data['alt_text']]);
+
+        return new MediaAssetResource($mediaAsset->fresh('uploadedBy'));
     }
 
     public function destroy(MediaAsset $mediaAsset): Response

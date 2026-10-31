@@ -7,6 +7,8 @@ use App\Http\Requests\Admin\StoreBlogPostRequest;
 use App\Http\Resources\Admin\AdminBlogPostResource;
 use App\Models\BlogPost;
 use App\Services\Content\HtmlSanitizer;
+use App\Support\AdminCapability;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -45,15 +47,23 @@ class BlogPostController extends Controller
         return new AdminBlogPostResource($blogPost);
     }
 
-    public function store(StoreBlogPostRequest $request): AdminBlogPostResource
+    public function store(StoreBlogPostRequest $request): AdminBlogPostResource|JsonResponse
     {
+        if ($refusal = $this->refusePublishing($request, $request->validated())) {
+            return $refusal;
+        }
+
         $post = BlogPost::create($this->prepare($request->validated()));
 
         return new AdminBlogPostResource($post);
     }
 
-    public function update(StoreBlogPostRequest $request, BlogPost $blogPost): AdminBlogPostResource
+    public function update(StoreBlogPostRequest $request, BlogPost $blogPost): AdminBlogPostResource|JsonResponse
     {
+        if ($refusal = $this->refusePublishing($request, $request->validated(), $blogPost)) {
+            return $refusal;
+        }
+
         $blogPost->update($this->prepare($request->validated(), $blogPost));
 
         return new AdminBlogPostResource($blogPost->fresh());
@@ -67,8 +77,39 @@ class BlogPostController extends Controller
     }
 
     /** @param  array<string, mixed>  $data */
+    /**
+     * Publishing and unpublishing take `content.publish`, which Staff don't
+     * have: they write drafts and an Admin puts them live. The route only
+     * asks for `content.write`, since saving a draft is the common case.
+     */
+    private function refusePublishing(Request $request, array $data, ?BlogPost $existing = null): ?JsonResponse
+    {
+        if (! array_key_exists('is_published', $data)) {
+            return null;
+        }
+
+        $changes = (bool) $data['is_published'] !== (bool) ($existing?->is_published ?? false);
+        $admin = $request->user('admin');
+
+        if (! $changes || $admin->hasCapability('content.publish')) {
+            return null;
+        }
+
+        $message = AdminCapability::denialMessage('content.publish', $admin->role);
+
+        // The same shape as the capability middleware's refusal.
+        return response()->json(['data' => null, 'meta' => null, 'message' => $message, 'errors' => ['message' => $message]], 403);
+    }
+
     private function prepare(array $data, ?BlogPost $existing = null): array
     {
+        // A post goes live when it is published *and* its date has come (the
+        // `published` scope), so publishing without a date means now. One
+        // already dated keeps its date, so a republish doesn't reorder it.
+        if (($data['is_published'] ?? false) && empty($data['published_at']) && $existing?->published_at === null) {
+            $data['published_at'] = now();
+        }
+
         // Sanitised on the way in, so what is stored is already safe to render.
         // The editor may strip scripts in the browser, but the browser is not
         // the trust boundary — anything that can POST here can post anything.

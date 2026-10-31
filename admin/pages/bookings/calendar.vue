@@ -17,12 +17,14 @@ import type { WorkshopSession, WorkshopType } from '~/types'
 useHead({ title: 'Calendar' })
 
 const { useAdminList } = useAdminApi()
-const { formatDate } = useFormatters()
-const { items: sessions, pending } = useAdminList<WorkshopSession>('cal-sessions', '/admin/workshop-sessions')
+const { formatDate, now } = useFormatters()
+const { can } = useAuth()
+const { items: sessions, pending, refresh } = useAdminList<WorkshopSession>('cal-sessions', '/admin/workshop-sessions')
 const { items: types } = useAdminList<WorkshopType>('cal-types', '/admin/workshop-types')
 
-/** Anchored to the fixture clock so the demo opens on a populated month. */
-const TODAY = new Date('2026-08-21T00:00:00Z')
+// `now` is the fixture clock on demo data and the real one otherwise, so the
+// demo still opens on a populated month.
+const TODAY = new Date(`${now.value.toISOString().slice(0, 10)}T00:00:00Z`)
 const cursor = ref(new Date(Date.UTC(TODAY.getUTCFullYear(), TODAY.getUTCMonth(), 1)))
 
 const monthLabel = computed(() =>
@@ -85,6 +87,18 @@ const agenda = computed(() =>
 )
 
 const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+const canManage = computed(() => can('workshops.manage'))
+const editingSession = ref<WorkshopSession | null>(null)
+const newDate = ref<string | null>(null)
+const sessionOpen = ref(false)
+function openSession(s: WorkshopSession | null, date: string | null = null) {
+  editingSession.value = s
+  newDate.value = date
+  sessionOpen.value = true
+}
+/** A day from today on can take a new session; earlier ones can't. */
+const canAddOn = (key: string) => canManage.value && key >= ymd(TODAY)
 </script>
 
 <template>
@@ -92,7 +106,7 @@ const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     <UiPageHeader title="Calendar" description="Workshop sessions by date, coloured by experience.">
       <template #actions>
         <UiPermissionGate capability="workshops.manage" quiet>
-          <UiButton size="sm"><PhPlus :size="16" />New session</UiButton>
+          <UiButton size="sm" @click="openSession(null)"><PhPlus :size="16" />New session</UiButton>
         </UiPermissionGate>
       </template>
     </UiPageHeader>
@@ -121,7 +135,11 @@ const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                 d.isToday ? 'bg-accent font-medium text-accent-fg'
                   : d.inMonth ? 'text-fg hover:bg-bg-sunken' : 'text-fg-faint',
                 sessionsOn(d.key).length && !d.isToday && 'font-medium text-accent-text',
+                !canAddOn(d.key) && 'cursor-default',
               ]"
+              :aria-label="canAddOn(d.key) ? `Add a session on ${formatDate(d.key)}` : formatDate(d.key)"
+              :disabled="!canAddOn(d.key)"
+              @click="openSession(null, d.key)"
             >{{ d.dayNum }}</button>
           </div>
         </div>
@@ -187,18 +205,24 @@ const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
             <ul class="mt-1 space-y-1">
               <li v-for="s in sessionsOn(d.key).slice(0, 2)" :key="s.id">
-                <span class="flex items-start gap-1.5">
+                <component
+                  :is="canManage ? 'button' : 'span'"
+                  :type="canManage ? 'button' : undefined"
+                  class="flex w-full items-start gap-1.5 rounded text-left"
+                  :class="canManage && 'hover:bg-bg-sunken'"
+                  @click="canManage && openSession(s)"
+                >
                   <span class="mt-1.5 size-1.5 shrink-0 rounded-pill" :style="{ backgroundColor: typeColour(s.workshopTypeId) }" />
                   <span class="min-w-0">
                     <span class="block truncate text-meta text-fg">{{ s.workshopTypeName }}</span>
                     <span
                       class="block text-micro"
-                      :class="s.confirmedCount >= s.capacity ? 'text-accent-text' : 'text-fg-faint'"
+                      :class="s.occupiedSeats >= s.capacity ? 'text-accent-text' : 'text-fg-faint'"
                     >
-                      {{ s.confirmedCount }}/{{ s.capacity }}{{ s.confirmedCount >= s.capacity ? ' · full' : '' }}
+                      {{ s.occupiedSeats }}/{{ s.capacity }}{{ s.occupiedSeats >= s.capacity ? ' · full' : '' }}
                     </span>
                   </span>
-                </span>
+                </component>
               </li>
               <li v-if="sessionsOn(d.key).length > 2" class="pl-3 text-micro text-accent-text">
                 +{{ sessionsOn(d.key).length - 2 }} more
@@ -230,12 +254,18 @@ const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
                 {{ formatDate(s.scheduledDate) }} · {{ s.scheduledSlot }}
               </span>
             </span>
-            <UiBadge :tone="s.confirmedCount >= s.capacity ? 'accent' : 'neutral'" size="sm">
-              {{ s.confirmedCount }}/{{ s.capacity }}
+            <UiBadge :tone="s.occupiedSeats >= s.capacity ? 'accent' : 'neutral'" size="sm">
+              {{ s.occupiedSeats }}/{{ s.capacity }}
             </UiBadge>
+            <UiButton v-if="canManage" variant="ghost" size="sm" @click="openSession(s)">Edit</UiButton>
           </li>
         </ul>
       </div>
     </div>
+
+    <BookingsSessionModal
+      v-model:open="sessionOpen" :session="editingSession" :types="types" :date="newDate"
+      @saved="refresh()" @deleted="refresh()"
+    />
   </div>
 </template>

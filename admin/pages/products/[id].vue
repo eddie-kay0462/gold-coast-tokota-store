@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PhArrowLeft, PhPlus, PhX } from '@phosphor-icons/vue'
-import type { FxRate, InventoryItem, Product } from '~/types'
+import { PhArrowLeft, PhPlus, PhTrash, PhX } from '@phosphor-icons/vue'
+import type { Category, FxRate, InventoryItem, Product } from '~/types'
 import type { LightboxImage } from '~/components/ui/Lightbox.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
 
@@ -20,7 +20,16 @@ const { formatDate } = useFormatters()
 
 const { item: product, refresh } = useAdminItem<Product>(`product-${route.params.id}`, `/admin/products/${route.params.id}`)
 const { item: fx } = useAdminItem<FxRate>('product-fx', '/fx-rate')
-const { items: inventory } = useAdminList<InventoryItem>('product-inventory', '/admin/inventory')
+// Filtered to this product: unfiltered, the list is the 50 scarcest sizes in
+// the whole catalogue, which can leave this one's out.
+const { items: inventory } = useAdminList<InventoryItem>(
+  `product-inventory-${route.params.id}`, '/admin/inventory', { product_id: route.params.id },
+)
+const { items: categories } = useAdminList<Category>('product-categories', '/admin/categories')
+const categoryOptions = computed(() => [
+  { value: '', label: 'No category' },
+  ...categories.value.map((c) => ({ value: String(c.id), label: c.name })),
+])
 
 useHead({ title: computed(() => product.value?.name ?? 'Product') })
 
@@ -32,6 +41,72 @@ const priceGhs = ref('')
 watchEffect(() => {
   if (product.value) priceGhs.value = (product.value.basePriceGhs.amount / 100).toFixed(2)
 })
+
+// --- Details and price ----------------------------------------------------
+const details = reactive({ name: '', slug: '', categoryId: '', description: '', isActive: true, isFeatured: false })
+watchEffect(() => {
+  const p = product.value
+  if (!p) return
+  Object.assign(details, {
+    name: p.name, slug: p.slug, categoryId: p.categoryId ? String(p.categoryId) : '',
+    description: p.description ?? '', isActive: p.isActive, isFeatured: p.isFeatured,
+  })
+})
+const saving = ref<'details' | 'price' | 'delete' | null>(null)
+const detailsError = ref<string | null>(null)
+const priceError = ref<string | null>(null)
+
+async function update(section: 'details' | 'price', body: Record<string, unknown>, done: string) {
+  if (!product.value) return
+  saving.value = section
+  const error = section === 'details' ? detailsError : priceError
+  error.value = null
+  try {
+    await adminFetch(`/admin/products/${product.value.id}`, { method: 'PUT', body })
+    await refresh()
+    toast.success(done, 'Live on the storefront now.')
+  } catch (err) {
+    error.value = failureMessage(err)
+  } finally {
+    saving.value = null
+  }
+}
+
+function saveDetails() {
+  return update('details', {
+    name: details.name.trim(),
+    slug: details.slug.trim(),
+    category_id: details.categoryId ? Number(details.categoryId) : null,
+    description: details.description.trim() || null,
+    is_active: details.isActive,
+    is_featured: details.isFeatured,
+  }, 'Product saved')
+}
+
+const priceMinor = computed(() => Math.round(Number(priceGhs.value) * 100))
+const priceValid = computed(() => priceGhs.value !== '' && Number.isFinite(priceMinor.value) && priceMinor.value >= 0)
+function savePrice() {
+  if (!priceValid.value) return
+  return update('price', { base_price_ghs: priceMinor.value }, 'Price saved')
+}
+
+// Deleting removes the product outright, so it asks first.
+const confirmingDelete = ref(false)
+async function deleteProduct() {
+  if (!product.value) return
+  saving.value = 'delete'
+  try {
+    await adminFetch(`/admin/products/${product.value.id}`, { method: 'DELETE' })
+    toast.success('Product deleted', product.value.name)
+    await navigateTo('/products')
+  } catch (err) {
+    const message = failureMessage(err, 'Not deleted. Try again in a moment.')
+    if (message) toast.error('Not deleted', message)
+    confirmingDelete.value = false
+  } finally {
+    saving.value = null
+  }
+}
 
 // --- Shipping and customs ------------------------------------------------
 // Grams and millimetres, as stored. International checkout refuses a product
@@ -77,9 +152,7 @@ async function saveShipping() {
     await refresh()
     toast.success('Shipping details saved')
   } catch (err: unknown) {
-    const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
-    if (e.statusCode === 401 || e.statusCode === 419) return
-    shippingError.value = Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? 'Saving failed. Try again in a moment.'
+    shippingError.value = failureMessage(err)
   } finally {
     savingShipping.value = false
   }
@@ -111,12 +184,6 @@ const openViewer = (src: string) => {
   viewing.value = i === -1 ? null : i
 }
 const photoError = ref<string | null>(null)
-
-function failureMessage(err: unknown, fallback: string): string | null {
-  const e = err as { statusCode?: number; data?: { errors?: Record<string, string[]>; message?: string } }
-  if (e.statusCode === 401 || e.statusCode === 419) return null
-  return Object.values(e.data?.errors ?? {})[0]?.[0] ?? e.data?.message ?? fallback
-}
 
 async function addPhotos(event: Event, colour: string | null) {
   const input = event.target as HTMLInputElement
@@ -173,6 +240,18 @@ const derivedUsd = computed(() => {
           <PhArrowLeft :size="16" />
           All products
         </UiButton>
+        <template v-if="product && can('products.delete')">
+          <UiButton v-if="!confirmingDelete" variant="ghost" size="sm" class="text-danger" @click="confirmingDelete = true">
+            <PhTrash :size="16" />
+            Delete
+          </UiButton>
+          <template v-else>
+            <UiButton variant="secondary" size="sm" @click="confirmingDelete = false">Keep it</UiButton>
+            <UiButton variant="danger" size="sm" :loading="saving === 'delete'" @click="deleteProduct">
+              Delete {{ product.name }}
+            </UiButton>
+          </template>
+        </template>
       </template>
     </UiPageHeader>
 
@@ -184,14 +263,26 @@ const derivedUsd = computed(() => {
       <div class="admin-stack min-w-0">
         <SettingsSection title="Details">
           <div class="grid gap-4 sm:grid-cols-2">
-            <UiField :model-value="product.name" label="Name" class="sm:col-span-2" />
-            <UiField :model-value="product.slug" label="Slug" />
-            <UiField :model-value="product.categoryName" label="Category" />
-            <UiField :model-value="product.description" label="Description" type="textarea" class="sm:col-span-2" />
+            <UiField v-model="details.name" label="Name" required class="sm:col-span-2" :disabled="!can('products.write')" />
+            <UiField
+              v-model="details.slug" label="Slug" required :disabled="!can('products.write')"
+              hint="The end of its web address. Changing it breaks old links."
+            />
+            <UiSelect v-model="details.categoryId" label="Category" :options="categoryOptions" />
+            <UiField v-model="details.description" label="Description" type="textarea" class="sm:col-span-2" :disabled="!can('products.write')" />
+            <label class="flex items-center gap-2 text-ui text-fg">
+              <input v-model="details.isActive" type="checkbox" class="size-4 rounded-sm" :disabled="!can('products.write')">
+              On sale in the shop
+            </label>
+            <label class="flex items-center gap-2 text-ui text-fg">
+              <input v-model="details.isFeatured" type="checkbox" class="size-4 rounded-sm" :disabled="!can('products.write')">
+              Featured on the home page
+            </label>
           </div>
+          <p v-if="detailsError" class="mt-3 text-meta text-danger" role="alert">{{ detailsError }}</p>
           <template #footer>
             <UiPermissionGate capability="products.write" quiet>
-              <UiButton size="sm">Save</UiButton>
+              <UiButton size="sm" :loading="saving === 'details'" :disabled="!details.name.trim() || !details.slug.trim()" @click="saveDetails">Save</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>
@@ -215,9 +306,10 @@ const derivedUsd = computed(() => {
               </p>
             </div>
           </div>
+          <p v-if="priceError" class="mt-3 text-meta text-danger" role="alert">{{ priceError }}</p>
           <template #footer>
             <UiPermissionGate capability="pricing.write">
-              <UiButton size="sm">Save price</UiButton>
+              <UiButton size="sm" :loading="saving === 'price'" :disabled="!priceValid" @click="savePrice">Save price</UiButton>
             </UiPermissionGate>
           </template>
         </SettingsSection>

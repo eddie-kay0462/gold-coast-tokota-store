@@ -92,7 +92,7 @@ function applyQuery<T>(rows: T[], q: ListQuery): Paginated<T> {
 
   // Any extra key on the query is treated as an equality filter on that field.
   // `all` and empty values are ignored so a "no filter" select works.
-  const reserved = new Set(['page', 'perPage', 'search', 'sort', 'dir'])
+  const reserved = new Set(['page', 'perPage', 'per_page', 'search', 'sort', 'dir', 'upcoming'])
   for (const [key, value] of Object.entries(q)) {
     if (reserved.has(key) || value == null || value === '' || value === 'all') continue
     out = out.filter((r) => String((r as Record<string, unknown>)[key]) === String(value))

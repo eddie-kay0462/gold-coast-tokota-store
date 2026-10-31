@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhDownloadSimple, PhCopy, PhPencilSimple, PhPlus, PhTrash, PhPackage, PhX, PhInfo } from '@phosphor-icons/vue'
+import { PhPencilSimple, PhTrash, PhPackage, PhX, PhInfo } from '@phosphor-icons/vue'
 import type { FxRate, Product } from '~/types'
 import type { Column } from '~/components/ui/DataTable.vue'
 import { formatMoney, usdFrom } from '~/utils/currency'
@@ -17,11 +17,12 @@ import { formatMoney, usdFrom } from '~/utils/currency'
  */
 useHead({ title: 'Products' })
 
-const { useAdminList, useAdminItem } = useAdminApi()
+const { useAdminList, useAdminItem, adminFetch } = useAdminApi()
 const { can } = useAuth()
+const toast = useToast()
 const { formatDate, formatNumber } = useFormatters()
 
-const { items: products, pending } = useAdminList<Product>('admin-products', '/admin/products')
+const { items: products, pending, refresh } = useAdminList<Product>('admin-products', '/admin/products')
 const { item: fx } = useAdminItem<FxRate>('fx-rate', '/fx-rate')
 
 const tab = ref<'active' | 'all'>('active')
@@ -42,6 +43,51 @@ const categoryOptions = computed(() => [
   ...[...new Set(products.value.map((p) => p.categoryName))].map((c) => ({ value: c, label: c })),
 ])
 
+// --- Deactivate (bulk) and delete --------------------------------------------
+const busy = ref(false)
+
+async function deactivateSelected() {
+  const ids = [...r.selected.value]
+  busy.value = true
+  let done = 0
+  try {
+    for (const id of ids) {
+      await adminFetch(`/admin/products/${id}`, { method: 'PUT', body: { is_active: false } })
+      done++
+    }
+    toast.success(`${done} product${done === 1 ? '' : 's'} taken off sale`, 'They stay here under All products.')
+    r.clearSelection()
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error(done ? `Stopped after ${done}` : 'Not saved', message)
+  } finally {
+    busy.value = false
+    await refresh()
+  }
+}
+
+const deleting = ref<Product | null>(null)
+const deleteOpen = ref(false)
+function askDelete(p: Product) {
+  deleting.value = p
+  deleteOpen.value = true
+}
+async function confirmDelete() {
+  if (!deleting.value) return
+  busy.value = true
+  try {
+    await adminFetch(`/admin/products/${deleting.value.id}`, { method: 'DELETE' })
+    toast.success('Product deleted', deleting.value.name)
+    deleteOpen.value = false
+    await refresh()
+  } catch (err) {
+    const message = failureMessage(err, 'Not deleted. Try again in a moment.')
+    if (message) toast.error('Not deleted', message)
+  } finally {
+    busy.value = false
+  }
+}
+
 const columns: Column<Product>[] = [
   { key: 'name', label: 'Name', sortable: true },
   { key: 'categoryName', label: 'Category', sortable: true },
@@ -54,20 +100,7 @@ const columns: Column<Product>[] = [
 
 <template>
   <div class="admin-stack">
-    <UiPageHeader title="Products" description="Everything in the catalogue, across all categories.">
-      <template #actions>
-        <UiButton variant="secondary" size="sm">
-          <PhDownloadSimple :size="16" />
-          Import
-        </UiButton>
-        <UiPermissionGate capability="products.write" quiet>
-          <UiButton size="sm">
-            <PhPlus :size="16" />
-            Add product
-          </UiButton>
-        </UiPermissionGate>
-      </template>
-    </UiPageHeader>
+    <UiPageHeader title="Products" description="Everything in the catalogue, across all categories." />
 
     <!-- Tabs (Figma 10:5807) -->
     <div class="flex items-center gap-5 border-b border-border">
@@ -121,8 +154,8 @@ const columns: Column<Product>[] = [
 
     <div v-if="r.selectedCount.value" class="flex items-center gap-3 rounded-lg bg-accent-soft px-4 py-2.5">
       <p class="text-ui text-accent-text">{{ r.selectedCount.value }} selected</p>
-      <UiPermissionGate capability="products.delete" quiet>
-        <UiButton variant="ghost" size="sm">Deactivate</UiButton>
+      <UiPermissionGate capability="products.write" quiet>
+        <UiButton variant="ghost" size="sm" :loading="busy" @click="deactivateSelected">Take off sale</UiButton>
       </UiPermissionGate>
       <button type="button" class="ml-auto text-meta text-accent-text hover:underline" @click="r.clearSelection()">
         Clear
@@ -188,15 +221,13 @@ const columns: Column<Product>[] = [
       </template>
 
       <template #actions="{ row }">
-        <button type="button" class="toolbar-btn" :aria-label="`Duplicate ${row.name}`">
-          <PhCopy :size="16" />
-        </button>
         <NuxtLink :to="`/products/${row.id}`" class="toolbar-btn" :aria-label="`Edit ${row.name}`">
           <PhPencilSimple :size="16" />
         </NuxtLink>
         <button
           v-if="can('products.delete')" type="button"
           class="toolbar-btn hover:text-danger" :aria-label="`Delete ${row.name}`"
+          @click.stop="askDelete(row)"
         >
           <PhTrash :size="16" />
         </button>
@@ -210,5 +241,16 @@ const columns: Column<Product>[] = [
         />
       </template>
     </UiDataTable>
+
+    <UiModal v-model:open="deleteOpen" size="sm" title="Delete this product?" :description="deleting?.name">
+      <p class="text-ui text-fg-muted">
+        It goes from the shop and from here, with its sizes and stock. Past orders keep their
+        details. To stop selling it but keep it, take it off sale instead.
+      </p>
+      <template #footer>
+        <UiButton variant="secondary" size="sm" @click="deleteOpen = false">Keep it</UiButton>
+        <UiButton variant="danger" size="sm" :loading="busy" @click="confirmDelete">Delete</UiButton>
+      </template>
+    </UiModal>
   </div>
 </template>

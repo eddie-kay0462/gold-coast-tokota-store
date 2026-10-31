@@ -8,6 +8,7 @@ use App\Http\Resources\Admin\AdminOrderResource;
 use App\Jobs\SendOrderNotification;
 use App\Models\Order;
 use App\Services\GiftCards\GiftCardService;
+use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -103,8 +104,13 @@ class OrderController extends Controller
         // their order has been dispatched." On the transition into `shipped`
         // only — a correction that re-saves an already-shipped order should
         // not tell the customer it shipped twice.
-        // An unpaid order called off gives back any gift card balance it held.
+        // An unpaid order called off gives back the stock and any gift card
+        // balance it held, as a WhatsApp order cancelled from the inbox does,
+        // rather than keeping them out of reach until the hold lapses.
         if ($status === 'cancelled' && $wasPending) {
+            $by = $request->user('admin')?->name;
+            $note = $by ? "Cancelled in admin by {$by}" : 'Order cancelled in admin';
+            app(InventoryReservationService::class)->releaseOrder($order, $note);
             app(GiftCardService::class)->release($order, 'Order cancelled in admin');
         }
 

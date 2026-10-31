@@ -12,6 +12,7 @@ useHead({ title: 'Newsletter' })
 
 const { useAdminList } = useAdminApi()
 const { formatDate, formatRelative } = useFormatters()
+const { download, downloading } = useDownload()
 const { items: subs, pending } = useAdminList<NewsletterSubscriber>('admin-newsletter', '/admin/newsletter')
 
 const r = useResource<NewsletterSubscriber>(subs, {
@@ -41,7 +42,10 @@ const columns: Column<NewsletterSubscriber>[] = [
     >
       <template #actions>
         <UiPermissionGate capability="customers.export" quiet>
-          <UiButton variant="secondary" size="sm"><PhDownloadSimple :size="16" />Export CSV</UiButton>
+          <UiButton
+            variant="secondary" size="sm" :loading="downloading"
+            @click="download('/admin/newsletter/export', 'newsletter-subscribers.csv')"
+          ><PhDownloadSimple :size="16" />Export CSV</UiButton>
         </UiPermissionGate>
       </template>
     </UiPageHeader>

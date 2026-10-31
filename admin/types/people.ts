@@ -40,7 +40,7 @@ export interface AccessExtension {
   extendedByName: string
   previousExpiry: Timestamp | null
   newExpiry: Timestamp
-  days: number
+  days: number | null
 }
 
 export interface Customer {

@@ -13,7 +13,7 @@ class AdminWorkshopSessionResource extends JsonResource
             'id' => $this->id,
             'workshop_type_id' => $this->workshop_type_id,
             'workshop_type_name' => $this->whenLoaded('workshopType', fn () => $this->workshopType->name),
-            'scheduled_date' => $this->scheduled_date,
+            'scheduled_date' => $this->scheduled_date?->toDateString(),
             'scheduled_slot' => $this->scheduled_slot,
             'capacity' => $this->capacity,
             'location_notes' => $this->location_notes,

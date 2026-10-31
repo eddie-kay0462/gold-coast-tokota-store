@@ -11,9 +11,27 @@ import { humanise } from '~/utils/formatters'
  */
 useHead({ title: 'Bookings' })
 
-const { useAdminList } = useAdminApi()
+const { useAdminList, adminFetch } = useAdminApi()
 const { formatDate, formatRelative } = useFormatters()
-const { items: bookings, pending } = useAdminList<Booking>('admin-bookings', '/admin/bookings')
+const toast = useToast()
+const { items: bookings, pending, refresh } = useAdminList<Booking>('admin-bookings', '/admin/bookings', { per_page: 200 })
+
+// `PATCH /admin/bookings/{id}`. Confirming texts the customer; waitlisted
+// bookings are promoted from the Waitlist screen, which checks for a seat.
+const changing = ref<number | null>(null)
+async function setStatus(b: Booking, status: Booking['status'], done: string) {
+  changing.value = b.id
+  try {
+    await adminFetch(`/admin/bookings/${b.id}`, { method: 'PATCH', body: { status } })
+    toast.success(done, `${b.reference} · ${b.customerName}`)
+    await refresh()
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not changed', message)
+  } finally {
+    changing.value = null
+  }
+}
 
 const tab = ref<'workshop' | 'diy_order'>('workshop')
 const visible = computed(() => bookings.value.filter((b) => b.type === tab.value))
@@ -100,18 +118,24 @@ const counts = computed(() => ({
         <span class="block truncate text-meta text-fg-faint">{{ row.customerPhone }}</span>
       </template>
       <template #cell-workshopTypeName="{ row }">
-        <span class="text-fg-muted">{{ row.workshopTypeName }}</span>
+        <span class="block truncate text-fg">{{ row.workshopTypeName ?? '-' }}</span>
+        <span v-if="row.scheduledDate" class="block text-meta text-fg-faint">
+          {{ formatDate(row.scheduledDate) }}<template v-if="row.scheduledSlot"> · {{ row.scheduledSlot }}</template>
+        </span>
       </template>
       <template #cell-attendeeCount="{ row }">
         <span class="text-fg-strong">{{ row.attendeeCount }}</span>
       </template>
       <template #cell-diySpecs="{ row }">
         <span v-if="row.diySpecs" class="text-fg-muted">
-          Size {{ row.diySpecs.size }}<span v-if="row.diySpecs.footLengthCm"> · {{ row.diySpecs.footLengthCm }}cm</span>
+          Size {{ row.diySpecs.size ?? '-' }}<span v-if="row.diySpecs.footLengthCm"> · {{ row.diySpecs.footLengthCm }}cm</span>
           <span class="block text-meta text-fg-faint">
-            {{ row.diySpecs.colourway }} · {{ row.diySpecs.soleMaterial }} ·
-            {{ row.diySpecs.preferredFulfilment }}
+            {{ [row.diySpecs.colourway, row.diySpecs.soleMaterial, row.diySpecs.preferredFulfilment && humanise(row.diySpecs.preferredFulfilment)].filter(Boolean).join(' · ') }}
           </span>
+          <a
+            v-if="row.referenceImageUrl" :href="row.referenceImageUrl" target="_blank" rel="noopener"
+            class="block text-meta text-accent-text underline-offset-4 hover:underline"
+          >Reference photo</a>
         </span>
       </template>
       <template #cell-scheduledDate="{ row }">
@@ -125,7 +149,21 @@ const counts = computed(() => ({
       </template>
       <template #actions="{ row }">
         <UiPermissionGate capability="bookings.update_status" quiet>
-          <UiButton v-if="row.status === 'pending'" variant="ghost" size="sm">Confirm</UiButton>
+          <span class="flex justify-end gap-1">
+            <UiButton
+              v-if="row.status === 'pending'" variant="ghost" size="sm" :loading="changing === row.id"
+              @click="setStatus(row, 'confirmed', 'Booking confirmed')"
+            >Confirm</UiButton>
+            <UiButton
+              v-if="row.status === 'confirmed'" variant="ghost" size="sm" :loading="changing === row.id"
+              @click="setStatus(row, 'completed', 'Marked done')"
+            >Done</UiButton>
+            <UiButton
+              v-if="row.status === 'pending' || row.status === 'confirmed'" variant="ghost" size="sm"
+              class="text-danger" :disabled="changing === row.id"
+              @click="setStatus(row, 'cancelled', 'Booking cancelled')"
+            >Cancel</UiButton>
+          </span>
         </UiPermissionGate>
       </template>
       <template #footer>

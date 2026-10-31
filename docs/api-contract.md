@@ -131,15 +131,15 @@ Anything that writes them directly is a bug.
 | GET | `/admin/inbox/templates` · POST `/admin/inbox/templates/sync` | `inbox.view` / `inbox.templates`. The local mirror of Meta's templates: `id`, `name`, `category`, `language`, `status`, `body`, `variables` (e.g. `["{{1}}"]`), `rejection_reason`, `updated_at`. Sync pulls them from the WABA |
 | GET | `/webhooks/whatsapp` · POST `/webhooks/whatsapp` | Public. GET answers Meta's `hub.challenge` when `hub.verify_token` matches `WHATSAPP_VERIFY_TOKEN`, else 403. POST needs a valid `X-Hub-Signature-256` (app secret), else 401; always 200 once verified. Handles `messages`, `smb_message_echoes`, `history`, `smb_app_state_sync`, `message_template_status_update`; idempotent per `wamid` |
 | GET | `/admin/orders` · `/admin/orders/{reference}` | `?status=` `?q=` `?channel=web¦whatsapp` — 25/page. Each order carries `channel`, `whatsapp_conversation_id` and `created_by_admin_id` |
-| PATCH | `/admin/orders/{reference}` | Status. **`refunded` needs `orders.refund`**. `delivered` stamps `delivered_at` |
+| PATCH | `/admin/orders/{reference}` | Status. **`refunded` needs `orders.refund`**. `delivered` stamps `delivered_at`. `cancelled` on a `pending` order frees its held stock and any gift card balance (31 Oct) |
 | GET/POST | `/admin/returns` · GET `/admin/returns/{id}` | `returns.view`. `?status=` `?reason=` — 25/page |
 | PATCH | `/admin/returns/{id}` | `returns.resolve` (Admin+). `refunded` also needs `orders.refund` |
-| GET | `/admin/bookings` | `?status=` `?type=` `?workshop_session_id=` |
+| GET | `/admin/bookings` | `?status=` `?type=` `?workshop_session_id=` `?per_page=` (default 25, up to 200). Since 31 Oct each row also carries `reference` (`WS-`/`DIY-` + id, display only), `customer_name`/`customer_email`/`customer_phone` (the same as `name`/`email`/`phone`), `workshop_type_name`, `scheduled_slot`, `attendee_count`, `waitlist_position` (1 = next up; null unless waitlisted), `diy_specs` (`size`, `foot_length_cm`, `preferred_fulfilment`; null on a workshop booking) and `created_at`. `scheduled_date` is now `YYYY-MM-DD`, falling back to the session's date |
 | PATCH | `/admin/bookings/{id}` | Status, incl. waitlist promotion |
 | GET | `/admin/workshop-types` | `bookings.view`. Read-only — the published programme |
 | GET/POST | `/admin/workshop-sessions` | `?upcoming=true` `?type=` on index. `workshop_type_id` required on create |
-| PUT/DELETE | `/admin/workshop-sessions/{id}` | Capacity editing, guarded — see below |
-| GET/POST | `/admin/blog` · GET/PUT/DELETE `/admin/blog/{id}` | Includes drafts. Body sanitised server-side. Returns `AdminBlogPostResource` (1 Oct), not the storefront shape: adds `excerpt`, `cover_image_alt`, `meta_description`, `author_name` (the `author` column), `is_published`, `updated_at`; text fields are `''` rather than null. Writes accept `excerpt` (≤500), `cover_image_alt`, `meta_description` (≤200) |
+| PUT/DELETE | `/admin/workshop-sessions/{id}` | Capacity editing, guarded — see below. `scheduled_date` is `YYYY-MM-DD` (31 Oct; was a full timestamp) |
+| GET/POST | `/admin/blog` · GET/PUT/DELETE `/admin/blog/{id}` | Includes drafts. Body sanitised server-side. Returns `AdminBlogPostResource` (1 Oct), not the storefront shape: adds `excerpt`, `cover_image_alt`, `meta_description`, `author_name` (the `author` column), `is_published`, `updated_at`; text fields are `''` rather than null. Writes accept `excerpt` (≤500), `cover_image_alt`, `meta_description` (≤200). Since 31 Oct, changing `is_published` needs `content.publish` (403 otherwise), and publishing without `published_at` dates the post now |
 | GET | `/admin/pages` · `/admin/pages/{id}` | |
 | PUT | `/admin/pages/{id}` | Body sanitised. **No create or delete** — see below |
 | GET | `/admin/site-settings` | Staff may read |
@@ -151,7 +151,7 @@ Anything that writes them directly is a bug.
 | POST/PUT/DELETE | `/admin/team/{id}` | **`team.manage` — Super Admin only** |
 | GET | `/admin/shipments` | A view over orders. `?provider=` `?status=` |
 | GET | `/admin/dashboard/charts` | Year-over-year series |
-| GET/POST | `/admin/media` · DELETE `/admin/media/{id}` | Image library |
+| GET/POST | `/admin/media` · PATCH/DELETE `/admin/media/{id}` | Image library. PATCH takes `alt_text` only (31 Oct) |
 | PUT | `/admin/shipping/fallback-rates` | `pricing.write`. `{ accra_ghs, ghana_ghs, international_ghs }` in pesewas: what a zone is charged when no courier can quote (and, Ghana, an unpriced region). Returned as `fallback_rates` by `GET /admin/shipping/settings`. Defaults ₵35 / ₵35 / ₵350 (23 Oct) |
 | GET · PUT | `/admin/menus` · `/admin/menus/{menu}` | Mega menu image tiles: `content.view` to read, `content.write` to save `{ slots: [{ position, media_asset_id, caption, link }] }`; a slot with `media_asset_id: null` goes back to automatic. Links must be in-site paths |
 | GET | `/admin/settings/{commerce\|delivery\|notifications\|whatsapp}` | Read-only config reflections. `settings.view` |

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PhChatsTeardrop, PhTruck, PhX } from '@phosphor-icons/vue'
-import type { Order, Shipment } from '~/types'
+import type { Order, OrderStatus, Shipment } from '~/types'
 import { PAYMENT_METHOD_LABELS } from '~/types'
 import { formatMoney } from '~/utils/currency'
 
@@ -29,6 +29,50 @@ watch([open, () => shipment.value?.id], async ([isOpen, id]) => {
     // The panel still shows the shipment; only the timeline is missing.
   }
 }, { immediate: true })
+
+// Status changes, `PATCH /admin/orders/{reference}`. Held locally like the
+// shipment, so the badge moves at once. Only the steps a person takes are
+// offered: `paid` comes from Paystack, and once there is a shipment, shipped
+// and delivered are recorded on it (the API refuses them here). Cancelling is
+// for unpaid orders; a paid one needs a refund, which is not built yet.
+const status = ref<OrderStatus | null>(null)
+watch(() => props.order?.status, (value) => { status.value = value ?? null }, { immediate: true })
+const { can } = useAuth()
+const toast = useToast()
+const changing = ref<OrderStatus | null>(null)
+const confirmingCancel = ref(false)
+watch(open, () => { confirmingCancel.value = false })
+
+const nextStep = computed<{ status: OrderStatus; label: string } | null>(() => {
+  if (props.order?.kind === 'gift_card') return null
+  switch (status.value) {
+    case 'paid': return { status: 'processing', label: 'Start making it' }
+    case 'inventory_conflict': return { status: 'processing', label: 'Resolved: start making it' }
+    case 'processing': return shipment.value ? null : { status: 'shipped', label: 'Mark shipped' }
+    case 'shipped': return shipment.value ? null : { status: 'delivered', label: 'Mark delivered' }
+    default: return null
+  }
+})
+
+async function setStatus(next: OrderStatus) {
+  if (!props.order) return
+  changing.value = next
+  try {
+    const { data } = await adminFetch<Order>(`/admin/orders/${props.order.reference}`, {
+      method: 'PATCH',
+      body: { status: next },
+    })
+    status.value = data.status
+    toast.success(next === 'cancelled' ? 'Order cancelled' : 'Status updated', props.order.reference)
+    confirmingCancel.value = false
+    emit('changed')
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not changed', message)
+  } finally {
+    changing.value = null
+  }
+}
 
 function onShipmentUpdated(next: Shipment) {
   shipment.value = { ...next, events: next.events ?? shipment.value?.events }
@@ -68,7 +112,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <p class="mt-1 text-meta text-fg-muted">Placed {{ formatDateTime(order.placedAt) }}</p>
             </div>
             <div class="flex shrink-0 items-center gap-2">
-              <UiStatusBadge :status="order.status" show-icon />
+              <UiStatusBadge :status="status ?? order.status" show-icon />
               <button type="button" class="toolbar-btn" aria-label="Close" @click="open = false">
                 <PhX :size="18" />
               </button>
@@ -181,12 +225,19 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
               <PhChatsTeardrop :size="16" />
               WhatsApp
             </UiButton>
-            <UiPermissionGate capability="orders.refund" quiet>
-              <UiButton variant="ghost" size="sm">Refund</UiButton>
-            </UiPermissionGate>
-            <UiPermissionGate capability="orders.update_status" quiet>
-              <UiButton size="sm">Advance status</UiButton>
-            </UiPermissionGate>
+            <template v-if="can('orders.update_status')">
+              <template v-if="status === 'pending'">
+                <UiButton v-if="!confirmingCancel" variant="ghost" size="sm" @click="confirmingCancel = true">
+                  Cancel order
+                </UiButton>
+                <UiButton v-else variant="danger" size="sm" :loading="changing === 'cancelled'" @click="setStatus('cancelled')">
+                  Cancel it and free the stock
+                </UiButton>
+              </template>
+              <UiButton v-if="nextStep" size="sm" :loading="changing === nextStep.status" @click="setStatus(nextStep.status)">
+                {{ nextStep.label }}
+              </UiButton>
+            </template>
           </footer>
         </div>
       </div>

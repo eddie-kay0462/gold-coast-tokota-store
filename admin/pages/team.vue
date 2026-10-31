@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhClock, PhPlus, PhWarningCircle } from '@phosphor-icons/vue'
+import { PhClock, PhPencilSimple, PhPlus, PhWarningCircle } from '@phosphor-icons/vue'
 import type { AdminUser } from '~/types'
 import { ADMIN_ROLE_LABELS } from '~/types'
 import { ROLE_CAPABILITIES, ROLE_ORDER } from '~/utils/permissions'
@@ -20,7 +20,7 @@ const { useAdminList } = useAdminApi()
 const { formatDate, formatRelative, daysUntil } = useFormatters()
 const { can } = useAuth()
 
-const { items: team, pending } = useAdminList<AdminUser>('admin-team', '/admin/team')
+const { items: team, pending, refresh } = useAdminList<AdminUser>('admin-team', '/admin/team')
 
 const byRole = computed(() =>
   ROLE_ORDER.map((role) => ({
@@ -48,6 +48,10 @@ const accessState = (m: AdminUser) => {
 const target = ref<AdminUser | null>(null)
 const extendOpen = ref(false)
 function extend(m: AdminUser) { target.value = m; extendOpen.value = true }
+
+const editing = ref<AdminUser | null>(null)
+const memberOpen = ref(false)
+function editMember(m: AdminUser | null) { editing.value = m; memberOpen.value = true }
 </script>
 
 <template>
@@ -55,7 +59,7 @@ function extend(m: AdminUser) { target.value = m; extendOpen.value = true }
     <UiPageHeader title="Team" description="Who has access to this dashboard, and at what level.">
       <template #actions>
         <UiPermissionGate capability="team.manage" quiet>
-          <UiButton size="sm"><PhPlus :size="16" />Add member</UiButton>
+          <UiButton size="sm" @click="editMember(null)"><PhPlus :size="16" />Add member</UiButton>
         </UiPermissionGate>
       </template>
     </UiPageHeader>
@@ -112,6 +116,12 @@ function extend(m: AdminUser) { target.value = m; extendOpen.value = true }
               <p class="truncate text-meta text-fg-muted">{{ m.jobTitle }}</p>
               <p class="truncate text-meta text-fg-faint">{{ m.email }}</p>
             </div>
+            <button
+              v-if="can('team.manage')" type="button" class="toolbar-btn shrink-0"
+              :aria-label="`Edit ${m.name}`" @click="editMember(m)"
+            >
+              <PhPencilSimple :size="16" />
+            </button>
           </div>
 
           <dl class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border pt-3 text-meta">
@@ -129,7 +139,7 @@ function extend(m: AdminUser) { target.value = m; extendOpen.value = true }
               extended {{ m.accessExtensions.length }}×
             </span>
             <UiButton
-              v-if="can('team.extend_access')"
+              v-if="can('team.manage')"
               variant="ghost" size="sm" class="ml-auto"
               @click="extend(m)"
             >Extend</UiButton>
@@ -141,6 +151,7 @@ function extend(m: AdminUser) { target.value = m; extendOpen.value = true }
       </ul>
     </section>
 
-    <PeopleExtendAccessModal v-model:open="extendOpen" :member="target" />
+    <PeopleExtendAccessModal v-model:open="extendOpen" :member="target" @saved="refresh()" />
+    <PeopleMemberModal v-model:open="memberOpen" :member="editing" @saved="refresh()" />
   </div>
 </template>
