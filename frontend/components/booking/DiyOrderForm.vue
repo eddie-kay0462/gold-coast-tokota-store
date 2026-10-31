@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useSiteSettingsStore } from '~/stores/siteSettings'
 import { whatsappMessage } from '~/utils/whatsapp'
+import { nationalNumberError, toE164 } from '~/utils/phone'
 
 const api = useApi()
 const siteSettings = useSiteSettingsStore()
@@ -9,10 +10,15 @@ const form = reactive({
   size: '',
   footLength: '',
   fulfilment: 'pickup' as 'pickup' | 'delivery',
-  name: '',
+  // First and last name, and a phone in two parts, as checkout asks for them.
+  firstName: '',
+  lastName: '',
   email: '',
+  phoneCountry: 'GH',
   phone: '',
 })
+const phoneError = ref<string | undefined>()
+const fullName = computed(() => `${form.firstName} ${form.lastName}`.trim())
 
 const submitted = ref(false)
 const pendingSubmit = ref(false)
@@ -72,13 +78,15 @@ function removePhoto() {
 }
 
 /** The fallback when an upload can't be done. */
-const referencePhotoMessage = computed(() => whatsappMessage.diyReference(form.name))
+const referencePhotoMessage = computed(() => whatsappMessage.diyReference(fullName.value))
 
 /** The way out when the submit fails: same request, different channel. */
 const whatsappFallbackMessage = computed(() => whatsappMessage.diyOrder())
 
 async function onSubmit() {
   if (pendingSubmit.value || uploading.value) return
+  phoneError.value = nationalNumberError(form.phoneCountry, form.phone)
+  if (phoneError.value) return
   pendingSubmit.value = true
   error.value = ''
 
@@ -94,9 +102,12 @@ async function onSubmit() {
           size: form.size,
           foot_length: Number(form.footLength),
           fulfilment: form.fulfilment,
-          name: form.name,
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          // Also whole, for an API from before the two parts.
+          name: fullName.value,
           email: form.email,
-          phone: form.phone,
+          phone: toE164(form.phoneCountry, form.phone),
           reference_image: photo.value?.path ?? null,
         },
       },
@@ -213,11 +224,17 @@ async function onSubmit() {
         </div>
       </fieldset>
 
-      <FormsFormField v-model="form.name" label="Full name" name="name" required autocomplete="name" />
       <div class="grid gap-4 sm:grid-cols-2">
-        <FormsFormField v-model="form.email" label="Email" name="email" type="email" required autocomplete="email" />
-        <FormsFormField v-model="form.phone" label="Phone (WhatsApp)" name="phone" type="tel" required autocomplete="tel" />
+        <FormsFormField v-model="form.firstName" label="First name" name="first-name" required autocomplete="given-name" />
+        <FormsFormField v-model="form.lastName" label="Last name" name="last-name" required autocomplete="family-name" />
       </div>
+      <FormsFormField v-model="form.email" label="Email" name="email" type="email" required autocomplete="email" />
+      <FormsPhoneField
+        v-model="form.phone"
+        v-model:country="form.phoneCountry"
+        label="Phone (WhatsApp)" name="phone" required
+        :error="phoneError"
+      />
 
       <div
         v-if="siteSettings.diyTurnaroundEstimate"

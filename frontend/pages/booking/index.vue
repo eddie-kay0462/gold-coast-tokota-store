@@ -8,16 +8,34 @@ useSeoMeta({
 })
 
 /**
- * Three of the six experiences in the brand guidelines are "by appointment";
- * they have no fixed day or slot, so they will never appear as a
- * `WorkshopSession` and cannot be booked from the list above. WhatsApp is their
- * only route, and without this they had no route at all.
+ * The experiences that run "by appointment" have no fixed day or slot, so
+ * they never appear as a `WorkshopSession` and can't be booked from the list
+ * above. WhatsApp is their route. They come from `GET /workshop-types`, so one
+ * the client adds in the admin shows here too; the three in the brand
+ * guidelines are the fallback if the API can't be reached.
  */
-const APPOINTMENT_EXPERIENCES = [
+type WorkshopTypeRow = { name: string, duration_label: string | null, capacity: number, requires_appointment: boolean }
+const FALLBACK_APPOINTMENT_EXPERIENCES = [
   { name: 'Corporate Team Building Workshop', detail: 'Half or full day · up to 30 people' },
   { name: 'Cultural Craft Experience', detail: '2 hours · up to 15 people' },
   { name: 'International Visitor Experience', detail: '2–4 hours · up to 20 people' },
 ]
+const apiFetch = useApiFetch()
+const { data: workshopTypes } = await useAsyncData('workshop-types', () =>
+  apiFetch<{ data: WorkshopTypeRow[] }>('/workshop-types')
+    .then((res) => res.data)
+    .catch(() => null),
+)
+const appointmentExperiences = computed(() =>
+  workshopTypes.value
+    ? workshopTypes.value
+      .filter((t) => t.requires_appointment)
+      .map((t) => ({
+        name: t.name,
+        detail: [t.duration_label, `up to ${t.capacity} people`].filter(Boolean).join(' · '),
+      }))
+    : FALLBACK_APPOINTMENT_EXPERIENCES,
+)
 </script>
 
 <template>
@@ -79,7 +97,7 @@ const APPOINTMENT_EXPERIENCES = [
 
       <ul class="mt-8 grid gap-x-6 gap-y-8 md:grid-cols-3">
         <li
-          v-for="experience in APPOINTMENT_EXPERIENCES"
+          v-for="experience in appointmentExperiences"
           :key="experience.name"
           class="flex flex-col items-start gap-3 border-t border-line pt-5"
         >

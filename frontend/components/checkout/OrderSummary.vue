@@ -99,12 +99,26 @@ async function apply() {
     <template v-if="!cart.isEmpty">
       <!-- Gift card or discount code -->
       <div class="flex flex-col gap-2 border-t border-line pt-6">
-        <div v-if="giftCard.applied.value" class="flex w-full items-center justify-between gap-3 text-caption text-graphite">
-          <span>Gift card ending {{ giftCard.applied.value.lastFour }} applied</span>
-          <button type="button" class="-my-3 min-h-[44px] py-3 text-caption text-muted underline hover:text-graphite" @click="giftCard.clear()">
-            Remove
-          </button>
-        </div>
+        <template v-if="giftCard.applied.value">
+          <div class="flex w-full items-center justify-between gap-3 text-caption text-graphite">
+            <span>Gift card ending {{ giftCard.applied.value.lastFour }} applied</span>
+            <button type="button" class="-my-3 min-h-[44px] py-3 text-caption text-muted underline hover:text-graphite" @click="giftCard.clear()">
+              Remove
+            </button>
+          </div>
+          <!-- The giver's note, as they wrote it when they bought the card. -->
+          <figure
+            v-if="giftCard.applied.value.message || giftCard.applied.value.senderName"
+            class="w-full border-l-2 border-line pl-3"
+          >
+            <blockquote v-if="giftCard.applied.value.message" class="whitespace-pre-line text-caption italic text-graphite">
+              “{{ giftCard.applied.value.message }}”
+            </blockquote>
+            <figcaption v-if="giftCard.applied.value.senderName" class="mt-1 text-caption text-muted">
+              From {{ giftCard.applied.value.senderName }}
+            </figcaption>
+          </figure>
+        </template>
         <form v-else class="flex w-full min-w-0 items-stretch gap-2" @submit.prevent="apply">
           <label class="sr-only" for="discount-code">Gift card or discount code</label>
           <input

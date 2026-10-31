@@ -48,6 +48,7 @@ const form = reactive({
   recipientEmail: '',
   senderName: '',
   message: '',
+  codeWord: '',
   firstName: '',
   lastName: '',
   email: '',
@@ -66,6 +67,9 @@ function validate(): boolean {
   errors.recipientEmail = !form.recipientEmail.trim()
     ? 'We email the card to them, so we need their address.'
     : isValidEmail(form.recipientEmail) ? undefined : 'That doesn’t look like a valid email address.'
+  errors.codeWord = !form.codeWord.trim() || /^[A-Za-z0-9]{2,10}$/.test(form.codeWord.trim())
+    ? undefined
+    : 'Use 2 to 10 letters or numbers, with no spaces.'
   errors.firstName = form.firstName.trim() ? undefined : 'Enter your first name.'
   errors.email = !form.email.trim()
     ? 'Enter your email for the receipt.'
@@ -78,6 +82,7 @@ const FIELD_MAP: Record<string, string> = {
   recipient_name: 'recipientName',
   recipient_email: 'recipientEmail',
   sender_name: 'senderName',
+  code_word: 'codeWord',
   'purchaser.first_name': 'firstName',
   'purchaser.email': 'email',
   'purchaser.phone': 'phone',
@@ -104,6 +109,7 @@ async function buy() {
         recipient_email: form.recipientEmail,
         sender_name: form.senderName || null,
         message: form.message || null,
+        code_word: form.codeWord.trim() || null,
       },
     })
     if (!res.payment.authorization_url) throw { statusCode: 500 }
@@ -133,14 +139,14 @@ async function buy() {
 
 const code = ref('')
 const checking = ref(false)
-const balance = ref<{ text: string, ok: boolean } | null>(null)
+const balance = ref<{ text: string, ok: boolean, message?: string | null, from?: string | null } | null>(null)
 
 async function checkBalance() {
   if (!code.value.trim() || checking.value) return
   balance.value = null
   checking.value = true
   try {
-    const res = await api<{ data: { balance: number, expires_at: string | null } }>('/gift-cards/balance', {
+    const res = await api<{ data: { balance: number, expires_at: string | null, sender_name?: string | null, message?: string | null } }>('/gift-cards/balance', {
       method: 'POST',
       body: { code: code.value },
     })
@@ -148,7 +154,12 @@ async function checkBalance() {
     const until = res.data.expires_at
       ? `, to spend by ${new Date(res.data.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
       : ''
-    balance.value = { text: `${left} left${until}. Enter the code at checkout to use it.`, ok: true }
+    balance.value = {
+      text: `${left} left${until}. Enter the code at checkout to use it.`,
+      ok: true,
+      message: res.data.message ?? null,
+      from: res.data.sender_name ?? null,
+    }
   } catch (err: unknown) {
     const e = err as { statusCode?: number, data?: { message?: string } }
     balance.value = {
@@ -227,7 +238,14 @@ useSeoMeta({
               hint="We email the card here once you’ve paid." :error="errors.recipientEmail"
             />
             <FormsFormField v-model="form.senderName" label="From" name="sender-name" hint="Optional. How the card is signed." :error="errors.senderName" />
-            <FormsFormField v-model="form.message" label="Message" name="message" type="textarea" :rows="3" hint="Optional." />
+            <FormsFormField v-model="form.message" label="Message" name="message" type="textarea" :rows="3" hint="Optional. They’ll see it when they use the card." />
+            <FormsFormField
+              v-model="form.codeWord" label="A word for the code" name="code-word" autocomplete="off"
+              :hint="form.codeWord.trim()
+                ? `Their code will read GCT-${form.codeWord.trim().toUpperCase()}-XXXX. The four random characters keep anyone else from guessing it.`
+                : 'Optional. A name or word, 2 to 10 letters or numbers, e.g. MAMA. Leave blank for a random code.'"
+              :error="errors.codeWord"
+            />
           </fieldset>
 
           <fieldset class="flex w-full max-w-[520px] flex-col items-start gap-5">
@@ -276,7 +294,7 @@ useSeoMeta({
               v-model="code"
               name="balance-code"
               autocomplete="off"
-              placeholder="GCT-XXXX-XXXX-XXXX"
+              placeholder="GCT-XXXX-XXXX"
               class="min-h-[44px] w-full min-w-0 flex-1 border border-line bg-white px-3 text-body text-graphite placeholder:text-muted"
             >
             <button
@@ -290,6 +308,10 @@ useSeoMeta({
           <p v-if="balance" class="w-full text-caption" :class="balance.ok ? 'text-graphite' : 'text-sale'" role="status">
             {{ balance.text }}
           </p>
+          <figure v-if="balance?.ok && (balance.message || balance.from)" class="w-full border-l-2 border-line pl-3">
+            <blockquote v-if="balance.message" class="whitespace-pre-line text-caption italic text-graphite">“{{ balance.message }}”</blockquote>
+            <figcaption v-if="balance.from" class="mt-1 text-caption text-muted">From {{ balance.from }}</figcaption>
+          </figure>
         </div>
       </div>
 

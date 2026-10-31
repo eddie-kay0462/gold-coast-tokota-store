@@ -3,6 +3,7 @@ import { PhMinus as Minus, PhPlus as Plus } from '@phosphor-icons/vue'
 import type { WorkshopSession } from './SessionPicker.vue'
 import { useBookingStore } from '~/stores/bookings'
 import { whatsappMessage } from '~/utils/whatsapp'
+import { nationalNumberError, toE164 } from '~/utils/phone'
 
 const apiFetch = useApiFetch()
 const api = useApi()
@@ -36,7 +37,9 @@ const isWaitlisted = computed(
   () => !!selectedSession.value && selectedSession.value.remaining_capacity <= 0,
 )
 
-const form = reactive({ attendeeCount: 1, name: '', email: '', phone: '' })
+// First and last name, and a phone in two parts, as checkout asks for them.
+const form = reactive({ attendeeCount: 1, firstName: '', lastName: '', email: '', phoneCountry: 'GH', phone: '' })
+const phoneError = ref<string | undefined>()
 
 /**
  * Attendees: at least 1, and no more than the seats left in the chosen
@@ -82,6 +85,8 @@ const canSubmit = computed(() => !!selectedSessionId.value && !pendingSubmit.val
 
 async function onSubmit() {
   if (!canSubmit.value) return
+  phoneError.value = nationalNumberError(form.phoneCountry, form.phone)
+  if (phoneError.value) return
   pendingSubmit.value = true
   error.value = ''
 
@@ -96,9 +101,12 @@ async function onSubmit() {
         workshop_session_id: Number(selectedSessionId.value),
         details: {
           attendee_count: form.attendeeCount,
-          name: form.name,
+          first_name: form.firstName.trim(),
+          last_name: form.lastName.trim(),
+          // Also whole, for an API from before the two parts.
+          name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
           email: form.email,
-          phone: form.phone,
+          phone: toE164(form.phoneCountry, form.phone),
         },
       },
     })
@@ -181,15 +189,16 @@ async function onSubmit() {
             <template v-else>At least 1.</template>
           </p>
         </div>
-        <FormsFormField v-model="form.name" label="Full name" name="name" required autocomplete="name" />
+        <div class="flex w-full flex-col gap-4 sm:flex-row">
+          <FormsFormField v-model="form.firstName" label="First name" name="first-name" required autocomplete="given-name" />
+          <FormsFormField v-model="form.lastName" label="Last name" name="last-name" required autocomplete="family-name" />
+        </div>
         <FormsFormField v-model="form.email" label="Email address" name="email" type="email" required autocomplete="email" />
-        <FormsFormField
+        <FormsPhoneField
           v-model="form.phone"
-          label="Phone (WhatsApp)"
-          name="phone"
-          type="tel"
-          required
-          autocomplete="tel"
+          v-model:country="form.phoneCountry"
+          label="Phone (WhatsApp)" name="phone" required
+          :error="phoneError"
         />
 
         <CommonInlineNotice v-if="error" variant="warning">
