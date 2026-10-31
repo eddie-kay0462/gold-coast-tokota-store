@@ -18,7 +18,7 @@ const { useAdminList } = useAdminApi()
 const { formatRelative, formatNumber } = useFormatters()
 // One row per size, the whole run in one request, paged client-side below.
 const { items: inventory, pending, refresh } = useAdminList<InventoryItem>(
-  'admin-inventory', '/admin/inventory', { per_page: 500 },
+  'admin-inventory', '/admin/inventory', { per_page: 500 }, { allPages: true },
 )
 
 const adjusting = ref<InventoryItem | null>(null)
@@ -29,18 +29,34 @@ function startAdjust(item: InventoryItem) {
 }
 
 const lowOnly = ref(false)
+// In catalogue order (product, colour, size) by default, so a row stays put
+// when its count changes. Sorted scarcest-first, as this used to be, a row
+// that was restocked jumped to a later page and looked as if it had vanished.
+// "Low stock only" or the Available column still put the scarcest first.
 const visible = computed(() =>
-  lowOnly.value
+  (lowOnly.value
     ? inventory.value.filter((i) => i.quantityAvailable <= i.lowStockThreshold)
-    : inventory.value,
+    : inventory.value
+  ).slice().sort(byCatalogueOrder),
 )
 
 const r = useResource<InventoryItem>(visible, {
   searchFields: ['productName', 'sku'],
-  defaultSort: 'quantityAvailable',
+  defaultSort: 'productName',
   defaultDir: 'asc',
   perPage: 15,
 })
+
+// The row just adjusted, picked out for a few seconds after the save.
+const justSaved = ref<number | null>(null)
+let clearSaved: ReturnType<typeof setTimeout> | undefined
+async function onSaved(item: InventoryItem) {
+  await refresh()
+  justSaved.value = item.id
+  clearTimeout(clearSaved)
+  clearSaved = setTimeout(() => { justSaved.value = null }, 4000)
+}
+onBeforeUnmount(() => clearTimeout(clearSaved))
 
 const lowCount = computed(
   () => inventory.value.filter((i) => i.quantityAvailable <= i.lowStockThreshold).length,
@@ -54,6 +70,14 @@ const columns: Column<InventoryItem>[] = [
   { key: 'lowStockThreshold', label: 'Threshold', align: 'right', hideOnCard: true },
   { key: 'updatedAt', label: 'Updated', sortable: true, hideOnCard: true },
 ]
+
+const sizeOrder = (s = '') => (Number.isFinite(Number(s)) ? Number(s).toString().padStart(6, '0') : s)
+function byCatalogueOrder(a: InventoryItem, b: InventoryItem) {
+  return a.productName.localeCompare(b.productName)
+    || (a.variantAttributes.colour ?? '').localeCompare(b.variantAttributes.colour ?? '')
+    || sizeOrder(a.variantAttributes.size).localeCompare(sizeOrder(b.variantAttributes.size))
+    || a.id - b.id
+}
 
 const variantLabel = (v: Record<string, string>) =>
   Object.entries(v).map(([k, val]) => `${k} ${val}`).join(' · ')
@@ -87,6 +111,7 @@ const variantLabel = (v: Record<string, string>) =>
     <UiDataTable
       :columns="columns" :rows="r.paged.value" :loading="pending"
       :sort="r.sort.value" :dir="r.dir.value"
+      :row-class="(row) => row.id === justSaved && 'bg-success-soft transition-colors duration-700'"
       empty-title="No variants match"
       empty-description="Everything is above its threshold, or the search returned nothing."
       @sort="r.toggleSort"
@@ -130,6 +155,6 @@ const variantLabel = (v: Record<string, string>) =>
       </template>
     </UiDataTable>
 
-    <InventoryAdjustModal v-model:open="adjustOpen" :item="adjusting" @saved="refresh()" />
+    <InventoryAdjustModal v-model:open="adjustOpen" :item="adjusting" @saved="onSaved" />
   </div>
 </template>

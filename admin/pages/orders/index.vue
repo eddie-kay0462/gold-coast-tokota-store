@@ -15,7 +15,9 @@ useHead({ title: 'Orders' })
 
 const { useAdminList } = useAdminApi()
 const { formatDateTime } = useFormatters()
-const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders')
+const { items: orders, pending, refresh } = useAdminList<Order>('admin-orders', '/admin/orders', { per_page: 500 }, { allPages: true })
+const { can } = useAuth()
+const { download, downloading } = useDownload()
 
 const r = useResource<Order>(orders, {
   searchFields: ['reference', 'customerName', 'customerEmail'],
@@ -60,7 +62,10 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
           <PhKanban :size="16" />
           Fulfilment board
         </UiButton>
-        <UiButton variant="secondary" size="sm">
+        <UiButton
+          v-if="can('orders.view') && can('customers.export')" variant="secondary" size="sm"
+          :loading="downloading" @click="download('/admin/orders/export', 'orders.csv')"
+        >
           <PhDownloadSimple :size="16" />
           Export
         </UiButton>
@@ -91,7 +96,7 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
 
     <UiDataTable
       :columns="columns" :rows="r.paged.value" :loading="pending"
-      :sort="r.sort.value" :dir="r.dir.value"
+      :sort="r.sort.value" :dir="r.dir.value" :row-click="openOrder"
       empty-title="No orders match"
       empty-description="Try clearing the status filter or searching for a different customer."
       @sort="r.toggleSort"
@@ -117,6 +122,7 @@ function openOrder(o: Order) { active.value = o; drawerOpen.value = true }
       </template>
       <template #cell-status="{ row }">
         <UiStatusBadge :status="row.status" />
+        <UiBadge v-if="row.refundedAmount?.amount && row.status !== 'refunded'" tone="warning" size="sm" class="ml-1.5">Partly refunded</UiBadge>
       </template>
       <template #actions="{ row }">
         <UiButton variant="ghost" size="sm" @click="openOrder(row)">View</UiButton>

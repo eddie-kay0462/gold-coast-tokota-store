@@ -108,10 +108,14 @@ function sessionsFor(type: WorkshopType, weekday: number | null, count: number, 
       id: startId + out.length,
       workshopTypeId: type.id,
       workshopTypeName: type.name,
+      title: null,
+      description: null,
+      eventName: type.name,
       scheduledDate: ymd(date.toISOString()),
       scheduledSlot: type.slotLabel.split(' / ')[0]!,
       capacity: type.capacity,
-      confirmedCount: confirmed,
+      occupiedSeats: confirmed,
+      remainingCapacity: Math.max(0, type.capacity - confirmed),
       // A session at capacity carries a waitlist rather than blocking signup
       // (README Feature 7).
       waitlistCount: confirmed >= type.capacity ? int(1, 6) : 0,
@@ -151,7 +155,7 @@ const workshopBookings: Booking[] = workshopSessions
   .slice(0, 34)
   .map((session) => {
     const c = pick(customers)
-    const isFull = session.confirmedCount >= session.capacity
+    const isFull = session.occupiedSeats >= session.capacity
     const status: BookingStatus = isFull
       ? 'waitlisted'
       : pick(['pending', 'confirmed', 'confirmed', 'completed', 'cancelled'] as const)
@@ -165,10 +169,13 @@ const workshopBookings: Booking[] = workshopSessions
       customerPhone: c.phone ?? `+2332${int(10, 59)}${int(100000, 999999)}`,
       workshopSessionId: session.id,
       workshopTypeName: session.workshopTypeName,
+      eventName: session.eventName,
+      scheduledSlot: session.scheduledSlot,
       attendeeCount: int(1, 4),
-      scheduledDate: null,
       diySpecs: null,
       waitlistPosition: status === 'waitlisted' ? int(1, 6) : null,
+      // The session's date, as the API sends it for a workshop booking.
+      scheduledDate: session.scheduledDate,
       whatsappThreadId: null,
       notes: '',
       createdAt: daysAgo(int(0, 30)),

@@ -24,6 +24,9 @@ class AdminUserResource extends JsonResource
             'has_lapsed' => $this->accessHasLapsed(),
             'access_extensions' => $this->access_extensions ?? [],
             'last_active_at' => $this->last_active_at,
+            // Invited and hasn't chosen a password yet, so can't sign in.
+            'invite_pending' => $this->invited_at !== null,
+            'invited_at' => $this->invited_at,
             'created_at' => $this->created_at,
         ];
     }

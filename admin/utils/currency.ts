@@ -20,8 +20,13 @@ export function usdFromOrder(ghs: Money, lockedRate: number | null): Money | nul
 
 const locales: Record<Currency, string> = { GHS: 'en-GH', USD: 'en-US' }
 
-/** Money is integer minor units everywhere; divide only at the display edge. */
-export function formatMoney(value: Money): string {
+/**
+ * Money is integer minor units everywhere; divide only at the display edge.
+ * A missing value reads "-" rather than throwing: one field the API didn't send
+ * shouldn't blank the whole screen.
+ */
+export function formatMoney(value: Money | null | undefined): string {
+  if (!value || typeof value.amount !== 'number') return '-'
   return new Intl.NumberFormat(locales[value.currency], {
     style: 'currency',
     currency: value.currency,
@@ -29,7 +34,8 @@ export function formatMoney(value: Money): string {
 }
 
 /** Compact form for metric tiles: GH₵1.2M rather than GH₵1,240,000.00 */
-export function formatMoneyCompact(value: Money): string {
+export function formatMoneyCompact(value: Money | null | undefined): string {
+  if (!value || typeof value.amount !== 'number') return '-'
   return new Intl.NumberFormat(locales[value.currency], {
     style: 'currency',
     currency: value.currency,

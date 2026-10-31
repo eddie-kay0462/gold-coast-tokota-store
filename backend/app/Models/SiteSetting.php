@@ -30,6 +30,7 @@ class SiteSetting extends Model
         'gift_card_amounts',
         'gift_card_expiry_months',
         'gift_card_terms',
+        'notification_channels',
     ];
 
     protected $casts = [
@@ -41,6 +42,7 @@ class SiteSetting extends Model
         'gift_cards_enabled' => 'boolean',
         'gift_card_amounts' => 'array',
         'gift_card_expiry_months' => 'integer',
+        'notification_channels' => 'array',
     ];
 
     /** Single-row resource — creates the row on first access if missing. */

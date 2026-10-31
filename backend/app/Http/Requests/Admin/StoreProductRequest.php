@@ -35,6 +35,8 @@ class StoreProductRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
+            // The shop's type filter (slippers, ahenema, closed-toe…).
+            'product_type' => ['nullable', 'string', 'max:40', 'regex:/^[a-z0-9-]+$/'],
             'base_price_ghs' => ['required', 'integer', 'min:0'],
             'sku' => ['required', 'string', 'max:255', 'unique:products,sku'],
             // Photos are added once the product exists, through
@@ -55,6 +57,8 @@ class StoreProductRequest extends FormRequest
             'hs_code' => ['nullable', 'string', 'regex:/^\d{4}(\.?\d{2}){0,3}$/'],
             'origin_country' => ['sometimes', 'string', 'size:2', 'alpha'],
             'customs_description' => ['nullable', 'string', 'max:255'],
+            // Optional: given, the stock grid is made from them (ProductVariants).
+            ...UpdateProductVariantsRequest::variantRules(false),
         ];
     }
 }

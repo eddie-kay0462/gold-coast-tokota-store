@@ -45,6 +45,7 @@ class IssueGiftCardForPaidOrder implements ShouldQueue
                         'recipient_email' => $line['recipient_email'] ?? null,
                         'sender_name' => $line['sender_name'] ?? null,
                         'message' => $line['message'] ?? null,
+                        'code_word' => $line['code_word'] ?? null,
                     ],
                     purchaseOrder: $order,
                 );

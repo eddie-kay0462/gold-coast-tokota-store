@@ -350,6 +350,57 @@ class GiftCardTest extends TestCase
         $this->postJson('/api/v1/gift-cards/balance', ['code' => 'GCT-XXXX-XXXX-XXXX'])->assertStatus(422);
     }
 
+    /** A chosen word goes on the card with four random characters after it. */
+    public function test_a_buyer_can_choose_a_word_for_the_code(): void
+    {
+        $this->onSale();
+        Mail::fake();
+        $this->postJson('/api/v1/gift-cards/purchase', $this->purchasePayload(['code_word' => ' mama ']))->assertCreated();
+
+        $this->payByWebhook(Order::firstOrFail());
+
+        $card = GiftCard::firstOrFail();
+        $this->assertMatchesRegularExpression('/^GCT-MAMA-[A-HJ-NP-Z2-9]{4}$/', $card->code);
+        // Typed any way round, with or without the dashes.
+        $loose = strtolower(str_replace('-', ' ', $card->code));
+        $this->postJson('/api/v1/gift-cards/balance', ['code' => $loose])->assertOk()->assertJsonPath('data.balance', 50_000);
+        $spent = $this->checkout($this->stocked(25_000), $loose)->assertCreated()->json('data.gift_card_amount');
+        $this->assertGreaterThan(0, $spent);
+        $this->assertSame(50_000 - $spent, $card->fresh()->balance);
+    }
+
+    public function test_a_code_word_is_letters_and_numbers_only(): void
+    {
+        $this->onSale();
+
+        foreach (['A', 'TOOLONGWORDX', 'MA MA', 'MAMA!'] as $word) {
+            $this->postJson('/api/v1/gift-cards/purchase', $this->purchasePayload(['code_word' => $word]))
+                ->assertUnprocessable()->assertJsonValidationErrors('code_word');
+        }
+        $this->assertSame(0, Order::count());
+    }
+
+    public function test_an_admin_can_choose_the_word_for_store_credit(): void
+    {
+        $this->actingAs(AdminUser::factory()->create(['role' => 'admin']), 'admin')
+            ->postJson('/api/v1/admin/gift-cards', ['amount' => 30_000, 'recipient_name' => 'Kofi', 'note' => 'Sold out', 'code_word' => 'kofi24'])
+            ->assertCreated();
+
+        $this->assertStringStartsWith('GCT-KOFI24-', GiftCard::firstOrFail()->code);
+    }
+
+    /** Checking or applying a card shows who it's from and what they wrote. */
+    public function test_the_balance_check_carries_the_givers_message(): void
+    {
+        $card = $this->card(10_000, ['sender_name' => 'Ama', 'message' => 'Happy birthday!']);
+
+        $this->postJson('/api/v1/gift-cards/balance', ['code' => $card->code])
+            ->assertOk()
+            ->assertJsonPath('data.sender_name', 'Ama')
+            ->assertJsonPath('data.message', 'Happy birthday!')
+            ->assertJsonMissingPath('data.recipient_email');
+    }
+
     // --- admin ----------------------------------------------------------
 
     public function test_staff_can_look_cards_up_but_only_an_admin_can_issue_store_credit(): void

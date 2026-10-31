@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\AdminUser;
 use App\Models\Customer;
+use App\Jobs\SendPasswordReset;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
@@ -167,5 +170,60 @@ class AdminAuthTest extends TestCase
 
         $response->assertNoContent();
         $this->assertGuest('admin');
+    }
+
+    // --- own account and password reset (31 Oct) -----------------------------
+
+    public function test_you_can_change_your_own_name_without_a_password(): void
+    {
+        $admin = AdminUser::factory()->create(['name' => 'Old']);
+
+        $this->actingAs($admin, 'admin')->putJson('/api/v1/admin/me', ['name' => 'New', 'job_title' => 'Production Lead'])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'New');
+    }
+
+    public function test_changing_your_password_needs_the_current_one(): void
+    {
+        $admin = AdminUser::factory()->create(['password' => 'old-password-123']);
+
+        $this->actingAs($admin, 'admin')->putJson('/api/v1/admin/me', [
+            'password' => 'new-password-456', 'password_confirmation' => 'new-password-456',
+        ])->assertStatus(422)->assertJsonValidationErrors('current_password');
+
+        $this->actingAs($admin, 'admin')->putJson('/api/v1/admin/me', [
+            'password' => 'new-password-456', 'password_confirmation' => 'new-password-456',
+            'current_password' => 'old-password-123',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('new-password-456', $admin->fresh()->password));
+    }
+
+    public function test_your_own_role_cannot_be_changed_from_your_account(): void
+    {
+        $admin = AdminUser::factory()->create(['role' => 'staff']);
+
+        $this->actingAs($admin, 'admin')->putJson('/api/v1/admin/me', ['role' => 'super_admin'])->assertOk();
+
+        $this->assertSame('staff', $admin->fresh()->role);
+    }
+
+    public function test_forgot_password_sends_an_admin_link_and_a_reset_works(): void
+    {
+        Bus::fake();
+        $admin = AdminUser::factory()->create(['email' => 'mary@example.com']);
+
+        $this->postJson('/api/v1/admin/forgot-password', ['email' => 'mary@example.com'])->assertOk();
+        $this->postJson('/api/v1/admin/forgot-password', ['email' => 'nobody@example.com'])->assertOk();
+        Bus::assertDispatchedTimes(SendPasswordReset::class, 1);
+        Bus::assertDispatched(SendPasswordReset::class, fn ($job) => str_contains($job->message->data['url'], config('app.admin_url').'/reset-password'));
+
+        $token = Password::broker('admins')->createToken($admin);
+        $this->postJson('/api/v1/admin/reset-password', [
+            'email' => 'mary@example.com', 'token' => $token,
+            'password' => 'brand-new-pass-1', 'password_confirmation' => 'brand-new-pass-1',
+        ])->assertOk();
+
+        $this->assertTrue(Hash::check('brand-new-pass-1', $admin->fresh()->password));
     }
 }

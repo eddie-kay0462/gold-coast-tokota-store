@@ -35,7 +35,7 @@ class GiftCardController extends Controller
                 $query->where(fn ($q) => $q
                     ->whereRaw('lower(recipient_email) like ?', [$like])
                     ->orWhereRaw('lower(recipient_name) like ?', [$like])
-                    ->orWhere('code', 'like', '%'.($code !== '' ? $code : $search).'%'));
+                    ->when($code !== '', fn ($q) => $q->orWhereRaw("REPLACE(code, '-', '') like ?", ['%'.$code.'%'])));
             })
             ->when($request->query('source'), fn ($q, $source) => $q->where('source', $source))
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
@@ -65,6 +65,7 @@ class GiftCardController extends Controller
                 'recipient_name' => $data['recipient_name'],
                 'recipient_email' => $data['recipient_email'] ?? null,
                 'note' => $data['note'],
+                'code_word' => $data['code_word'] ?? null,
             ],
             by: $request->user('admin'),
         );

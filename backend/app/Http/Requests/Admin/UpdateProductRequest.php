@@ -22,6 +22,8 @@ class UpdateProductRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'collection_id' => ['nullable', 'integer', 'exists:collections,id'],
+            // The shop's type filter (slippers, ahenema, closed-toe…).
+            'product_type' => ['nullable', 'string', 'max:40', 'regex:/^[a-z0-9-]+$/'],
             'base_price_ghs' => ['sometimes', 'required', 'integer', 'min:0'],
             'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('products', 'sku')->ignore($product)],
             // Reorder or remove only. New photos go through

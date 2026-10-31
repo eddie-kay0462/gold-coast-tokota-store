@@ -13,10 +13,35 @@ import type { Booking, WorkshopSession } from '~/types'
  */
 useHead({ title: 'Waitlist' })
 
-const { useAdminList } = useAdminApi()
+const { useAdminList, adminFetch } = useAdminApi()
 const { formatDate, formatRelative } = useFormatters()
-const { items: bookings, pending } = useAdminList<Booking>('waitlist-bookings', '/admin/bookings')
-const { items: sessions } = useAdminList<WorkshopSession>('waitlist-sessions', '/admin/workshop-sessions')
+const toast = useToast()
+const { items: bookings, pending, refresh } = useAdminList<Booking>(
+  'waitlist-bookings', '/admin/bookings', { status: 'waitlisted', per_page: 200 },
+)
+const { items: sessions, refresh: refreshSessions } = useAdminList<WorkshopSession>(
+  'waitlist-sessions', '/admin/workshop-sessions', { upcoming: true },
+)
+
+// Promote is `confirmed`, which the API only allows while the session has a
+// seat (409 otherwise) and which messages the customer. Skip cancels the
+// entry. Neither happens on its own: a place opening doesn't promote anyone.
+const changing = ref<number | null>(null)
+async function decide(b: Booking, status: 'confirmed' | 'cancelled') {
+  changing.value = b.id
+  try {
+    await adminFetch(`/admin/bookings/${b.id}`, { method: 'PATCH', body: { status } })
+    toast.success(status === 'confirmed' ? 'Promoted' : 'Skipped', status === 'confirmed'
+      ? `${b.customerName} has the place and has been told.`
+      : `${b.customerName} is off the waitlist.`)
+    await Promise.all([refresh(), refreshSessions()])
+  } catch (err) {
+    const message = failureMessage(err)
+    if (message) toast.error('Not changed', message)
+  } finally {
+    changing.value = null
+  }
+}
 
 const waitlisted = computed(() => bookings.value.filter((b) => b.status === 'waitlisted'))
 
@@ -37,7 +62,7 @@ const groups = computed(() =>
   <div class="admin-stack">
     <UiPageHeader
       title="Waitlist"
-      description="When a confirmed booking is cancelled the next person here is promoted automatically and notified."
+      description="When a place opens on a session, promote the next person here. They’re messaged that it’s theirs."
     />
 
     <div v-if="pending" class="space-y-4">
@@ -54,13 +79,16 @@ const groups = computed(() =>
     <section v-for="g in groups" :key="g.session.id" v-else class="card">
       <header class="flex flex-wrap items-center gap-3 border-b border-border p-4 md:p-5">
         <div class="min-w-0 flex-1">
-          <h2 class="card-title">{{ g.session.workshopTypeName }}</h2>
+          <h2 class="card-title">{{ g.session.eventName ?? g.session.workshopTypeName }}</h2>
           <p class="mt-0.5 text-ui text-fg-muted">
             {{ formatDate(g.session.scheduledDate) }} · {{ g.session.scheduledSlot }}
           </p>
         </div>
-        <UiBadge tone="accent">
-          {{ g.session.confirmedCount }}/{{ g.session.capacity }} · full
+        <UiBadge v-if="g.session.remainingCapacity > 0" tone="success">
+          {{ g.session.remainingCapacity }} place{{ g.session.remainingCapacity === 1 ? '' : 's' }} free
+        </UiBadge>
+        <UiBadge v-else tone="accent">
+          {{ g.session.occupiedSeats }}/{{ g.session.capacity }} · full
         </UiBadge>
       </header>
 
@@ -78,11 +106,16 @@ const groups = computed(() =>
           </span>
           <UiPermissionGate capability="waitlist.promote" quiet>
             <span class="flex shrink-0 gap-1">
-              <UiButton variant="secondary" size="sm">
+              <UiButton
+                variant="secondary" size="sm" :loading="changing === b.id"
+                :disabled="g.session.remainingCapacity < 1"
+                :title="g.session.remainingCapacity < 1 ? 'No place free on this session yet' : undefined"
+                @click="decide(b, 'confirmed')"
+              >
                 <PhArrowUp :size="14" />
                 Promote
               </UiButton>
-              <UiButton variant="ghost" size="sm">
+              <UiButton variant="ghost" size="sm" :disabled="changing === b.id" @click="decide(b, 'cancelled')">
                 <PhSkipForward :size="14" />
                 Skip
               </UiButton>
