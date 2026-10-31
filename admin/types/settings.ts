@@ -15,6 +15,8 @@ export interface SiteSettings {
   address: string
   instagramUrl: string
   heroHeadline: string
+  /** The line under the headline; empty keeps the storefront's own. */
+  heroSubheadline?: string | null
   heroImage: string | null
   /** The announcement bar's lines, up to five. Empty: the storefront's own. */
   announcements?: string[]

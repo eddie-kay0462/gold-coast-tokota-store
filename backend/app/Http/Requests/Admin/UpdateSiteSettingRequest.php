@@ -37,6 +37,7 @@ class UpdateSiteSettingRequest extends FormRequest
             'tagline' => ['sometimes', 'nullable', 'string', 'max:120'],
             'instagram_url' => ['sometimes', 'nullable', 'url', 'max:255'],
             'hero_headline' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'hero_subheadline' => ['sometimes', 'nullable', 'string', 'max:255'],
             'hero_image' => ['sometimes', 'nullable', 'string', 'max:2048'],
             'diy_turnaround_estimate' => ['sometimes', 'nullable', 'string', 'max:120'],
             'announcements' => ['sometimes', 'array', 'max:5'],

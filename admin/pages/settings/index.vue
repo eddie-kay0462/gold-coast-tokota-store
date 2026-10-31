@@ -15,7 +15,7 @@ const { item: settings, refresh } = useAdminItem<SiteSettings>('site-settings', 
 
 const form = reactive({
   contactEmail: '', contactPhone: '', address: '',
-  instagramUrl: '', heroHeadline: '',
+  instagramUrl: '', heroHeadline: '', heroSubheadline: '',
   announcements: [] as string[],
 })
 watchEffect(() => {
@@ -26,6 +26,7 @@ watchEffect(() => {
     address: settings.value.address ?? '',
     instagramUrl: settings.value.instagramUrl ?? '',
     heroHeadline: settings.value.heroHeadline ?? '',
+    heroSubheadline: settings.value.heroSubheadline ?? '',
     announcements: [...(settings.value.announcements ?? [])],
   })
 })
@@ -42,14 +43,17 @@ async function save(section: Section) {
       address: form.address.trim() || null,
       instagram_url: form.instagramUrl.trim() || null,
     },
-    hero: { hero_headline: form.heroHeadline.trim() || null },
+    hero: {
+      hero_headline: form.heroHeadline.trim() || null,
+      hero_subheadline: form.heroSubheadline.trim() || null,
+    },
     announcements: { announcements: form.announcements.map((a) => a.trim()).filter(Boolean) },
   }[section]
   saving.value = section
   try {
     await adminFetch('/admin/site-settings', { method: 'PUT', body })
     toast.success(
-      { contact: 'Contact details saved', hero: 'Headline saved', announcements: 'Announcements saved' }[section],
+      { contact: 'Contact details saved', hero: 'Hero text saved', announcements: 'Announcements saved' }[section],
       'Live on the storefront now.',
     )
     await refresh()
@@ -90,11 +94,18 @@ async function save(section: Section) {
           </template>
         </SettingsSection>
 
-        <SettingsSection title="Home hero" description="The headline over the storefront hero.">
-          <UiField
-            v-model="form.heroHeadline" label="Headline"
-            hint="Keep it short. It shows at display size on phones as well as desktops."
-          />
+        <SettingsSection title="Home hero" description="The two lines over the storefront hero image.">
+          <div class="flex flex-col gap-4">
+            <UiField
+              v-model="form.heroHeadline" label="Headline" placeholder="Your Step into Heritage"
+              hint="Keep it short. It shows at display size on phones as well as desktops. Blank uses the one shown."
+            />
+            <UiField
+              v-model="form.heroSubheadline" label="Second line" maxlength="255"
+              placeholder="Get your pair of authentic locally-made Ghanaian footwear."
+              hint="Under the headline, a size smaller. Blank uses the line shown."
+            />
+          </div>
           <template #footer>
             <UiPermissionGate capability="settings.write" quiet>
               <UiButton size="sm" :loading="saving === 'hero'" @click="save('hero')">Save</UiButton>
@@ -106,6 +117,7 @@ async function save(section: Section) {
           title="Announcement bar"
           description="The short lines that take turns in the bar above the storefront header. Up to five, 120 characters each. With none, the bar shows its built-in lines."
         >
+          <SettingsAnnouncementPreview :messages="form.announcements" :hours="settings?.businessHours" class="mb-4" />
           <ContentListEditor
             v-model="form.announcements" noun="line" :blank="() => ''" :max="5"
             :disabled="!can('settings.write')"
