@@ -86,7 +86,7 @@ Anything that writes them directly is a bug.
 | GET | `/products/facets` | The shop sidebar's options from the catalogue (`App\Support\CatalogueFacets`): `{ types: [{ value, label, count }], colors: [{ value, label, hex, count }] }`. Only what active products have; each colour's `hex` is the swatch most products are entered with; counts match `?type=` / `?color=`. Cached 10 min, cleared on any product change (23 Oct) |
 | GET | `/navigation/menus` | The header's four mega menus (`App\Support\MegaMenus`): `{ key, label, to, columns: [{ heading, links: [{ label, to }] }], promos: [{ label, image, alt, to, chosen }] }`. Links are built from the catalogue (only styles and departments with active products in that menu); tiles are chosen in Content › Menus, or the menu's own product photos. Cached 10 min, cleared when a tile, product or media asset changes (23 Oct) |
 | GET | `/fx-rate` | |
-| GET | `/pages/{slug}` · `/site-settings` | |
+| GET | `/pages/{slug}` · `/site-settings` | Site settings carry `hero_subheadline` (31 Oct), the line under `hero_headline`; null keeps the storefront's own. Writable on PUT `/admin/site-settings` |
 | GET | `/blog-posts` | Paginated, 9/page. `?limit=` (clamped 1–24) |
 | GET | `/blog-posts/{slug}` | Since 31 Oct both also carry `excerpt`, `subtitle` (the same text, the name the storefront reads), `meta_description` and `cover_image_alt` |
 | POST | `/checkout/session` | Guest-friendly. Throttled 20/min — see below |

@@ -27,6 +27,8 @@ class SiteSettingResource extends JsonResource
             'tagline' => $this->tagline,
             'instagram_url' => $this->instagram_url,
             'hero_headline' => $this->hero_headline,
+            // The line under the headline; null keeps the storefront's own.
+            'hero_subheadline' => $this->hero_subheadline,
             'hero_image' => $this->hero_image,
             'diy_turnaround_estimate' => $this->diy_turnaround_estimate,
             // Per-order-type estimates. The DIY form still shows the single
