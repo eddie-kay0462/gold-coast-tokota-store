@@ -12,6 +12,9 @@ export interface AppliedGiftCard {
   lastFour: string
   /** What's on the card, GHS minor units. */
   balanceGhs: number
+  /** Who gave it and what they wrote, shown once it's applied. */
+  senderName: string | null
+  message: string | null
 }
 
 export type ApplyResult =
@@ -24,11 +27,17 @@ export function useGiftCardCode() {
 
   async function apply(code: string): Promise<ApplyResult> {
     try {
-      const res = await api<{ data: { last_four: string, balance: number } }>('/gift-cards/balance', {
+      const res = await api<{ data: { last_four: string, balance: number, sender_name?: string | null, message?: string | null } }>('/gift-cards/balance', {
         method: 'POST',
         body: { code },
       })
-      applied.value = { code: code.trim(), lastFour: res.data.last_four, balanceGhs: res.data.balance }
+      applied.value = {
+        code: code.trim(),
+        lastFour: res.data.last_four,
+        balanceGhs: res.data.balance,
+        senderName: res.data.sender_name ?? null,
+        message: res.data.message ?? null,
+      }
       return { ok: true }
     } catch (err: unknown) {
       const e = err as { statusCode?: number, data?: { message?: string } }
