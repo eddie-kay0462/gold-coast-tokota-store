@@ -54,6 +54,6 @@ class OrderController extends Controller
             ->where('reference', $reference)
             ->firstOrFail();
 
-        return new OrderResource($payments->confirmByVerifying($order)->load('giftCard'));
+        return new OrderResource($payments->confirmByVerifying($order)->load(['giftCard', 'booking.workshopSession.workshopType']));
     }
 }

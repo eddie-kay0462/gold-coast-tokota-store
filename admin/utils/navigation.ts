@@ -73,6 +73,7 @@ export const NAVIGATION: NavGroup[] = [
           { label: 'Calendar', to: '/bookings/calendar', capability: 'bookings.view' },
           { label: 'Workshops', to: '/workshops', capability: 'bookings.view' },
           { label: 'Waitlist', to: '/waitlist', capability: 'bookings.view' },
+          { label: 'Check-in', to: '/check-in', capability: 'bookings.update_status' },
         ],
       },
     ],

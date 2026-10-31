@@ -19,6 +19,10 @@ class AdminWorkshopSessionResource extends JsonResource
             'scheduled_date' => $this->scheduled_date?->toDateString(),
             'scheduled_slot' => $this->scheduled_slot,
             'capacity' => $this->capacity,
+            // `price_ghs` is this date's own, or null; `effective_price_ghs`
+            // is what's actually charged (its own, else the event's).
+            'price_ghs' => $this->price_ghs,
+            'effective_price_ghs' => $this->priceGhs(),
             'location_notes' => $this->location_notes,
             // Computed from bookings, never stored — the same accessors the
             // storefront's session list uses, so admin and storefront can never

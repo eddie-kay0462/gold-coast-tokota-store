@@ -49,6 +49,7 @@ class BookingTest extends TestCase
     public function test_workshop_booking_is_waitlisted_when_session_is_at_capacity(): void
     {
         $session = WorkshopSession::factory()->create(['capacity' => 1]);
+        $session->workshopType->update(['allow_waitlist' => true]);
         Booking::factory()->workshop($session)->create();
 
         $response = $this->postJson('/api/v1/bookings', [

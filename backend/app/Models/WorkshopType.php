@@ -23,6 +23,8 @@ class WorkshopType extends Model
         'slot_label',
         'duration_label',
         'capacity',
+        'price_ghs',
+        'allow_waitlist',
         'requires_appointment',
         'description',
         'is_active',
@@ -31,6 +33,8 @@ class WorkshopType extends Model
 
     protected $casts = [
         'capacity' => 'integer',
+        'price_ghs' => 'integer',
+        'allow_waitlist' => 'boolean',
         'requires_appointment' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',

@@ -8,6 +8,7 @@ use App\Models\InventoryItem;
 use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\StockHold;
+use App\Services\Bookings\BookingCheckout;
 use App\Services\GiftCards\GiftCardService;
 use App\Services\Inventory\InventoryReservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -182,7 +183,7 @@ class InventoryReservationServiceTest extends TestCase
         $this->reservations->reserve($expired, 3, now()->addMinute(), $this->order());
         $this->travel(2)->minutes();
 
-        (new ReleaseExpiredReservations)->handle(app(InventoryReservationService::class), app(GiftCardService::class));
+        (new ReleaseExpiredReservations)->handle(app(InventoryReservationService::class), app(GiftCardService::class), app(BookingCheckout::class));
 
         $this->assertSame(0, $expired->fresh()->quantity_reserved);
         $this->assertNull($expired->fresh()->reservation_expires_at);

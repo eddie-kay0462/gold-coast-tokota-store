@@ -1,4 +1,4 @@
-import type { Timestamp } from './common'
+import type { Money, Timestamp } from './common'
 
 export type BookingType = 'workshop' | 'diy_order'
 
@@ -6,6 +6,10 @@ export type BookingStatus =
   | 'pending'
   | 'confirmed'
   | 'waitlisted'
+  /** A paid event's booking holding its seats while the customer pays. */
+  | 'awaiting_payment'
+  /** Its payment hold lapsed unpaid; the seats went back. */
+  | 'expired'
   | 'completed'
   | 'cancelled'
 
@@ -32,6 +36,10 @@ export interface WorkshopType {
   description: string | null
   isActive: boolean
   upcomingSessionsCount?: number
+  /** Pesewas per person; null is free. */
+  priceGhs?: number | null
+  /** A full session takes waitlist bookings (on) or is sold out (off). */
+  allowWaitlist?: boolean
 }
 
 export interface WorkshopSession {
@@ -43,6 +51,10 @@ export interface WorkshopSession {
   description: string | null
   /** `title`, or the type's name. */
   eventName: string
+  /** This date's own price per person (pesewas), or null to follow the event's. */
+  priceGhs?: number | null
+  /** What a place actually costs: its own price, else the event's. Null is free. */
+  effectivePriceGhs?: number | null
   scheduledDate: string          // YYYY-MM-DD
   scheduledSlot: string          // "10:00 AM – 1:00 PM"
   capacity: number
@@ -85,6 +97,21 @@ export interface Booking {
   notes?: string
   /** Everything the form sent, as stored. */
   details?: Record<string, unknown>
+  // --- Paid events ---
+  /** Per person, in cedis; null for a free event. */
+  price?: Money | null
+  amountPaid?: Money | null
+  orderId?: number | null
+  orderReference?: string | null
+  /** While `awaiting_payment`: when the seats go back if it isn't paid. */
+  holdExpiresAt?: Timestamp | null
+  checkedInAt?: Timestamp | null
+  checkedInBy?: string | null
+  /** Paid after its hold lapsed, into a session that had filled: add a seat or refund. */
+  needsAttention?: boolean
+  ticketCode?: string | null
+  /** The ticket PDF, a signed link; confirmed workshop bookings only. */
+  ticketUrl?: string | null
   createdAt: Timestamp
 }
 
