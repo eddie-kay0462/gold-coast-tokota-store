@@ -103,7 +103,9 @@ class AdminProductVariantsTest extends TestCase
             ->assertOk();
 
         $this->assertSame(['Red 40'], $this->grid($product));
-        $this->assertSame([['name' => 'Red', 'hex' => '#C6212B']], $product->fresh()->colors);
+        // assertEquals, not assertSame: Postgres jsonb stores an object's keys
+        // in its own order, so only the contents can be compared.
+        $this->assertEquals([['name' => 'Red', 'hex' => '#C6212B']], $product->fresh()->colors);
     }
 
     public function test_staff_cannot_change_sizes(): void
