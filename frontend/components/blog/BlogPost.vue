@@ -39,16 +39,18 @@ const blocks = computed(() => {
         {{ post.subtitle }}
       </p>
 
+      <p v-if="post.author" class="text-label text-graphite">By {{ post.author }}</p>
+
       <BlogShare :title="post.title" />
     </header>
 
-    <div class="mt-10 aspect-[16/9] w-full overflow-hidden bg-surface">
-      <img
-        :src="post.hero_image || post.cover_image || '/design/news-placeholder.png'"
-        :alt="post.title"
-        class="size-full object-cover"
-      >
+    <!-- The cover, when the story has a photo. Without one the article goes
+         straight to its words: a stand-in picture at this size read as a
+         missing image, not a design. -->
+    <div v-if="post.hero_image || post.cover_image" class="mt-10 w-full overflow-hidden bg-surface">
+      <BlogCover :post="post" variant="hero" aspect="aspect-[16/9]" />
     </div>
+    <div v-else class="mt-10 w-full max-w-[680px] border-t border-line" aria-hidden="true" />
 
     <p v-if="post.lede" class="mt-10 w-full max-w-[680px] text-article-lg font-normal text-black">
       {{ post.lede }}
@@ -122,5 +124,31 @@ const blocks = computed(() => {
 .post-body :deep(ol) {
   padding-left: 1.5rem;
   list-style: revert;
+  font-size: clamp(16px, 14.857px + 0.357vw, 20px);
+  line-height: 1.6;
+  font-weight: 300;
+  letter-spacing: 0.64px;
+  width: 100%;
+}
+
+.post-body :deep(li + li) {
+  margin-top: 0.5em;
+}
+
+/* Pulled quotes, as the editor makes them: a rule on the left, the site's
+   display type, no italics. */
+.post-body :deep(blockquote) {
+  border-left: 1px solid currentColor;
+  padding-left: 1.25rem;
+  font-size: clamp(20px, 18.857px + 0.357vw, 24px);
+  line-height: 1.4;
+  font-weight: 300;
+  width: 100%;
+}
+
+/* Images dropped into the text: the column's width, no rounding. */
+.post-body :deep(img) {
+  width: 100%;
+  height: auto;
 }
 </style>

@@ -8,12 +8,7 @@ defineProps<{ post: ApiPost }>()
   <!-- The large editorial card drawn in Figma (10:918), used both under an
        article ("More stories") and as the Sustainability listing tile. -->
   <NuxtLink :to="`/blog/${post.slug}`" class="group flex w-full flex-col gap-5">
-    <img
-      :src="post.cover_image || '/design/news-placeholder.png'"
-      :alt="post.title"
-      class="aspect-[4/3] w-full object-cover"
-      loading="lazy"
-    >
+    <BlogCover :post="post" aspect="aspect-[4/3]" />
     <div class="flex w-full flex-col items-start gap-3">
       <h3 class="w-full text-display-md font-light text-black group-hover:underline">
         {{ post.title }}
