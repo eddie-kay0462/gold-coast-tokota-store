@@ -48,7 +48,23 @@ inert at their last step.
 
 ## Recent changes
 
-### 2 November 2026 (latest): order tracking in emails; 3-day invitations; logo not an attachment (API, admin)
+### 2 November 2026 (latest): order tracking from an email's link (storefront)
+
+Order emails now say "track your order with your order number and this email", linking to `/account?order=GCT-…#track-order` (from `STOREFRONT_URL` on the API).
+- The **Track an order** form is its own component, `components/account/OrderLookup.vue`, at the `#track-order` anchor. It fills in the order number from the link; the customer types the email, which is never in the link. The check is unchanged: the email must match the order's.
+- Signed out, it sits on `/account` as before. **Signed in**, it also shows there when the link names an order, since a guest order isn't in a signed-in customer's list.
+- Checked locally: the link fills the number, a wrong email is refused, the right one opens the order's status page.
+
+### 1 November 2026: Stories fit the site; a missing story has its own page (storefront)
+
+From the client's content feedback, and the launch audit's "Pages that don't fit the website's look", which names Stories: every card and cover was the logo on grey, because the stories have no photos.
+- **No photo, no logo.** `components/blog/BlogCover.vue` shows the cover photo when a story has one. Otherwise it shows a quiet tile in the site's own type: the category in tracked capitals, the title, the small brand mark, on the light surface used behind product photos. It's used by the Stories cards and the feature card. A story page without a photo goes straight from its header to the text, rather than showing a stand-in picture.
+- **Byline.** The story page shows "By …" from the post's author (set in admin).
+- **Body text.** Lists, pulled quotes and images in a story's text are styled to match its paragraphs.
+- **A deleted or unpublished story** shows "This story isn't available any more", with All stories, Shop sandals and the three latest stories, instead of the general not-found page (`error.vue`).
+- Real stories with photos are still the client's to publish; the post editor can now upload a cover directly.
+
+### 2 November 2026: order tracking in emails; 3-day invitations; logo not an attachment (API, admin)
 
 - **Track your order.** The order confirmation (with a **Track your order** button) and the shipping email tell the customer they can track it with their order number and email, and link to the storefront's order tracking: `STOREFRONT_URL/account?order=GCT-…#track-order`. `STOREFRONT_URL` (`app.storefront_url`) is `http://localhost:3000` locally and `https://goldcoasttokota.store` in production. The email address is left out of the link so it stays out of logs and analytics; the storefront fills in the number and asks for the email (on `feat/storefront-pages`).
 - **Team invitations last 3 days** (`auth.passwords.admin_invites.expire`, was 7). The invitation email, `mail:test`, the admin's Add member message and the API contract say so; a test covers a link refused after 3 days.
