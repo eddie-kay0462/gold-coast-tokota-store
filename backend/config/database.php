@@ -97,6 +97,17 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // No named prepared statements. Neon's pooler (PgBouncer,
+            // transaction mode) can hand a statement's clean-up DEALLOCATE to a
+            // different server connection, where it fails without a word and
+            // aborts the open transaction: the next statement then fails with
+            // "current transaction is aborted" (SQLSTATE 25P02). With this, each
+            // query goes to the server together with its values as one unnamed
+            // statement, so there is nothing to clean up. Unlike emulated
+            // prepares, the server still types the values (0 is a valid boolean).
+            'options' => extension_loaded('pdo_pgsql') && env('DB_DISABLE_PREPARES', true) ? [
+                (defined('Pdo\Pgsql::ATTR_DISABLE_PREPARES') ? constant('Pdo\Pgsql::ATTR_DISABLE_PREPARES') : PDO::PGSQL_ATTR_DISABLE_PREPARES) => true,
+            ] : [],
         ],
 
         // Neon's direct (non-pooled) endpoint, for migrations only:
@@ -116,6 +127,17 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // No named prepared statements. Neon's pooler (PgBouncer,
+            // transaction mode) can hand a statement's clean-up DEALLOCATE to a
+            // different server connection, where it fails without a word and
+            // aborts the open transaction: the next statement then fails with
+            // "current transaction is aborted" (SQLSTATE 25P02). With this, each
+            // query goes to the server together with its values as one unnamed
+            // statement, so there is nothing to clean up. Unlike emulated
+            // prepares, the server still types the values (0 is a valid boolean).
+            'options' => extension_loaded('pdo_pgsql') && env('DB_DISABLE_PREPARES', true) ? [
+                (defined('Pdo\Pgsql::ATTR_DISABLE_PREPARES') ? constant('Pdo\Pgsql::ATTR_DISABLE_PREPARES') : PDO::PGSQL_ATTR_DISABLE_PREPARES) => true,
+            ] : [],
         ],
 
         'sqlsrv' => [
