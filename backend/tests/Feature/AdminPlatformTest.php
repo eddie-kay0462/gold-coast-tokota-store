@@ -188,9 +188,9 @@ class AdminPlatformTest extends TestCase
         ])->assertCreated();
         $member = AdminUser::query()->where('email', 'akosua@goldcoasttokota.store')->sole();
 
-        // A week later, the invitation still works; a reset link wouldn't.
+        // Two days later the invitation still works; a reset link wouldn't.
         $token = Password::broker('admin_invites')->createToken($member);
-        $this->travel(6)->days();
+        $this->travel(2)->days();
 
         $this->postJson('/api/v1/admin/reset-password', [
             'email' => $member->email, 'token' => $token, 'invite' => true,
@@ -199,6 +199,20 @@ class AdminPlatformTest extends TestCase
 
         $this->assertNull($member->fresh()->invited_at);
         $this->assertTrue(Hash::check('her-own-password-1', $member->fresh()->password));
+    }
+
+    /** Invitations last 3 days; after that the link is refused and a new one is needed. */
+    public function test_an_invitation_runs_out_after_three_days(): void
+    {
+        $member = AdminUser::factory()->create(['email' => 'late@goldcoasttokota.store']);
+        $token = Password::broker('admin_invites')->createToken($member);
+        $this->travel(3)->days();
+        $this->travel(1)->hours();
+
+        $this->postJson('/api/v1/admin/reset-password', [
+            'email' => $member->email, 'token' => $token, 'invite' => true,
+            'password' => 'too-late-password-1', 'password_confirmation' => 'too-late-password-1',
+        ])->assertStatus(422);
     }
 
     public function test_the_invitation_can_be_sent_again(): void

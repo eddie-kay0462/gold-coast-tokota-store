@@ -8,6 +8,4 @@
 Open the order
 </x-mail::button>
 @endif
-
-{{ config('mail.from.name') }}
 </x-mail::message>

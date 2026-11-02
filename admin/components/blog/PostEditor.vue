@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { PhArrowLeft, PhImage, PhLink, PhTrash, PhUser } from '@phosphor-icons/vue'
-import type { BlogPost, MediaAsset } from '~/types'
+import { PhArrowLeft, PhImage, PhLink, PhTrash, PhUploadSimple, PhUser } from '@phosphor-icons/vue'
+import type { AdminUser, BlogPost, MediaAsset } from '~/types'
 
 /**
  * Post editor, Figma node 26:1297, followed closely: the writing surface on
@@ -14,7 +14,7 @@ import type { BlogPost, MediaAsset } from '~/types'
 const route = useRoute()
 const isNew = computed(() => route.path.endsWith('/new'))
 
-const { useAdminItem, adminFetch } = useAdminApi()
+const { useAdminItem, useAdminList, adminFetch } = useAdminApi()
 const { formatRelative } = useFormatters()
 const { can } = useAuth()
 const toast = useToast()
@@ -102,17 +102,70 @@ async function deletePost() {
 }
 
 // --- Cover ------------------------------------------------------------------
-// Picked from the media library; the post stores the image's URL.
+// Picked from the media library, or uploaded here (`POST /admin/media`, so it
+// lands in the library too); the post stores the image's URL.
 const pickingCover = ref(false)
 function useCover(asset: MediaAsset) {
   draft.coverImage = asset.url
-  if (!draft.coverImageAlt.trim()) draft.coverImageAlt = asset.altText
+  if (!draft.coverImageAlt.trim()) draft.coverImageAlt = asset.altText ?? ''
+}
+
+const coverInput = ref<HTMLInputElement | null>(null)
+const uploadingCover = ref(false)
+async function uploadCover(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  uploadingCover.value = true
+  error.value = null
+  try {
+    const body = new FormData()
+    body.append('file', file)
+    const { data } = await adminFetch<MediaAsset>('/admin/media', { method: 'POST', body })
+    useCover(data)
+    toast.success('Image uploaded', 'Save the post to keep it as the cover.')
+  } catch (err) {
+    error.value = failureMessage(err, 'The image didn’t upload. Try again.')
+  } finally {
+    uploadingCover.value = false
+  }
 }
 
 useHead({ title: computed(() => (isNew.value ? 'New post' : draft.title || 'Post')) })
 
-// Suggestions only: the byline is free text, so anyone can be credited.
-const authors = ['Samuel Kumi-Gyau', 'Mary Seade', 'Akosua Danso']
+// --- Author -----------------------------------------------------------------
+// Chosen from the team (Team, `GET /admin/team`), or typed as anyone else: a
+// guest writer, or someone without a dashboard account. A new post starts as
+// Samuel Kumi-Gyau's, the founder, whether or not he's on the team list.
+const DEFAULT_AUTHOR = 'Samuel Kumi-Gyau'
+const OTHER = '__other__'
+const { items: team } = useAdminList<AdminUser>('blog-authors', '/admin/team')
+const teamNames = computed(() => {
+  const names = [...new Set(team.value.map((m) => m.name).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  return [DEFAULT_AUTHOR, ...names.filter((n) => n !== DEFAULT_AUTHOR)]
+})
+const authorOptions = computed(() => [
+  ...teamNames.value.map((n) => ({ value: n, label: n })),
+  { value: OTHER, label: 'Someone else…' },
+])
+// Typing a name only when it isn't one of the team's.
+const typingAuthor = ref(false)
+watch([() => draft.authorName, teamNames], ([name]) => {
+  if (name && !teamNames.value.includes(name)) typingAuthor.value = true
+}, { immediate: true })
+const authorChoice = computed({
+  get: () => (typingAuthor.value ? OTHER : draft.authorName || DEFAULT_AUTHOR),
+  set: (value: string) => {
+    if (value === OTHER) {
+      typingAuthor.value = true
+      draft.authorName = ''
+    } else {
+      typingAuthor.value = false
+      draft.authorName = value
+    }
+  },
+})
 
 /** The slug tracks the title until someone edits it by hand. */
 const slugTouched = ref(false)
@@ -197,15 +250,13 @@ watch(() => draft.title, (t) => {
                 @input="slugTouched = true"
               >
             </div>
-            <div class="relative">
+            <UiSelect v-model="authorChoice" label="Author" :options="authorOptions" />
+            <div v-if="typingAuthor" class="relative">
               <PhUser :size="16" class="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-fg-faint" />
               <input
-                v-model="draft.authorName" type="text" list="post-authors" aria-label="Author"
-                placeholder="Who wrote it" class="field min-h-[44px] pl-9"
+                v-model="draft.authorName" type="text" aria-label="Author’s name" maxlength="120"
+                placeholder="Their name, as it should appear" class="field min-h-[44px] pl-9"
               >
-              <datalist id="post-authors">
-                <option v-for="a in authors" :key="a" :value="a" />
-              </datalist>
             </div>
             <p v-if="post" class="text-meta text-fg-faint">
               Last edited {{ formatRelative(post.updatedAt) }}
@@ -222,8 +273,16 @@ watch(() => draft.title, (t) => {
           <div v-if="can('content.write')" class="mt-2 flex justify-end gap-2">
             <UiButton v-if="draft.coverImage" variant="ghost" size="sm" @click="draft.coverImage = null">Remove</UiButton>
             <UiButton variant="ghost" size="sm" @click="pickingCover = true">
-              {{ draft.coverImage ? 'Replace image' : 'Choose image' }}
+              {{ draft.coverImage ? 'Choose another' : 'Choose from library' }}
             </UiButton>
+            <UiButton variant="secondary" size="sm" :loading="uploadingCover" @click="coverInput?.click()">
+              <PhUploadSimple :size="16" />
+              Upload image
+            </UiButton>
+            <input
+              ref="coverInput" type="file" accept="image/jpeg,image/png,image/webp,image/avif" class="sr-only"
+              aria-label="Upload a cover image" tabindex="-1" @change="uploadCover"
+            >
           </div>
           <ContentMediaPicker v-model:open="pickingCover" @select="useCover" />
           <UiField

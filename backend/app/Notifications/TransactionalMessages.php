@@ -43,12 +43,13 @@ final class TransactionalMessages
                 'order' => $order,
                 'total' => $total,
                 'returnWindowDays' => ReturnPolicy::WINDOW_DAYS,
+                'statusUrl' => self::orderStatusUrl($order),
             ],
             // Deliberately short. This is one SMS segment including the
             // reference, which is the part a customer actually needs to quote
             // back to anyone.
             sms: "Gold Coast Tokota: payment received for order {$order->reference} ({$total}). "
-                .'We process orders within 48 hours and will text you when it ships.',
+                .'We process orders within 48 hours and will let you know when it ships.',
         );
     }
 
@@ -75,6 +76,7 @@ final class TransactionalMessages
                 'trackingUrl' => $trackingUrl,
                 'courier' => self::courierName($shipment?->carrier ?? $order->delivery_provider, $shipment?->courier_name),
                 'international' => $international,
+                'statusUrl' => self::orderStatusUrl($order),
                 'deliveryEstimate' => DeliveryEstimates::for($order->shipping_address['country'] ?? null),
             ],
             // "where available" is doing real work: a courier booked by hand
@@ -149,8 +151,8 @@ final class TransactionalMessages
         return new NotificationMessage(
             key: 'booking_submitted',
             subject: $isWaitlisted
-                ? 'You are on the waitlist — Gold Coast Tokota'
-                : 'We have your booking request — Gold Coast Tokota',
+                ? 'You’re on the Gold Coast Tokota waitlist'
+                : 'We’ve received your Gold Coast Tokota booking request',
             view: 'mail.booking-submitted',
             data: [
                 'booking' => $booking,
@@ -158,9 +160,9 @@ final class TransactionalMessages
                 'isDiy' => $booking->type === 'diy_order',
             ],
             sms: $isWaitlisted
-                ? 'Gold Coast Tokota: that session is full, so you are on the waitlist. '
-                    .'We will contact you if a place opens up.'
-                : 'Gold Coast Tokota: we have your booking request and will confirm it shortly.',
+                ? 'Gold Coast Tokota: that session is full, so you’re on the waitlist. '
+                    .'We’ll contact you if a place opens up.'
+                : 'Gold Coast Tokota: we’ve received your booking request and will confirm it soon.',
         );
     }
 
@@ -178,7 +180,7 @@ final class TransactionalMessages
 
         return new NotificationMessage(
             key: 'booking_confirmed',
-            subject: $isWorkshop ? 'Your ticket — Gold Coast Tokota' : 'Your booking is confirmed — Gold Coast Tokota',
+            subject: $isWorkshop ? 'Your Gold Coast Tokota ticket' : 'Your Gold Coast Tokota order is confirmed',
             view: 'mail.booking-confirmed',
             data: [
                 'booking' => $booking,
@@ -192,7 +194,7 @@ final class TransactionalMessages
             ],
             sms: 'Gold Coast Tokota: your booking is confirmed'
                 .($when ? ' for '.$when->format('j M Y') : '').'. '
-                .($isWorkshop ? 'Your ticket is in your email. ' : '').'We look forward to seeing you.',
+                .($isWorkshop ? 'Your ticket is in your email.' : 'We’ve started on it.'),
             attachments: $isWorkshop ? [[
                 'name' => $tickets->filename($booking),
                 'mime' => 'application/pdf',
@@ -213,7 +215,7 @@ final class TransactionalMessages
         // they pay, within the hold, and the ticket follows the payment.
         return new NotificationMessage(
             key: 'waitlist_promoted',
-            subject: 'A place has opened up — Gold Coast Tokota',
+            subject: 'A place has opened up at Gold Coast Tokota',
             view: 'mail.waitlist-promoted',
             data: [
                 'booking' => $booking,
@@ -225,7 +227,7 @@ final class TransactionalMessages
             sms: $payUrl
                 ? 'Gold Coast Tokota: a place has opened up'.($when ? ' for '.$when->format('j M Y') : '').'. Pay by '
                     .$booking->hold_expires_at?->format('j M, g:ia').' to keep it: check your email for the link.'
-                : 'Gold Coast Tokota: good news, a place has opened up and you are off the waitlist'
+                : 'Gold Coast Tokota: a place has opened up and you’re off the waitlist'
                     .($when ? ' for '.$when->format('j M Y') : '').'.',
         );
     }
@@ -275,6 +277,20 @@ final class TransactionalMessages
      * currency they were placed in; USD orders were converted at the rate
      * locked at checkout, so this never re-derives anything.
      */
+    /**
+     * The storefront's order tracking, with the order number filled in: the
+     * "Track an order" form on /account, which asks for the email too before
+     * it shows anything. The email is left out of the link, so it doesn't end
+     * up in server logs or analytics. The storefront's address comes from
+     * STOREFRONT_URL (`app.storefront_url`): localhost:3000 locally, the real
+     * domain in production.
+     */
+    private static function orderStatusUrl(Order $order): string
+    {
+        return rtrim((string) config('app.storefront_url'), '/')
+            .'/account?'.http_build_query(['order' => $order->reference]).'#track-order';
+    }
+
     private static function money(int $minorUnits, string $currency): string
     {
         $symbol = $currency === 'USD' ? '$' : 'GH₵';

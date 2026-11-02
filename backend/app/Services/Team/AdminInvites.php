@@ -23,7 +23,7 @@ final class AdminInvites
     public function send(AdminUser $member, AdminUser $by): void
     {
         $token = Password::broker('admin_invites')->createToken($member);
-        $days = intdiv((int) config('auth.passwords.admin_invites.expire', 10080), 60 * 24);
+        $days = intdiv((int) config('auth.passwords.admin_invites.expire', 4320), 60 * 24);
 
         $url = config('app.admin_url').'/reset-password?'.http_build_query([
             'token' => $token,
