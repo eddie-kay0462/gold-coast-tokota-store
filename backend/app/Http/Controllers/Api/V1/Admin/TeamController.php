@@ -48,7 +48,7 @@ class TeamController extends Controller
     }
 
     /**
-     * Sends the invitation again (it lasts a week), or, for someone already
+     * Sends the invitation again (it lasts 3 days), or, for someone already
      * set up, a fresh link to choose a new password. Either way the Super
      * Admin never handles the password.
      */

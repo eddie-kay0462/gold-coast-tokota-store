@@ -81,10 +81,12 @@ return [
         // Invitations to a new team member to set their first password. The
         // same table (one live link per address), but a week to act on it
         // rather than an hour.
+        // A team invitation's link: 3 days, long enough to get round to it
+        // and short enough that a forwarded or forgotten one goes stale.
         'admin_invites' => [
             'provider' => 'admins',
             'table' => 'admin_password_reset_tokens',
-            'expire' => 60 * 24 * 7,
+            'expire' => 60 * 24 * 3,
             'throttle' => 0,
         ],
 
