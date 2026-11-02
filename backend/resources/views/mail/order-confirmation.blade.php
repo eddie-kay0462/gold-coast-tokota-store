@@ -34,6 +34,13 @@ payment. We’ll email you again when yours is on its way.
 {{ $country && class_exists(\Locale::class) ? (\Locale::getDisplayRegion('-'.$country, 'en') ?: $country) : $country }}
 @endif
 
+**Track your order** at any time with your order number,
+**{{ $order->reference }}**, and this email address.
+
+<x-mail::button :url="$statusUrl">
+Track your order
+</x-mail::button>
+
 You can return an item within **{{ $returnWindowDays }} days** of receiving it.
 Keep this email: your order number is all we need if you have a question.
 </x-mail::message>

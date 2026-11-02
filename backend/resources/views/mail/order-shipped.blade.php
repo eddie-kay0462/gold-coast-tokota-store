@@ -20,6 +20,10 @@ Tracking number: **{{ $tracking }}**
 We’ll send you a tracking number as soon as the courier gives us one.
 @endif
 
+You can also check your order’s status on our site with your order number,
+**{{ $order->reference }}**, and this email address:
+[track your order]({{ $statusUrl }}).
+
 @if ($international)
 Delivery usually takes **{{ $deliveryEstimate }}**. Any customs duties, taxes or
 import fees your country charges are paid on arrival.

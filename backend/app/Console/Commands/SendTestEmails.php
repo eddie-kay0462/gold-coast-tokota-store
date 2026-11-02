@@ -140,7 +140,7 @@ class SendTestEmails extends Command
 
         // Accounts: a team invitation and a password reset.
         $admin = rtrim((string) config('app.admin_url'), '/');
-        yield 'admin_invite' => TransactionalMessages::adminInvite($admin.'/reset-password?token=test&invite=1', 'Samuel Kumi-Gyau', 'Staff', 7);
+        yield 'admin_invite' => TransactionalMessages::adminInvite($admin.'/reset-password?token=test&invite=1', 'Samuel Kumi-Gyau', 'Staff', intdiv((int) config('auth.passwords.admin_invites.expire'), 60 * 24));
         yield 'password_reset' => TransactionalMessages::passwordReset($admin.'/reset-password?token=test', 60);
     }
 }

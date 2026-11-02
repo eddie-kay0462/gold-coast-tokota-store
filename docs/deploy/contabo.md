@@ -209,6 +209,10 @@ EXCHANGERATE_HOST_KEY=
 # is sent: no receipts, tickets, team invitations or password resets.
 MAIL_MAILER=resend
 RESEND_API_KEY=
+# The logo at the top of every email. Defaults to the admin site's copy; set
+# it to https://goldcoasttokota.store/brand/logo.png once the storefront's
+# domain is live. Order emails' "Track your order" links use STOREFRONT_URL.
+# MAIL_LOGO_URL=
 MAIL_FROM_ADDRESS=hello@goldcoasttokota.store
 MAIL_FROM_NAME="Gold Coast Tokota"
 

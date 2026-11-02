@@ -1,14 +1,14 @@
 @props(['url'])
-{{-- The storefront's announcement band, then the main logo on white. The logo
-     travels inside the email as an inline image (`cid:logo`, attached by
-     TransactionalMail), so it shows without loading anything from a server. --}}
+{{-- The storefront's announcement band, then the main logo on white, loaded
+     from `mail.logo_url` (MAIL_LOGO_URL). Not embedded: Gmail lists an
+     embedded image as an attachment. --}}
 <tr>
 <td class="band">HANDCRAFTED IN GHANA</td>
 </tr>
 <tr>
 <td class="header">
 <a href="{{ $url }}" style="display: inline-block;">
-<img src="cid:logo" class="logo" width="174" height="43" alt="Gold Coast Tokota">
+<img src="{{ config('mail.logo_url') }}" class="logo" width="174" height="43" alt="Gold Coast Tokota">
 </a>
 </td>
 </tr>

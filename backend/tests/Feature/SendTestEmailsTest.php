@@ -53,13 +53,42 @@ class SendTestEmailsTest extends TestCase
             }
             $html = $mail->render();
             $this->assertStringNotContainsString('—', strip_tags($html), $mail->message->key);
-            $this->assertStringContainsString('cid:logo', $html);
+            // The logo is loaded from a public address, not embedded: Gmail
+            // lists an embedded image as an attachment.
+            $this->assertStringContainsString('src="'.config('mail.logo_url').'"', $html);
+            $this->assertStringNotContainsString('cid:', $html);
             $this->assertStringContainsString('HANDCRAFTED IN GHANA', $html);
             $this->assertStringContainsString('https://www.instagram.com/goldcoasttokota/', $html);
             $this->assertStringContainsString('https://wa.me/233257534297', $html);
 
             return true;
         });
+    }
+
+    /** Both order emails link to the storefront's order tracking, on whichever storefront STOREFRONT_URL names. */
+    public function test_order_emails_link_to_order_tracking_on_the_storefront(): void
+    {
+        Mail::fake();
+        config(['app.storefront_url' => 'https://goldcoasttokota.store']);
+
+        $this->artisan('mail:test', ['to' => 'check@example.com', '--only' => 'order_placed,order_shipped'])->assertSuccessful();
+
+        Mail::assertSent(TransactionalMail::class, function (TransactionalMail $mail) {
+            $html = $mail->render();
+            $this->assertMatchesRegularExpression('#https://goldcoasttokota\.store/account\?order=GCT-[A-Z0-9]+\#track-order#', $html);
+            $this->assertStringContainsString('this email address', $html);
+
+            return true;
+        });
+    }
+
+    public function test_the_invitation_says_three_days(): void
+    {
+        Mail::fake();
+
+        $this->artisan('mail:test', ['to' => 'check@example.com', '--only' => 'admin_invite'])->assertSuccessful();
+
+        Mail::assertSent(TransactionalMail::class, fn ($mail) => str_contains($mail->render(), '3 days'));
     }
 
     public function test_only_sends_the_ones_asked_for(): void

@@ -43,6 +43,7 @@ final class TransactionalMessages
                 'order' => $order,
                 'total' => $total,
                 'returnWindowDays' => ReturnPolicy::WINDOW_DAYS,
+                'statusUrl' => self::orderStatusUrl($order),
             ],
             // Deliberately short. This is one SMS segment including the
             // reference, which is the part a customer actually needs to quote
@@ -75,6 +76,7 @@ final class TransactionalMessages
                 'trackingUrl' => $trackingUrl,
                 'courier' => self::courierName($shipment?->carrier ?? $order->delivery_provider, $shipment?->courier_name),
                 'international' => $international,
+                'statusUrl' => self::orderStatusUrl($order),
                 'deliveryEstimate' => DeliveryEstimates::for($order->shipping_address['country'] ?? null),
             ],
             // "where available" is doing real work: a courier booked by hand
@@ -275,6 +277,20 @@ final class TransactionalMessages
      * currency they were placed in; USD orders were converted at the rate
      * locked at checkout, so this never re-derives anything.
      */
+    /**
+     * The storefront's order tracking, with the order number filled in: the
+     * "Track an order" form on /account, which asks for the email too before
+     * it shows anything. The email is left out of the link, so it doesn't end
+     * up in server logs or analytics. The storefront's address comes from
+     * STOREFRONT_URL (`app.storefront_url`): localhost:3000 locally, the real
+     * domain in production.
+     */
+    private static function orderStatusUrl(Order $order): string
+    {
+        return rtrim((string) config('app.storefront_url'), '/')
+            .'/account?'.http_build_query(['order' => $order->reference]).'#track-order';
+    }
+
     private static function money(int $minorUnits, string $currency): string
     {
         $symbol = $currency === 'USD' ? '$' : 'GH₵';

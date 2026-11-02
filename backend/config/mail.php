@@ -127,6 +127,12 @@ return [
     |
     */
 
+    // The logo at the top of every email, loaded from a public address. It
+    // used to travel inside the email (cid:), which Gmail listed as an
+    // attachment. The admin site serves the brand files today; once the
+    // storefront's domain is live, its /brand/logo.png is the same file.
+    'logo_url' => env('MAIL_LOGO_URL', 'https://admin.goldcoasttokota.store/brand/logo.png'),
+
     'markdown' => [
         'theme' => 'tokota',
         'paths' => [
