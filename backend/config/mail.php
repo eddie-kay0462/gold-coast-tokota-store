@@ -115,4 +115,23 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown mail theme
+    |--------------------------------------------------------------------------
+    |
+    | The brand's own look (resources/views/vendor/mail): the storefront's band
+    | and logo, its type and colours, square outlined buttons, and a footer
+    | with the brand's channels. Components not overridden there fall back to
+    | Laravel's.
+    |
+    */
+
+    'markdown' => [
+        'theme' => 'tokota',
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];

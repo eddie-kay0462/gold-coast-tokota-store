@@ -431,8 +431,8 @@ class NotificationTest extends TestCase
             NotificationRecipient::forOrder($order),
         ))->render();
 
-        $this->assertStringNotContainsString('Tracking reference', $html);
-        $this->assertStringContainsString('as soon as the courier provides one', $html);
+        $this->assertStringNotContainsString('Tracking number', $html);
+        $this->assertStringContainsString('as soon as the courier gives us one', $html);
 
         $tracked = $this->order(['reference' => 'GCT-TEST-2', 'delivery_reference' => 'DHL-99']);
         $trackedHtml = (new TransactionalMail(

@@ -1,16 +1,16 @@
 <x-mail::message>
 # Thank you, {{ $greetingName }}
 
-Your payment has come through.
+We’ve received your payment for a **{{ $amount }}** gift card.
 
-**Order {{ $order->reference }}**: a {{ $amount }} gift card, {{ $total }} paid.
+<x-mail::panel>
+**Order {{ $order->reference }}**<br>
+{{ $total }} paid
+</x-mail::panel>
 
 @if ($recipientEmail)
-We have emailed the gift card to {{ $recipientName ?: $recipientEmail }} at {{ $recipientEmail }}.
+The gift card is on its way to {{ $recipientName ?: $recipientEmail }} at {{ $recipientEmail }}.
 @endif
 
-Keep this email. The order reference above is all we need if anything goes wrong.
-
-Thanks,<br>
-{{ config('mail.from.name') }}
+Keep this email: your order number is all we need if you have a question.
 </x-mail::message>

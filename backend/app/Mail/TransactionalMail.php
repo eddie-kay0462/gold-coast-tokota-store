@@ -12,6 +12,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Symfony\Component\Mime\Email;
 
 /**
  * One Mailable for every transactional email, driven by the
@@ -28,7 +29,14 @@ class TransactionalMail extends Mailable
     public function __construct(
         public readonly NotificationMessage $message,
         public readonly NotificationRecipient $recipient,
-    ) {}
+    ) {
+        // The brand's logo, carried inside the email and shown by the header
+        // as `cid:logo` (resources/views/vendor/mail/html/header.blade.php),
+        // so it appears without loading an image from a server.
+        $this->withSymfonyMessage(function (Email $email) {
+            $email->embedFromPath(resource_path('mail/logo.png'), 'logo', 'image/png');
+        });
+    }
 
     public function envelope(): Envelope
     {
