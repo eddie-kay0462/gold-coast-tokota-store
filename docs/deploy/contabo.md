@@ -195,6 +195,7 @@ WHATSAPP_LOG_PAYLOADS=false
 # the full list of SHIPPING_*, YANGO_* and DHL_* settings)
 YANGO_ENABLED=false
 DHL_ENABLED=false
+# Who hears about payments that need refunding and failed deliveries.
 OPS_ALERT_EMAIL=
 
 # SMS and FX
@@ -204,7 +205,14 @@ FISH_AFRICA_APP_SECRET=
 EXCHANGERATE_HOST_URL=https://api.exchangerate.host
 EXCHANGERATE_HOST_KEY=
 
-MAIL_MAILER=
+# Email goes out through Resend (section 6, "Email"). Left as `log`, nothing
+# is sent: no receipts, tickets, team invitations or password resets.
+MAIL_MAILER=resend
+RESEND_API_KEY=
+# The logo at the top of every email. Defaults to the admin site's copy; set
+# it to https://goldcoasttokota.store/brand/logo.png once the storefront's
+# domain is live. Order emails' "Track your order" links use STOREFRONT_URL.
+# MAIL_LOGO_URL=
 MAIL_FROM_ADDRESS=hello@goldcoasttokota.store
 MAIL_FROM_NAME="Gold Coast Tokota"
 
@@ -346,6 +354,38 @@ current. If `api` is ever switched to proxied, set SSL/TLS to **Full
 `servers { trusted_proxies static ... }`, or every customer shares one IP for
 rate limiting.
 
+**Email (Resend):** every customer and staff email goes through Resend:
+order receipts, shipping updates, gift cards, booking confirmations with their
+ticket, waitlist pay links, team invitations, password resets and ops alerts.
+1. In Resend, **Domains › Add domain**: `goldcoasttokota.store`, region
+   **Ireland (eu-west-1)**, the closest to Ghana.
+2. Resend shows the records to add: an **MX** and a **TXT** (SPF) on
+   `send.goldcoasttokota.store`, and a **TXT** at `resend._domainkey` (DKIM).
+   Add each in Cloudflare **exactly as shown**, **DNS only** (grey). They sit
+   on `send.` and `resend._domainkey`, so they don't touch any mail the root
+   domain already receives. Then **Verify** in Resend.
+3. Add DMARC if the domain has none: a **TXT** at `_dmarc` with
+   `v=DMARC1; p=none; rua=mailto:<an inbox that's read>`. Without it, Gmail
+   and Yahoo are likely to file the emails as spam.
+4. **API Keys › Create**: permission **Sending access**, domain
+   `goldcoasttokota.store`. That is `RESEND_API_KEY`. `MAIL_MAILER=resend` and
+   `MAIL_FROM_ADDRESS=hello@goldcoasttokota.store` are already in the `.env`
+   above.
+5. Restart so the containers read it (`docker compose -f
+   docker-compose.prod.yml up -d`), then send one of every email to yourself:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml run --rm app php artisan mail:test you@example.com
+   ```
+
+   It lists each one as sent or failed, with the provider's error. The data
+   in them is made up and isn't kept. Check them on Gmail and a phone,
+   including that the booking confirmation has its ticket PDF attached.
+6. **Replies.** The emails come from `hello@goldcoasttokota.store`, and several
+   say "reply to this email". Make sure that address receives mail (an inbox
+   on Google Workspace or Zoho, with their MX records at the root), or
+   replies bounce.
+
 **Paystack:** set the webhook URL in the Paystack dashboard to
 `https://api.goldcoasttokota.store/api/v1/webhooks/paystack`.
 
@@ -410,6 +450,9 @@ development, which still runs `php artisan serve` (CLAUDE.md, Commands).
 - [ ] `/up` returns 200 through `https://api.goldcoasttokota.store`
 - [ ] R2 buckets, custom domain, token
 - [ ] Paystack webhook URL updated
+- [ ] Resend domain verified (SPF, DKIM, DMARC in Cloudflare, grey);
+      `RESEND_API_KEY` set; `mail:test` delivers all nine to a real inbox
+- [ ] `hello@goldcoasttokota.store` receives replies; `OPS_ALERT_EMAIL` set
 - [ ] WhatsApp webhook URL verified in the Meta app (once the number is connected); `/settings/whatsapp` shows a recent "last update from WhatsApp"
 - [ ] Storefront and admin on Vercel have
       `NUXT_PUBLIC_API_BASE=https://api.goldcoasttokota.store/api/v1`

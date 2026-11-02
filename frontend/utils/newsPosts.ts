@@ -29,6 +29,8 @@ export type ApiPost = {
   blocks?: PostBlock[]
   /** Plain rich-text body, as the CMS will return it. Used when `blocks` is absent. */
   body?: string | null
+  /** The byline, chosen in the post editor. */
+  author?: string | null
 }
 
 /** "21st March 2025": the date format used throughout the news designs. */

@@ -8,7 +8,7 @@ import { ROLE_DESCRIPTIONS, ROLE_ORDER } from '~/utils/permissions'
  * /admin/team`. Super Admin only (§18: Users).
  *
  * Nobody sets a password for someone else. Adding a member emails them a link
- * to choose their own (a week long); "Send a password link" sends it again, or
+ * to choose their own (3 days long); "Send a password link" sends it again, or
  * gives someone already set up a fresh one.
  *
  * An intern account needs an end date; no other tier may have one, so the
@@ -77,7 +77,7 @@ async function save() {
     }
     toast.success(editing.value ? 'Saved' : 'Invitation sent', editing.value
       ? form.name
-      : `${form.name} gets an email to choose a password. The link works for a week.`)
+      : `${form.name} gets an email to choose a password. The link works for 3 days.`)
     emit('saved')
     open.value = false
   } catch (err) {
