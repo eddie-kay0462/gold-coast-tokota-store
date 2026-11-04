@@ -58,7 +58,7 @@ The images are:
 
 | Image | Built from | Runs as |
 |---|---|---|
-| `tokota-api` | `backend/Dockerfile`, target `app` (PHP 8.3 FPM, Alpine) | `app`, `worker`, `scheduler`, one command each |
+| `tokota-api` | `backend/Dockerfile`, target `app` (PHP 8.5 FPM, Alpine) | `app`, `worker`, `scheduler`, one command each |
 | `tokota-web` | the same Dockerfile, target `web` (nginx with `public/`) | `web` |
 | `redis:7.4-alpine` | upstream | `redis`, append-only file in the `redis-data` volume so queued jobs survive a restart |
 

@@ -49,10 +49,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 8.3 matches the Contabo server and composer.json's platform pin.
+      # 8.5 matches the Contabo server and composer.json's platform pin.
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.5'
           extensions: pdo_pgsql, pdo_sqlite, zip
           coverage: none
 
