@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * The frame around the signed-out pages (sign in, forgot password, choose or
- * reset a password): a rounded photo panel on the left from `lg` up, and the
+ * reset a password): a rounded black panel with the white wordmark on the left from `lg` up, and the
  * form centred on the right. Laid out like the IRIS operations portal's
- * sign-in, with Gold Coast Tokota's own photo and wordmark.
+ * sign-in, with Gold Coast Tokota's wordmark in place of a photo.
  *
  * Inputs and buttons inside are restyled here, not in `UiField`/`UiButton`,
  * so the rest of the dashboard keeps its denser look.
@@ -13,18 +13,12 @@
 <template>
   <div class="flex min-h-dvh bg-bg lg:p-4">
     <!-- Photo panel. Hidden below lg, where it would push the form below the fold. -->
-    <div
-      class="relative hidden flex-col justify-between overflow-hidden rounded-3xl bg-ink bg-cover p-12 lg:flex lg:w-1/2"
-      style="background-image: url('/brand/login-bg.jpg'); background-position: center 30%"
-    >
-      <div class="absolute inset-0 bg-gradient-to-b from-black/55 via-black/10 to-black/70" aria-hidden="true" />
+    <div class="hidden flex-col justify-between rounded-3xl bg-ink p-12 lg:flex lg:w-1/2">
+      <span class="text-xs font-medium uppercase tracking-[0.2em] text-white/40">Admin</span>
 
-      <div class="relative flex items-center gap-3">
-        <img src="/brand/logo-white.png" alt="Gold Coast Tokota" class="h-7 w-auto object-contain">
-        <span class="mt-1 text-xs font-medium uppercase tracking-[0.2em] text-white/50">Admin</span>
-      </div>
+      <img src="/brand/logo-white.png" alt="Gold Coast Tokota" class="mx-auto w-3/5 max-w-[288px] object-contain">
 
-      <div class="relative space-y-3">
+      <div class="space-y-3">
         <div class="h-px w-10 bg-white/30" />
         <p class="text-lg font-light leading-snug text-white/90">Crafted with Purpose. Inspired by Culture.</p>
         <p class="text-xs tracking-wide text-white/50">Haatso, Accra · Ghana</p>
