@@ -4,7 +4,7 @@
  * `POST /admin/reset-password`. The link lasts an hour and works once.
  *
  * A new member's invitation lands here too, with `invite=1`: the same form,
- * worded as choosing a first password, and the link lasts a week.
+ * worded as choosing a first password, and the link lasts three days.
  */
 definePageMeta({ layout: false })
 const isInvite = useRoute().query.invite === '1'
@@ -43,19 +43,19 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex min-h-dvh items-center justify-center bg-bg px-5 py-10">
-    <div class="w-full max-w-sm">
-      <h1 class="text-title font-medium text-fg-strong">{{ isInvite ? 'Choose your password' : 'Set a new password' }}</h1>
-      <template v-if="done">
-        <p class="mt-3 text-ui text-fg-muted">
-          {{ isInvite ? 'Your account is ready. Sign in with your email and this password.' : 'Your password has been changed.' }}
-        </p>
-        <UiButton to="/login" block class="mt-6">Sign in</UiButton>
-      </template>
-      <form v-else class="mt-6 flex flex-col gap-4" novalidate @submit.prevent="submit">
-        <p v-if="email" class="text-ui text-fg-muted">
-          {{ isInvite ? `Welcome to the Gold Coast Tokota dashboard. You’ll sign in as ${email}.` : `For ${email}.` }}
-        </p>
+  <AuthShell>
+    <h1 class="text-2xl font-semibold text-fg-strong">{{ isInvite ? 'Choose your password' : 'Set a new password' }}</h1>
+    <template v-if="done">
+      <p class="mt-2 text-sm text-fg-muted">
+        {{ isInvite ? 'Your account is ready. Sign in with your email and this password.' : 'Your password has been changed.' }}
+      </p>
+      <UiButton to="/login" block class="auth-pill mt-8">Sign in</UiButton>
+    </template>
+    <template v-else>
+      <p v-if="email" class="mt-2 text-sm text-fg-muted">
+        {{ isInvite ? `Welcome to the Gold Coast Tokota dashboard. You’ll sign in as ${email}.` : `For ${email}.` }}
+      </p>
+      <form class="mt-8 flex flex-col gap-5" novalidate @submit.prevent="submit">
         <UiField v-model="password" label="New password" type="password" required autocomplete="new-password" hint="At least 8 characters." />
         <UiField v-model="confirm" label="Repeat it" type="password" required autocomplete="new-password" />
         <p v-if="confirm && password !== confirm" class="text-meta text-fg-muted">The two don’t match yet.</p>
@@ -63,11 +63,11 @@ async function submit() {
         <UiButton type="submit" block :loading="saving" :disabled="!token || !password || password !== confirm">
           Save new password
         </UiButton>
-        <NuxtLink v-if="!isInvite" to="/forgot-password" class="text-ui text-accent-text underline-offset-4 hover:underline">
+        <NuxtLink v-if="!isInvite" to="/forgot-password" class="text-sm text-fg-muted underline-offset-4 hover:text-fg-strong hover:underline">
           Ask for a new link
         </NuxtLink>
         <p v-else class="text-meta text-fg-faint">If the link has run out, ask whoever invited you to send it again.</p>
       </form>
-    </div>
-  </div>
+    </template>
+  </AuthShell>
 </template>

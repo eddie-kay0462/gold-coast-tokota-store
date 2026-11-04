@@ -10,7 +10,9 @@
 # The .env is not baked in. Compose mounts it at run time, and the entrypoint
 # caches config from it on every start.
 
-FROM php:8.3-fpm-alpine AS app
+# PHP 8.5, the current stable release (Nov 2026), and what development
+# runs; CI and composer.json's platform pin match it.
+FROM php:8.5-fpm-alpine AS app
 
 # pdo_pgsql for Neon; pcntl so queue:work stops cleanly between jobs on
 # SIGTERM (deploys, --max-time); the rest are what composer.json's packages
